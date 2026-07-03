@@ -1,4 +1,4 @@
-app = "e-techbike-at"
+app = "emergent-interaction-lab"
 primary_region = "fra"
 
 [build]
@@ -8,7 +8,7 @@ primary_region = "fra"
   STATIC_DIR = "/app/dist"
   UPLOADS_DIR = "/app/uploads"
   CONTENT_PATH = "/app/data/content.json"
-  REDIRECT_URI = "https://e-techbike-at.fly.dev/auth/callback"
+  REDIRECT_URI = "https://emergent-interaction-lab.fly.dev/auth/callback"
 
 [http_service]
   internal_port = 3000
@@ -24,9 +24,9 @@ primary_region = "fra"
   cpus = 1
 
 [[mounts]]
-  source = "etb_data"
+  source = "eil_data"
   destination = "/app/data"
 
 [[mounts]]
-  source = "etb_uploads"
+  source = "eil_uploads"
   destination = "/app/uploads"
