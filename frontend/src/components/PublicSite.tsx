@@ -303,14 +303,57 @@ function TrustIcon({ icon }: { icon: string }) {
 
 // ── Hero graphic: a wireframe mesh rippling outward from a single point,
 // like a droplet's impact spreading across a water surface. Pure line art,
-// no fill, so it reads as a diagram rather than a photo.
+// no fill, so it reads as a diagram rather than a photo. The impact point
+// eases toward the cursor while it hovers the hero, and drifts back to its
+// resting spot once the pointer leaves — smoothed via rAF so it feels fluid
+// rather than snapping straight to the mouse.
 function HeroFieldGraphic() {
   const W = 720, H = 640
-  const cx = 470, cy = 250
+  const restX = 470, restY = 250
   const amp = 20, wavelength = 48, decay = 260
   const gridLines = 9   // how many mesh lines per axis
   const samples = 48    // points per line — needs to be dense enough to trace the sine smoothly
 
+  const svgRef = useRef<SVGSVGElement>(null)
+  const targetRef = useRef({ x: restX, y: restY })
+  const currentRef = useRef({ x: restX, y: restY })
+  const [center, setCenter] = useState({ x: restX, y: restY })
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let raf = 0
+    const tick = () => {
+      const cur = currentRef.current
+      const tgt = targetRef.current
+      cur.x += (tgt.x - cur.x) * 0.06
+      cur.y += (tgt.y - cur.y) * 0.06
+      setCenter({ x: cur.x, y: cur.y })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const onMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect()
+      targetRef.current = {
+        x: ((e.clientX - rect.left) / rect.width) * W,
+        y: ((e.clientY - rect.top) / rect.height) * H,
+      }
+    }
+    const onLeave = () => { targetRef.current = { x: restX, y: restY } }
+    el.addEventListener('mousemove', onMove)
+    el.addEventListener('mouseleave', onLeave)
+    return () => {
+      el.removeEventListener('mousemove', onMove)
+      el.removeEventListener('mouseleave', onLeave)
+    }
+  }, [])
+
+  const { x: cx, y: cy } = center
   const ripple = (x: number, y: number) => {
     const dist = Math.hypot(x - cx, y - cy)
     return Math.sin(dist / wavelength) * Math.exp(-dist / decay) * amp
@@ -339,10 +382,10 @@ function HeroFieldGraphic() {
   }
 
   return (
-    <svg className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      {lines.map((d, i) => <path key={i} d={d} fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.28" />)}
-      <circle cx={cx} cy={cy} r="14" fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.55" />
-      <circle cx={cx} cy={cy} r="3" fill="var(--accent)" opacity="0.9" />
+    <svg ref={svgRef} className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      {lines.map((d, i) => <path key={i} d={d} fill="none" stroke="var(--brand-cyan)" strokeWidth="1" opacity="0.28" />)}
+      <circle cx={cx} cy={cy} r="14" fill="none" stroke="var(--brand-cyan)" strokeWidth="1" opacity="0.55" />
+      <circle cx={cx} cy={cy} r="3" fill="var(--brand-cyan)" opacity="0.9" />
     </svg>
   )
 }
