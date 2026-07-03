@@ -1,0 +1,32 @@
+app = "e-techbike-at"
+primary_region = "fra"
+
+[build]
+
+[env]
+  PORT = "3000"
+  STATIC_DIR = "/app/dist"
+  UPLOADS_DIR = "/app/uploads"
+  CONTENT_PATH = "/app/data/content.json"
+  REDIRECT_URI = "https://e-techbike-at.fly.dev/auth/callback"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[[mounts]]
+  source = "etb_data"
+  destination = "/app/data"
+
+[[mounts]]
+  source = "etb_uploads"
+  destination = "/app/uploads"

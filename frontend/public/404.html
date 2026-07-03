@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Loading…</title>
+<script>
+  // SPA redirect for GitHub Pages subpath repos.
+  // Encodes the full path into ?p= so index.html can restore it.
+  var segmentCount = 1; // adjust to match repo-name depth (1 for /my-repo/)
+  var l = window.location;
+  var base = l.pathname.split('/').slice(0, 1 + segmentCount).join('/');
+  var rest = '/' + l.pathname.slice(1).split('/').slice(segmentCount).join('/');
+  if (rest === '/') {
+    l.replace(l.protocol + '//' + l.host + base + '/');
+  } else {
+    l.replace(
+      l.protocol + '//' + l.host + base +
+      '/?p=' + rest.replace(/&/g, '~and~') +
+      (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  }
+</script>
+</head>
+<body></body>
+</html>
