@@ -312,7 +312,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
           <span className="builder-lang-switch" role="group" aria-label="Editing language">
             <button type="button" className={`builder-lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
             <button type="button" className={`builder-lang-btn ${lang === 'de' ? 'active' : ''}`} onClick={() => setLang('de')}>DE</button>
-            <button type="button" className={`builder-lang-btn ${lang === 'hu' ? 'active' : ''}`} onClick={() => setLang('hu')}>HU</button>
           </span>
         </div>
         <div className="builder-device-switch" role="group" aria-label="Ansicht wählen">
