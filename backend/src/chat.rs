@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 
-const CHAT_MODEL: &str = "nvidia/llama-3.1-nemotron-70b-instruct";
+const CHAT_MODEL: &str = "nvidia/nemotron-mini-4b-instruct";
 const EMBED_MODEL: &str = "nvidia/nv-embedqa-e5-v5";
 const CHUNK_CHARS: usize = 900;
 const CHUNK_OVERLAP: usize = 150;
