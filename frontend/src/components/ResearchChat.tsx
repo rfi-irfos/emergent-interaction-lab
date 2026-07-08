@@ -133,17 +133,23 @@ export function ResearchChat() {
 
   useEffect(() => { refreshConversations(); refreshDocuments() }, [])
 
-  useEffect(() => {
-    if (!activeId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMessages([])
-      return
-    }
-    fetch(`${API_BASE}/api/chat/conversations/${activeId}`, { headers: authHeaders() })
+  // Deliberately not a useEffect keyed on activeId: ensureConversation() below
+  // also sets activeId for a brand-new (empty) conversation, and a reload
+  // effect firing at that exact moment would race the optimistic message
+  // bubbles send() adds right after — overwriting them mid-stream with the
+  // (still empty) server state and silently dropping the whole reply.
+  function openConversation(id: string) {
+    setActiveId(id)
+    fetch(`${API_BASE}/api/chat/conversations/${id}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
       .then(setMessages)
       .catch(() => setMessages([]))
-  }, [activeId])
+  }
+
+  function startNewConversation() {
+    setActiveId(null)
+    setMessages([])
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
@@ -194,7 +200,7 @@ export function ResearchChat() {
 
   async function deleteConversation(id: string) {
     await fetch(`${API_BASE}/api/chat/conversations/${id}`, { method: 'DELETE', headers: authHeaders() })
-    if (activeId === id) setActiveId(null)
+    if (activeId === id) startNewConversation()
     refreshConversations()
   }
 
@@ -228,10 +234,10 @@ export function ResearchChat() {
   return (
     <div className="chat-panel">
       <aside className="chat-sidebar">
-        <button className="chat-new-btn" onClick={() => setActiveId(null)}>+ Neue Unterhaltung</button>
+        <button className="chat-new-btn" onClick={startNewConversation}>+ Neue Unterhaltung</button>
         <div className="chat-conv-list">
           {conversations.map(c => (
-            <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''}`} onClick={() => setActiveId(c.id)}>
+            <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''}`} onClick={() => openConversation(c.id)}>
               <span className="chat-conv-title">{c.title}</span>
               <button
                 className="chat-conv-delete"
