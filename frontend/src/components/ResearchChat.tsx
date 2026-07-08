@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { API_BASE } from '../lib/apiBase'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
 interface TokenAlt { token: string; probability: number }
@@ -21,7 +22,7 @@ async function streamChat(
 ) {
   let res: Response
   try {
-    res = await fetch('/api/chat/stream', {
+    res = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ conversation_id: conversationId, message }),
@@ -118,13 +119,13 @@ export function ResearchChat() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const refreshConversations = () => {
-    fetch('/api/chat/conversations', { headers: authHeaders() })
+    fetch(`${API_BASE}/api/chat/conversations`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
       .then(setConversations)
       .catch(() => {})
   }
   const refreshDocuments = () => {
-    fetch('/api/chat/documents', { headers: authHeaders() })
+    fetch(`${API_BASE}/api/chat/documents`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
       .then(setDocuments)
       .catch(() => {})
@@ -138,7 +139,7 @@ export function ResearchChat() {
       setMessages([])
       return
     }
-    fetch(`/api/chat/conversations/${activeId}`, { headers: authHeaders() })
+    fetch(`${API_BASE}/api/chat/conversations/${activeId}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
       .then(setMessages)
       .catch(() => setMessages([]))
@@ -150,7 +151,7 @@ export function ResearchChat() {
 
   async function ensureConversation(): Promise<string | null> {
     if (activeId) return activeId
-    const res = await fetch('/api/chat/conversations', {
+    const res = await fetch(`${API_BASE}/api/chat/conversations`, {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({}),
@@ -192,7 +193,7 @@ export function ResearchChat() {
   }
 
   async function deleteConversation(id: string) {
-    await fetch(`/api/chat/conversations/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await fetch(`${API_BASE}/api/chat/conversations/${id}`, { method: 'DELETE', headers: authHeaders() })
     if (activeId === id) setActiveId(null)
     refreshConversations()
   }
@@ -203,7 +204,7 @@ export function ResearchChat() {
     const form = new FormData()
     form.append('file', file)
     try {
-      const res = await fetch('/api/chat/documents', { method: 'POST', headers: authHeaders(), body: form })
+      const res = await fetch(`${API_BASE}/api/chat/documents`, { method: 'POST', headers: authHeaders(), body: form })
       if (!res.ok) setError('Datei konnte nicht verarbeitet werden.')
       refreshDocuments()
     } catch {
@@ -214,7 +215,7 @@ export function ResearchChat() {
   }
 
   async function deleteDocument(id: string) {
-    await fetch(`/api/chat/documents/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await fetch(`${API_BASE}/api/chat/documents/${id}`, { method: 'DELETE', headers: authHeaders() })
     refreshDocuments()
   }
 

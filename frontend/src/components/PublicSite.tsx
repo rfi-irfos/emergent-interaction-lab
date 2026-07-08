@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useMemo 
 import type { SiteContent, SectionId, CanvasPos, ProductItem, NewsItem, CertificateItem } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
+import { API_BASE } from '../lib/apiBase'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -577,7 +578,7 @@ export function PublicSite({
   // Tracking pixel — fires once per page load in production (skipped in edit mode).
   useEffect(() => {
     if (editMode) return
-    const px = new URL('/api/track/pixel.gif', window.location.origin)
+    const px = new URL('/api/track/pixel.gif', API_BASE || window.location.origin)
     px.searchParams.set('p', window.location.pathname)
     px.searchParams.set('r', document.referrer)
     const s = new URLSearchParams(window.location.search)

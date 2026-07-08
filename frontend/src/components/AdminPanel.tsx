@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { SiteContent, NewsItem, PageItem, SectionId } from '../types/content'
 import { PublicSite } from './PublicSite'
 import { ResearchChat } from './ResearchChat'
+import { API_BASE } from '../lib/apiBase'
 
 interface Props {
   content: SiteContent
@@ -69,7 +70,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   useEffect(() => {
     if (!(adminMode && adminSection === 'analytics')) return
     setAnalyticsLoading(true)
-    fetch('/api/analytics')
+    fetch(`${API_BASE}/api/analytics`)
       .then(r => r.json())
       .then(d => { setAnalyticsData(d); setAnalyticsLoading(false) })
       .catch(() => setAnalyticsLoading(false))
