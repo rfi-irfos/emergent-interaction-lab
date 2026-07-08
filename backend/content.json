@@ -1,4 +1,13 @@
 {
+  "pages": [
+    {
+      "id": "research",
+      "title": "Research",
+      "slug": "research",
+      "showInNav": false,
+      "body": "<h2>How this research happens</h2><p>The starting point isn't a lab — it's practice. Since 2023 I've been systematically documenting and analyzing how I think, correct myself, and reshape my own concepts across sustained conversations with a language model. The architecture below (IEIA-2025) wasn't designed in advance — it grew out of how I approach projects: fully into the interaction first, analysis afterward.</p><h2>The seven instruments (IEIA-2025)</h2><ul><li><strong>UIP (User Integrity Protocol)</strong> — rules against distortion: no reinterpreting statements, no fabricated facts, triple-checking every claim.</li><li><strong>EIA (Emergent Interaction Analysis)</strong> — observes how meaning and abstraction shift over the course of a conversation.</li><li><strong>CCET (Continuous Co-Evolution Tracker)</strong> — tries to put a number on that shift (e.g. the Co-Evolution Index).</li><li><strong>LSG-24</strong> — breaks individual dialogue passages down into facts, analysis, and patterns.</li><li><strong>8-Layer Model</strong> — separates thinking into eight levels: facts, analysis, patterns, hypotheses, symbols, action, counterarguments, blind spot.</li><li><strong>LAP-1</strong> — checks whether cited sources and literature are actually accurate.</li><li><strong>LT-Data</strong> — the long-term archive of all sessions, since language models themselves have no memory between conversations.</li></ul><h2>A case study: the dream with the helmet</h2><p>A recurring dream — a helmet combining protection and perception — was worked through across several sessions using the 8-Layer Model. Over time, the model increasingly carried the analytical structure forward on its own, without needing it re-specified each time.</p><p><em>Important, in full honesty: this shows that a language model can consistently continue a structure once it's been introduced — not that it independently \"understands\" or develops self-awareness. My own work draws exactly this boundary: the results show structural adaptation, not autonomous cognition.</em></p><h2>Where this goes next</h2><p>The quantitative indicators (Co-Evolution Index and others) are currently my own, self-developed measure — not externally validated or cross-checked against other researchers. That's a stated next step, not a finished result.</p>"
+    }
+  ],
   "meta": {
     "title": "Emergent Interaction Lab — Human–AI Systems Research",
     "description": "Emergent Interaction Lab investigates how meaning, structure, and behavior emerge in continuous human–AI interaction.",
@@ -21,6 +30,10 @@
       {
         "label": "Blog",
         "href": "#news"
+      },
+      {
+        "label": "Research",
+        "href": "#p/research"
       }
     ],
     "ctaLabel": "Contact",

@@ -1,4 +1,13 @@
 {
+  "pages": [
+    {
+      "id": "research",
+      "title": "Forschung",
+      "slug": "research",
+      "showInNav": false,
+      "body": "<h2>Wie diese Forschung entsteht</h2><p>Der Ausgangspunkt ist nicht ein Labor, sondern die eigene Praxis: seit 2023 dokumentiere und analysiere ich systematisch, wie ich in anhaltenden Gesprächen mit einem Sprachmodell denke, mich korrigiere und meine Begriffe verändere. Die Architektur unten (IEIA-2025) wurde nicht vorher entworfen — sie ist aus der Art entstanden, wie ich an Projekte herangehe: erst voll in die Interaktion, danach die Analyse.</p><h2>Die sieben Werkzeuge (IEIA-2025)</h2><ul><li><strong>UIP (User Integrity Protocol)</strong> — Regeln gegen Verfälschung: keine Umdeutung von Aussagen, keine erfundenen Fakten, dreifache Prüfung jeder Behauptung.</li><li><strong>EIA (Emergent Interaction Analysis)</strong> — beobachtet, wie sich Bedeutung und Abstraktion über ein Gespräch hinweg verschieben.</li><li><strong>CCET (Continuous Co-Evolution Tracker)</strong> — versucht, diese Verschiebung in Zahlen zu fassen (z. B. den Co-Evolution Index).</li><li><strong>LSG-24</strong> — zerlegt einzelne Gesprächsabschnitte in Fakten, Analyse und Muster.</li><li><strong>8-Schichten-Modell</strong> — trennt Denken in acht Ebenen: Fakten, Analyse, Muster, Hypothesen, Symbole, Handlung, Gegenargumente, blinder Fleck.</li><li><strong>LAP-1</strong> — prüft, ob zitierte Quellen und Literatur tatsächlich stimmen.</li><li><strong>LT-Data</strong> — das Langzeitarchiv aller Sitzungen, weil Sprachmodelle selbst kein Gedächtnis zwischen Gesprächen haben.</li></ul><h2>Eine Fallstudie: Der Traum mit dem Helm</h2><p>Ein wiederkehrender Traum — ein Helm, der Schutz und Wahrnehmung verbindet — wurde über mehrere Sitzungen mit dem 8-Schichten-Modell durchgearbeitet. Das Modell übernahm dabei zunehmend selbstständig die eigene Analysestruktur, ohne dass sie jedes Mal neu vorgegeben werden musste.</p><p><em>Wichtig, in aller Ehrlichkeit: das zeigt, dass ein Sprachmodell eine einmal eingeführte Struktur konsequent weiterführen kann — nicht, dass es eigenständig „versteht“ oder ein Bewusstsein von sich selbst entwickelt. Genau diese Grenze zieht auch meine eigene Arbeit: die Ergebnisse belegen strukturelle Anpassung, keine autonome Kognition.</em></p><h2>Wo das noch hinführt</h2><p>Die quantitativen Kennzahlen (Co-Evolution Index u. a.) sind aktuell mein eigenes, selbst entwickeltes Maß — nicht extern validiert oder mit anderen Forschenden abgeglichen. Das ist erklärter nächster Schritt, kein fertiges Ergebnis.</p>"
+    }
+  ],
   "meta": {
     "title": "Emergent Interaction Lab — Mensch-KI-Systemforschung",
     "description": "Emergent Interaction Lab untersucht, wie Bedeutung, Struktur und Verhalten in kontinuierlicher Mensch-KI-Interaktion entstehen.",
@@ -21,6 +30,10 @@
       {
         "label": "Blog",
         "href": "#news"
+      },
+      {
+        "label": "Forschung",
+        "href": "#p/research"
       }
     ],
     "ctaLabel": "Kontakt",
