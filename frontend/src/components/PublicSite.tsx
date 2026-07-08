@@ -1182,14 +1182,35 @@ export function PublicSite({
           <section className={reveal("site-section site-section-alt site-usp")} id="usp">
             {usp.eyebrow && <div className="site-eyebrow">{usp.eyebrow}</div>}
             <E field="usp.title" value={usp.title} as="h2" className="site-section-title" />
-            <div className="site-usp-grid">
-              {usp.items.map((u, i) => (
-                <div key={u.id} className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
-                  {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
-                  <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
-                  <E field={`usp.items.${i}.description`} value={u.description} as="p" />
-                </div>
-              ))}
+            <div className="site-usp-pillars">
+              {(usp.pillars ?? [{ id: '', title: '', subtitle: '' }]).map((pillar, pi) => {
+                const groupItems = usp.items
+                  .map((u, i) => ({ u, i }))
+                  .filter(({ u }) => (usp.pillars ? u.pillar === pillar.id : true))
+                if (groupItems.length === 0) return null
+                return (
+                  <div key={pillar.id || 'all'} className="site-usp-pillar">
+                    {pillar.title && (
+                      <div className="site-usp-pillar-head">
+                        <span className="site-usp-pillar-index">{String(pi + 1).padStart(2, '0')}</span>
+                        <div>
+                          <h3 className="site-usp-pillar-title">{pillar.title}</h3>
+                          <p className="site-usp-pillar-subtitle">{pillar.subtitle}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="site-usp-grid">
+                      {groupItems.map(({ u, i }) => (
+                        <div key={u.id} className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
+                          {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
+                          <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
+                          <E field={`usp.items.${i}.description`} value={u.description} as="p" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </section>
         )}
