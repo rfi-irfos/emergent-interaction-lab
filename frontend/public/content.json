@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Emergent Interaction Lab — Human–AI Systems Research",
-    "description": "Emergent Interaction Lab untersucht, wie Bedeutung, Struktur und Verhalten in kontinuierlicher Mensch-KI-Interaktion entstehen.",
+    "description": "Emergent Interaction Lab investigates how meaning, structure, and behavior emerge in continuous human–AI interaction.",
     "primaryColor": "#63f0ff",
     "accentColor": "#63f0ff",
     "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
@@ -23,16 +23,16 @@
         "href": "#news"
       }
     ],
-    "ctaLabel": "Kontakt",
+    "ctaLabel": "Contact",
     "ctaHref": "#location"
   },
   "hero": {
     "tag": "Human–AI Systems Research",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Dieses Projekt untersucht Emergenz als Eigenschaft von Interaktion — wie Bedeutung, Struktur und Verhalten in kontinuierlicher Mensch-KI-Interaktion entstehen.",
-    "ctaLabel": "Blog lesen",
+    "subheadline": "This project investigates emergence as a property of interaction — how meaning, structure, and behavior arise through continuous human–AI interaction.",
+    "ctaLabel": "Read the blog",
     "ctaHref": "#news",
-    "ctaSecLabel": "Über das Projekt",
+    "ctaSecLabel": "About the project",
     "ctaSecHref": "#about",
     "image": "",
     "bgX": 50,
@@ -53,67 +53,67 @@
   },
   "about": {
     "eyebrow": "System Definition",
-    "headline": "Was ist das Interaction Field?",
-    "bio": "Das Interaction Field ist ein gekoppeltes kognitiv-inferentielles System. Es überträgt Information nicht einseitig, sondern aktualisiert fortlaufend eine gemeinsame Bedeutungskonfiguration durch Interaktion — jeder Austausch verändert die Bedingungen des nächsten. Wichtig: dieses System ist kein Tracking-, Analytics- oder Verhaltensüberwachungs-Tool. Es speichert keine personenbezogenen Daten und bewertet keine Einzelpersonen, sondern modelliert Interaktion als strukturellen Prozess. Ziel der Forschung ist zu verstehen, wie intelligenzähnliche Eigenschaften aus wiederholten Interaktionszyklen entstehen, und wie sich semantische Stabilität, Drift und Neukonfiguration in gekoppelten Mensch-KI-Systemen über Zeit entwickeln."
+    "headline": "What is the Interaction Field?",
+    "bio": "The Interaction Field is a coupled cognitive-inferential system. It does not transmit information one-directionally; instead, it continuously updates a shared configuration of meaning through interaction — each exchange changes the conditions for the next. Importantly: this system is not a tracking, analytics, or behavior-monitoring tool. It stores no personal data and does not evaluate individuals, but models interaction as a structural process. The goal of this research is to understand how intelligence-like properties emerge from repeated interaction cycles, and how semantic stability, drift, and reconfiguration develop over time in coupled human–AI systems."
   },
   "usp": {
     "eyebrow": "Key Concepts",
-    "title": "Das Framework",
+    "title": "The Framework",
     "items": [
       {
         "id": "u1",
         "title": "Emergence",
-        "description": "Stabile Muster, die aus wiederholten Interaktionsschleifen zwischen Mensch und Modell entstehen.",
+        "description": "Stable patterns that emerge from repeated interaction loops between human and model.",
         "icon": "emergence"
       },
       {
         "id": "u2",
         "title": "Behavior",
-        "description": "Kontextabhängige Anpassung von Antworten über sich entwickelnde Interaktionszustände hinweg.",
+        "description": "Context-dependent adaptation of responses across evolving interaction states.",
         "icon": "behavior"
       },
       {
         "id": "u3",
         "title": "Drift",
-        "description": "Graduelle Transformation von Bedeutungsstrukturen über die Zeit durch Rekursion.",
+        "description": "Gradual transformation of meaning structures over time through recursion.",
         "icon": "drift"
       },
       {
         "id": "u4",
         "title": "Interaction Field",
-        "description": "Ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten.",
+        "description": "A shared dynamic space in which cognition and inference continuously co-shape outcomes.",
         "icon": "field"
       },
       {
         "id": "u5",
         "title": "Representation Layers",
-        "description": "Mehrere gleichzeitige semantische Schichten, die während der Dialogentwicklung entstehen.",
+        "description": "Multiple simultaneous semantic layers that emerge over the course of a dialogue.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "title": "Constraints",
-        "description": "Strukturelle Grenzen, die bestimmen, was sich stabilisiert, emergiert oder kollabiert.",
+        "description": "Structural boundaries that determine what stabilizes, emerges, or collapses.",
         "icon": "constraints"
       }
     ]
   },
   "news": {
     "eyebrow": "Blog",
-    "title": "Beobachtungen aus dem Interaction Field",
+    "title": "Observations from the Interaction Field",
     "items": [
       {
         "id": "n1",
         "date": "2026-07-03",
-        "title": "Willkommen im Blog",
-        "body": "Hier teile ich Beobachtungen, Screenshots und Notizen aus laufenden Mensch-KI-Interaktionen — Rohmaterial für das Interaction Field Projekt.",
+        "title": "Welcome to the blog",
+        "body": "Here I share observations, screenshots, and notes from ongoing human–AI interactions — raw material for the Interaction Field project.",
         "image": ""
       }
     ]
   },
   "contact": {
-    "title": "Kontakt",
-    "subtitle": "Fragen zum Projekt oder zur Methodik? Schreib mir.",
+    "title": "Contact",
+    "subtitle": "Questions about the project or the methodology? Get in touch.",
     "email": "",
     "phone": "",
     "address": "",
