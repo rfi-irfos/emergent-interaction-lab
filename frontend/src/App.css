@@ -126,6 +126,8 @@ button { cursor: pointer; font-family: inherit; }
   .site[data-theme="dark"] .site-reveal { opacity: 1; transform: none; transition: none; }
 }
 
+.site[data-theme="dark"] .site-nav { background: transparent; backdrop-filter: none; border-bottom-color: transparent; }
+
 /* ── ONE CONTINUOUS BACKDROP (dark theme) ─────────────────────────────────────
    Sections and cards no longer carry their own flat, opaque background — the
    emergence-field shows through everywhere, and content sits on top as
@@ -447,21 +449,43 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1160px; margin: 0 auto;
 }
 .site-usp-card {
-  background: var(--surface); padding: 32px; border-radius: 12px;
-  border: 1px solid var(--border); border-left: 4px solid var(--primary);
+  background: var(--surface); padding: 44px 36px; border-radius: 14px;
+  border: 1px solid var(--border); border-top: 3px solid var(--primary);
+  display: flex; flex-direction: column; align-items: center; text-align: center;
 }
-.site-usp-card.accent { border-left-color: var(--accent); }
-.site-usp-icon { color: var(--primary); margin-bottom: 14px; }
+.site-usp-card.accent { border-top-color: var(--accent); }
+.site-usp-icon { color: var(--primary); margin-bottom: 16px; }
 .site-usp-card.accent .site-usp-icon { color: var(--accent); }
-.site-usp-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 10px; color: var(--text); }
-.site-usp-card p { font-size: 14px; color: var(--text-soft); line-height: 1.7; }
+.site-usp-card h3 { font-size: 19px; font-weight: 800; margin-bottom: 12px; color: var(--text); }
+.site-usp-card p { font-size: 15px; color: var(--text); opacity: .8; line-height: 1.7; }
 
-.site-usp-pillars { display: flex; flex-direction: column; gap: 48px; max-width: 1160px; margin: 0 auto; }
-.site-usp-pillar-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 22px; }
-.site-usp-pillar-index { font-size: 13px; font-weight: 800; color: var(--primary); letter-spacing: .05em; flex-shrink: 0; }
-.site-usp-pillar-title { font-size: 19px; font-weight: 800; color: var(--text); }
-.site-usp-pillar-subtitle { font-size: 13.5px; color: var(--text-soft); margin-top: 2px; }
-.site-usp-pillar .site-usp-grid { grid-template-columns: repeat(2, 1fr); max-width: 780px; margin: 0; }
+.site-usp-pillars { display: flex; flex-direction: column; gap: 56px; max-width: 1160px; margin: 0 auto; }
+.site-usp-pillar-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 28px; text-align: center; }
+.site-usp-pillar-index { font-size: 13px; font-weight: 800; color: var(--primary); letter-spacing: .05em; }
+.site-usp-pillar-title { font-size: 22px; font-weight: 800; color: var(--text); }
+.site-usp-pillar-subtitle { font-size: 14px; color: var(--text); opacity: .75; }
+.site-usp-pillar .site-usp-grid { grid-template-columns: repeat(2, 1fr); max-width: 860px; margin: 0 auto; gap: 32px; }
+
+/* Scroll-scrubbed entrance: cards slide in from alternating sides as they
+   cross into view, and reverse smoothly on scroll-up — driven purely by
+   scroll position, no JS. Falls back to the plain .site-reveal fade
+   (whole-section, already in place) on browsers without scroll-timelines. */
+@supports (animation-timeline: view()) {
+  @keyframes site-slide-from-left { from { transform: translateX(-64px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes site-slide-from-right { from { transform: translateX(64px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .site-usp-card, .site-news-card {
+    animation: site-slide-from-left linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 35%;
+  }
+  .site-usp-card:nth-child(2), .site-news-card:nth-child(even) {
+    animation-name: site-slide-from-right;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .site-usp-card, .site-news-card { animation: none; }
+  }
+}
 
 /* ── NEWS ────────────────────────────────────────────────────────────────── */
 .site-news { background: var(--surface); }
@@ -1487,6 +1511,12 @@ button { cursor: pointer; font-family: inherit; }
 .chat-bubble-content {
   white-space: pre-wrap; word-break: break-word; font-size: 13.5px; line-height: 1.55; padding: 10px 14px; border-radius: 12px;
 }
+.chat-bubble-content p { margin: 0 0 10px; }
+.chat-bubble-content p:last-child { margin-bottom: 0; }
+.chat-bubble-content ol, .chat-bubble-content ul { margin: 0 0 10px; padding-left: 22px; }
+.chat-bubble-content ol:last-child, .chat-bubble-content ul:last-child { margin-bottom: 0; }
+.chat-bubble-content li { margin-bottom: 4px; }
+.chat-bubble-content strong { color: #63f0ff; }
 .chat-bubble.user .chat-bubble-content { background: rgba(99,240,255,.16); border: 1px solid rgba(99,240,255,.25); color: #e9fbff; }
 .chat-bubble.assistant .chat-bubble-content {
   background: rgba(16,26,44,.65); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
