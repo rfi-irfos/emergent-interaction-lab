@@ -2,6 +2,7 @@ mod analytics;
 mod auth;
 mod contact;
 mod content;
+mod inspect;
 mod track;
 mod upload;
 
@@ -70,6 +71,10 @@ async fn main() {
     if dev_mode {
         tracing::warn!("DEV_MODE=true — auth is bypassed, do not use in production");
     }
+    match std::env::var("NVIDIA_API_KEY") {
+        Ok(v) => tracing::info!("NVIDIA_API_KEY present, length={}", v.len()),
+        Err(e) => tracing::warn!("NVIDIA_API_KEY missing at startup: {e}"),
+    }
 
     let index_html = static_dir.join("index.html");
     let spa_fallback = ServeDir::new(&static_dir)
@@ -86,6 +91,7 @@ async fn main() {
         .route("/api/upload", post(upload::upload_file))
         .route("/api/contact", post(contact::submit_contact))
         .route("/api/analytics", get(analytics::stats))
+        .route("/api/inspect", post(inspect::inspect))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))

@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import type { SiteContent, NewsItem, PageItem, SectionId } from '../types/content'
-import type { User } from '../hooks/useAuth'
 import { PublicSite } from './PublicSite'
 
 interface Props {
   content: SiteContent
-  user: User
   saving: boolean
   onSave: (c: SiteContent) => Promise<boolean>
   onUpload: (f: File) => Promise<string | null>
@@ -48,7 +46,7 @@ const DEVICE_OPTS: { id: DeviceView; label: string; icon: React.ReactNode }[] = 
   { id: 'mobile', label: 'Mobil', icon: <IconMobile /> },
 ]
 
-export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }: Props) {
+export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Props) {
   const [draft, setDraft] = useState<SiteContent>(content)
   const [activeTab, setActiveTab] = useState<PanelTab>('hero')
 
@@ -247,7 +245,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
           ))}
         </div>
         <div className="builder-topbar-right">
-          <span className="builder-user">{user.name || user.email}</span>
           <button
             className={`builder-save-btn-top ${saving ? 'loading' : ''} ${saved ? 'done' : ''} ${saveErr ? 'err' : ''}`}
             onClick={handleSave}

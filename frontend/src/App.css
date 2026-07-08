@@ -671,7 +671,6 @@ button { cursor: pointer; font-family: inherit; }
 .builder-brand-dot { width: 7px; height: 7px; background: #C4956A; border-radius: 50%; flex-shrink: 0; }
 .builder-topbar-hint { font-size: 12px; color: #aaa; flex: 1; text-align: center; }
 .builder-topbar-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
-.builder-user { font-size: 13px; color: #777; }
 .builder-btn-ghost { background: none; border: 1.5px solid #ddd; border-radius: 6px; padding: 5px 12px; font-size: 13px; color: #555; transition: .2s; }
 .builder-btn-ghost:hover { border-color: #0099CC; color: #0099CC; }
 .builder-save-btn-top {
@@ -1257,3 +1256,37 @@ button { cursor: pointer; font-family: inherit; }
 .site-cert-subtitle { font-size: 13px; color: var(--text-soft); line-height: 1.5; }
 .panel-cert-row { border-top: 1px solid var(--border, #e5e5e5); padding-top: 16px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; }
 @media (max-width: 600px) { .site-cert-grid { grid-template-columns: 1fr; } }
+
+/* ── STATIC PAGES (Legal + custom Pages) ─────────────────────────────────────
+   Rendered outside the themed .site wrapper (no data-theme / --vars in scope
+   here), so colors are fixed rather than theme-driven — a light, readable
+   page with the brand cyan as the one accent. */
+.static-page { min-height: 100vh; background: #fafcfd; color: #0b1720; }
+.static-page-nav {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 32px; background: rgba(250,252,253,.92); backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e2e8ec;
+}
+.static-page-brand { font-weight: 800; font-size: 15px; color: #0b1720; text-decoration: none; }
+.static-page-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: #46606b; text-decoration: none; transition: color .15s;
+}
+.static-page-back:hover { color: #0e8a9c; }
+.static-page-edit-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: #0e8a9c; background: #eaf3f4;
+  border: 1px solid #cfe4e6; border-radius: 7px; padding: 6px 12px; text-decoration: none;
+}
+.static-page-main { display: flex; justify-content: center; padding: 56px 24px 96px; }
+.static-page-content { width: 100%; max-width: 720px; }
+.static-page-content h1 { font-size: 34px; font-weight: 900; color: #0b1720; margin-bottom: 24px; line-height: 1.2; }
+.static-page-content h2 { font-size: 19px; font-weight: 800; color: #0e8a9c; margin: 36px 0 12px; }
+.static-page-content p { font-size: 16px; line-height: 1.75; color: #33474f; margin: 0 0 14px; }
+.static-page-content em { color: #5a7178; }
+.static-page-content ul { margin: 0 0 18px; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+.static-page-content li { font-size: 16px; line-height: 1.65; color: #33474f; }
+.static-page-content strong { color: #0b1720; }
+.static-page-content a { color: #0e8a9c; text-decoration: underline; text-underline-offset: 2px; }
+.static-page-content a:hover { color: #0a6b79; }

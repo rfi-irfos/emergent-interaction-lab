@@ -64,7 +64,6 @@ export default function App() {
     return (
       <AdminPanel
         content={admin.content}
-        user={user}
         saving={admin.saving}
         onSave={admin.save}
         onUpload={admin.uploadImage}

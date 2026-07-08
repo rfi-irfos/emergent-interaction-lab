@@ -22,11 +22,3 @@ primary_region = "fra"
   memory = "512mb"
   cpu_kind = "shared"
   cpus = 1
-
-[[mounts]]
-  source = "eil_data"
-  destination = "/app/data"
-
-[[mounts]]
-  source = "eil_uploads"
-  destination = "/app/uploads"
