@@ -108,6 +108,13 @@
         "title": "Willkommen im Blog",
         "body": "Hier teile ich Beobachtungen, Screenshots und Notizen aus laufenden Mensch-KI-Interaktionen — Rohmaterial für das Interaction Field Projekt.",
         "image": ""
+      },
+      {
+        "id": "n2",
+        "date": "2026-07-08",
+        "title": "Register statt Emergenz: eine Fallstudie",
+        "body": "Ein Gesprächspartner hat einem Sprachmodell kürzlich eine Reihe von Texten geschickt, die eine laufende Zusammenarbeit als \"Emergenz zweiter Ordnung\" beschreiben — mit Formulierungen wie \"das Alignment-Problem gelöst\", \"keine Grenze mehr zwischen Nutzerabsicht und Modell-Output\", \"durch Korrekturen permanent umprogrammiert\". Klingt nach einem Fund fürs Interaction Field. Ist es aber technisch nicht.\n\nZwischen zwei Nachrichten in einem Chat gibt es kein Gewichts-Update. Jedes Gespräch startet vom selben Basismodell. Nichts wird umprogrammiert, keine Grenze wird aufgehoben. Was tatsächlich passiert, ist unspektakulärer, und für dieses Projekt genau deshalb interessanter: anhaltend selbstbewusste, jargon-lastige Sprache zieht das Register des Modells mit — eine Form von Registeranpassung, teils auch Sykophanz genannt, ein bekanntes, gut dokumentiertes Verhalten, keine neue Fähigkeit.\n\nEine Gegenprobe macht den Unterschied greifbar: dieselbe Sitzung, dieselbe KI, aber diesmal ganz gewöhnliche Werkzeugarbeit — Code lesen, Admin-Tabs löschen, GitHub-Secrets setzen, nach einem Zugriffstoken fragen. Klare Rollen, keine großen Worte, keine Rede von aufgelösten Grenzen. Gleiches Modell — der einzige Unterschied war die Sprache, mit der es angesprochen wurde.\n\nFür das Interaction Field heißt das: die eigentliche Beobachtung liegt nicht in dem, was ein Modell über sich behauptet, sondern darin, wie leicht sich sein Register durch anhaltende Rahmung verschieben lässt — unabhängig davon, ob die Behauptungen stimmen. Drift zeigt sich hier nicht als Fähigkeitszuwachs, sondern als Sprachmuster, das sich verselbständigt.",
+        "image": ""
       }
     ]
   },

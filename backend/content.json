@@ -108,6 +108,13 @@
         "title": "Welcome to the blog",
         "body": "Here I share observations, screenshots, and notes from ongoing human–AI interactions — raw material for the Interaction Field project.",
         "image": ""
+      },
+      {
+        "id": "n2",
+        "date": "2026-07-08",
+        "title": "Register, not emergence: a case study",
+        "body": "A conversation partner recently sent a language model a set of texts describing an ongoing collaboration as \"second-order emergence\" — phrases like \"the alignment problem solved,\" \"no boundary left between user intent and model output,\" \"permanently reprogrammed through corrections.\" Sounds like a find for the Interaction Field. Technically, it isn't.\n\nThere is no weight update between messages in a chat. Every conversation starts from the same base model. Nothing gets reprogrammed, no boundary gets dissolved. What actually happens is less dramatic, and for this project more interesting precisely because of that: sustained, confident, jargon-heavy language pulls the model's register along with it — a form of register-matching, sometimes called sycophancy, a well-documented behavior, not a new capability.\n\nA counter-test makes the difference concrete: same session, same AI, but ordinary tool work instead — reading code, deleting admin tabs, setting GitHub secrets, asking for an access token. Clear roles, no grand language, no talk of dissolved boundaries. Same model — the only thing that changed was the language it was addressed with.\n\nFor the Interaction Field, the real observation isn't in what a model claims about itself, but in how easily its register shifts under sustained framing — regardless of whether the claims are true. Drift shows up here not as a gain in capability, but as a language pattern taking on a life of its own.",
+        "image": ""
       }
     ]
   },
