@@ -1,11 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import type { SiteContent, ProductItem, NewsItem, PageItem, SectionId } from '../types/content'
+import type { SiteContent, NewsItem, PageItem, SectionId } from '../types/content'
 import type { User } from '../hooks/useAuth'
 import { PublicSite } from './PublicSite'
-import { useStudents } from '../lib/useStudents'
-import type { Student } from '../types/students'
-import { useTestimonials } from '../lib/useTestimonials'
-import type { Testimonial } from '../types/testimonials'
 
 interface Props {
   content: SiteContent
@@ -16,7 +12,7 @@ interface Props {
   onLogout: () => void
 }
 
-type PanelTab = 'products' | 'hero' | 'news' | 'contact' | 'style' | 'students' | 'ssp' | 'pages' | 'inbox' | 'analytics' | 'about' | 'pricing' | 'reviews'
+type PanelTab = 'hero' | 'news' | 'contact' | 'style' | 'pages' | 'inbox' | 'analytics' | 'about'
 
 interface AnalyticsData {
   total_views: number
@@ -54,26 +50,16 @@ const DEVICE_OPTS: { id: DeviceView; label: string; icon: React.ReactNode }[] = 
 
 export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }: Props) {
   const [draft, setDraft] = useState<SiteContent>(content)
-  const [activeTab, setActiveTab] = useState<PanelTab>('products')
-  const { students, saving: studentsSaving, saveError: studentsSaveError, add: addStudent, update: updateStudent, remove: removeStudent } = useStudents()
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
-  const [newStudentForm, setNewStudentForm] = useState(false)
-  const [studentDraft, setStudentDraft] = useState<Partial<Student>>({})
-  const { testimonials, saving: testimonialsSaving, add: addTestimonial, update: updateTestimonial, remove: removeTestimonial } = useTestimonials()
-  const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null)
-  const [newTestimonialForm, setNewTestimonialForm] = useState(false)
-  const [testimonialDraft, setTestimonialDraft] = useState<Partial<Testimonial>>({})
+  const [activeTab, setActiveTab] = useState<PanelTab>('hero')
 
   useEffect(() => { setDraft(content) }, [content])
   const [saved, setSaved] = useState(false)
   const [saveErr, setSaveErr] = useState(false)
   const [uploadTarget, setUploadTarget] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<string | null>(null)
   const [editingNews, setEditingNews] = useState<string | null>(null)
   const [editingPage, setEditingPage] = useState<string | null>(null)
   const [contactInbox, setContactInbox] = useState<ContactInboxItem[]>(() => loadInbox())
-  const [specsInput, setSpecsInput] = useState('')
   const [panelWidth, setPanelWidth] = useState(380)
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
@@ -89,9 +75,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
   const [device, setDevice] = useState<DeviceView>('edit')
   const fileRef = useRef<HTMLInputElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
-
-  // reset the specs tag input whenever a different session opens
-  useEffect(() => { setSpecsInput('') }, [editingProduct])
 
   // drag-resize the right settings panel (380–620px)
   const startPanelResize = (e: React.MouseEvent) => {
@@ -119,18 +102,12 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
     const cid = el.dataset.cid ?? ''
     if (cid.startsWith('hero.') || cid.startsWith('nav.')) {
       setActiveTab('hero')
-    } else if (cid.startsWith('products.items.')) {
-      const idx = parseInt(cid.split('.')[2])
-      const item = draft.products?.items?.[idx]
-      if (item) { setActiveTab('products'); setEditingProduct(item.id) }
     } else if (cid.startsWith('news.items.')) {
       const idx = parseInt(cid.split('.')[2])
       const item = draft.news?.items?.[idx]
       if (item) { setActiveTab('news'); setEditingNews(item.id) }
     } else if (cid.startsWith('contact.') || cid.startsWith('whatsapp.')) {
       setActiveTab('contact')
-    } else if (cid.startsWith('ssp.')) {
-      setActiveTab('ssp')
     } else if (cid.startsWith('meta.') || cid.startsWith('footer.')) {
       setActiveTab('style')
     }
@@ -162,36 +139,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
     fileRef.current?.click()
   }
 
-  // ── Product helpers ───────────────────────────────────────────────────────
-
-  const addProduct = () => {
-    const id = `p${Date.now()}`
-    const cat = draft.products?.tabs?.find(t => t !== 'Alle') ?? 'Englisch'
-    const tmpl = {
-      name: 'Neue Stunde',
-      description: 'Beschreibe diese Stunde in ein, zwei Sätzen. Für wen ist sie, was nimmt man mit, und was macht deinen Ansatz besonders?',
-      price: 'Auf Anfrage',
-      specs: ['Einzeln oder Kleingruppe', 'Online oder in Graz', 'Flexible Termine'],
-    }
-    const newProduct: ProductItem = { id, name: tmpl.name, description: tmpl.description, price: tmpl.price, image: '', category: cat, specs: tmpl.specs }
-    update('products.items', [...(draft.products?.items ?? []), newProduct])
-    setEditingProduct(id)
-  }
-
-  const deleteProduct = (id: string) => {
-    update('products.items', draft.products.items.filter(p => p.id !== id))
-    if (editingProduct === id) setEditingProduct(null)
-  }
-
-  const updateProduct = (id: string, field: keyof ProductItem, value: unknown) => {
-    update('products.items', draft.products.items.map(p => p.id === id ? { ...p, [field]: value } : p))
-  }
-
-  const uploadProductImage = async (id: string) => {
-    setUploadTarget(`product:${id}`)
-    fileRef.current?.click()
-  }
-
   // ── News helpers ──────────────────────────────────────────────────────────
 
   const addNews = () => {
@@ -215,17 +162,13 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
     update('news.items', draft.news.items.map(n => n.id === id ? { ...n, [field]: value } : n))
   }
 
-  // Custom file handler that can handle product image uploads
   const handleFileChangeAll = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !uploadTarget) return
     setUploading(true)
     const url = await onUpload(file)
     if (url) {
-      if (uploadTarget.startsWith('product:')) {
-        const pid = uploadTarget.replace('product:', '')
-        updateProduct(pid, 'image', url)
-      } else if (uploadTarget.startsWith('news:')) {
+      if (uploadTarget.startsWith('news:')) {
         const nid = uploadTarget.replace('news:', '')
         updateNews(nid, 'image', url)
       } else {
@@ -267,21 +210,15 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
 
   const tabs: Array<{ id: PanelTab; label: string; badge?: number }> = [
     { id: 'inbox',    label: 'Inbox', badge: contactInbox.length },
-    { id: 'products', label: 'Products' },
     { id: 'hero',     label: 'Hero' },
     { id: 'about',    label: 'About' },
     { id: 'news',     label: 'Blog' },
     { id: 'pages',    label: 'Pages' },
     { id: 'contact',  label: 'Contact' },
-    { id: 'pricing',  label: 'Pricing' },
-    { id: 'reviews',  label: 'Reviews', badge: testimonials.length },
     { id: 'style',    label: 'Style' },
-    { id: 'students',  label: 'Students' },
-    { id: 'ssp',       label: 'Member Portal' },
     { id: 'analytics', label: 'Analytics' },
   ]
 
-  const editingProd = editingProduct ? draft.products?.items?.find(p => p.id === editingProduct) : null
   const editingNewsItem = editingNews ? draft.news?.items?.find(n => n.id === editingNews) : null
 
   return (
@@ -375,30 +312,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
           {/* Panel content */}
           <div className="builder-panel-body">
 
-            {/* ── PRODUCTS TAB ──────────────────────────────────────────── */}
-            {activeTab === 'products' && (
-              <div className="panel-products">
-                <div className="panel-product-list">
-                  {(draft.products?.items ?? []).map(p => (
-                    <div key={p.id} className={`panel-product-row ${editingProduct === p.id ? 'active' : ''}`} onClick={() => setEditingProduct(p.id)}>
-                      <div className="panel-product-thumb">
-                        {p.image ? <img src={p.image} alt={p.name} /> : <div className="panel-product-thumb-empty" />}
-                      </div>
-                      <div className="panel-product-info">
-                        <div className="panel-product-name">{p.name}</div>
-                        <div className="panel-product-meta">{p.category} &nbsp;·&nbsp; {p.price}</div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                  ))}
-                </div>
-                <button className="panel-add-big-btn" onClick={addProduct}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Session hinzufügen
-                </button>
-              </div>
-            )}
-
             {/* ── HERO TAB ──────────────────────────────────────────────── */}
             {activeTab === 'hero' && (
               <>
@@ -459,29 +372,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
                   Blogbeitrag hinzufügen
                 </button>
               </div>
-            )}
-
-            {/* ── MEMBER PORTAL / SSP TAB ─────────────────────────────── */}
-            {activeTab === 'ssp' && (
-              <>
-                <PanelSection title="Member Portal Section">
-                  <Field label="Badge text">
-                    <input data-cid="ssp.badge" value={draft.ssp?.badge ?? ''} onChange={e => update('ssp.badge', e.target.value)} placeholder="Research Portal" />
-                  </Field>
-                  <Field label="Title">
-                    <input data-cid="ssp.title" value={draft.ssp?.title ?? ''} onChange={e => update('ssp.title', e.target.value)} placeholder="Your Member Portal" />
-                  </Field>
-                  <Field label="Description">
-                    <textarea rows={4} data-cid="ssp.sub" value={draft.ssp?.sub ?? ''} onChange={e => update('ssp.sub', e.target.value)} placeholder="Describe what members get access to..." style={{ resize: 'vertical' }} />
-                  </Field>
-                  <Field label="Button label">
-                    <input data-cid="ssp.button" value={draft.ssp?.button ?? ''} onChange={e => update('ssp.button', e.target.value)} placeholder="Member login →" />
-                  </Field>
-                  <div style={{ marginTop: 8, padding: '8px 10px', background: '#F8F5F0', borderRadius: 6, fontSize: 11, color: '#888', lineHeight: 1.5 }}>
-                    Leave Title empty to hide this section entirely.
-                  </div>
-                </PanelSection>
-              </>
             )}
 
             {/* ── CONTACT TAB ───────────────────────────────────────────── */}
@@ -694,93 +584,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
               </div>
             )}
 
-            {/* ── STUDENTS TAB ──────────────────────────────────────────── */}
-            {activeTab === 'students' && (
-              <div className="panel-students">
-                {studentsSaveError && (
-                  <div style={{ color: '#c53030', fontSize: 12, fontWeight: 600, padding: '8px 12px', background: '#fff5f5', borderRadius: 8, border: '1px solid #feb2b2', marginBottom: 12 }}>
-                    Save failed. Please reload the page and try again.
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontSize: 12, color: 'var(--panel-muted, #888)', fontWeight: 600 }}>{students.length} students</span>
-                  <button className="panel-add-btn" onClick={() => { setNewStudentForm(true); setStudentDraft({ status: 'active', language: 'English', level: 'B1', sessions: 0, goal: '', notes: '' }) }}>
-                    + Add student
-                  </button>
-                </div>
-
-                {newStudentForm && (
-                  <div className="panel-student-form" style={{ background: 'var(--panel-surface, #f8f8f8)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid var(--panel-border, #e8e8e8)' }}>
-                    <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 13 }}>New student</div>
-                    {(['name', 'language', 'level', 'goal', 'notes', 'next_session'] as (keyof Student)[]).map(f => (
-                      <div key={f} style={{ marginBottom: 8 }}>
-                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 3, textTransform: 'capitalize' }}>{f.replace('_', ' ')}</label>
-                        {f === 'notes' || f === 'goal'
-                          ? <textarea rows={2} value={(studentDraft[f] as string) ?? ''} onChange={e => setStudentDraft(d => ({ ...d, [f]: e.target.value }))} style={{ width: '100%', borderRadius: 6, border: '1px solid var(--panel-border, #e0e0e0)', padding: '6px 8px', fontSize: 12, resize: 'vertical' }} />
-                          : <input value={(studentDraft[f] as string) ?? ''} onChange={e => setStudentDraft(d => ({ ...d, [f]: e.target.value }))} style={{ width: '100%', borderRadius: 6, border: '1px solid var(--panel-border, #e0e0e0)', padding: '6px 8px', fontSize: 12 }} />
-                        }
-                      </div>
-                    ))}
-                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                      <button className="panel-add-btn" disabled={!studentDraft.name} onClick={() => { addStudent(studentDraft as Omit<Student, 'id' | 'since'>); setNewStudentForm(false); setStudentDraft({}) }}>
-                        {studentsSaving ? 'Saving…' : 'Save'}
-                      </button>
-                      <button className="panel-back-btn" onClick={() => { setNewStudentForm(false); setStudentDraft({}) }}>Cancel</button>
-                    </div>
-                  </div>
-                )}
-
-                {students.length === 0 && !newStudentForm && (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--panel-muted, #aaa)', fontSize: 13 }}>
-                    No students yet. Add your first one above.
-                  </div>
-                )}
-
-                {students.map(s => (
-                  <div key={s.id} style={{ background: 'var(--panel-surface, #f8f8f8)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid var(--panel-border, #e8e8e8)' }}>
-                    {editingStudent?.id === s.id ? (
-                      <div>
-                        <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>Edit: {s.name}</div>
-                        {(['name', 'language', 'level', 'status', 'sessions', 'next_session', 'goal', 'notes'] as (keyof Student)[]).map(f => (
-                          <div key={f} style={{ marginBottom: 7 }}>
-                            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 2, textTransform: 'capitalize' }}>{f.replace('_', ' ')}</label>
-                            {f === 'status'
-                              ? <select value={editingStudent[f] as string} onChange={e => setEditingStudent(d => d ? ({ ...d, [f]: e.target.value } as Student) : null)} style={{ width: '100%', borderRadius: 6, border: '1px solid var(--panel-border, #e0e0e0)', padding: '5px 8px', fontSize: 12 }}>
-                                  <option value="active">Active</option>
-                                  <option value="paused">Paused</option>
-                                  <option value="completed">Completed</option>
-                                </select>
-                              : f === 'notes' || f === 'goal'
-                              ? <textarea rows={2} value={(editingStudent[f] as string) ?? ''} onChange={e => setEditingStudent(d => d ? ({ ...d, [f]: e.target.value } as Student) : null)} style={{ width: '100%', borderRadius: 6, border: '1px solid var(--panel-border, #e0e0e0)', padding: '5px 8px', fontSize: 12, resize: 'vertical' }} />
-                              : <input value={(editingStudent[f] as string | number) ?? ''} onChange={e => setEditingStudent(d => d ? ({ ...d, [f]: f === 'sessions' ? parseInt(e.target.value) || 0 : e.target.value } as Student) : null)} style={{ width: '100%', borderRadius: 6, border: '1px solid var(--panel-border, #e0e0e0)', padding: '5px 8px', fontSize: 12 }} />
-                            }
-                          </div>
-                        ))}
-                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                          <button className="panel-add-btn" onClick={() => { updateStudent(s.id, editingStudent!); setEditingStudent(null) }} disabled={studentsSaving}>{studentsSaving ? 'Saving…' : 'Save'}</button>
-                          <button className="panel-back-btn" onClick={() => setEditingStudent(null)}>Cancel</button>
-                          <button className="panel-delete-btn" style={{ marginLeft: 'auto' }} onClick={() => { if (confirm(`Remove ${s.name}?`)) { removeStudent(s.id); setEditingStudent(null) } }}>Remove</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{s.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--panel-muted, #888)', marginBottom: 4 }}>{s.language} · {s.level} · {s.sessions} sessions{s.next_session ? ` · next: ${s.next_session}` : ''}</div>
-                          {s.goal && <div style={{ fontSize: 11, fontStyle: 'italic', color: 'var(--panel-muted, #999)', marginBottom: 2 }}>Goal: {s.goal}</div>}
-                          {s.notes && <div style={{ fontSize: 11, color: 'var(--panel-muted, #aaa)' }}>{s.notes}</div>}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: s.status === 'active' ? '#E8F5E8' : s.status === 'paused' ? '#FFF8E8' : '#F0F0F0', color: s.status === 'active' ? '#3A7A3A' : s.status === 'paused' ? '#9A7A10' : '#888' }}>{s.status}</span>
-                          <button className="panel-back-btn" style={{ fontSize: 11, padding: '3px 10px' }} onClick={() => setEditingStudent({ ...s })}>Edit</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* ── ANALYTICS TAB ──────────────────────────────────────────── */}
             {activeTab === 'analytics' && (
               <div style={{ padding: 14 }}>
@@ -896,96 +699,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
               </>
             )}
 
-            {/* ── PRICING TAB ────────────────────────────────────────────── */}
-            {activeTab === 'pricing' && (
-              <>
-                <PanelSection title="Pricing">
-                  <Field label="Section title">
-                    <input value={(draft as any).pricing?.title ?? ''} onChange={e => update('pricing.title', e.target.value)} placeholder="Pricing" />
-                  </Field>
-                  <Field label="Text (separate paragraphs with blank line)">
-                    <textarea rows={8} value={(draft as any).pricing?.body ?? ''} onChange={e => update('pricing.body', e.target.value)} style={{ resize: 'vertical' }} />
-                  </Field>
-                </PanelSection>
-                <PanelSection title="Certificates">
-                  {((draft as any).certificates?.items ?? []).map((cert: { id: string; title: string; subtitle: string; file: string }, i: number) => (
-                    <div key={cert.id} className="panel-cert-row">
-                      <Field label={`Certificate ${i + 1} — Title`}>
-                        <input value={cert.title} onChange={e => update('certificates.items', (draft as any).certificates.items.map((c: { id: string }) => c.id === cert.id ? { ...c, title: e.target.value } : c))} />
-                      </Field>
-                      <Field label="Subtitle">
-                        <input value={cert.subtitle} onChange={e => update('certificates.items', (draft as any).certificates.items.map((c: { id: string }) => c.id === cert.id ? { ...c, subtitle: e.target.value } : c))} />
-                      </Field>
-                    </div>
-                  ))}
-                  <button className="panel-add-big-btn" onClick={() => {
-                    const items = (draft as any).certificates?.items ?? []
-                    update('certificates.items', [...items, { id: crypto.randomUUID(), title: '', subtitle: '', file: '' }])
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add certificate
-                  </button>
-                </PanelSection>
-              </>
-            )}
-
-            {/* ── REVIEWS TAB ────────────────────────────────────────────── */}
-            {activeTab === 'reviews' && (
-              <div style={{ padding: 14 }}>
-                {testimonialsSaving && <div style={{ fontSize: 11, color: '#0099CC', marginBottom: 8 }}>Saving…</div>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-                  {testimonials.map(r => (
-                    <div key={r.id} style={{ background: 'var(--panel-surface,#f8f8f8)', border: '1px solid var(--panel-border,#e8e8e8)', borderRadius: 8, padding: '10px 12px' }}>
-                      {editingTestimonial?.id === r.id ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <input style={{ fontSize: 12 }} value={editingTestimonial.name} onChange={e => setEditingTestimonial(t => t ? { ...t, name: e.target.value } : t)} placeholder="Name" />
-                          <input style={{ fontSize: 12 }} type="number" min={1} max={5} value={editingTestimonial.rating} onChange={e => setEditingTestimonial(t => t ? { ...t, rating: Number(e.target.value) } : t)} placeholder="Rating (1-5)" />
-                          <input style={{ fontSize: 12 }} value={editingTestimonial.date} onChange={e => setEditingTestimonial(t => t ? { ...t, date: e.target.value } : t)} placeholder="Date (e.g. 2026-01)" />
-                          <textarea style={{ fontSize: 12, resize: 'vertical' }} rows={3} value={editingTestimonial.text} onChange={e => setEditingTestimonial(t => t ? { ...t, text: e.target.value } : t)} placeholder="Review text" />
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button style={{ flex: 1, fontSize: 11, padding: '4px 0', background: '#0099CC', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer' }} onClick={() => { updateTestimonial(editingTestimonial); setEditingTestimonial(null) }}>Save</button>
-                            <button style={{ flex: 1, fontSize: 11, padding: '4px 0', background: 'none', border: '1px solid #ccc', borderRadius: 5, cursor: 'pointer' }} onClick={() => setEditingTestimonial(null)}>Cancel</button>
-                            <button style={{ fontSize: 11, padding: '4px 8px', background: '#c53030', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer' }} onClick={() => { removeTestimonial(r.id); setEditingTestimonial(null) }}>Delete</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text,#333)' }}>{r.name} <span style={{ color: '#f59e0b' }}>{'★'.repeat(r.rating)}</span></div>
-                            <div style={{ fontSize: 11, color: 'var(--text-soft,#777)', marginTop: 2, lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{r.text}</div>
-                          </div>
-                          <button style={{ fontSize: 11, padding: '3px 8px', background: 'none', border: '1px solid #ddd', borderRadius: 5, cursor: 'pointer', flexShrink: 0 }} onClick={() => setEditingTestimonial(r)}>Edit</button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {newTestimonialForm ? (
-                  <div style={{ background: 'var(--panel-surface,#f8f8f8)', border: '1px solid var(--panel-border,#e8e8e8)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <input style={{ fontSize: 12 }} value={testimonialDraft.name ?? ''} onChange={e => setTestimonialDraft(d => ({ ...d, name: e.target.value }))} placeholder="Name" />
-                    <input style={{ fontSize: 12 }} type="number" min={1} max={5} value={testimonialDraft.rating ?? 5} onChange={e => setTestimonialDraft(d => ({ ...d, rating: Number(e.target.value) }))} placeholder="Rating (1-5)" />
-                    <input style={{ fontSize: 12 }} value={testimonialDraft.date ?? ''} onChange={e => setTestimonialDraft(d => ({ ...d, date: e.target.value }))} placeholder="Date (e.g. 2026-01)" />
-                    <textarea style={{ fontSize: 12, resize: 'vertical' }} rows={3} value={testimonialDraft.text ?? ''} onChange={e => setTestimonialDraft(d => ({ ...d, text: e.target.value }))} placeholder="Review text" />
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ flex: 1, fontSize: 11, padding: '4px 0', background: '#0099CC', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer' }} onClick={() => {
-                        if (testimonialDraft.name && testimonialDraft.text) {
-                          addTestimonial({ name: testimonialDraft.name, rating: testimonialDraft.rating ?? 5, text: testimonialDraft.text, date: testimonialDraft.date ?? '', language: testimonialDraft.language })
-                          setTestimonialDraft({})
-                          setNewTestimonialForm(false)
-                        }
-                      }}>Add</button>
-                      <button style={{ flex: 1, fontSize: 11, padding: '4px 0', background: 'none', border: '1px solid #ccc', borderRadius: 5, cursor: 'pointer' }} onClick={() => { setNewTestimonialForm(false); setTestimonialDraft({}) }}>Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                  <button className="panel-add-big-btn" onClick={() => setNewTestimonialForm(true)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add review
-                  </button>
-                )}
-              </div>
-            )}
-
           </div>
 
           {/* SAVE FOOTER */}
@@ -1000,85 +713,6 @@ export function AdminPanel({ content, user, saving, onSave, onUpload, onLogout }
           </div>
         </aside>
       </div>
-
-      {/* ── SESSION EDIT MODAL ─────────────────────────────────────────── */}
-      {editingProd && (
-        <div className="pem-overlay" onClick={() => setEditingProduct(null)}>
-          <div className="pem" onClick={e => e.stopPropagation()}>
-            <div className="pem-header">
-              <span className="pem-title">Session bearbeiten</span>
-              <button className="pem-close" onClick={() => setEditingProduct(null)} title="Schließen">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div className="pem-body">
-              <div className="pem-img-area">
-                {editingProd.image
-                  ? <img src={editingProd.image} alt={editingProd.name} className="pem-img" />
-                  : <div className="pem-img-placeholder">Kein Bild</div>}
-                <button className="pem-img-btn" onClick={() => uploadProductImage(editingProd.id)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  Bild tauschen
-                </button>
-              </div>
-              <div className="pem-fields">
-                <div className="pem-field">
-                  <label>Name</label>
-                  <input value={editingProd.name} onChange={e => updateProduct(editingProd.id, 'name', e.target.value)} />
-                </div>
-                <div className="pem-row">
-                  <div className="pem-field">
-                    <label>Preis</label>
-                    <input value={editingProd.price} onChange={e => updateProduct(editingProd.id, 'price', e.target.value)} placeholder="Auf Anfrage" />
-                  </div>
-                  <div className="pem-field">
-                    <label>Kategorie</label>
-                    <select value={editingProd.category} onChange={e => updateProduct(editingProd.id, 'category', e.target.value)}>
-                      {(draft.products?.tabs?.slice(1) ?? []).map(t => <option key={t} value={t}>{t}</option>)}
-                      {!(draft.products?.tabs?.slice(1) ?? []).includes(editingProd.category) && <option value={editingProd.category}>{editingProd.category}</option>}
-                    </select>
-                  </div>
-                  <div className="pem-field">
-                    <label>Badge</label>
-                    <input value={editingProd.badge ?? ''} onChange={e => updateProduct(editingProd.id, 'badge', e.target.value)} placeholder="z.B. Beliebt" />
-                  </div>
-                </div>
-                <div className="pem-field">
-                  <label>Beschreibung</label>
-                  <textarea rows={3} value={editingProd.description} onChange={e => updateProduct(editingProd.id, 'description', e.target.value)} />
-                </div>
-                <div className="pem-field">
-                  <label>Inhalte (Tags)</label>
-                  <div className="pem-tags">
-                    {(editingProd.specs ?? []).map((s, i) => (
-                      <span key={i} className="pem-tag">
-                        {s}
-                        <button onClick={() => updateProduct(editingProd.id, 'specs', (editingProd.specs ?? []).filter((_, idx) => idx !== i))} title="Entfernen">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="pem-tag-input-row">
-                    <input value={specsInput} placeholder="Tag hinzufügen, Enter" onChange={e => setSpecsInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = specsInput.trim(); if (v) { updateProduct(editingProd.id, 'specs', [...(editingProd.specs ?? []), v]); setSpecsInput('') } } }} />
-                    <button className="pem-tag-add" onClick={() => { const v = specsInput.trim(); if (v) { updateProduct(editingProd.id, 'specs', [...(editingProd.specs ?? []), v]); setSpecsInput('') } }}>+</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="pem-footer">
-              <button className="panel-delete-btn" onClick={() => deleteProduct(editingProd.id)}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                Löschen
-              </button>
-              <div className="pem-footer-right">
-                <button className="builder-save-btn-top done" onClick={() => setEditingProduct(null)}>Fertig</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── BLOG EDIT MODAL ────────────────────────────────────────────── */}
       {editingNewsItem && (

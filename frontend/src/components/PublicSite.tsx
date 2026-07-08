@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import type { SiteContent, SectionId, CanvasPos, ProductItem, NewsItem, CertificateItem } from '../types/content'
-import type { Testimonial } from '../types/testimonials'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
 
@@ -563,61 +562,6 @@ function CategoryIcon({ category }: { category: string }) {
   return <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 }
 
-// ── Star rating display ───────────────────────────────────────────────────────
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <div className="site-review-stars" aria-label={`${rating} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map(n => (
-        <svg key={n} className={`site-review-star ${n <= rating ? 'filled' : ''}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-      ))}
-    </div>
-  )
-}
-
-// ── Reviews section ───────────────────────────────────────────────────────────
-
-function ReviewsSection({ editMode }: { editMode: boolean }) {
-  const [reviews, setReviews] = useState<Testimonial[]>([])
-
-  useEffect(() => {
-    fetch(`/testimonials.json?t=${Date.now()}`, { cache: 'no-store' })
-      .then(r => r.ok ? r.json() : [])
-      .then((d: Testimonial[]) => setReviews(Array.isArray(d) ? d : []))
-      .catch(() => {})
-  }, [])
-
-  if (reviews.length === 0) {
-    if (!editMode) return null
-    return (
-      <section className="site-section site-reviews" id="reviews">
-        <h2 className="site-section-title">Reviews</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-soft)', fontSize: 14 }}>No reviews yet — add them in the Reviews tab.</p>
-      </section>
-    )
-  }
-
-  return (
-    <section className="site-section site-reviews" id="reviews">
-      <h2 className="site-section-title">Reviews</h2>
-      <div className="site-reviews-grid">
-        {reviews.map(r => (
-          <div key={r.id} className="site-review-card">
-            <Stars rating={r.rating} />
-            <p className="site-review-text">"{r.text}"</p>
-            <div className="site-review-footer">
-              <span className="site-review-name">{r.name}</span>
-              {r.date && <span className="site-review-date">{r.date}</span>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 // ── Public Site ───────────────────────────────────────────────────────────────
 
@@ -1244,9 +1188,6 @@ export function PublicSite({
             </div>
           </section>
         )}
-
-        {/* ── REVIEWS ──────────────────────────────────────────────────── */}
-        <ReviewsSection editMode={editMode} />
 
         {/* ── NEWS ─────────────────────────────────────────────────────── */}
         {!hiddenSections.includes('news') && (news?.items?.length ?? 0) > 0 && (
