@@ -308,105 +308,64 @@ function TrustIcon({ icon }: { icon: string }) {
 // to the mouse. Particle offsets are generated once (fixed shape) and the
 // whole cluster is translated to the eased point, so the animation loop
 // never has to recompute geometry.
+// ── Hero graphic: Earth's limb at sunrise, as seen from orbit — a warm glow
+// breaking over the planet's curved horizon into a dark, star-scattered sky.
+// Deliberately restrained: no mouse-chasing, no particle burst — a still,
+// scenic frame with just a couple of stars quietly twinkling.
 function HeroFieldGraphic() {
   const W = 720, H = 640
-  const restX = 470, restY = 210
+  const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
 
-  const svgRef = useRef<SVGSVGElement>(null)
-  const targetRef = useRef({ x: restX, y: restY })
-  const currentRef = useRef({ x: restX, y: restY })
-  const [center, setCenter] = useState({ x: restX, y: restY })
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let raf = 0
-    const tick = () => {
-      const cur = currentRef.current
-      const tgt = targetRef.current
-      cur.x += (tgt.x - cur.x) * 0.06
-      cur.y += (tgt.y - cur.y) * 0.06
-      setCenter({ x: cur.x, y: cur.y })
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  useEffect(() => {
-    const el = svgRef.current
-    if (!el) return
-    const onMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect()
-      targetRef.current = {
-        x: ((e.clientX - rect.left) / rect.width) * W,
-        y: ((e.clientY - rect.top) / rect.height) * H,
-      }
-    }
-    const onLeave = () => { targetRef.current = { x: restX, y: restY } }
-    el.addEventListener('mousemove', onMove)
-    el.addEventListener('mouseleave', onLeave)
-    return () => {
-      el.removeEventListener('mousemove', onMove)
-      el.removeEventListener('mouseleave', onLeave)
-    }
-  }, [])
-
-  const { x: cx, y: cy } = center
-
-  // Debris trail sweeping down-right from the star, fixed shape (seeded once).
-  const particles = useMemo(() => {
-    const n = 34
-    const arr: { x: number; y: number; r: number; o: number; violet: boolean; dur: number; delay: number }[] = []
+  const stars = useMemo(() => {
+    const n = 16
+    const arr: { x: number; y: number; r: number; o: number; twinkle: boolean; dur: number }[] = []
     for (let i = 0; i < n; i++) {
-      const t = i / (n - 1)
-      const angle = 0.2 + t * 0.85 + (Math.random() - 0.5) * 0.2
-      const dist = 26 + t * 300 + Math.random() * 36
       arr.push({
-        x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist,
-        r: Math.max(0.7, 3 * (1 - t) + Math.random() * 1.1),
-        o: Math.max(0.1, (1 - t) * 0.85 + Math.random() * 0.1),
-        violet: Math.random() > 0.6,
-        dur: 2.6 + Math.random() * 2.4,
-        delay: Math.random() * 4,
+        x: Math.random() * W * 0.7,
+        y: Math.random() * H * 0.5,
+        r: 0.6 + Math.random() * 1.3,
+        o: 0.25 + Math.random() * 0.45,
+        twinkle: i % 4 === 0,
+        dur: 4 + Math.random() * 3,
       })
     }
     return arr
   }, [])
 
   return (
-    <svg ref={svgRef} className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <svg className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
-        <linearGradient id="hero-beam" gradientUnits="userSpaceOnUse" x1="0" y1={cy} x2={cx} y2={cy}>
-          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0" />
-          <stop offset="18%" stopColor="var(--brand-cyan)" stopOpacity="0.55" />
-          <stop offset="70%" stopColor="var(--brand-cyan)" stopOpacity="0.75" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
-        </linearGradient>
-        <radialGradient id="hero-star-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0.55" />
+        <radialGradient id="hero-sunrise-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff6e0" stopOpacity="0.95" />
+          <stop offset="26%" stopColor="#ffd88a" stopOpacity="0.55" />
+          <stop offset="58%" stopColor="var(--brand-cyan)" stopOpacity="0.22" />
           <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
         </radialGradient>
+        <linearGradient id="hero-earth-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#0d1f2e" />
+          <stop offset="100%" stopColor="#050a12" />
+        </linearGradient>
       </defs>
 
-      <line x1="0" y1={cy} x2={cx} y2={cy} stroke="url(#hero-beam)" strokeWidth="7" opacity="0.35" style={{ filter: 'blur(4px)' }} />
-      <line x1="0" y1={cy} x2={cx} y2={cy} stroke="url(#hero-beam)" strokeWidth="1.5" />
+      {stars.map((s, i) => (
+        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#e9fbff" opacity={s.o}>
+          {!reducedMotion && s.twinkle && (
+            <animate attributeName="opacity" values={`${s.o};${s.o * 0.2};${s.o}`} dur={`${s.dur}s`} repeatCount="indefinite" />
+          )}
+        </circle>
+      ))}
 
-      <g transform={`translate(${cx} ${cy})`}>
-        <circle r="70" fill="url(#hero-star-glow)" />
-        {particles.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x} cy={p.y} r={p.r}
-            fill={p.violet ? '#8b7bf0' : 'var(--brand-cyan)'}
-            opacity={p.o}
-          >
-            <animate attributeName="opacity" values={`${p.o};${p.o * 0.25};${p.o}`} dur={`${p.dur}s`} begin={`${p.delay}s`} repeatCount="indefinite" />
-          </circle>
-        ))}
-        <path d="M0,-16 L3,-3 L16,0 L3,3 L0,16 L-3,3 L-16,0 L-3,-3 Z" fill="#fff" opacity="0.95" />
-        <circle r="3.2" fill="#fff" />
-      </g>
+      {/* sun, peeking from behind the horizon — the Earth fill below occludes its lower half */}
+      <circle cx="630" cy="255" r="230" fill="url(#hero-sunrise-glow)">
+        {!reducedMotion && (
+          <animate attributeName="r" values="222;232;222" dur="9s" repeatCount="indefinite" />
+        )}
+      </circle>
+
+      {/* Earth's limb: a gentle curve, the planet filled dark below it */}
+      <path d="M -40,640 Q 340,430 760,190 L 760,680 L -40,680 Z" fill="url(#hero-earth-fill)" />
+      <path d="M -40,640 Q 340,430 760,190" fill="none" stroke="var(--brand-cyan)" strokeWidth="3" opacity="0.5" style={{ filter: 'blur(2px)' }} />
+      <path d="M -40,640 Q 340,430 760,190" fill="none" stroke="#d8f7ff" strokeWidth="1.1" opacity="0.85" />
     </svg>
   )
 }
@@ -1223,14 +1182,35 @@ export function PublicSite({
           <section className={reveal("site-section site-section-alt site-usp")} id="usp">
             {usp.eyebrow && <div className="site-eyebrow">{usp.eyebrow}</div>}
             <E field="usp.title" value={usp.title} as="h2" className="site-section-title" />
-            <div className="site-usp-grid">
-              {usp.items.map((u, i) => (
-                <div key={u.id} className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
-                  {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
-                  <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
-                  <E field={`usp.items.${i}.description`} value={u.description} as="p" />
-                </div>
-              ))}
+            <div className="site-usp-pillars">
+              {(usp.pillars ?? [{ id: '', title: '', subtitle: '' }]).map((pillar, pi) => {
+                const groupItems = usp.items
+                  .map((u, i) => ({ u, i }))
+                  .filter(({ u }) => (usp.pillars ? u.pillar === pillar.id : true))
+                if (groupItems.length === 0) return null
+                return (
+                  <div key={pillar.id || 'all'} className="site-usp-pillar">
+                    {pillar.title && (
+                      <div className="site-usp-pillar-head">
+                        <span className="site-usp-pillar-index">{String(pi + 1).padStart(2, '0')}</span>
+                        <div>
+                          <h3 className="site-usp-pillar-title">{pillar.title}</h3>
+                          <p className="site-usp-pillar-subtitle">{pillar.subtitle}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="site-usp-grid">
+                      {groupItems.map(({ u, i }) => (
+                        <div key={u.id} className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
+                          {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
+                          <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
+                          <E field={`usp.items.${i}.description`} value={u.description} as="p" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </section>
         )}
