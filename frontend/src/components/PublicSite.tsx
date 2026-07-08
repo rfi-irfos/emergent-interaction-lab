@@ -346,7 +346,32 @@ function HeroFieldGraphic() {
           <stop offset="0%" stopColor="#0d1f2e" />
           <stop offset="100%" stopColor="#050a12" />
         </linearGradient>
+        <radialGradient id="hero-aurora-a" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-aurora-b" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#8b7bf0" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#8b7bf0" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-aurora-c" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#2fd9c4" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#2fd9c4" stopOpacity="0" />
+        </radialGradient>
       </defs>
+
+      {/* soft aurora, drifting on the dark side of the sky */}
+      <g style={{ mixBlendMode: 'screen' }}>
+        <ellipse cx="70" cy="160" rx="55" ry="230" fill="url(#hero-aurora-a)">
+          {!reducedMotion && <animate attributeName="cx" values="70;95;70" dur="16s" repeatCount="indefinite" />}
+        </ellipse>
+        <ellipse cx="160" cy="260" rx="45" ry="210" fill="url(#hero-aurora-b)">
+          {!reducedMotion && <animate attributeName="cx" values="160;130;160" dur="19s" repeatCount="indefinite" />}
+        </ellipse>
+        <ellipse cx="30" cy="340" rx="40" ry="190" fill="url(#hero-aurora-c)">
+          {!reducedMotion && <animate attributeName="cy" values="340;300;340" dur="22s" repeatCount="indefinite" />}
+        </ellipse>
+      </g>
 
       {stars.map((s, i) => (
         <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#e9fbff" opacity={s.o}>
@@ -356,10 +381,14 @@ function HeroFieldGraphic() {
         </circle>
       ))}
 
-      {/* sun, peeking from behind the horizon — the Earth fill below occludes its lower half */}
-      <circle cx="630" cy="255" r="230" fill="url(#hero-sunrise-glow)">
+      {/* sun, rising slowly from behind the horizon on first load — the Earth
+          fill below occludes whatever hasn't "risen" above the curve yet */}
+      <circle cx="630" cy={reducedMotion ? 255 : 440} r="230" fill="url(#hero-sunrise-glow)" opacity={reducedMotion ? 1 : 0}>
         {!reducedMotion && (
-          <animate attributeName="r" values="222;232;222" dur="9s" repeatCount="indefinite" />
+          <>
+            <animate attributeName="cy" values="440;255" dur="13s" fill="freeze" calcMode="spline" keySplines="0.22 0.1 0.2 1" />
+            <animate attributeName="opacity" values="0;1" dur="5s" fill="freeze" />
+          </>
         )}
       </circle>
 

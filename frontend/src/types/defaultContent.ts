@@ -93,6 +93,6 @@ export const defaultContent: SiteContent = {
       { label: 'Datenschutz', href: '/datenschutz' },
       { label: 'Impressum', href: '/impressum' },
     ],
-    copyright: '© 2026 Emergent Interaction Lab — built by RFI-IRFOS',
+    copyright: '© 2026 Emergent Interaction Lab — made with <3 in Graz by RFI-IRFOS, for Laura',
   },
 }

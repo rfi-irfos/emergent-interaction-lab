@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
@@ -73,6 +73,38 @@ function downloadText(filename: string, text: string) {
   URL.revokeObjectURL(url)
 }
 
+// Minimal, safe markdown rendering for model replies — bold, numbered/bulleted
+// lists, paragraphs. Builds JSX directly (no dangerouslySetInnerHTML), so
+// there's no HTML-injection surface even though the text is model-generated.
+// Not a general-purpose parser: covers what these replies actually use.
+function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>
+      : part
+  )
+}
+
+function renderMarkdown(text: string): React.ReactNode {
+  return text.split(/\n{2,}/).map((block, bi) => {
+    const lines = block.split('\n').filter(l => l.trim() !== '')
+    if (lines.length === 0) return null
+    const isNumbered = lines.every(l => /^\d+\.\s/.test(l.trim()))
+    const isBulleted = lines.every(l => /^[-*]\s/.test(l.trim()))
+    if (isNumbered) {
+      return <ol key={bi}>{lines.map((l, li) => <li key={li}>{renderInline(l.trim().replace(/^\d+\.\s/, ''), `${bi}-${li}`)}</li>)}</ol>
+    }
+    if (isBulleted) {
+      return <ul key={bi}>{lines.map((l, li) => <li key={li}>{renderInline(l.trim().replace(/^[-*]\s/, ''), `${bi}-${li}`)}</li>)}</ul>
+    }
+    return (
+      <p key={bi}>
+        {lines.map((l, li) => <React.Fragment key={li}>{renderInline(l, `${bi}-${li}`)}{li < lines.length - 1 && <br />}</React.Fragment>)}
+      </p>
+    )
+  })
+}
+
 function TokenInspector({ tokens }: { tokens: TokenInfo[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
   if (!tokens.length) return null
@@ -117,6 +149,17 @@ export function ResearchChat() {
   const [uploading, setUploading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const baseTitleRef = useRef(document.title)
+
+  // Backgrounded/inactive browser tabs don't get repainted until they're
+  // focused again — the reply has already arrived and rendered into the DOM,
+  // it just isn't visible yet. Flash the tab title as a cue instead of
+  // leaving no indication at all.
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) document.title = baseTitleRef.current }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const refreshConversations = () => {
     fetch(`${API_BASE}/api/chat/conversations`, { headers: authHeaders() })
@@ -193,7 +236,11 @@ export function ResearchChat() {
         allTokens.push(...tokens)
         setMessages(m => m.map(msg => msg.id === assistantId ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens) } : msg))
       },
-      () => { setStreaming(false); refreshConversations() },
+      () => {
+        setStreaming(false)
+        refreshConversations()
+        if (document.hidden) document.title = `💬 ${baseTitleRef.current}`
+      },
       (msg) => { setStreaming(false); setError(msg) },
     )
   }
@@ -286,7 +333,10 @@ export function ResearchChat() {
             const tokens: TokenInfo[] = m.token_info ? JSON.parse(m.token_info) : []
             return (
               <div key={m.id} className={`chat-bubble ${m.role}`}>
-                <div className="chat-bubble-content">{m.content}{streaming && m.role === 'assistant' && m.content === '' ? '…' : ''}</div>
+                <div className="chat-bubble-content">
+                  {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
+                  {streaming && m.role === 'assistant' && m.content === '' ? '…' : ''}
+                </div>
                 {m.role === 'assistant' && tokens.length > 0 && (
                   <div className="chat-bubble-tools">
                     <button
