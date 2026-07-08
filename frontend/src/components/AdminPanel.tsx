@@ -10,7 +10,8 @@ interface Props {
   onLogout: () => void
 }
 
-type PanelTab = 'hero' | 'news' | 'contact' | 'style' | 'pages' | 'inbox' | 'analytics' | 'about'
+type PanelTab = 'hero' | 'contact' | 'style' | 'pages' | 'about'
+type AdminSection = 'inbox' | 'forschung' | 'blog' | 'analytics'
 
 interface AnalyticsData {
   total_views: number
@@ -49,6 +50,8 @@ const DEVICE_OPTS: { id: DeviceView; label: string; icon: React.ReactNode }[] = 
 export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Props) {
   const [draft, setDraft] = useState<SiteContent>(content)
   const [activeTab, setActiveTab] = useState<PanelTab>('hero')
+  const [adminMode, setAdminMode] = useState(false)
+  const [adminSection, setAdminSection] = useState<AdminSection>('inbox')
 
   useEffect(() => { setDraft(content) }, [content])
   const [saved, setSaved] = useState(false)
@@ -63,13 +66,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   useEffect(() => {
-    if (activeTab !== 'analytics') return
+    if (!(adminMode && adminSection === 'analytics')) return
     setAnalyticsLoading(true)
     fetch('/api/analytics')
       .then(r => r.json())
       .then(d => { setAnalyticsData(d); setAnalyticsLoading(false) })
       .catch(() => setAnalyticsLoading(false))
-  }, [activeTab])
+  }, [adminMode, adminSection])
   const [device, setDevice] = useState<DeviceView>('edit')
   const fileRef = useRef<HTMLInputElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
@@ -103,7 +106,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
     } else if (cid.startsWith('news.items.')) {
       const idx = parseInt(cid.split('.')[2])
       const item = draft.news?.items?.[idx]
-      if (item) { setActiveTab('news'); setEditingNews(item.id) }
+      if (item) { setAdminMode(true); setAdminSection('blog'); setEditingNews(item.id) }
     } else if (cid.startsWith('contact.') || cid.startsWith('whatsapp.')) {
       setActiveTab('contact')
     } else if (cid.startsWith('meta.') || cid.startsWith('footer.')) {
@@ -207,14 +210,11 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   }
 
   const tabs: Array<{ id: PanelTab; label: string; badge?: number }> = [
-    { id: 'inbox',    label: 'Inbox', badge: contactInbox.length },
     { id: 'hero',     label: 'Hero' },
     { id: 'about',    label: 'About' },
-    { id: 'news',     label: 'Blog' },
     { id: 'pages',    label: 'Pages' },
     { id: 'contact',  label: 'Contact' },
     { id: 'style',    label: 'Style' },
-    { id: 'analytics', label: 'Analytics' },
   ]
 
   const editingNewsItem = editingNews ? draft.news?.items?.find(n => n.id === editingNews) : null
@@ -245,6 +245,26 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           ))}
         </div>
         <div className="builder-topbar-right">
+          <button
+            className="builder-btn-ghost"
+            onClick={() => { setAdminMode(true); setAdminSection('forschung') }}
+            title="Forschungsseite bearbeiten"
+          >
+            Forschung
+          </button>
+          <button
+            className={`builder-btn-ghost ${adminMode ? 'active' : ''}`}
+            onClick={() => setAdminMode(m => !m)}
+            title="Verwaltung: Inbox, Forschung, Blog, Analytics"
+            style={{ position: 'relative' }}
+          >
+            Verwaltung
+            {contactInbox.length > 0 && (
+              <span style={{ position: 'absolute', top: -6, right: -6, background: '#e53e3e', color: '#fff', borderRadius: '50%', fontSize: 10, fontWeight: 700, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
+                {contactInbox.length}
+              </span>
+            )}
+          </button>
           <a
             href={window.location.origin + window.location.pathname}
             target="_blank"
@@ -271,6 +291,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
       </div>
 
       {/* ── BODY ────────────────────────────────────────────────────────── */}
+      {!adminMode && (
       <div className="builder-body">
 
         {/* LEFT: Canvas editor OR device preview */}
@@ -359,26 +380,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               </>
             )}
 
-            {/* ── NEWS TAB ──────────────────────────────────────────────── */}
-            {activeTab === 'news' && (
-              <div className="panel-products">
-                <div className="panel-product-list">
-                  {(draft.news?.items ?? []).map(n => (
-                    <div key={n.id} className={`panel-product-row ${editingNews === n.id ? 'active' : ''}`} onClick={() => setEditingNews(n.id)}>
-                      <div className="panel-product-info">
-                        <div className="panel-product-name">{n.title}</div>
-                        <div className="panel-product-meta">{n.date}</div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </div>
-                  ))}
-                </div>
-                <button className="panel-add-big-btn" onClick={addNews}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Blogbeitrag hinzufügen
-                </button>
-              </div>
-            )}
 
             {/* ── CONTACT TAB ───────────────────────────────────────────── */}
             {activeTab === 'contact' && (
@@ -561,8 +562,129 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               )
             })()}
 
+
+            {/* ── ABOUT TAB ──────────────────────────────────────────────── */}
+            {activeTab === 'about' && (
+              <>
+                <PanelSection title="Text">
+                  <Field label="Eyebrow (small, top)">
+                    <input value={draft.about?.eyebrow ?? ''} onChange={e => update('about.eyebrow', e.target.value)} placeholder="About us" />
+                  </Field>
+                  <Field label="Headline">
+                    <input value={draft.about?.headline ?? ''} onChange={e => update('about.headline', e.target.value)} placeholder="Hello, we're..." />
+                  </Field>
+                  <Field label="Bio text">
+                    <textarea rows={5} value={draft.about?.bio ?? ''} onChange={e => update('about.bio', e.target.value)} placeholder="A few warm sentences about who you are..." />
+                  </Field>
+                </PanelSection>
+                <PanelSection title="Photo">
+                  <UploadRow
+                    src={draft.about?.photo ?? ''}
+                    onUpload={() => handleImageClick('about.photo')}
+                    uploading={uploading && uploadTarget === 'about.photo'}
+                  />
+                </PanelSection>
+                <PanelSection title="Stats">
+                  {(draft.about?.stats ?? []).map((s, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                      <input style={{ width: 80, flexShrink: 0 }} value={s.value} placeholder="10+" onChange={e => {
+                        const stats = [...(draft.about?.stats ?? [])]
+                        stats[i] = { ...stats[i], value: e.target.value }
+                        update('about.stats', stats)
+                      }} />
+                      <input style={{ flex: 1 }} value={s.label} placeholder="years active" onChange={e => {
+                        const stats = [...(draft.about?.stats ?? [])]
+                        stats[i] = { ...stats[i], label: e.target.value }
+                        update('about.stats', stats)
+                      }} />
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d44', padding: '0 4px', fontSize: 18, lineHeight: 1 }}
+                        onClick={() => update('about.stats', (draft.about?.stats ?? []).filter((_, j) => j !== i))}>×</button>
+                    </div>
+                  ))}
+                  <button className="panel-add-big-btn" onClick={() => update('about.stats', [...(draft.about?.stats ?? []), { value: '', label: '' }])}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add stat
+                  </button>
+                </PanelSection>
+              </>
+            )}
+
+          </div>
+
+          {/* SAVE FOOTER */}
+          <div className="builder-panel-foot">
+            <button
+              className={`builder-save-btn ${saving ? 'loading' : ''} ${saved ? 'done' : ''}`}
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Speichern…' : saved ? 'Gespeichert!' : 'Speichern'}
+            </button>
+          </div>
+        </aside>
+      </div>
+      )}
+
+      {adminMode && (
+        <div className="crm-layout">
+          <aside className="crm-sidebar">
+            <div className="crm-sidebar-brand">
+              <span className="crm-sidebar-icon">E</span>
+              <div>
+                <div className="crm-sidebar-name">{draft.nav?.brand || 'Verwaltung'}</div>
+                <div className="crm-sidebar-sub">Verwaltung</div>
+              </div>
+            </div>
+            <nav className="crm-nav">
+              <button className={`crm-nav-item ${adminSection === 'inbox' ? 'active' : ''}`} onClick={() => setAdminSection('inbox')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                Inbox
+                {contactInbox.length > 0 && <span className="crm-badge red">{contactInbox.length}</span>}
+              </button>
+              <button className={`crm-nav-item ${adminSection === 'forschung' ? 'active' : ''}`} onClick={() => setAdminSection('forschung')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Forschung
+              </button>
+              <button className={`crm-nav-item ${adminSection === 'blog' ? 'active' : ''}`} onClick={() => setAdminSection('blog')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Blog
+              </button>
+              <button className={`crm-nav-item ${adminSection === 'analytics' ? 'active' : ''}`} onClick={() => setAdminSection('analytics')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+                Analytics
+              </button>
+            </nav>
+          </aside>
+
+          <div className="crm-main">
+            <div className="crm-topbar">
+              <div className="crm-topbar-title">
+                {adminSection === 'inbox' ? 'Inbox' : adminSection === 'forschung' ? 'Forschung' : adminSection === 'blog' ? 'Blog' : 'Analytics'}
+              </div>
+            </div>
+            <div className="crm-body">
+            {/* ── NEWS TAB ──────────────────────────────────────────────── */}
+            {adminSection === 'blog' && (
+              <div className="panel-products">
+                <div className="panel-product-list">
+                  {(draft.news?.items ?? []).map(n => (
+                    <div key={n.id} className={`panel-product-row ${editingNews === n.id ? 'active' : ''}`} onClick={() => setEditingNews(n.id)}>
+                      <div className="panel-product-info">
+                        <div className="panel-product-name">{n.title}</div>
+                        <div className="panel-product-meta">{n.date}</div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </div>
+                  ))}
+                </div>
+                <button className="panel-add-big-btn" onClick={addNews}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Blogbeitrag hinzufügen
+                </button>
+              </div>
+            )}
             {/* ── INBOX TAB ─────────────────────────────────────────────── */}
-            {activeTab === 'inbox' && (
+            {adminSection === 'inbox' && (
               <div style={{ padding: 14 }}>
                 {contactInbox.length === 0 ? (
                   <div style={{ padding: '24px 0', textAlign: 'center', color: '#aaa', fontSize: 13 }}>
@@ -589,9 +711,8 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 )}
               </div>
             )}
-
             {/* ── ANALYTICS TAB ──────────────────────────────────────────── */}
-            {activeTab === 'analytics' && (
+            {adminSection === 'analytics' && (
               <div style={{ padding: 14 }}>
                 {analyticsLoading && (
                   <div style={{ textAlign: 'center', color: '#aaa', padding: '40px 0', fontSize: 13 }}>Lade Daten…</div>
@@ -659,66 +780,42 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               </div>
             )}
 
-            {/* ── ABOUT TAB ──────────────────────────────────────────────── */}
-            {activeTab === 'about' && (
-              <>
-                <PanelSection title="Text">
-                  <Field label="Eyebrow (small, top)">
-                    <input value={draft.about?.eyebrow ?? ''} onChange={e => update('about.eyebrow', e.target.value)} placeholder="About us" />
-                  </Field>
-                  <Field label="Headline">
-                    <input value={draft.about?.headline ?? ''} onChange={e => update('about.headline', e.target.value)} placeholder="Hello, we're..." />
-                  </Field>
-                  <Field label="Bio text">
-                    <textarea rows={5} value={draft.about?.bio ?? ''} onChange={e => update('about.bio', e.target.value)} placeholder="A few warm sentences about who you are..." />
-                  </Field>
-                </PanelSection>
-                <PanelSection title="Photo">
-                  <UploadRow
-                    src={draft.about?.photo ?? ''}
-                    onUpload={() => handleImageClick('about.photo')}
-                    uploading={uploading && uploadTarget === 'about.photo'}
-                  />
-                </PanelSection>
-                <PanelSection title="Stats">
-                  {(draft.about?.stats ?? []).map((s, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                      <input style={{ width: 80, flexShrink: 0 }} value={s.value} placeholder="10+" onChange={e => {
-                        const stats = [...(draft.about?.stats ?? [])]
-                        stats[i] = { ...stats[i], value: e.target.value }
-                        update('about.stats', stats)
-                      }} />
-                      <input style={{ flex: 1 }} value={s.label} placeholder="years active" onChange={e => {
-                        const stats = [...(draft.about?.stats ?? [])]
-                        stats[i] = { ...stats[i], label: e.target.value }
-                        update('about.stats', stats)
-                      }} />
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d44', padding: '0 4px', fontSize: 18, lineHeight: 1 }}
-                        onClick={() => update('about.stats', (draft.about?.stats ?? []).filter((_, j) => j !== i))}>×</button>
+              {adminSection === 'forschung' && (() => {
+                const researchPage = (draft.pages ?? []).find(p => p.id === 'research')
+                if (!researchPage) {
+                  return (
+                    <div style={{ padding: 20, color: '#888', fontSize: 13 }}>
+                      Keine Research-Seite gefunden. Lege sie im "Pages"-Tab an (ID: research).
                     </div>
-                  ))}
-                  <button className="panel-add-big-btn" onClick={() => update('about.stats', [...(draft.about?.stats ?? []), { value: '', label: '' }])}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add stat
-                  </button>
-                </PanelSection>
-              </>
-            )}
-
+                  )
+                }
+                return (
+                  <div style={{ maxWidth: 720 }}>
+                    <div style={{ marginBottom: 16, padding: '10px 14px', background: '#eaf3f4', borderRadius: 8, fontSize: 12, color: '#0e8a9c' }}>
+                      Diese Seite ist live unter <strong>#p/{researchPage.slug}</strong> zu sehen.
+                    </div>
+                    <div className="rte-wrap">
+                      <div className="rte-toolbar">
+                        {[{ cmd: 'bold', label: 'B' }, { cmd: 'italic', label: 'I' }, { cmd: 'insertUnorderedList', label: '\u2022 Liste' }].map(({ cmd, label }) => (
+                          <button key={cmd} type="button" onMouseDown={e => { e.preventDefault(); document.execCommand(cmd, false) }}>{label}</button>
+                        ))}
+                      </div>
+                      <div
+                        className="rte-body"
+                        contentEditable
+                        suppressContentEditableWarning
+                        dangerouslySetInnerHTML={{ __html: researchPage.body }}
+                        onBlur={e => updatePage(researchPage.id, 'body', e.currentTarget.innerHTML)}
+                        style={{ minHeight: 400 }}
+                      />
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
-
-          {/* SAVE FOOTER */}
-          <div className="builder-panel-foot">
-            <button
-              className={`builder-save-btn ${saving ? 'loading' : ''} ${saved ? 'done' : ''}`}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? 'Speichern…' : saved ? 'Gespeichert!' : 'Speichern'}
-            </button>
-          </div>
-        </aside>
-      </div>
+        </div>
+      )}
 
       {/* ── BLOG EDIT MODAL ────────────────────────────────────────────── */}
       {editingNewsItem && (
