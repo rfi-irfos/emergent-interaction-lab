@@ -1,5 +1,6 @@
 mod analytics;
 mod auth;
+mod chat;
 mod contact;
 mod content;
 mod inspect;
@@ -24,6 +25,9 @@ pub struct AppState {
     pub redirect_uri: String,
     pub dev_mode: bool,
     pub db: SqlitePool,
+    pub http: reqwest::Client,
+    pub nvidia_api_key: String,
+    pub chat_secret: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -53,6 +57,13 @@ async fn main() {
         .execute(&db).await.ok();
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_wv_source ON web_visits(source, created_at)")
         .execute(&db).await.ok();
+    chat::init_schema(&db).await;
+
+    let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
+    match nvidia_api_key.len() {
+        0 => tracing::warn!("NVIDIA_API_KEY missing at startup"),
+        n => tracing::info!("NVIDIA_API_KEY present, length={n}"),
+    }
 
     let state = AppState {
         sessions: Arc::new(RwLock::new(HashMap::new())),
@@ -66,14 +77,13 @@ async fn main() {
             .unwrap_or("http://localhost:3000/auth/callback".into()),
         dev_mode,
         db,
+        http: reqwest::Client::new(),
+        nvidia_api_key,
+        chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
     };
 
     if dev_mode {
         tracing::warn!("DEV_MODE=true — auth is bypassed, do not use in production");
-    }
-    match std::env::var("NVIDIA_API_KEY") {
-        Ok(v) => tracing::info!("NVIDIA_API_KEY present, length={}", v.len()),
-        Err(e) => tracing::warn!("NVIDIA_API_KEY missing at startup: {e}"),
     }
 
     let index_html = static_dir.join("index.html");
@@ -92,6 +102,12 @@ async fn main() {
         .route("/api/contact", post(contact::submit_contact))
         .route("/api/analytics", get(analytics::stats))
         .route("/api/inspect", post(inspect::inspect))
+        // Research chat (RAG + streaming)
+        .route("/api/chat/conversations", get(chat::list_conversations).post(chat::create_conversation))
+        .route("/api/chat/conversations/:id", get(chat::get_conversation).delete(chat::delete_conversation))
+        .route("/api/chat/stream", post(chat::stream_chat))
+        .route("/api/chat/documents", get(chat::list_documents).post(chat::upload_document))
+        .route("/api/chat/documents/:id", axum::routing::delete(chat::delete_document))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { SiteContent, NewsItem, PageItem, SectionId } from '../types/content'
 import { PublicSite } from './PublicSite'
+import { ResearchChat } from './ResearchChat'
 
 interface Props {
   content: SiteContent
@@ -780,38 +781,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               </div>
             )}
 
-              {adminSection === 'forschung' && (() => {
-                const researchPage = (draft.pages ?? []).find(p => p.id === 'research')
-                if (!researchPage) {
-                  return (
-                    <div style={{ padding: 20, color: '#888', fontSize: 13 }}>
-                      Keine Research-Seite gefunden. Lege sie im "Pages"-Tab an (ID: research).
-                    </div>
-                  )
-                }
-                return (
-                  <div style={{ maxWidth: 720 }}>
-                    <div style={{ marginBottom: 16, padding: '10px 14px', background: '#eaf3f4', borderRadius: 8, fontSize: 12, color: '#0e8a9c' }}>
-                      Diese Seite ist live unter <strong>#p/{researchPage.slug}</strong> zu sehen.
-                    </div>
-                    <div className="rte-wrap">
-                      <div className="rte-toolbar">
-                        {[{ cmd: 'bold', label: 'B' }, { cmd: 'italic', label: 'I' }, { cmd: 'insertUnorderedList', label: '\u2022 Liste' }].map(({ cmd, label }) => (
-                          <button key={cmd} type="button" onMouseDown={e => { e.preventDefault(); document.execCommand(cmd, false) }}>{label}</button>
-                        ))}
-                      </div>
-                      <div
-                        className="rte-body"
-                        contentEditable
-                        suppressContentEditableWarning
-                        dangerouslySetInnerHTML={{ __html: researchPage.body }}
-                        onBlur={e => updatePage(researchPage.id, 'body', e.currentTarget.innerHTML)}
-                        style={{ minHeight: 400 }}
-                      />
-                    </div>
-                  </div>
-                )
-              })()}
+              {adminSection === 'forschung' && <ResearchChat />}
             </div>
           </div>
         </div>
