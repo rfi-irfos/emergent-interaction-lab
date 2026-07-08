@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import type { SiteContent, SectionId, CanvasPos, ProductItem, NewsItem, CertificateItem } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
@@ -300,18 +300,17 @@ function TrustIcon({ icon }: { icon: string }) {
   }
 }
 
-// ── Hero graphic: a wireframe mesh rippling outward from a single point,
-// like a droplet's impact spreading across a water surface. Pure line art,
-// no fill, so it reads as a diagram rather than a photo. The impact point
-// eases toward the cursor while it hovers the hero, and drifts back to its
-// resting spot once the pointer leaves — smoothed via rAF so it feels fluid
-// rather than snapping straight to the mouse.
+// ── Hero graphic: a comet — a horizontal light trail sweeping in from the
+// left, converging on a bright four-point star, with a scatter of debris
+// particles trailing off beyond it. The star eases toward the cursor while
+// it hovers the hero, and drifts back to its resting spot once the pointer
+// leaves — smoothed via rAF so it feels fluid rather than snapping straight
+// to the mouse. Particle offsets are generated once (fixed shape) and the
+// whole cluster is translated to the eased point, so the animation loop
+// never has to recompute geometry.
 function HeroFieldGraphic() {
   const W = 720, H = 640
-  const restX = 470, restY = 250
-  const amp = 20, wavelength = 48, decay = 260
-  const gridLines = 9   // how many mesh lines per axis
-  const samples = 48    // points per line — needs to be dense enough to trace the sine smoothly
+  const restX = 470, restY = 210
 
   const svgRef = useRef<SVGSVGElement>(null)
   const targetRef = useRef({ x: restX, y: restY })
@@ -353,38 +352,61 @@ function HeroFieldGraphic() {
   }, [])
 
   const { x: cx, y: cy } = center
-  const ripple = (x: number, y: number) => {
-    const dist = Math.hypot(x - cx, y - cy)
-    return Math.sin(dist / wavelength) * Math.exp(-dist / decay) * amp
-  }
 
-  const lines: string[] = []
-  for (let r = 0; r < gridLines; r++) {
-    const baseY = (H / (gridLines - 1)) * r
-    let d = ''
-    for (let s = 0; s < samples; s++) {
-      const x = (W / (samples - 1)) * s
-      const y = baseY + ripple(x, baseY)
-      d += s === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : ` L ${x.toFixed(1)} ${y.toFixed(1)}`
+  // Debris trail sweeping down-right from the star, fixed shape (seeded once).
+  const particles = useMemo(() => {
+    const n = 34
+    const arr: { x: number; y: number; r: number; o: number; violet: boolean; dur: number; delay: number }[] = []
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1)
+      const angle = 0.2 + t * 0.85 + (Math.random() - 0.5) * 0.2
+      const dist = 26 + t * 300 + Math.random() * 36
+      arr.push({
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        r: Math.max(0.7, 3 * (1 - t) + Math.random() * 1.1),
+        o: Math.max(0.1, (1 - t) * 0.85 + Math.random() * 0.1),
+        violet: Math.random() > 0.6,
+        dur: 2.6 + Math.random() * 2.4,
+        delay: Math.random() * 4,
+      })
     }
-    lines.push(d)
-  }
-  for (let c = 0; c < gridLines; c++) {
-    const baseX = (W / (gridLines - 1)) * c
-    let d = ''
-    for (let s = 0; s < samples; s++) {
-      const y = (H / (samples - 1)) * s
-      const x = baseX + ripple(baseX, y)
-      d += s === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : ` L ${x.toFixed(1)} ${y.toFixed(1)}`
-    }
-    lines.push(d)
-  }
+    return arr
+  }, [])
 
   return (
     <svg ref={svgRef} className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      {lines.map((d, i) => <path key={i} d={d} fill="none" stroke="var(--brand-cyan)" strokeWidth="1" opacity="0.28" />)}
-      <circle cx={cx} cy={cy} r="14" fill="none" stroke="var(--brand-cyan)" strokeWidth="1" opacity="0.55" />
-      <circle cx={cx} cy={cy} r="3" fill="var(--brand-cyan)" opacity="0.9" />
+      <defs>
+        <linearGradient id="hero-beam" gradientUnits="userSpaceOnUse" x1="0" y1={cy} x2={cx} y2={cy}>
+          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0" />
+          <stop offset="18%" stopColor="var(--brand-cyan)" stopOpacity="0.55" />
+          <stop offset="70%" stopColor="var(--brand-cyan)" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+        </linearGradient>
+        <radialGradient id="hero-star-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      <line x1="0" y1={cy} x2={cx} y2={cy} stroke="url(#hero-beam)" strokeWidth="7" opacity="0.35" style={{ filter: 'blur(4px)' }} />
+      <line x1="0" y1={cy} x2={cx} y2={cy} stroke="url(#hero-beam)" strokeWidth="1.5" />
+
+      <g transform={`translate(${cx} ${cy})`}>
+        <circle r="70" fill="url(#hero-star-glow)" />
+        {particles.map((p, i) => (
+          <circle
+            key={i}
+            cx={p.x} cy={p.y} r={p.r}
+            fill={p.violet ? '#8b7bf0' : 'var(--brand-cyan)'}
+            opacity={p.o}
+          >
+            <animate attributeName="opacity" values={`${p.o};${p.o * 0.25};${p.o}`} dur={`${p.dur}s`} begin={`${p.delay}s`} repeatCount="indefinite" />
+          </circle>
+        ))}
+        <path d="M0,-16 L3,-3 L16,0 L3,3 L0,16 L-3,3 L-16,0 L-3,-3 Z" fill="#fff" opacity="0.95" />
+        <circle r="3.2" fill="#fff" />
+      </g>
     </svg>
   )
 }
