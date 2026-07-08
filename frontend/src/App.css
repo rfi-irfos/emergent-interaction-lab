@@ -241,8 +241,14 @@ button { cursor: pointer; font-family: inherit; }
 
 /* ── HERO ────────────────────────────────────────────────────────────────── */
 .site-hero {
-  margin-top: 70px;
-  min-height: 680px;
+  /* padding, not margin: a top margin here collapses through .site's own
+     top edge (nothing prevents it — .site-nav is position:fixed, out of
+     flow), pushing the whole page down and exposing the default background
+     behind the fixed nav. Invisible while the nav was opaque, visible now
+     that it's transparent. Padding paints as part of .site-hero's own
+     (already dark) background box instead, so there's no gap to expose. */
+  padding-top: 70px;
+  min-height: 750px;
   position: relative;
   display: flex; align-items: flex-end;
   /* fixed dark regardless of the visitor's light/dark/hc choice — this is the
@@ -1213,7 +1219,7 @@ button { cursor: pointer; font-family: inherit; }
 
   .site-usp-pillar .site-usp-grid { grid-template-columns: 1fr; }
   .site-usp-pillar-head { flex-direction: column; gap: 4px; }
-  .site-hero { margin-top: 62px; min-height: 520px !important; }
+  .site-hero { padding-top: 62px; min-height: 582px !important; }
   .site-hero-inner { padding: 0 22px 48px; max-width: 100%; }
   .site-hero-h1 { font-size: 36px; }
   .site-hero-sub { font-size: 16px; margin-bottom: 28px; }
