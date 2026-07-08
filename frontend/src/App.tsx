@@ -23,7 +23,11 @@ function getRoute(hash: string) {
 
 export default function App() {
   const { lang } = useLang()
-  const { content, loading, saving, save, uploadImage } = useContent(lang)
+  const { content, loading } = useContent(lang)
+  // The admin always edits the German content, independent of whatever
+  // language a visitor last had the public site in — Laura writes in German
+  // and never needs an editing-language switch.
+  const admin = useContent('de')
   const { user, login, logout } = useAuth()
   const [route, setRoute] = useState(() => getRoute(window.location.hash))
 
@@ -46,14 +50,24 @@ export default function App() {
   }
 
   if (route.isAdmin) {
+    if (admin.loading) {
+      return (
+        <div className="loading-screen">
+          <div className="loading-spinner" />
+        </div>
+      )
+    }
+    if (!admin.content) {
+      return <div className="error-screen">Content could not be loaded.</div>
+    }
     if (!user) return <LoginPage onLogin={login} />
     return (
       <AdminPanel
-        content={content}
+        content={admin.content}
         user={user}
-        saving={saving}
-        onSave={save}
-        onUpload={uploadImage}
+        saving={admin.saving}
+        onSave={admin.save}
+        onUpload={admin.uploadImage}
         onLogout={logout}
       />
     )

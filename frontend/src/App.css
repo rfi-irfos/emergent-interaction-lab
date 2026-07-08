@@ -669,9 +669,6 @@ button { cursor: pointer; font-family: inherit; }
 }
 .builder-brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; color: #111; flex-shrink: 0; }
 .builder-brand-dot { width: 7px; height: 7px; background: #C4956A; border-radius: 50%; flex-shrink: 0; }
-.builder-lang-switch { display: inline-flex; gap: 2px; margin-left: 6px; background: #f0ece6; border: 1px solid #e2dad0; border-radius: 7px; padding: 2px; }
-.builder-lang-btn { border: none; background: transparent; font-size: 11px; font-weight: 800; letter-spacing: .03em; padding: 3px 9px; border-radius: 5px; color: #8a7a6c; cursor: pointer; transition: .15s; }
-.builder-lang-btn.active { background: #C4956A; color: #fff; }
 .builder-topbar-hint { font-size: 12px; color: #aaa; flex: 1; text-align: center; }
 .builder-topbar-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .builder-user { font-size: 13px; color: #777; }
