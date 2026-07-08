@@ -606,6 +606,22 @@ export function PublicSite({
     new Image().src = px.toString()
   }, [editMode])
 
+  // Soft scroll-reveal for sections (dark theme only, see .site-reveal in App.css) —
+  // sections fade + rise into place the first time they cross into view.
+  const reveal = (cls: string) => editMode ? cls : `${cls} site-reveal`
+  useEffect(() => {
+    if (editMode) return
+    const els = document.querySelectorAll('.site-reveal')
+    if (!els.length) return
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target) }
+      })
+    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' })
+    els.forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [editMode])
+
   // Keep the product filter valid when the language (and its tab labels) changes
   useEffect(() => {
     const tabs = content.products?.tabs ?? []
@@ -882,6 +898,14 @@ export function PublicSite({
   return (
     <Ctx.Provider value={ctx}>
       <div style={vars} className="site" data-theme={theme}>
+        <div className="site-emergence-field" aria-hidden="true">
+          <div className="ef-blob ef-blob-1" />
+          <div className="ef-blob ef-blob-2" />
+          <div className="ef-blob ef-blob-3" />
+          <div className="ef-ripple ef-ripple-1" />
+          <div className="ef-ripple ef-ripple-2" />
+          <div className="ef-ripple ef-ripple-3" />
+        </div>
         {editMode && <FormatToolbar anchorEl={focusedEl} />}
 
         {/* ── NAV ──────────────────────────────────────────────────────── */}
@@ -1012,7 +1036,7 @@ export function PublicSite({
 
         {/* ── ABOUT ────────────────────────────────────────────────────── */}
         {content.about && (
-          <section className="site-about" id="about">
+          <section className={reveal("site-about")} id="about">
             <div className={`site-about-inner${content.about.photo ? '' : ' site-about-inner--no-photo'}`}>
               {content.about.photo && (
                 <div className="site-about-photo-wrap">
@@ -1047,7 +1071,7 @@ export function PublicSite({
             ? (products?.items ?? []).filter(p => !browseCat.tab || p.category === browseCat.tab)
             : []
           return (
-            <section className="site-section site-categories site-browser" id="categories">
+            <section className={reveal("site-section site-categories site-browser")} id="categories">
               {(editMode || browseCatIdx == null) ? (
                 <>
                   {categories.eyebrow && <div className="site-eyebrow">{categories.eyebrow}</div>}
@@ -1121,7 +1145,7 @@ export function PublicSite({
 
         {/* ── PRODUCTS ─────────────────────────────────────────────────── */}
         {!hiddenSections.includes('products') && (products?.items?.length ?? 0) > 0 && (
-          <section className="site-section site-products" id="products">
+          <section className={reveal("site-section site-products")} id="products">
             <div className="site-products-top">
               <E field="products.title" value={products.title} as="h2" className="site-products-h2" />
               {!editMode && (products?.tabs?.length ?? 0) > 1 && (
@@ -1174,7 +1198,7 @@ export function PublicSite({
 
         {/* ── USP ──────────────────────────────────────────────────────── */}
         {!hiddenSections.includes('usp') && (usp?.items?.length ?? 0) > 0 && (
-          <section className="site-section site-section-alt site-usp" id="usp">
+          <section className={reveal("site-section site-section-alt site-usp")} id="usp">
             {usp.eyebrow && <div className="site-eyebrow">{usp.eyebrow}</div>}
             <E field="usp.title" value={usp.title} as="h2" className="site-section-title" />
             <div className="site-usp-grid">
@@ -1191,7 +1215,7 @@ export function PublicSite({
 
         {/* ── NEWS ─────────────────────────────────────────────────────── */}
         {!hiddenSections.includes('news') && (news?.items?.length ?? 0) > 0 && (
-          <section className="site-section site-news" id="news">
+          <section className={reveal("site-section site-news")} id="news">
             {news.eyebrow && <div className="site-eyebrow">{news.eyebrow}</div>}
             <E field="news.title" value={news.title} as="h2" className="site-section-title" />
             <div className="site-news-grid">
@@ -1221,7 +1245,7 @@ export function PublicSite({
 
         {/* ── LOCATION ─────────────────────────────────────────────────── */}
         {!hiddenSections.includes('location') && (
-        <section className="site-location" id="location">
+        <section className={reveal("site-location")} id="location">
           {contact?.mapSrc && (
             <div className="site-map">
               <iframe src={contact.mapSrc} allowFullScreen loading="lazy" title="Standort" />
@@ -1266,7 +1290,7 @@ export function PublicSite({
 
         {/* ── PRICING ──────────────────────────────────────────────────── */}
         {pricing?.body && (
-          <section className="site-section site-pricing" id="pricing" data-cid="pricing.title">
+          <section className={reveal("site-section site-pricing")} id="pricing" data-cid="pricing.title">
             <h2 className="site-section-title">{pricing.title}</h2>
             <div className="site-pricing-body">
               {pricing.body.split('\n\n').map((para, i) => (
@@ -1278,7 +1302,7 @@ export function PublicSite({
 
         {/* ── CERTIFICATES ─────────────────────────────────────────────── */}
         {(certificates?.items?.length ?? 0) > 0 && (
-          <section className="site-section site-certificates" id="certificates">
+          <section className={reveal("site-section site-certificates")} id="certificates">
             {certificates!.title && <h2 className="site-section-title">{certificates!.title}</h2>}
             <div className="site-cert-grid">
               {certificates!.items.map((cert: CertificateItem) => (

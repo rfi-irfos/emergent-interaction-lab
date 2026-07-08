@@ -245,6 +245,15 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           ))}
         </div>
         <div className="builder-topbar-right">
+          <a
+            href={window.location.origin + window.location.pathname}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="builder-btn-ghost"
+            title="Live-Seite in neuem Tab öffnen"
+          >
+            Live ansehen
+          </a>
           <button
             className={`builder-save-btn-top ${saving ? 'loading' : ''} ${saved ? 'done' : ''} ${saveErr ? 'err' : ''}`}
             onClick={handleSave}

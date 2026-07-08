@@ -58,18 +58,99 @@ button { cursor: pointer; font-family: inherit; }
 
 /* ── DARK (Emergent Interaction Lab's original palette) ──────────────────────── */
 .site[data-theme="dark"] {
-  --bg: #03050a;
-  --surface: #0c1a28;
-  --surface-alt: #09131f;
+  /* Softened off-black with a blue/purple undertone — never literal #000. */
+  --bg: #0a0e1a;
+  --surface: #101a2c;
+  --surface-alt: #0d1524;
   --surface-sunken: #1c2f40;
   --text: #e9fbff;
   --text-soft: #9bb3c2;
   --border: #1c2f40;
-  --nav-bg: rgba(3, 5, 10, .95);
+  --nav-bg: rgba(10, 14, 26, .85);
   --nav-border: rgba(99, 240, 255, .15);
   --on-primary: #03050a;
   --on-accent: #03050a;
   --shadow: rgba(0, 0, 0, .5);
+  /* Glass-panel tokens: translucent surfaces over the shared emergence-field
+     backdrop, instead of flat opaque section colors — see .site-emergence-field. */
+  --glass-bg: rgba(16, 26, 44, .52);
+  --glass-border: rgba(148, 197, 214, .16);
+  --glass-blur: blur(18px);
+  background: linear-gradient(180deg, #0a0e1a 0%, #0b1120 55%, #0a0e1a 100%);
+}
+
+/* ── EMERGENCE FIELD (dark theme only) ────────────────────────────────────────
+   One continuous animated backdrop behind every section — soft drifting color
+   blobs + slow ripple rings — so the page reads as a single field rather than
+   a stack of flat-colored bands. Fixed to the viewport, purely decorative. */
+.site-emergence-field { display: none; }
+.site[data-theme="dark"] .site-emergence-field {
+  display: block;
+  position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+}
+.ef-blob {
+  position: absolute; border-radius: 50%; filter: blur(90px);
+  opacity: .28; will-change: transform;
+  animation: ef-drift 50s ease-in-out infinite alternate;
+}
+.ef-blob-1 { width: 62vw; height: 62vw; left: -14vw; top: -16vh; background: radial-gradient(circle, #63f0ff, transparent 70%); animation-duration: 48s; }
+.ef-blob-2 { width: 54vw; height: 54vw; right: -16vw; top: 26vh; background: radial-gradient(circle, #8b7bf0, transparent 70%); animation-duration: 58s; animation-delay: -10s; }
+.ef-blob-3 { width: 48vw; height: 48vw; left: 18vw; bottom: -22vh; background: radial-gradient(circle, #2fd9c4, transparent 70%); animation-duration: 66s; animation-delay: -24s; }
+@keyframes ef-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(5vw, 7vh) scale(1.18); }
+}
+.ef-ripple {
+  position: absolute; border-radius: 50%; border: 1px solid rgba(99,240,255,.22);
+  animation: ef-ripple 16s ease-out infinite;
+}
+.ef-ripple-1 { width: 260px; height: 260px; left: 12%; top: 22%; animation-delay: 0s; }
+.ef-ripple-2 { width: 220px; height: 220px; right: 18%; top: 58%; animation-delay: 5.2s; border-color: rgba(139,123,240,.2); }
+.ef-ripple-3 { width: 300px; height: 300px; left: 58%; top: 8%; animation-delay: 10.4s; border-color: rgba(47,217,196,.18); }
+@keyframes ef-ripple {
+  0%   { transform: scale(.4); opacity: 0; }
+  12%  { opacity: .45; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ef-blob, .ef-ripple { animation: none; }
+}
+
+/* ── SCROLL-REVEAL (dark theme) ────────────────────────────────────────────── */
+.site[data-theme="dark"] .site-reveal {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .9s ease, transform .9s ease;
+}
+.site[data-theme="dark"] .site-reveal.in-view { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .site[data-theme="dark"] .site-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── ONE CONTINUOUS BACKDROP (dark theme) ─────────────────────────────────────
+   Sections and cards no longer carry their own flat, opaque background — the
+   emergence-field shows through everywhere, and content sits on top as
+   translucent glass panels instead. */
+.site[data-theme="dark"] .site-section-alt,
+.site[data-theme="dark"] .site-news,
+.site[data-theme="dark"] .site-pricing,
+.site[data-theme="dark"] .site-certificates,
+.site[data-theme="dark"] .site-about,
+.site[data-theme="dark"] .site-location:has(> .site-location-info:only-child) {
+  background: transparent;
+}
+.site[data-theme="dark"] .site-usp-card,
+.site[data-theme="dark"] .site-news-card,
+.site[data-theme="dark"] .site-cert-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
+}
+.site[data-theme="dark"] .site-location-info:only-child {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
 }
 
 /* ── LIGHT (Emergent Interaction Lab's original palette, no photo shoot to lean on
@@ -390,7 +471,11 @@ button { cursor: pointer; font-family: inherit; }
 .site-news-body { padding: 22px; }
 .site-news-date { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
 .site-news-title { font-size: 17px; font-weight: 800; margin-bottom: 10px; line-height: 1.4; color: var(--text); }
-.site-news-text { font-size: 14px; color: var(--text-soft); line-height: 1.7; }
+.site-news-text {
+  font-size: 14px; color: var(--text-soft); line-height: 1.7;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .site-news-read-more { display: inline-block; margin-top: 12px; font-size: 12px; font-weight: 700; color: var(--primary); letter-spacing: .04em; }
 .site-news-card.clickable { cursor: pointer; }
 .site-news-card.clickable:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
