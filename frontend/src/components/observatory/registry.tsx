@@ -55,6 +55,7 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   blog: 'Blog',
   analytics: 'Analytics',
   'website-kit': 'Website Kit',
+  monetization: 'Monetarisierung',
   systemmap: 'System Map',
   emergence: 'Emergence Monitor',
   systemstate: 'System State',
