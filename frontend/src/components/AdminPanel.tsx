@@ -30,7 +30,13 @@ function loadInbox(): ContactInboxItem[] { try { return JSON.parse(localStorage.
 
 function loadSidebarCollapsed(): boolean { try { return localStorage.getItem('rfi_sidebar_collapsed') === '1' } catch { return false } }
 
-// ── Topbar icons (minimal shell: just logout + view-live-site) ──────────────
+// Defaults to dark: the Observatory HUD look is the direction the whole
+// shell is meant to read in, not an opt-in for one section only.
+function loadCrmTheme(): 'light' | 'dark' {
+  try { return (localStorage.getItem('rfi_crm_theme') as 'light' | 'dark') || 'dark' } catch { return 'dark' }
+}
+
+// ── Topbar icons (minimal shell: theme, view-live-site, logout) ─────────────
 function IconLogout() {
   return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 }
@@ -39,6 +45,12 @@ function IconViewSite() {
 }
 function IconCollapse() {
   return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+}
+function IconSun() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+}
+function IconMoon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
 }
 
 /// The Verwaltung shell — collapsible sidebar + minimal topbar — is now the
@@ -49,6 +61,15 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [draft, setDraft] = useState<SiteContent>(content)
   const [adminSection, setAdminSection] = useState<AdminSection>('website-kit')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
+  const [crmTheme, setCrmTheme] = useState<'light' | 'dark'>(loadCrmTheme)
+
+  const toggleCrmTheme = () => {
+    setCrmTheme(t => {
+      const next = t === 'dark' ? 'light' : 'dark'
+      localStorage.setItem('rfi_crm_theme', next)
+      return next
+    })
+  }
 
   useEffect(() => { setDraft(content) }, [content])
   const [saved, setSaved] = useState(false)
@@ -182,6 +203,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           <strong>{draft.nav?.brand || 'My website'}</strong>
         </div>
         <div className="builder-topbar-right">
+          <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
+            {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
+          </button>
           <a
             href={window.location.origin + window.location.pathname}
             target="_blank"
@@ -201,13 +225,16 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="crm-sidebar-brand">
-            <span className="crm-sidebar-icon">E</span>
+            <img src="/favicon.svg" alt="" className="crm-sidebar-icon" />
             {!sidebarCollapsed && (
-              <div>
+              <div className="crm-sidebar-brand-text">
                 <div className="crm-sidebar-name">{draft.nav?.brand || 'Verwaltung'}</div>
                 <div className="crm-sidebar-sub">Verwaltung</div>
               </div>
             )}
+            <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
+              <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
+            </button>
           </div>
           <nav className="crm-nav">
             {!sidebarCollapsed && <div className="crm-nav-group-label">Verwaltung</div>}
@@ -241,13 +268,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               </button>
             ))}
           </nav>
-          <button className="crm-sidebar-collapse-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
-            <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
-            {!sidebarCollapsed && <span>Einklappen</span>}
-          </button>
         </aside>
 
-        <div className={`crm-main ${OBSERVATORY_MODULES.some(m => m.id === adminSection) ? 'observatory-hud' : ''}`}>
+        <div className={`crm-main ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection)) ? 'observatory-hud' : ''}`}>
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
           </div>
@@ -340,7 +363,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                         </div>
                         <div style={{ fontSize: 10, color: '#aaa', whiteSpace: 'nowrap' }}>{new Date(item.ts).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
-                      {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: '#444', lineHeight: 1.5 }}>{item.message}</p>}
+                      {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, #444)', lineHeight: 1.5 }}>{item.message}</p>}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <a href={`mailto:${item.email}?subject=Re: Ihre Anfrage`} className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}>Antworten</a>
                         <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => dismissInboxItem(item.ts)}>Erledigt</button>
