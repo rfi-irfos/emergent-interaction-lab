@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
+import { TOOL_LABELS } from '../lib/toolLabels'
 import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
@@ -105,17 +106,6 @@ function renderMarkdown(text: string): React.ReactNode {
       </p>
     )
   })
-}
-
-const TOOL_LABELS: Record<string, string> = {
-  draft_blog_post: 'Blogpost-Entwurf angelegt',
-  log_research_note: 'Research Note gespeichert',
-  get_recent_analytics: 'Analytics abgerufen',
-  get_content_section: 'Seiteninhalt gelesen',
-  run_simulation_scenario: 'Simulation durchgespielt',
-  get_blog_post: 'Blogpost-Entwurf gelesen',
-  revise_blog_post: 'Blogpost-Entwurf überarbeitet',
-  update_content_field: 'Website-Kit-Entwurf aktualisiert',
 }
 
 function ToolCallBadge({ call }: { call: ToolCallEvent }) {

@@ -1,10 +1,13 @@
 import { useAdminFetch } from '../../lib/adminApi'
+import { TOOL_LABELS } from '../../lib/toolLabels'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
+interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
 interface BehaviorData {
   category_mix: Bucket[]
   tool_distribution: Bucket[]
   length_distribution: Bucket[]
+  recent_tool_calls: ToolCallEntry[]
 }
 
 /// Group patterns, not individual surveillance: what kinds of research
@@ -12,7 +15,7 @@ interface BehaviorData {
 /// whether conversations tend to be quick check-ins or long deep-dives.
 /// Replaces the old visitor-hour/weekday bar charts entirely — those told
 /// you about website traffic, not about the research itself.
-export function BehavioralLandscape() {
+export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const { data, loading } = useAdminFetch<BehaviorData>('/api/observatory/behavior')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
@@ -47,6 +50,37 @@ export function BehavioralLandscape() {
           </div>
         ))}
       </div>
+
+      <div className="obs-section-label">Jarvis-Aktivität (letzte Aufrufe)</div>
+      {data.recent_tool_calls.length === 0
+        ? <div className="obs-card"><div className="obs-empty">Noch keine Werkzeugaufrufe protokolliert.</div></div>
+        : data.recent_tool_calls.map((c, i) => (
+            <div className="obs-item-card" key={i} style={{ ['--obs-accent' as string]: c.status === 'ok' ? '#8b5cf6' : '#ef4444' }}>
+              <div className="obs-item-title">{TOOL_LABELS[c.tool_name] ?? c.tool_name}</div>
+              <div className="obs-item-meta">
+                <span
+                  className="obs-pill"
+                  style={{ background: c.status === 'ok' ? 'rgba(139,92,246,.12)' : 'rgba(239,68,68,.12)', color: c.status === 'ok' ? '#8b5cf6' : '#ef4444' }}
+                >
+                  {c.status === 'ok' ? 'ok' : 'Fehler'}
+                </span>
+                {' · '}{c.created_at}
+                {c.conversation_id && onOpenConversation && (
+                  <>
+                    {' · '}
+                    <button
+                      className="chat-inspect-toggle"
+                      style={{ fontSize: 11, padding: 0 }}
+                      onClick={() => onOpenConversation(c.conversation_id!)}
+                    >
+                      aus Gespräch ↗
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))
+      }
 
       <div className="obs-section-label">Gesprächslänge — Verteilung</div>
       <div className="obs-card">
