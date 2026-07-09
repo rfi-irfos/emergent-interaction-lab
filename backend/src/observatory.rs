@@ -35,10 +35,24 @@ pub async fn behavior(State(state): State<AppState>, headers: HeaderMap) -> impl
         ) GROUP BY bucket"
     ).fetch_all(db).await.unwrap_or_default();
 
+    // Individual recent calls, not just the 30-day count above — every
+    // consumer of agent_tool_calls so far only ever aggregates, discarding
+    // exactly which calls happened and what they touched.
+    let recent_tool_calls: Vec<(String, String, Option<String>, Option<String>, String)> = sqlx::query_as(
+        "SELECT tool_name, status, conversation_id, result, created_at FROM agent_tool_calls ORDER BY created_at DESC LIMIT 10"
+    ).fetch_all(db).await.unwrap_or_default();
+
     Json(json!({
         "category_mix": category_mix.into_iter().map(|(c,n)| json!({"category":c,"count":n})).collect::<Vec<_>>(),
         "tool_distribution": tool_distribution.into_iter().map(|(t,n)| json!({"tool":t,"count":n})).collect::<Vec<_>>(),
         "length_distribution": length_distribution.into_iter().map(|(b,n)| json!({"bucket":b,"count":n})).collect::<Vec<_>>(),
+        "recent_tool_calls": recent_tool_calls.into_iter().map(|(tool_name, status, conversation_id, result, created_at)| json!({
+            "tool_name": tool_name,
+            "status": status,
+            "conversation_id": conversation_id,
+            "result": result,
+            "created_at": created_at,
+        })).collect::<Vec<_>>(),
     })).into_response()
 }
 
