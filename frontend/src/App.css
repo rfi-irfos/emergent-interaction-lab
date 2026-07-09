@@ -29,6 +29,14 @@ button { cursor: pointer; font-family: inherit; }
      the hero band always stays dark regardless of the visitor's theme choice, so
      its own accents (mesh, cta) must not be darkened along with body text */
   --brand-cyan: #63f0ff;
+  /* Secondary accent, same family as the Observatory's cyan/purple pairing
+     (see .observatory-hud in this file) — used sparingly as a second signal
+     color (alternating framework cards, category tags), never for primary
+     CTAs. Accessible-on-white by default; themes below tune it for contrast. */
+  --accent-purple: #6d3fd1;
+  /* Small technical/telemetry-style labels (eyebrows, dates, meta) borrow the
+     Observatory's monospace voice — body copy stays in the regular font. */
+  --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
 
   /* ── Semantic theme tokens (default = LIGHT) ──────────────────────────────
      EU accessibility mandate: every public page ships LIGHT / DARK / HIGH-CONTRAST.
@@ -71,6 +79,8 @@ button { cursor: pointer; font-family: inherit; }
   --on-primary: #03050a;
   --on-accent: #03050a;
   --shadow: rgba(0, 0, 0, .5);
+  /* Dark bg has room for the Observatory's own purple, unmuted. */
+  --accent-purple: #8b5cf6;
   /* Glass-panel tokens: translucent surfaces over the shared emergence-field
      backdrop, instead of flat opaque section colors — see .site-emergence-field. */
   --glass-bg: rgba(16, 26, 44, .52);
@@ -180,6 +190,7 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="hc"] {
   --primary: #ffd400 !important;   /* amber beats brand for guaranteed contrast */
   --accent: #ffd400 !important;
+  --accent-purple: #ffd400 !important;  /* AAA priority over palette matching: one color, max contrast */
   --bg: #000000;
   --surface: #000000;
   --surface-alt: #000000;
@@ -201,6 +212,10 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="hc"] button:focus-visible,
 .site[data-theme="hc"] input:focus-visible,
 .site[data-theme="hc"] textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* The purple pill below is written with a literal rgba tint (no --accent-purple
+   dependency for the fill), so HC needs its own override to stay strictly
+   black/white/amber rather than inheriting a stray purple. */
+.site[data-theme="hc"] .site-news-cat-tag { background: #000; border: 1px solid #ffd400; color: #ffd400; }
 
 /* ── NAV ─────────────────────────────────────────────────────────────────── */
 .site-nav {
@@ -322,8 +337,23 @@ button { cursor: pointer; font-family: inherit; }
   display: inline-flex; align-items: center; gap: 8px;
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
   backdrop-filter: blur(8px); color: #fff;
+  font-family: var(--mono);
   font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   padding: 6px 14px; border-radius: 20px;
+}
+/* Live-feed indicator: a small pulsing dot borrowed from the Observatory's own
+   "signal" language (see hud-pulse in the .observatory-hud block) — reused
+   here only where the copy is actually live (hero tag, blog eyebrow), not
+   sprinkled across every static label. */
+.site-hero-tag::before, .site-news .site-eyebrow::before {
+  content: ''; flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--brand-cyan); box-shadow: 0 0 8px var(--brand-cyan);
+  animation: site-live-pulse 2.2s ease-in-out infinite;
+}
+.site-news .site-eyebrow::before { display: inline-block; margin-right: 8px; vertical-align: middle; }
+@keyframes site-live-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .site-hero-tag::before, .site-news .site-eyebrow::before { animation: none; opacity: .85; }
 }
 .site-hero-h1 {
   font-size: 72px; font-weight: 900; color: #fff; line-height: 1.0;
@@ -394,7 +424,7 @@ button { cursor: pointer; font-family: inherit; }
 .site-section { padding: 90px 60px; }
 .site-section-alt { background: var(--surface-alt); }
 .site-eyebrow {
-  text-align: center; font-size: 11px; font-weight: 700;
+  text-align: center; font-size: 11px; font-weight: 700; font-family: var(--mono);
   letter-spacing: .12em; text-transform: uppercase; color: var(--primary); margin-bottom: 10px;
 }
 .site-section-title {
@@ -485,7 +515,7 @@ button { cursor: pointer; font-family: inherit; }
   padding: 3px 9px; border-radius: 3px;
 }
 .site-pcard-body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
-.site-pcard-brand { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+.site-pcard-brand { font-size: 10px; font-weight: 700; font-family: var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--primary); margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
 .site-cat-icon { width: 14px; height: 14px; flex-shrink: 0; stroke: var(--primary); }
 .site-pcard-name { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
 .site-pcard-specs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -518,15 +548,19 @@ button { cursor: pointer; font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .site-usp-card:hover { transform: none; }
 }
-.site-usp-card.accent { border-top-color: var(--accent); }
+/* Alternating cyan/purple accent across the Framework grid — same two-tone
+   signal language as the Observatory's stat cards (c-purple vs default cyan),
+   rather than a single flat brand color for every card. */
+.site-usp-card.accent { border-top-color: var(--accent-purple); }
+.site-usp-card.accent:hover { border-color: var(--accent-purple); box-shadow: 0 12px 32px rgba(139,92,246,.2); }
 .site-usp-icon { color: var(--primary); margin-bottom: 16px; }
-.site-usp-card.accent .site-usp-icon { color: var(--accent); }
+.site-usp-card.accent .site-usp-icon { color: var(--accent-purple); }
 .site-usp-card h3 { font-size: 19px; font-weight: 800; margin-bottom: 12px; color: var(--text); }
 .site-usp-card p { font-size: 15px; color: var(--text); opacity: .8; line-height: 1.7; }
 
 .site-usp-pillars { display: flex; flex-direction: column; gap: 56px; max-width: 1160px; margin: 0 auto; }
 .site-usp-pillar-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 28px; text-align: center; }
-.site-usp-pillar-index { font-size: 13px; font-weight: 800; color: var(--primary); letter-spacing: .05em; }
+.site-usp-pillar-index { font-size: 13px; font-weight: 800; font-family: var(--mono); color: var(--primary); letter-spacing: .05em; }
 .site-usp-pillar-title { font-size: 22px; font-weight: 800; color: var(--text); }
 .site-usp-pillar-subtitle { font-size: 14px; color: var(--text); opacity: .75; }
 .site-usp-pillar .site-usp-grid { grid-template-columns: repeat(2, 1fr); max-width: 860px; margin: 0 auto; gap: 32px; }
@@ -563,8 +597,12 @@ button { cursor: pointer; font-family: inherit; }
 .site-news-filter-chip:hover { border-color: var(--primary); color: var(--text); }
 .site-news-filter-chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 .site-news-cat-tag {
+  /* Tinted-pill treatment, same idiom as the Observatory's status pills
+     (tinted bg + colored text, not a solid fill) — purple here, pairing
+     with the date's cyan for a two-tone signal instead of one flat color. */
   display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px;
-  background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: .03em;
+  background: rgba(139,92,246,.14); color: var(--accent-purple); border: 1px solid rgba(139,92,246,.3);
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
   text-transform: none; vertical-align: middle;
 }
 .site-news-grid {
@@ -578,7 +616,7 @@ button { cursor: pointer; font-family: inherit; }
 .site-news-card:hover { box-shadow: 0 10px 28px var(--shadow); transform: translateY(-3px); }
 .site-news-img { width: 100%; height: 180px; object-fit: cover; }
 .site-news-body { padding: 22px; }
-.site-news-date { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
+.site-news-date { font-size: 12px; font-weight: 600; font-family: var(--mono); color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
 .site-news-title { font-size: 17px; font-weight: 800; margin-bottom: 10px; line-height: 1.4; color: var(--text); }
 .site-news-text {
   font-size: 14px; color: var(--text-soft); line-height: 1.7;

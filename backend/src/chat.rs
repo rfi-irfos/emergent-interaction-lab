@@ -18,6 +18,11 @@ use crate::authz::require_admin as is_authorized;
 use crate::AppState;
 
 pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
+// "Ein bisschen Steroide, nur als Test": try the larger model on the same
+// NIM family first (more headroom for tool-heavy, multi-round exchanges),
+// falling back to CHAT_MODEL automatically if NVIDIA rejects it or the
+// request fails outright — see stream_chat's retry below.
+const CHAT_MODEL_LARGE: &str = "meta/llama-3.1-70b-instruct";
 const EMBED_MODEL: &str = "nvidia/nv-embedqa-e5-v5";
 const CHUNK_CHARS: usize = 900;
 const CHUNK_OVERLAP: usize = 150;
@@ -592,23 +597,47 @@ pub async fn stream_chat(
 
         let mut final_full_text = String::new();
         let mut final_tokens: Vec<serde_json::Value> = Vec::new();
+        // Sticky across rounds within one exchange: if the large model works
+        // once, keep using it; if it fails once, stop retrying it and stay
+        // on the proven fallback for the rest of this exchange.
+        let mut active_model: &str = CHAT_MODEL_LARGE;
+        // A local, mutable snapshot of site_content that's updated in place
+        // whenever update_content_field runs — without this, a second
+        // get_content_section call later in the same exchange would still
+        // see the value the exchange started with, not the edit just made.
+        let mut local_site_content = body.site_content.clone();
 
         'rounds: for _round in 0..agent::MAX_TOOL_ITERATIONS {
-            let res = state
+            let build_body = |model: &str| json!({
+                "model": model,
+                "messages": messages,
+                "max_tokens": 4096,
+                "temperature": 0.7,
+                "logprobs": true,
+                "top_logprobs": 5,
+                "stream": true,
+            });
+
+            let mut res = state
                 .http
                 .post("https://integrate.api.nvidia.com/v1/chat/completions")
                 .bearer_auth(&state.nvidia_api_key)
-                .json(&json!({
-                    "model": CHAT_MODEL,
-                    "messages": messages,
-                    "max_tokens": 4096,
-                    "temperature": 0.7,
-                    "logprobs": true,
-                    "top_logprobs": 5,
-                    "stream": true,
-                }))
+                .json(&build_body(active_model))
                 .send()
                 .await;
+
+            let succeeded = matches!(&res, Ok(r) if r.status().is_success());
+            if !succeeded && active_model != CHAT_MODEL {
+                tracing::warn!("large model {active_model} unavailable, falling back to {CHAT_MODEL}");
+                active_model = CHAT_MODEL;
+                res = state
+                    .http
+                    .post("https://integrate.api.nvidia.com/v1/chat/completions")
+                    .bearer_auth(&state.nvidia_api_key)
+                    .json(&build_body(active_model))
+                    .send()
+                    .await;
+            }
 
             let res = match res {
                 Ok(r) => r,
@@ -702,8 +731,19 @@ pub async fn stream_chat(
 
             match agent::parse_tool_call(&iter_text) {
                 Some(call) => {
-                    let result = agent::execute_tool(&state, &call, body.site_content.as_ref(), &conversation_id).await;
+                    let result = agent::execute_tool(&state, &call, local_site_content.as_ref(), &conversation_id).await;
                     agent::log_tool_call(&state, &conversation_id, &call, &result).await;
+                    if call.tool == "update_content_field" {
+                        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&result) {
+                            if parsed["ok"].as_bool() == Some(true) {
+                                if let Some(field) = parsed["field"].as_str() {
+                                    let mut content = local_site_content.take().unwrap_or(json!({}));
+                                    agent::apply_content_field_update(&mut content, field, parsed["value"].clone());
+                                    local_site_content = Some(content);
+                                }
+                            }
+                        }
+                    }
                     yield Ok(Event::default().event("tool_call").data(json!({ "tool": call.tool, "result": result }).to_string()));
                     messages.push(json!({ "role": "assistant", "content": iter_text }));
                     messages.push(json!({ "role": "system", "content": format!("[Ergebnis von {}]: {}", call.tool, result) }));

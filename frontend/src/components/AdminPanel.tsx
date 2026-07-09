@@ -392,6 +392,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   onMessageComplete={() => setForschungRefresh(n => n + 1)}
                   openConversationId={openConversationId}
                   onOpenConversationHandled={() => setOpenConversationId(null)}
+                  onUpdate={update}
                 />
               </div>
             )}

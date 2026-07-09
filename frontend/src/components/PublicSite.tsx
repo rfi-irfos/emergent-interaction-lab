@@ -923,7 +923,7 @@ export function PublicSite({
         <CanvasEl id="footer.block" pos={pos('footer.block', { x: 0, y: H + 3520 })} onMove={p => moveEl('footer.block', p)} minWidth={900} noPad label="Footer">
           <footer className="site-footer" style={{ position: 'static', borderRadius: 8 }}>
             <div className="site-footer-bottom">
-              <span>{footer?.brand} — {footer?.tagline}</span>
+              <span>{footer?.brand} - {footer?.tagline}</span>
               <div className="site-footer-links">
                 {(footer?.links ?? []).map((l, i) => <a key={i} href={safeHref(l.href)}>{l.label}</a>)}
               </div>
@@ -1193,7 +1193,7 @@ export function PublicSite({
                         </div>
                       </div>
                     ))}
-                    {browseSessions.length === 0 && <p className="site-browser-empty">—</p>}
+                    {browseSessions.length === 0 && <p className="site-browser-empty">-</p>}
                   </div>
                 </>
               )}

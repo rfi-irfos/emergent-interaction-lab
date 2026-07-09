@@ -142,6 +142,56 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl
     })).into_response()
 }
 
+// ── Scope trends (System State citing real Interaction Dynamics data) ──────
+// For each scope emergence_signals has observed, the message-volume trend
+// of the specific conversations that scope's signals came from — a real,
+// computed "this system's interaction volume is up/down" figure, not an
+// invented one. Lets System State's narrative cite an actual Interaction
+// Dynamics number inline instead of the two modules staying disconnected.
+
+pub async fn scope_trends(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    guard!(state, headers);
+    let db = &state.db;
+
+    let rows: Vec<(String, String)> = sqlx::query_as(
+        "SELECT DISTINCT scope, source_conversation_id FROM emergence_signals WHERE scope IS NOT NULL AND source_conversation_id IS NOT NULL"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    let mut by_scope: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    for (scope, conv_id) in rows {
+        by_scope.entry(scope).or_default().push(conv_id);
+    }
+
+    let mut out = Vec::new();
+    for (scope, conv_ids) in by_scope {
+        let placeholders: Vec<String> = (1..=conv_ids.len()).map(|i| format!("?{i}")).collect();
+        let in_clause = placeholders.join(",");
+
+        let recent_sql = format!(
+            "SELECT COUNT(*) FROM chat_messages WHERE conversation_id IN ({in_clause}) AND created_at > datetime('now','-7 days')"
+        );
+        let mut q = sqlx::query_as::<_, (i64,)>(&recent_sql);
+        for id in &conv_ids { q = q.bind(id); }
+        let (messages_7d,): (i64,) = q.fetch_one(db).await.unwrap_or((0,));
+
+        let prev_sql = format!(
+            "SELECT COUNT(*) FROM chat_messages WHERE conversation_id IN ({in_clause}) AND created_at > datetime('now','-14 days') AND created_at <= datetime('now','-7 days')"
+        );
+        let mut q2 = sqlx::query_as::<_, (i64,)>(&prev_sql);
+        for id in &conv_ids { q2 = q2.bind(id); }
+        let (messages_prev_7d,): (i64,) = q2.fetch_one(db).await.unwrap_or((0,));
+
+        out.push(json!({
+            "scope": scope,
+            "conversation_count": conv_ids.len(),
+            "messages_7d": messages_7d,
+            "messages_prev_7d": messages_prev_7d,
+        }));
+    }
+
+    Json(out).into_response()
+}
+
 // ── System Diagnostics (folded into the bottom of System State) ────────────
 // Real: config presence flags, agent error rate, DB reachability. No longer
 // its own nav item — this is the "Technology" side of the system under

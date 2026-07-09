@@ -124,6 +124,7 @@ async fn main() {
         .route("/api/observatory/behavior", get(observatory::behavior))
         .route("/api/observatory/information", get(observatory::information))
         .route("/api/observatory/human-ai", get(observatory::human_ai))
+        .route("/api/observatory/scope-trends", get(observatory::scope_trends))
         .route("/api/observatory/diagnostics", get(observatory::diagnostics))
         .route("/api/observatory/emergence/signals", get(emergence::list_signals))
         .route("/api/observatory/emergence/analyze", post(emergence::analyze))

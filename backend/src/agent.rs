@@ -26,6 +26,7 @@ const KNOWN_TOOLS: &[&str] = &[
     "run_simulation_scenario",
     "get_blog_post",
     "revise_blog_post",
+    "update_content_field",
 ];
 
 pub async fn init_schema(db: &SqlitePool) {
@@ -68,7 +69,8 @@ pub(crate) fn tool_instructions_block(module: &str) -> String {
     s.push_str("- get_content_section(section): liest einen Top-Level-Abschnitt des aktuell im Browser geladenen Seiteninhalts (z.B. \"hero\", \"about\", \"usp\").\n");
     s.push_str("- run_simulation_scenario(hypothesis, parameters?): lässt dich eine Hypothese explorativ durchdenken (keine validierte Simulation, immer als solche kennzeichnen).\n");
     s.push_str("- get_blog_post(post_id): liest Titel und Text eines vorhandenen Blogpost-Entwurfs — nutze das, bevor du an einem Entwurf weiterschreibst.\n");
-    s.push_str("- revise_blog_post(post_id, title?, body?): überschreibt Titel und/oder Text eines Entwurfs komplett. Funktioniert NUR bei einem Entwurf (status=draft) — ein bereits veröffentlichter Post wird nie automatisch verändert.\n\n");
+    s.push_str("- revise_blog_post(post_id, title?, body?): überschreibt Titel und/oder Text eines Entwurfs komplett. Funktioniert NUR bei einem Entwurf (status=draft) — ein bereits veröffentlichter Post wird nie automatisch verändert.\n");
+    s.push_str("- update_content_field(field, value): schreibt einen Wert direkt in den Website-Kit-Entwurf, z.B. field=\"hero.title\" oder field=\"about.body\" — Punktnotation für verschachtelte Felder. Wird sofort im Entwurf übernommen (Laura sieht die Änderung live im Website Kit), aber erst mit \"Speichern\" dort tatsächlich veröffentlicht. Nutze get_content_section zuerst, um die genaue Feldstruktur zu sehen, bevor du sie überschreibst.\n\n");
     s.push_str("Wenn keine Handlung nötig ist, antworte ganz normal im Gespräch — kein JSON, keine Werkzeug-Erwähnung.");
     s
 }
@@ -122,6 +124,34 @@ pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
     None
 }
 
+/// Applies a dot-notation field update (e.g. "hero.title") to a JSON object
+/// in place, creating intermediate objects as needed. Used to keep the
+/// in-memory site_content snapshot for one exchange in sync with
+/// update_content_field calls made earlier in that same exchange, so a
+/// later get_content_section call in the same exchange sees the edit
+/// instead of the value the exchange originally started with.
+pub(crate) fn apply_content_field_update(content: &mut serde_json::Value, field: &str, value: serde_json::Value) {
+    let parts: Vec<&str> = field.split('.').filter(|p| !p.is_empty()).collect();
+    if parts.is_empty() {
+        return;
+    }
+    if !content.is_object() {
+        *content = json!({});
+    }
+    let mut current = content;
+    for part in &parts[..parts.len() - 1] {
+        let obj = current.as_object_mut().expect("just ensured object above");
+        let entry = obj.entry(part.to_string()).or_insert_with(|| json!({}));
+        if !entry.is_object() {
+            *entry = json!({});
+        }
+        current = entry;
+    }
+    if let Some(obj) = current.as_object_mut() {
+        obj.insert(parts[parts.len() - 1].to_string(), value);
+    }
+}
+
 pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&serde_json::Value>, conversation_id: &str) -> String {
     match call.tool.as_str() {
         "draft_blog_post" => {
@@ -170,6 +200,25 @@ pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content
             match site_content.and_then(|c| c.get(section)) {
                 Some(v) => v.to_string(),
                 None => json!({ "error": "section not found in the content currently loaded in the admin's browser" }).to_string(),
+            }
+        }
+        // No backend write happens here — site content only exists as the
+        // browser's own draft state until Laura clicks "Speichern" in
+        // Website Kit. This just echoes field/value back in the result;
+        // ResearchChat.tsx is what actually applies it to the live draft
+        // when it sees this specific tool in a tool_call event.
+        "update_content_field" => {
+            let field = call.arguments.get("field").and_then(|v| v.as_str()).unwrap_or("");
+            if field.is_empty() {
+                json!({ "ok": false, "error": "field is required" }).to_string()
+            } else {
+                // Keep the argument's original JSON type (bool/number/object/
+                // array/string) instead of forcing it through .as_str() —
+                // several real SiteContent fields (e.g. whatsapp.enabled,
+                // hero.minHeight) aren't strings, and .as_str() silently
+                // turned those into "" while still reporting ok:true.
+                let value = call.arguments.get("value").cloned().unwrap_or(serde_json::Value::Null);
+                json!({ "ok": true, "field": field, "value": value }).to_string()
             }
         }
         "run_simulation_scenario" => {
@@ -253,5 +302,23 @@ mod tests {
     fn ordinary_reply_is_never_misdetected() {
         let text = "Guten Tag! Es geht so: wir haben gerade über die Interaction Field Forschung gesprochen.";
         assert!(parse_tool_call(text).is_none());
+    }
+
+    #[test]
+    fn apply_content_field_update_sets_nested_non_string_value() {
+        // Regression: update_content_field used to force every value through
+        // .as_str(), silently blanking non-string fields (e.g. a bool toggle
+        // or a numeric minHeight) while still reporting ok:true.
+        let mut content = json!({ "hero": { "title": "Alt", "minHeight": 400 } });
+        apply_content_field_update(&mut content, "hero.minHeight", json!(720));
+        assert_eq!(content["hero"]["minHeight"], 720);
+        assert_eq!(content["hero"]["title"], "Alt");
+    }
+
+    #[test]
+    fn apply_content_field_update_creates_missing_intermediate_objects() {
+        let mut content = json!({});
+        apply_content_field_update(&mut content, "whatsapp.enabled", json!(true));
+        assert_eq!(content["whatsapp"]["enabled"], true);
     }
 }
