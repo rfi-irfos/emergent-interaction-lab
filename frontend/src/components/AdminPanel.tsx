@@ -407,7 +407,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {/* ── OBSERVATORY MODULES ──────────────────────────────────── */}
             {adminSection === 'systemmap' && <SystemMap />}
-            {adminSection === 'emergence' && <EmergenceMonitor />}
+            {adminSection === 'emergence' && (
+              <EmergenceMonitor onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
             {adminSection === 'systemstate' && <SystemState />}
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
