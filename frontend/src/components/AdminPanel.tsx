@@ -8,6 +8,8 @@ import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
 import { OBSERVATORY_MODULES, SECTION_LABELS } from './observatory/registry'
 import { SystemOverview } from './observatory/SystemOverview'
+import { BlogDrafts } from './observatory/BlogDrafts'
+import { LiveCards } from './observatory/LiveCards'
 import { SystemMap } from './observatory/SystemMap'
 import { EmergenceMonitor } from './observatory/EmergenceMonitor'
 import { BehavioralObservatory } from './observatory/BehavioralObservatory'
@@ -79,6 +81,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [panelWidth, setPanelWidth] = useState(380)
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [forschungRefresh, setForschungRefresh] = useState(0)
 
   useEffect(() => {
     if (!(adminMode && adminSection === 'analytics')) return
@@ -169,6 +172,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
     setEditingNews(id)
   }
 
+  const promoteBlogPostToSite = (title: string, body: string) => {
+    const id = `n${Date.now()}`
+    const today = new Date().toISOString().split('T')[0]
+    const newItem: NewsItem = { id, date: today, title, body, image: '' }
+    update('news.items', [...(draft.news?.items ?? []), newItem])
+  }
+
   const deleteNews = (id: string) => {
     update('news.items', draft.news.items.filter(n => n.id !== id))
     if (editingNews === id) setEditingNews(null)
@@ -244,21 +254,23 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           <span className="builder-brand-dot" />
           <strong>{draft.nav?.brand || 'My website'}</strong>
         </div>
-        <div className="builder-device-switch" role="group" aria-label="Ansicht wählen">
-          {DEVICE_OPTS.map(d => (
-            <button
-              key={d.id}
-              type="button"
-              className={`builder-device-btn ${device === d.id ? 'active' : ''}`}
-              aria-pressed={device === d.id}
-              title={d.id === 'edit' ? 'Canvas bearbeiten' : `${d.label}-Vorschau`}
-              onClick={() => setDevice(d.id)}
-            >
-              {d.icon}
-              {d.label}
-            </button>
-          ))}
-        </div>
+        {!adminMode && (
+          <div className="builder-device-switch" role="group" aria-label="Ansicht wählen">
+            {DEVICE_OPTS.map(d => (
+              <button
+                key={d.id}
+                type="button"
+                className={`builder-device-btn ${device === d.id ? 'active' : ''}`}
+                aria-pressed={device === d.id}
+                title={d.id === 'edit' ? 'Canvas bearbeiten' : `${d.label}-Vorschau`}
+                onClick={() => setDevice(d.id)}
+              >
+                {d.icon}
+                {d.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="builder-topbar-right">
           <button
             className="builder-btn-ghost"
@@ -703,6 +715,10 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Blogbeitrag hinzufügen
                 </button>
+                <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--panel-border, #e8e8e8)' }}>
+                  <div className="obs-section-label">Jarvis-Entwürfe</div>
+                  <BlogDrafts onPromoteToSite={promoteBlogPostToSite} />
+                </div>
               </div>
             )}
             {/* ── INBOX TAB ─────────────────────────────────────────────── */}
@@ -802,7 +818,12 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               </div>
             )}
 
-              {adminSection === 'forschung' && <ResearchChat />}
+              {adminSection === 'forschung' && (
+                <div className="forschung-view">
+                  <LiveCards refreshSignal={forschungRefresh} onNavigate={setAdminSection} />
+                  <ResearchChat siteContent={draft} onMessageComplete={() => setForschungRefresh(n => n + 1)} />
+                </div>
+              )}
 
               {/* ── OBSERVATORY MODULES ──────────────────────────────────── */}
               {adminSection === 'overview' && <SystemOverview />}
@@ -817,7 +838,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               {adminSection === 'innovation' && <InnovationLab />}
             </div>
           </div>
-          <AgentDock currentModule={adminSection} siteContent={draft} />
+          <AgentDock onJumpToForschung={() => { setAdminMode(true); setAdminSection('forschung') }} />
         </div>
       )}
 

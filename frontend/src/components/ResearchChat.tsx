@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
+import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
-interface TokenAlt { token: string; probability: number }
-interface TokenInfo { token: string; probability: number; alternatives: TokenAlt[] }
 interface ChatMessage { id: string; role: 'user' | 'assistant'; content: string; token_info: string | null; created_at: string }
 interface DocumentItem { id: string; filename: string; created_at: string }
+
+interface ToolCallEvent { tool: string; result: string }
 
 async function streamChat(
   conversationId: string,
   message: string,
+  siteContent: unknown,
   onDelta: (delta: string, tokens: TokenInfo[]) => void,
+  onToolCall: (call: ToolCallEvent) => void,
   onDone: () => void,
   onError: (msg: string) => void,
 ) {
@@ -20,7 +23,7 @@ async function streamChat(
     res = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ conversation_id: conversationId, message }),
+      body: JSON.stringify({ conversation_id: conversationId, message, current_module: 'Forschung', site_content: siteContent }),
     })
   } catch {
     onError('Verbindung zum Server fehlgeschlagen.')
@@ -49,6 +52,10 @@ async function streamChat(
       }
       if (eventType === 'error') { onError(data); return }
       if (eventType === 'done') { onDone(); return }
+      if (eventType === 'tool_call') {
+        try { onToolCall(JSON.parse(data)) } catch { /* ignore malformed frame */ }
+        continue
+      }
       try {
         const parsed = JSON.parse(data)
         onDelta(parsed.delta || '', parsed.tokens || [])
@@ -100,39 +107,27 @@ function renderMarkdown(text: string): React.ReactNode {
   })
 }
 
-function TokenInspector({ tokens }: { tokens: TokenInfo[] }) {
-  const [openIdx, setOpenIdx] = useState<number | null>(null)
-  if (!tokens.length) return null
+const TOOL_LABELS: Record<string, string> = {
+  draft_blog_post: 'Blogpost-Entwurf angelegt',
+  log_research_note: 'Research Note gespeichert',
+  get_recent_analytics: 'Analytics abgerufen',
+  get_content_section: 'Seiteninhalt gelesen',
+  run_simulation_scenario: 'Simulation durchgespielt',
+}
+
+function ToolCallBadge({ call }: { call: ToolCallEvent }) {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="chat-inspector">
-      {tokens.map((t, i) => (
-        <span key={i} className="chat-inspector-wrap">
-          <button
-            type="button"
-            className="chat-inspector-token"
-            style={{ opacity: 0.35 + t.probability * 0.65 }}
-            onClick={() => setOpenIdx(openIdx === i ? null : i)}
-            title={`${(t.probability * 100).toFixed(1)}%`}
-          >
-            {t.token}
-          </button>
-          {openIdx === i && (
-            <span className="chat-inspector-pop">
-              {t.alternatives.map((a, j) => (
-                <span key={j} className="chat-inspector-alt">
-                  <span>{a.token || '·'}</span>
-                  <span>{(a.probability * 100).toFixed(1)}%</span>
-                </span>
-              ))}
-            </span>
-          )}
-        </span>
-      ))}
+    <div className="chat-tool-call">
+      <button type="button" className="chat-tool-call-toggle" onClick={() => setOpen(o => !o)}>
+        🔧 {TOOL_LABELS[call.tool] ?? call.tool}
+      </button>
+      {open && <pre className="chat-tool-call-detail">{call.result}</pre>}
     </div>
   )
 }
 
-export function ResearchChat() {
+export function ResearchChat({ siteContent, onMessageComplete }: { siteContent?: unknown; onMessageComplete?: () => void }) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -141,6 +136,7 @@ export function ResearchChat() {
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showInspector, setShowInspector] = useState<Record<string, boolean>>({})
+  const [toolCalls, setToolCalls] = useState<Record<string, ToolCallEvent[]>>({})
   const [uploading, setUploading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -226,14 +222,19 @@ export function ResearchChat() {
     await streamChat(
       convId,
       text,
+      siteContent,
       (delta, tokens) => {
         fullText += delta
         allTokens.push(...tokens)
         setMessages(m => m.map(msg => msg.id === assistantId ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens) } : msg))
       },
+      (call) => {
+        setToolCalls(t => ({ ...t, [assistantId]: [...(t[assistantId] ?? []), call] }))
+      },
       () => {
         setStreaming(false)
         refreshConversations()
+        onMessageComplete?.()
         if (document.hidden) document.title = `💬 ${baseTitleRef.current}`
       },
       (msg) => { setStreaming(false); setError(msg) },
@@ -328,6 +329,11 @@ export function ResearchChat() {
             const tokens: TokenInfo[] = m.token_info ? JSON.parse(m.token_info) : []
             return (
               <div key={m.id} className={`chat-bubble ${m.role}`}>
+                {m.role === 'assistant' && (toolCalls[m.id]?.length ?? 0) > 0 && (
+                  <div className="chat-tool-calls">
+                    {toolCalls[m.id].map((c, i) => <ToolCallBadge key={i} call={c} />)}
+                  </div>
+                )}
                 <div className="chat-bubble-content">
                   {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
                   {streaming && m.role === 'assistant' && m.content === '' ? '…' : ''}
@@ -340,7 +346,7 @@ export function ResearchChat() {
                     >
                       {showInspector[m.id] ? 'Token-Analyse ausblenden' : '🔍 Token-Analyse'}
                     </button>
-                    {showInspector[m.id] && <TokenInspector tokens={tokens} />}
+                    {showInspector[m.id] && <TokenBreakdown tokens={tokens} />}
                   </div>
                 )}
               </div>

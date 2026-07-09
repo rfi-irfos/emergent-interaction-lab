@@ -1,24 +1,30 @@
-use axum::{
-    http::{HeaderMap, StatusCode},
-    response::IntoResponse,
-    extract::State,
-    Json,
-};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-use crate::{authz::require_admin, chat::CHAT_MODEL, AppState};
+use crate::AppState;
 
-/// The "Jarvis" tool-calling loop. Implemented as a prompt-based fenced-JSON
-/// convention rather than NVIDIA's native OpenAI-style `tools` parameter:
-/// this NIM deployment's actual support for structured tool_calls couldn't be
-/// verified from this environment (no NVIDIA_API_KEY available locally to
-/// spike against), and the fenced-JSON convention works against any plain
-/// chat-completions endpoint regardless of vendor-specific tool-calling
-/// support. See plan §1.3's named risk.
-const MAX_TOOL_ITERATIONS: usize = 4;
+/// Jarvis's tool-calling primitives, shared by chat.rs's stream_chat — tool
+/// calling is merged into the one Forschung chat surface, not a separate
+/// endpoint (see plan: "Jarvis lives in two disconnected places" fix).
+///
+/// Detection is a prompt-based fenced-JSON convention rather than NVIDIA's
+/// native `tools` parameter (that support couldn't be verified from this
+/// environment — no NVIDIA_API_KEY available locally to spike against).
+/// `parse_tool_call` deliberately checks three shapes, because in practice
+/// the model doesn't reliably wrap calls in a fenced block: it sometimes
+/// replies with bare JSON and nothing else. Every shape is gated on the
+/// parsed object naming a *known* tool, so ordinary prose containing
+/// incidental braces never false-positives into a tool execution.
+pub(crate) const MAX_TOOL_ITERATIONS: usize = 4;
+
+const KNOWN_TOOLS: &[&str] = &[
+    "draft_blog_post",
+    "log_research_note",
+    "get_recent_analytics",
+    "get_content_section",
+    "run_simulation_scenario",
+];
 
 pub async fn init_schema(db: &SqlitePool) {
     sqlx::query(
@@ -41,42 +47,78 @@ pub async fn init_schema(db: &SqlitePool) {
         .ok();
 }
 
-fn build_system_prompt(module: &str) -> String {
+/// Appended after chat.rs's own warm-colleague SYSTEM_PROMPT — deliberately
+/// just the tool list + calling convention, no separate persona ("Du bist
+/// Jarvis…"), so the merged chat keeps one voice instead of two competing
+/// framings. Strict "JSON and nothing else" wording matters mechanically,
+/// not just stylistically: chat.rs uses the first non-whitespace character
+/// of the reply to decide whether to buffer-and-suppress (possible tool
+/// call) or stream live — the more consistently the model leads with `{`,
+/// the more reliably that heuristic holds.
+pub(crate) fn tool_instructions_block(module: &str) -> String {
     let mut s = String::new();
-    s.push_str(&format!(
-        "Du bist Jarvis — der ambiente KI-Assistent des Emergent Interaction Lab (RFI-IRFOS), erreichbar aus jedem Bereich des Verwaltungs-Dashboards, nicht nur aus einem einzelnen Chat-Tab. Der Admin schaut sich gerade an: \"{module}\".\n\n"
-    ));
-    s.push_str("Du hast Zugriff auf folgende Werkzeuge. Wenn du eines aufrufen willst, antworte NUR mit einem einzigen Codeblock in genau diesem Format, ohne weiteren Text davor oder danach:\n");
-    s.push_str("```json\n{\"tool\": \"<name>\", \"arguments\": {\"...\": \"...\"}}\n```\n\n");
+    s.push_str(&format!("\n\nDu kannst außerdem direkt handeln — du bist aus jedem Bereich des Verwaltungs-Dashboards erreichbar, gerade schaut der Admin sich an: \"{module}\". Wenn eine Nachricht eine Handlung verlangt (\"leg einen Blogpost-Entwurf an\", \"merk dir das als Research Note\", \"wie viele Besuche hatten wir\", \"was steht gerade im Hero-Text\", \"spiel diese Hypothese durch\"), antworte AUSSCHLIESSLICH mit einem JSON-Objekt in genau dieser Form, ohne jeden Text davor oder danach, ohne Erklärung, ohne Codeblock-Markierung:\n"));
+    s.push_str("{\"tool\": \"<name>\", \"arguments\": {\"...\": \"...\"}}\n\n");
     s.push_str("Werkzeuge:\n");
     s.push_str("- draft_blog_post(title, body): legt einen Blogpost-Entwurf an (status=draft). Wird NIE automatisch veröffentlicht — das macht bewusst ein Mensch.\n");
-    s.push_str("- log_research_note(category, title, body, tags?): category ist eines von paper/hypothesis/idea/concept/framework/prototype. Speist Research Workspace und Innovation Lab.\n");
+    s.push_str("- log_research_note(category, title, body, tags?): category ist eines von paper/hypothesis/idea/concept/framework/prototype.\n");
     s.push_str("- get_recent_analytics(days?): liefert Seitenaufrufe/Unique Visitors der letzten N Tage (Standard 7).\n");
     s.push_str("- get_content_section(section): liest einen Top-Level-Abschnitt des aktuell im Browser geladenen Seiteninhalts (z.B. \"hero\", \"about\", \"usp\").\n");
     s.push_str("- run_simulation_scenario(hypothesis, parameters?): lässt dich eine Hypothese explorativ durchdenken (keine validierte Simulation, immer als solche kennzeichnen).\n\n");
-    s.push_str("Wenn kein Werkzeug nötig ist, antworte einfach normal auf Deutsch, warm und direkt — keine Floskeln, keine \"Als KI-Sprachmodell\".");
+    s.push_str("Wenn keine Handlung nötig ist, antworte ganz normal im Gespräch — kein JSON, keine Werkzeug-Erwähnung.");
     s
 }
 
-struct ToolCall {
-    tool: String,
-    arguments: serde_json::Value,
+pub(crate) struct ToolCall {
+    pub tool: String,
+    pub arguments: serde_json::Value,
 }
 
-fn parse_tool_call(text: &str) -> Option<ToolCall> {
-    let start = text.find("```")?;
-    let after_start = &text[start + 3..];
-    let after_start = after_start.strip_prefix("json").unwrap_or(after_start);
-    let after_start = after_start.trim_start_matches('\n');
-    let end = after_start.find("```")?;
-    let json_str = after_start[..end].trim();
-    let value: serde_json::Value = serde_json::from_str(json_str).ok()?;
+fn try_parse_as_tool_call(candidate: &str) -> Option<ToolCall> {
+    let value: serde_json::Value = serde_json::from_str(candidate.trim()).ok()?;
     let tool = value.get("tool")?.as_str()?.to_string();
+    if !KNOWN_TOOLS.contains(&tool.as_str()) {
+        return None;
+    }
     let arguments = value.get("arguments").cloned().unwrap_or(json!({}));
     Some(ToolCall { tool, arguments })
 }
 
-async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&serde_json::Value>) -> String {
+pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
+    let trimmed = text.trim();
+
+    // 1. Whole reply is the JSON object — the common case in practice: the
+    //    model frequently skips fencing entirely despite being asked for it.
+    if let Some(call) = try_parse_as_tool_call(trimmed) {
+        return Some(call);
+    }
+
+    // 2. A fenced ```json ... ``` block, per the original instruction.
+    if let Some(start) = trimmed.find("```") {
+        let after_start = &trimmed[start + 3..];
+        let after_start = after_start.strip_prefix("json").unwrap_or(after_start);
+        let after_start = after_start.trim_start_matches('\n');
+        if let Some(end) = after_start.find("```") {
+            if let Some(call) = try_parse_as_tool_call(&after_start[..end]) {
+                return Some(call);
+            }
+        }
+    }
+
+    // 3. A bare JSON object embedded in surrounding prose (model adds
+    //    commentary around the call instead of replying with only JSON).
+    if let (Some(first), Some(last)) = (trimmed.find('{'), trimmed.rfind('}')) {
+        if last > first {
+            if let Some(call) = try_parse_as_tool_call(&trimmed[first..=last]) {
+                return Some(call);
+            }
+        }
+    }
+
+    None
+}
+
+pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&serde_json::Value>) -> String {
     match call.tool.as_str() {
         "draft_blog_post" => {
             let title = call.arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Unbenannt");
@@ -134,7 +176,7 @@ async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&s
     }
 }
 
-async fn log_tool_call(state: &AppState, conversation_id: &str, call: &ToolCall, result: &str) {
+pub(crate) async fn log_tool_call(state: &AppState, conversation_id: &str, call: &ToolCall, result: &str) {
     let _ = sqlx::query(
         "INSERT INTO agent_tool_calls (id, conversation_id, tool_name, arguments, result, status) VALUES (?1,?2,?3,?4,?5,'ok')",
     )
@@ -147,118 +189,49 @@ async fn log_tool_call(state: &AppState, conversation_id: &str, call: &ToolCall,
     .await;
 }
 
-#[derive(Deserialize)]
-pub struct AgentMessageReq {
-    conversation_id: String,
-    message: String,
-    current_module: Option<String>,
-    /// The SiteContent object as currently loaded in the admin's browser
-    /// (already fetched there via useContent) — lets get_content_section
-    /// answer from live state without the backend needing its own GitHub
-    /// credentials/repo config.
-    site_content: Option<serde_json::Value>,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[derive(Serialize)]
-pub struct AgentMessageOut {
-    reply: String,
-    tool_calls_made: Vec<String>,
-    conversation_id: String,
-}
-
-pub async fn message(State(state): State<AppState>, headers: HeaderMap, Json(body): Json<AgentMessageReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
-        return StatusCode::UNAUTHORIZED.into_response();
-    }
-    if state.nvidia_api_key.is_empty() {
-        return StatusCode::SERVICE_UNAVAILABLE.into_response();
-    }
-    let user_message = body.message.trim().to_string();
-    if user_message.is_empty() {
-        return (StatusCode::BAD_REQUEST, "Nachricht darf nicht leer sein.").into_response();
-    }
-    let conversation_id = body.conversation_id.clone();
-
-    let _ = sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES (?1,?2,'user',?3)")
-        .bind(Uuid::new_v4().to_string())
-        .bind(&conversation_id)
-        .bind(&user_message)
-        .execute(&state.db)
-        .await;
-    let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
-        .bind(&conversation_id)
-        .execute(&state.db)
-        .await;
-
-    let history: Vec<(String, String)> = sqlx::query_as(
-        "SELECT role, content FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC",
-    )
-    .bind(&conversation_id)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
-
-    let module_ctx = body.current_module.as_deref().unwrap_or("unbekannt");
-    let mut messages = vec![json!({ "role": "system", "content": build_system_prompt(module_ctx) })];
-    for (role, content) in &history {
-        messages.push(json!({ "role": role, "content": content }));
+    #[test]
+    fn detects_bare_unfenced_json_the_model_actually_sent() {
+        // This is the exact shape observed in production: the model replies
+        // with raw JSON and no fencing at all, despite being asked for one.
+        let text = r#"{"tool": "draft_blog_post", "arguments": {"title": "Emergent Interaction Test", "body": "Dies ist ein Test."}}"#;
+        let call = parse_tool_call(text).expect("should detect bare JSON tool call");
+        assert_eq!(call.tool, "draft_blog_post");
+        assert_eq!(call.arguments["title"], "Emergent Interaction Test");
     }
 
-    let mut tool_calls_made = Vec::new();
-    let mut final_reply = String::new();
-
-    for _ in 0..MAX_TOOL_ITERATIONS {
-        let res = state
-            .http
-            .post("https://integrate.api.nvidia.com/v1/chat/completions")
-            .bearer_auth(&state.nvidia_api_key)
-            .json(&json!({
-                "model": CHAT_MODEL,
-                "messages": messages,
-                "max_tokens": 900,
-                "temperature": 0.5,
-                "stream": false,
-            }))
-            .send()
-            .await;
-
-        let res = match res {
-            Ok(r) => r,
-            Err(e) => { final_reply = format!("Verbindung zum Modell fehlgeschlagen: {e}"); break; }
-        };
-        if !res.status().is_success() {
-            let status = res.status();
-            let body_text = res.text().await.unwrap_or_default();
-            final_reply = format!("Modell-Anfrage fehlgeschlagen ({status}): {body_text}");
-            break;
-        }
-        let parsed: serde_json::Value = match res.json().await {
-            Ok(v) => v,
-            Err(e) => { final_reply = format!("Antwort konnte nicht gelesen werden: {e}"); break; }
-        };
-        let content = parsed["choices"][0]["message"]["content"].as_str().unwrap_or("").to_string();
-
-        match parse_tool_call(&content) {
-            Some(call) => {
-                let result = execute_tool(&state, &call, body.site_content.as_ref()).await;
-                log_tool_call(&state, &conversation_id, &call, &result).await;
-                tool_calls_made.push(call.tool.clone());
-                messages.push(json!({ "role": "assistant", "content": content }));
-                messages.push(json!({ "role": "system", "content": format!("[Ergebnis von {}]: {}", call.tool, result) }));
-            }
-            None => { final_reply = content; break; }
-        }
-    }
-    if final_reply.trim().is_empty() {
-        final_reply = "Ich habe mehrere Werkzeuge aufgerufen, konnte aber noch keine abschließende Antwort formulieren — frag gern nochmal genauer nach.".to_string();
+    #[test]
+    fn detects_fenced_json_block() {
+        let text = "```json\n{\"tool\": \"log_research_note\", \"arguments\": {\"category\": \"idea\", \"title\": \"x\", \"body\": \"y\"}}\n```";
+        let call = parse_tool_call(text).expect("should detect fenced tool call");
+        assert_eq!(call.tool, "log_research_note");
     }
 
-    let _ = sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES (?1,?2,'assistant',?3)")
-        .bind(Uuid::new_v4().to_string())
-        .bind(&conversation_id)
-        .bind(&final_reply)
-        .execute(&state.db)
-        .await;
+    #[test]
+    fn detects_json_embedded_in_surrounding_prose() {
+        let text = "Klar, das mache ich: {\"tool\": \"get_recent_analytics\", \"arguments\": {\"days\": 7}} Einen Moment.";
+        let call = parse_tool_call(text).expect("should detect embedded tool call");
+        assert_eq!(call.tool, "get_recent_analytics");
+    }
 
-    Json(AgentMessageOut { reply: final_reply, tool_calls_made, conversation_id }).into_response()
+    #[test]
+    fn ignores_ordinary_prose_with_incidental_braces() {
+        let text = "Die Konfiguration sieht so aus: { nichts Bekanntes hier }. Kein Werkzeugaufruf.";
+        assert!(parse_tool_call(text).is_none());
+    }
+
+    #[test]
+    fn ignores_json_naming_an_unknown_tool() {
+        let text = r#"{"tool": "delete_everything", "arguments": {}}"#;
+        assert!(parse_tool_call(text).is_none());
+    }
+
+    #[test]
+    fn ordinary_reply_is_never_misdetected() {
+        let text = "Guten Tag! Es geht so: wir haben gerade über die Interaction Field Forschung gesprochen.";
+        assert!(parse_tool_call(text).is_none());
+    }
 }

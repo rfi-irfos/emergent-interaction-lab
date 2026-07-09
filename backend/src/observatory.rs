@@ -184,12 +184,30 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl
     }).filter(|s| *s >= 0.0).collect();
     let mean_latency_s = if !latencies.is_empty() { Some(latencies.iter().sum::<f64>() / latencies.len() as f64) } else { None };
 
+    // The module anchors around this: the actual token-by-token breakdown of
+    // the most recent reply, not just an averaged number — same shape
+    // TokenBreakdown already renders in the Forschung chat's Token-Analyse.
+    let latest: Option<(String, String, String)> = sqlx::query_as(
+        "SELECT content, token_info, created_at FROM chat_messages WHERE role='assistant' AND token_info IS NOT NULL ORDER BY created_at DESC LIMIT 1"
+    ).fetch_optional(db).await.unwrap_or(None);
+    let (latest_reply, latest_tokens, latest_at) = match latest {
+        Some((content, token_info, created_at)) => (
+            Some(content),
+            serde_json::from_str::<serde_json::Value>(&token_info).ok(),
+            Some(created_at),
+        ),
+        None => (None, None, None),
+    };
+
     Json(json!({
         "user_messages": user_msgs,
         "assistant_messages": assistant_msgs,
         "mean_token_confidence": mean_confidence,
         "mean_latency_seconds": mean_latency_s,
         "latency_sample_size": latencies.len(),
+        "latest_reply": latest_reply,
+        "latest_tokens": latest_tokens,
+        "latest_at": latest_at,
     })).into_response()
 }
 
