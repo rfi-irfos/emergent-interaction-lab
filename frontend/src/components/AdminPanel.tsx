@@ -315,7 +315,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                     </span>
                   ))}
                   {(draft.news?.categories ?? []).length === 0 && (
-                    <span style={{ fontSize: 12, color: '#aaa' }}>Noch keine Themen — leg mindestens eines an, um Blogposts zu kategorisieren.</span>
+                    <span style={{ fontSize: 12, color: 'var(--panel-text-dim, #aaa)' }}>Noch keine Themen — leg mindestens eines an, um Blogposts zu kategorisieren.</span>
                   )}
                 </div>
                 <div className="pem-tag-input-row" style={{ marginBottom: 22, maxWidth: 360 }}>
@@ -361,7 +361,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'inbox' && (
               <div style={{ padding: 14 }}>
                 {contactInbox.length === 0 ? (
-                  <div style={{ padding: '24px 0', textAlign: 'center', color: '#aaa', fontSize: 13 }}>
+                  <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>
                     Keine neuen Anfragen.
                   </div>
                 ) : (
@@ -370,10 +370,10 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
-                          <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: '#0099CC' }}>{item.email}</a>
-                          {item.phone && <div style={{ fontSize: 12, color: '#666' }}>{item.phone}</div>}
+                          <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: 'var(--hud-cyan, #0099CC)' }}>{item.email}</a>
+                          {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, #666)' }}>{item.phone}</div>}
                         </div>
-                        <div style={{ fontSize: 10, color: '#aaa', whiteSpace: 'nowrap' }}>{new Date(item.ts).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+                        <div style={{ fontSize: 10, color: 'var(--panel-text-dim, #aaa)', whiteSpace: 'nowrap' }}>{new Date(item.ts).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                       {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, #444)', lineHeight: 1.5 }}>{item.message}</p>}
                       <div style={{ display: 'flex', gap: 8 }}>
@@ -429,7 +429,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
       {/* ── BLOG EDIT MODAL ────────────────────────────────────────────── */}
       {editingNewsItem && (
-        <div className="pem-overlay" onClick={() => setEditingNews(null)}>
+        <div className={`pem-overlay ${crmTheme === 'dark' ? 'observatory-hud' : ''}`} onClick={() => setEditingNews(null)}>
           <div className="pem" onClick={e => e.stopPropagation()}>
             <div className="pem-header">
               <span className="pem-title">Blogbeitrag bearbeiten</span>

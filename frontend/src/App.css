@@ -1797,6 +1797,7 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .crm-body {
   position: relative; color: rgba(226,241,245,.85);
   --panel-surface: rgba(20,30,42,.6); --panel-border: rgba(34,211,238,.16); --panel-bg: rgba(7,14,20,.6); --panel-text: rgba(226,241,245,.75);
+  --panel-text-dim: rgba(148,190,199,.6);
 }
 .observatory-hud .panel-product-name { color: #eefcff; }
 .observatory-hud .panel-product-meta { color: rgba(148,190,199,.65); }
@@ -1870,6 +1871,103 @@ button { cursor: pointer; font-family: inherit; }
 
 @keyframes hud-card-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes hud-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+/* ── VERWALTUNG SECTIONS UNDER THE HUD ────────────────────────────────────
+   Website Kit / Inbox / Blog still rendered as plain white BI cards even
+   with the dark theme active on the shared .crm-main shell — only the
+   shared .obs-* primitives above (already used by Analytics/Monetization/
+   BlogDrafts) picked up the HUD look for free. These extend the same
+   dark-glass + cyan-accent treatment to the remaining Verwaltung-only
+   markup. The builder's live canvas and its Desktop/Tablet/Mobil device
+   preview are deliberately left alone — they render the actual public
+   site and are meant to look like it, not like the admin HUD; only their
+   chrome (device switch, settings panel, tabs, fields) is reskinned here. */
+
+/* Website Kit: device switch + settings panel chrome */
+.observatory-hud .builder-device-switch { background: rgba(7,14,20,.5); border-color: rgba(34,211,238,.16); }
+.observatory-hud .builder-device-btn { color: rgba(148,190,199,.75); }
+.observatory-hud .builder-device-btn:hover { color: #eefcff; }
+.observatory-hud .builder-device-btn.active { background: rgba(34,211,238,.14); color: var(--hud-cyan); box-shadow: none; }
+
+.observatory-hud .builder-panel { background: rgba(11,17,26,.85); border-left-color: rgba(34,211,238,.16); }
+.observatory-hud .builder-panel-resize:hover { background: rgba(34,211,238,.3); }
+.observatory-hud .builder-panel-foot { border-top-color: rgba(34,211,238,.14); }
+
+.observatory-hud .builder-tabs { background: rgba(7,14,20,.5); border-bottom-color: rgba(34,211,238,.14); }
+.observatory-hud .builder-tab { color: rgba(148,190,199,.75); }
+.observatory-hud .builder-tab:hover { background: rgba(34,211,238,.08); color: #eefcff; }
+.observatory-hud .builder-tab.active { background: rgba(34,211,238,.14); border-color: var(--hud-cyan); color: var(--hud-cyan); }
+
+.observatory-hud .panel-section + .panel-section { border-top-color: rgba(34,211,238,.12); }
+.observatory-hud .panel-section-title { color: rgba(148,190,199,.55); }
+.observatory-hud .panel-field label { color: rgba(148,190,199,.6); }
+.observatory-hud .panel-field input, .observatory-hud .panel-field select, .observatory-hud .panel-field textarea,
+.observatory-hud .panel-color-hex {
+  background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: #eefcff;
+}
+.observatory-hud .panel-field input:focus, .observatory-hud .panel-field select:focus, .observatory-hud .panel-field textarea:focus,
+.observatory-hud .panel-color-hex:focus { border-color: var(--hud-cyan); }
+.observatory-hud .panel-color-row input[type="color"] { border-color: rgba(34,211,238,.3); background: rgba(7,14,20,.4); }
+.observatory-hud .panel-color-label { color: rgba(226,241,245,.75); }
+
+.observatory-hud .panel-upload-btn { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: rgba(226,241,245,.8); }
+.observatory-hud .panel-upload-btn:hover:not(:disabled) { border-color: var(--hud-cyan); color: var(--hud-cyan); }
+.observatory-hud .panel-upload-thumb { border-color: rgba(34,211,238,.2); }
+
+.observatory-hud .panel-back-btn { color: var(--hud-cyan); }
+.observatory-hud .panel-back-btn:hover { color: #67e8f9; }
+
+.observatory-hud .rte-toolbar button { color: rgba(226,241,245,.75); }
+.observatory-hud .rte-toolbar button:hover { color: #eefcff; }
+.observatory-hud .rte-body { color: rgba(226,241,245,.85); }
+.observatory-hud .rte-body:focus { background: rgba(34,211,238,.04); }
+
+/* Blog tab: "Themen" chips */
+.observatory-hud .pem-tag { background: rgba(34,211,238,.12); border-color: rgba(34,211,238,.28); color: #a8f0ff; }
+.observatory-hud .pem-tag button { color: #a8f0ff; }
+.observatory-hud .pem-tag-input-row input { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: #eefcff; }
+.observatory-hud .pem-tag-add { background: var(--hud-cyan); color: #04222b; }
+
+/* Live/stat cards above the Forschung chat (LiveCards.tsx) */
+.observatory-hud .live-card {
+  background: linear-gradient(180deg, rgba(20,30,42,.75), rgba(11,17,26,.75));
+  border-color: rgba(34,211,238,.16);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.05), 0 8px 24px rgba(0,0,0,.45);
+}
+.observatory-hud .live-card-value { color: #eefcff; }
+.observatory-hud .live-card-label { color: rgba(148,190,199,.7); }
+
+/* Blog edit modal — .pem-overlay renders as a sibling of .crm-main, not a
+   descendant of it (see AdminPanel.tsx), so it can't inherit the HUD scope
+   the normal way; AdminPanel toggles `observatory-hud` onto the overlay
+   itself so these selectors have something to match against. */
+.observatory-hud.pem-overlay { background: rgba(2,6,12,.72); }
+.observatory-hud .pem { background: linear-gradient(180deg, rgba(20,30,42,.97), rgba(9,14,22,.97)); box-shadow: 0 24px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(34,211,238,.12); }
+.observatory-hud .pem-header { border-bottom-color: rgba(34,211,238,.14); }
+.observatory-hud .pem-title { color: #eefcff; }
+.observatory-hud .pem-close { color: rgba(148,190,199,.7); }
+.observatory-hud .pem-close:hover { background: rgba(34,211,238,.1); color: #eefcff; }
+.observatory-hud .pem-img { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.18); }
+.observatory-hud .pem-img-placeholder { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.18); color: rgba(148,190,199,.6); }
+.observatory-hud .pem-img-btn { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: rgba(226,241,245,.8); }
+.observatory-hud .pem-img-btn:hover { background: rgba(34,211,238,.1); }
+.observatory-hud .pem-field label { color: rgba(148,190,199,.6); }
+.observatory-hud .pem-field input, .observatory-hud .pem-field select, .observatory-hud .pem-field textarea {
+  background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: #eefcff;
+}
+.observatory-hud .pem-field input:focus, .observatory-hud .pem-field select:focus, .observatory-hud .pem-field textarea:focus {
+  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15);
+}
+.observatory-hud .pem-field select option { background: #0d141f; color: #eefcff; }
+.observatory-hud .pem-footer { border-top-color: rgba(34,211,238,.14); }
+
+/* Blog co-writer, inline inside the modal (.cowriter-prompt is already
+   covered by the shared .obs-form input rule above) */
+.observatory-hud .cowriter { border-top-color: rgba(34,211,238,.14); }
+.observatory-hud .cowriter-toggle { color: var(--hud-cyan); }
+.observatory-hud .cowriter-response { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.16); }
+.observatory-hud .cowriter-suggested-title { color: var(--hud-cyan); }
+.observatory-hud .cowriter-response-text { color: rgba(226,241,245,.85); }
 
 /* ── System Map: the mycelium network ─────────────────────────────────────
    "Imagine its like a mycelium network growing new nodes dynamically" —
