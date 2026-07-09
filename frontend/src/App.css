@@ -857,11 +857,11 @@ button { cursor: pointer; font-family: inherit; }
 
 /* Top bar */
 .builder-topbar {
-  height: 52px; background: #fff; border-bottom: 1px solid #e4e4e4;
+  height: 52px; background: #0a0e1a; border-bottom: 1px solid rgba(255,255,255,.08);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 20px; flex-shrink: 0; gap: 16px;
 }
-.builder-brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; color: #111; flex-shrink: 0; }
+.builder-brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .builder-brand-dot { width: 7px; height: 7px; background: #C4956A; border-radius: 50%; flex-shrink: 0; }
 .builder-topbar-hint { font-size: 12px; color: #aaa; flex: 1; text-align: center; }
 .builder-topbar-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
@@ -874,11 +874,11 @@ button { cursor: pointer; font-family: inherit; }
    every destination is one sidebar click away in the unified shell now. */
 .topbar-icon-btn {
   display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
-  border-radius: 9px; border: 1.5px solid #e0e0e0; background: #fff; color: #555; transition: .15s;
+  border-radius: 9px; border: 1.5px solid rgba(255,255,255,.15); background: rgba(255,255,255,.04); color: rgba(255,255,255,.7); transition: .15s;
 }
-.topbar-icon-btn:hover { border-color: #0099CC; color: #0099CC; background: #f0f9fc; }
-.topbar-icon-btn-danger { color: #c53030; }
-.topbar-icon-btn-danger:hover { border-color: #e53e3e; color: #e53e3e; background: #fef2f2; }
+.topbar-icon-btn:hover { border-color: #63f0ff; color: #63f0ff; background: rgba(99,240,255,.08); }
+.topbar-icon-btn-danger { color: #fca5a5; }
+.topbar-icon-btn-danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.1); }
 .builder-save-btn-top {
   background: #0099CC; color: #fff; border: none;
   padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; transition: .2s;
@@ -1525,13 +1525,21 @@ button { cursor: pointer; font-family: inherit; }
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
 .crm-sidebar { width: 220px; flex-shrink: 0; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden; }
-.crm-sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 22px 18px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.crm-sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 16px 14px 16px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .crm-sidebar-icon {
-  width: 36px; height: 36px; border-radius: 10px; background: #63f0ff; color: #03050a;
-  font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; object-fit: contain;
+  background: rgba(255,255,255,.06); padding: 4px;
 }
+.crm-sidebar-brand-text { flex: 1; min-width: 0; }
 .crm-sidebar-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
 .crm-sidebar-sub { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; text-transform: uppercase; letter-spacing: .08em; }
+.crm-sidebar-collapse-icon-btn {
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 26px; height: 26px; border-radius: 7px; border: none;
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
+}
+.crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
+.crm-sidebar.collapsed .crm-sidebar-brand { flex-direction: column; padding: 14px 0; gap: 8px; }
 
 .crm-nav { padding: 12px 10px; flex: 1; }
 .crm-nav-item {
@@ -1576,17 +1584,9 @@ button { cursor: pointer; font-family: inherit; }
 /* ── SIDEBAR COLLAPSE ─────────────────────────────────────────────────────── */
 .crm-sidebar { transition: width .18s ease; }
 .crm-sidebar.collapsed { width: 60px; }
-.crm-sidebar.collapsed .crm-sidebar-brand { padding: 18px 0; justify-content: center; }
 .crm-sidebar.collapsed .crm-nav-item { justify-content: center; padding: 10px 0; }
 .crm-sidebar.collapsed .crm-nav-item.active::before { left: 0; }
 .crm-sidebar.collapsed .crm-badge { position: absolute; top: 2px; right: 6px; margin-left: 0; }
-.crm-sidebar-collapse-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin: 8px 10px 12px; padding: 8px; border: none; border-radius: 8px;
-  background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); font-size: 12px; font-weight: 600;
-  cursor: pointer; transition: background .15s, color .15s; flex-shrink: 0;
-}
-.crm-sidebar-collapse-btn:hover { background: rgba(255,255,255,.09); color: rgba(255,255,255,.8); }
 
 /* ── ADMIN: OBSERVATORY MODULES ──────────────────────────────────────────────
    A proper BI-dashboard design language (Looker/Linear-adjacent: layered
@@ -1725,7 +1725,16 @@ button { cursor: pointer; font-family: inherit; }
   color: #e7fbff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-weight: 700;
   letter-spacing: .03em; text-shadow: 0 0 12px rgba(34,211,238,.35);
 }
-.observatory-hud .crm-body { position: relative; }
+.observatory-hud .crm-body {
+  position: relative; color: rgba(226,241,245,.85);
+  --panel-surface: rgba(20,30,42,.6); --panel-border: rgba(34,211,238,.16); --panel-bg: rgba(7,14,20,.6); --panel-text: rgba(226,241,245,.75);
+}
+.observatory-hud .panel-product-name { color: #eefcff; }
+.observatory-hud .panel-product-meta { color: rgba(148,190,199,.65); }
+.observatory-hud .panel-product-row:hover { background: rgba(34,211,238,.06); border-color: rgba(34,211,238,.2); }
+.observatory-hud .panel-add-big-btn { border-color: rgba(34,211,238,.3); color: var(--hud-cyan); }
+.observatory-hud .panel-add-big-btn:hover { border-color: var(--hud-cyan); background: rgba(34,211,238,.08); }
+.observatory-hud .panel-checkbox { color: rgba(226,241,245,.8); }
 .observatory-hud .crm-body::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
   background: repeating-linear-gradient(180deg, rgba(34,211,238,.025) 0px, rgba(34,211,238,.025) 1px, transparent 1px, transparent 3px);
