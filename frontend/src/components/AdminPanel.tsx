@@ -403,7 +403,12 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
             {adminSection === 'behavior' && <BehavioralLandscape />}
-            {adminSection === 'research' && <ResearchPulse onNavigate={setAdminSection} />}
+            {adminSection === 'research' && (
+              <ResearchPulse
+                onNavigate={setAdminSection}
+                onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}
+              />
+            )}
             {adminSection === 'simulationcenter' && <SimulationCenter />}
             {adminSection === 'knowledgegraph' && <KnowledgeGraph />}
           </div>

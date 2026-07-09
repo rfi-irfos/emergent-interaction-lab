@@ -35,6 +35,13 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+    // Additive: links a note back to the Forschung conversation it grew out
+    // of, mirroring blog_posts.source_conversation_id — the same "writing
+    // about flying while flying" pattern, applied to research notes too.
+    sqlx::query("ALTER TABLE research_notes ADD COLUMN source_conversation_id TEXT")
+        .execute(db)
+        .await
+        .ok();
 }
 
 #[derive(Serialize)]
@@ -48,22 +55,25 @@ pub struct NoteOut {
     source: String,
     created_at: String,
     updated_at: String,
+    source_conversation_id: Option<String>,
 }
 
-type NoteRow = (String, String, String, String, String, String, String, String, String);
+type NoteRow = (String, String, String, String, String, String, String, String, String, Option<String>);
 fn to_out(r: NoteRow) -> NoteOut {
     NoteOut {
         id: r.0, category: r.1, title: r.2, body: r.3, tags: r.4,
-        status: r.5, source: r.6, created_at: r.7, updated_at: r.8,
+        status: r.5, source: r.6, created_at: r.7, updated_at: r.8, source_conversation_id: r.9,
     }
 }
 
 /// Shared by the human-facing `create_item` handler and the agent's
-/// `log_research_note` tool.
-pub async fn insert_note(state: &AppState, category: &str, title: &str, body: &str, tags: &str, source: &str) -> String {
+/// `log_research_note` tool. `source_conversation_id` is set when a note
+/// grows out of a live Forschung talk, `None` for one created directly in
+/// Research Pulse.
+pub async fn insert_note(state: &AppState, category: &str, title: &str, body: &str, tags: &str, source: &str, source_conversation_id: Option<&str>) -> String {
     let id = Uuid::new_v4().to_string();
     let _ = sqlx::query(
-        "INSERT INTO research_notes (id, category, title, body, tags, source) VALUES (?1,?2,?3,?4,?5,?6)",
+        "INSERT INTO research_notes (id, category, title, body, tags, source, source_conversation_id) VALUES (?1,?2,?3,?4,?5,?6,?7)",
     )
     .bind(&id)
     .bind(category)
@@ -71,6 +81,7 @@ pub async fn insert_note(state: &AppState, category: &str, title: &str, body: &s
     .bind(body)
     .bind(tags)
     .bind(source)
+    .bind(source_conversation_id)
     .execute(&state.db)
     .await;
     id
@@ -85,7 +96,7 @@ pub async fn list_items(State(state): State<AppState>, headers: HeaderMap, Query
         Some(cats) => {
             let wanted: Vec<&str> = cats.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
             let all: Vec<NoteRow> = sqlx::query_as(
-                "SELECT id, category, title, body, tags, status, source, created_at, updated_at FROM research_notes ORDER BY updated_at DESC",
+                "SELECT id, category, title, body, tags, status, source, created_at, updated_at, source_conversation_id FROM research_notes ORDER BY updated_at DESC",
             )
             .fetch_all(&state.db)
             .await
@@ -93,7 +104,7 @@ pub async fn list_items(State(state): State<AppState>, headers: HeaderMap, Query
             all.into_iter().filter(|r| wanted.contains(&r.1.as_str())).collect()
         }
         None => sqlx::query_as(
-            "SELECT id, category, title, body, tags, status, source, created_at, updated_at FROM research_notes ORDER BY updated_at DESC",
+            "SELECT id, category, title, body, tags, status, source, created_at, updated_at, source_conversation_id FROM research_notes ORDER BY updated_at DESC",
         )
         .fetch_all(&state.db)
         .await
@@ -107,14 +118,14 @@ pub struct CreateItemReq { category: String, title: String, body: String, tags: 
 
 pub async fn create_item(State(state): State<AppState>, headers: HeaderMap, Json(req): Json<CreateItemReq>) -> impl IntoResponse {
     if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
-    let id = insert_note(&state, &req.category, &req.title, &req.body, req.tags.as_deref().unwrap_or(""), "human").await;
+    let id = insert_note(&state, &req.category, &req.title, &req.body, req.tags.as_deref().unwrap_or(""), "human", None).await;
     Json(serde_json::json!({ "id": id })).into_response()
 }
 
 pub async fn get_item(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
     if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
     let row: Option<NoteRow> = sqlx::query_as(
-        "SELECT id, category, title, body, tags, status, source, created_at, updated_at FROM research_notes WHERE id = ?1",
+        "SELECT id, category, title, body, tags, status, source, created_at, updated_at, source_conversation_id FROM research_notes WHERE id = ?1",
     )
     .bind(&id)
     .fetch_optional(&state.db)

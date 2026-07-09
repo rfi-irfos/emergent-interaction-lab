@@ -151,7 +151,7 @@ pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content
             let title = call.arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Unbenannt");
             let body = call.arguments.get("body").and_then(|v| v.as_str()).unwrap_or("");
             let tags = call.arguments.get("tags").and_then(|v| v.as_str()).unwrap_or("");
-            let id = crate::research::insert_note(state, category, title, body, tags, "agent").await;
+            let id = crate::research::insert_note(state, category, title, body, tags, "agent", Some(conversation_id)).await;
             json!({ "ok": true, "id": id }).to_string()
         }
         "get_recent_analytics" => {
