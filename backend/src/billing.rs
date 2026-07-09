@@ -147,16 +147,23 @@ pub async fn create_payment_link(State(state): State<AppState>, headers: HeaderM
         return (StatusCode::SERVICE_UNAVAILABLE, "STRIPE_SECRET_KEY not configured").into_response();
     }
 
-    let row: Option<(String, String, i64, String, String, Option<String>)> = sqlx::query_as(
-        "SELECT name, description, price_cents, currency, mode, recurring_interval FROM products WHERE id = ?1",
+    let row: Option<(String, String, i64, String, String, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT name, description, price_cents, currency, mode, recurring_interval, payment_link_url FROM products WHERE id = ?1",
     )
     .bind(&id)
     .fetch_optional(&state.db)
     .await
     .unwrap_or(None);
-    let Some((name, description, price_cents, currency, mode, recurring_interval)) = row else {
+    let Some((name, description, price_cents, currency, mode, recurring_interval, existing_link)) = row else {
         return (StatusCode::NOT_FOUND, "product not found").into_response();
     };
+    // Idempotent: without this, double-clicking "Zahlungslink erstellen" (or
+    // a retried request) would create a second real Stripe product/price/
+    // link every time, orphaning the first one on Stripe's side rather than
+    // just failing loudly or no-opping.
+    if let Some(url) = existing_link {
+        return Json(json!({ "ok": true, "payment_link_url": url })).into_response();
+    }
 
     let client = &state.http;
     let secret = &state.stripe_secret_key;
