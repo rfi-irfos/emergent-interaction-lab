@@ -1,4 +1,4 @@
-# RFI-IRFOS Web Template
+
 
 A minimalist, high-performance website builder kit. Fast. No bloat. No subscription.
 
