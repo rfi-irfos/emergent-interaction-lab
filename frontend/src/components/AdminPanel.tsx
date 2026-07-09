@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { SiteContent, NewsItem } from '../types/content'
+import { BlogCoWriter } from './BlogCoWriter'
 import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
@@ -124,6 +125,20 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
     update('news.items', draft.news.items.map(n => n.id === id ? { ...n, [field]: value } : n))
   }
 
+  // ── Blog categories (Themen) ────────────────────────────────────────────
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const addCategory = () => {
+    const name = newCategoryName.trim()
+    if (!name) return
+    const id = `cat${Date.now()}`
+    update('news.categories', [...(draft.news?.categories ?? []), { id, name }])
+    setNewCategoryName('')
+  }
+  const removeCategory = (id: string) => {
+    update('news.categories', (draft.news?.categories ?? []).filter(c => c.id !== id))
+    update('news.items', (draft.news?.items ?? []).map(n => n.category === id ? { ...n, category: undefined } : n))
+  }
+
   const handleFileChangeAll = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !uploadTarget) return
@@ -232,7 +247,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           </button>
         </aside>
 
-        <div className="crm-main">
+        <div className={`crm-main ${OBSERVATORY_MODULES.some(m => m.id === adminSection) ? 'observatory-hud' : ''}`}>
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
           </div>
@@ -256,12 +271,38 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {/* ── BLOG TAB ──────────────────────────────────────────────── */}
             {adminSection === 'blog' && (
               <div className="panel-products">
+                <div className="obs-section-label">Themen</div>
+                <div className="pem-tags" style={{ marginBottom: 10 }}>
+                  {(draft.news?.categories ?? []).map(c => (
+                    <span className="pem-tag" key={c.id}>
+                      {c.name}
+                      <button type="button" onClick={() => removeCategory(c.id)} title="Thema löschen">×</button>
+                    </span>
+                  ))}
+                  {(draft.news?.categories ?? []).length === 0 && (
+                    <span style={{ fontSize: 12, color: '#aaa' }}>Noch keine Themen — leg mindestens eines an, um Blogposts zu kategorisieren.</span>
+                  )}
+                </div>
+                <div className="pem-tag-input-row" style={{ marginBottom: 22, maxWidth: 360 }}>
+                  <input
+                    placeholder="Neues Thema, z.B. Emergenz"
+                    value={newCategoryName}
+                    onChange={e => setNewCategoryName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } }}
+                  />
+                  <button className="pem-tag-add" onClick={addCategory} type="button">+</button>
+                </div>
                 <div className="panel-product-list">
                   {(draft.news?.items ?? []).map(n => (
                     <div key={n.id} className={`panel-product-row ${editingNews === n.id ? 'active' : ''}`} onClick={() => setEditingNews(n.id)}>
                       <div className="panel-product-info">
                         <div className="panel-product-name">{n.title}</div>
-                        <div className="panel-product-meta">{n.date}</div>
+                        <div className="panel-product-meta">
+                          {n.date}
+                          {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
+                            <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
+                          )}
+                        </div>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                     </div>
@@ -366,6 +407,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   </div>
                 </div>
                 <div className="pem-field">
+                  <label>Thema</label>
+                  <select value={editingNewsItem.category ?? ''} onChange={e => updateNews(editingNewsItem.id, 'category', e.target.value)}>
+                    <option value="">Kein Thema</option>
+                    {(draft.news?.categories ?? []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="pem-field">
                   <label>Titel</label>
                   <input value={editingNewsItem.title} onChange={e => updateNews(editingNewsItem.id, 'title', e.target.value)} />
                 </div>
@@ -373,6 +421,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   <label>Text</label>
                   <textarea rows={6} value={editingNewsItem.body} onChange={e => updateNews(editingNewsItem.id, 'body', e.target.value)} />
                 </div>
+                <BlogCoWriter
+                  title={editingNewsItem.title}
+                  body={editingNewsItem.body}
+                  siteContent={draft}
+                  onApplyTitle={(t) => updateNews(editingNewsItem.id, 'title', t)}
+                  onApplyBody={(b) => updateNews(editingNewsItem.id, 'body', b)}
+                />
               </div>
             </div>
             <div className="pem-footer">

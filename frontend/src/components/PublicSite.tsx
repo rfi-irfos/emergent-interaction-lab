@@ -622,6 +622,7 @@ export function PublicSite({
   const [modalGalleryIdx, setModalGalleryIdx] = useState(0)
   const [modalArticle, setModalArticle] = useState<NewsItem | null>(null)
   const [browseCatIdx, setBrowseCatIdx] = useState<number | null>(null)
+  const [activeNewsCategory, setActiveNewsCategory] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
   const { t } = useLang()
 
@@ -1296,8 +1297,32 @@ export function PublicSite({
           <section className={reveal("site-section site-news")} id="news">
             {news.eyebrow && <div className="site-eyebrow">{news.eyebrow}</div>}
             <E field="news.title" value={news.title} as="h2" className="site-section-title" />
+            {(news.categories?.length ?? 0) > 0 && (
+              <div className="site-news-filters">
+                <button
+                  type="button"
+                  className={`site-news-filter-chip ${activeNewsCategory === null ? 'active' : ''}`}
+                  onClick={() => setActiveNewsCategory(null)}
+                >
+                  Alle
+                </button>
+                {news.categories!.map(c => (
+                  <button
+                    type="button"
+                    key={c.id}
+                    className={`site-news-filter-chip ${activeNewsCategory === c.id ? 'active' : ''}`}
+                    onClick={() => setActiveNewsCategory(c.id)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="site-news-grid">
-              {news.items.map((n, i) => (
+              {news.items.map((n, i) => {
+                if (activeNewsCategory && n.category !== activeNewsCategory) return null
+                const catName = news.categories?.find(c => c.id === n.category)?.name
+                return (
                 <div
                   key={n.id}
                   className={`site-news-card ${!editMode ? 'clickable' : ''}`}
@@ -1310,13 +1335,17 @@ export function PublicSite({
                 >
                   {n.image && <img src={n.image} alt={n.title} className="site-news-img" />}
                   <div className="site-news-body">
-                    <div className="site-news-date">{new Date(n.date).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                    <div className="site-news-date">
+                      {new Date(n.date).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {catName && <span className="site-news-cat-tag">{catName}</span>}
+                    </div>
                     <E field={`news.items.${i}.title`} value={n.title} as="h3" className="site-news-title" />
                     <E field={`news.items.${i}.body`} value={n.body} as="p" className="site-news-text" />
                     {!editMode && <span className="site-news-read-more">{t.readMore} →</span>}
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         )}

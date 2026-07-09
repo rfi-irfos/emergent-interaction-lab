@@ -46,7 +46,6 @@ export function SimulationLab() {
 
   return (
     <div className="obs-panel">
-      <div className="obs-badge-experimental">KI-generierte explorative Überlegung, keine validierte Simulation</div>
       <div className="obs-card">
         <div className="obs-form" style={{ marginBottom: 0 }}>
           <input placeholder="Hypothese, z.B. „Mehr Kontext führt zu stabileren Mensch-KI-Interaktionen“" value={hypothesis} onChange={e => setHypothesis(e.target.value)} />
