@@ -214,8 +214,39 @@ button { cursor: pointer; font-family: inherit; }
 .site-logo-img { height: 50px; }
 .site-logo-text { font-size: 20px; font-weight: 900; color: var(--primary); }
 .site-main-nav { display: flex; gap: 26px; }
-.site-main-nav a { font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
+.site-main-nav a { position: relative; font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
 .site-main-nav a:hover { color: var(--primary); }
+.site-main-nav a::after {
+  content: ''; position: absolute; left: 0; right: 100%; bottom: -4px; height: 2px;
+  background: var(--primary); transition: right .25s ease;
+}
+.site-main-nav a:hover::after { right: 0; }
+
+/* State-aware header: flat bar until the visitor scrolls, then a glass panel
+   with a slow animated accent line — replaces the old always-static look. */
+.site-nav {
+  transition: background .4s ease, backdrop-filter .4s ease, border-color .4s ease, box-shadow .4s ease;
+}
+.site-nav.scrolled { box-shadow: 0 8px 24px var(--shadow); }
+.site[data-theme="dark"] .site-nav.scrolled {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom-color: var(--glass-border);
+}
+.site-nav.scrolled::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand-cyan), transparent);
+  background-size: 200% 100%;
+  animation: nav-accent-sweep 6s linear infinite;
+}
+@keyframes nav-accent-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-nav.scrolled::before { animation: none; }
+}
 .site-nav-right { display: flex; gap: 12px; align-items: center; }
 .site-nav-desktop { display: flex; gap: 12px; align-items: center; }
 .site-nav-phone {
@@ -256,6 +287,31 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-hero-graphic {
   position: absolute; inset: 0; width: 100%; height: 100%;
+}
+.site-hero-parallax { position: absolute; inset: 0; }
+
+/* Occasional specular light-sweep across the hero — a slow, mostly-idle glint
+   rather than a constant scrolling shine. */
+.site-hero-sheen {
+  position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none;
+}
+.site-hero-sheen::after {
+  content: ''; position: absolute; top: -50%; left: -60%;
+  width: 40%; height: 200%;
+  background: linear-gradient(100deg,
+    transparent 0%, rgba(255,255,255,.16) 45%, rgba(214,247,255,.26) 50%,
+    rgba(255,255,255,.16) 55%, transparent 100%);
+  transform: rotate(8deg) translateX(-120%);
+  mix-blend-mode: screen;
+  animation: hero-sheen-sweep 11s ease-in-out infinite;
+  animation-delay: 3s;
+}
+@keyframes hero-sheen-sweep {
+  0%, 60%  { transform: rotate(8deg) translateX(-120%); }
+  74%, 100% { transform: rotate(8deg) translateX(340%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-hero-sheen { display: none; }
 }
 .site-hero-inner {
   position: relative; z-index: 2;
@@ -452,6 +508,15 @@ button { cursor: pointer; font-family: inherit; }
   background: var(--surface); padding: 44px 36px; border-radius: 14px;
   border: 1px solid var(--border); border-top: 3px solid var(--primary);
   display: flex; flex-direction: column; align-items: center; text-align: center;
+  transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+}
+.site-usp-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--brand-cyan);
+  box-shadow: 0 12px 32px rgba(99,240,255,.18);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-usp-card:hover { transform: none; }
 }
 .site-usp-card.accent { border-top-color: var(--accent); }
 .site-usp-icon { color: var(--primary); margin-bottom: 16px; }
@@ -1443,10 +1508,104 @@ button { cursor: pointer; font-family: inherit; }
 }
 .crm-badge.red { background: #e53e3e; color: #fff; }
 
+.crm-nav-group-label {
+  font-size: 10px; font-weight: 700; color: rgba(255,255,255,.32); text-transform: uppercase;
+  letter-spacing: .08em; padding: 14px 12px 6px;
+}
+.crm-nav-group-label:first-child { padding-top: 4px; }
+
 .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .crm-topbar { display: flex; align-items: center; padding: 20px 28px 16px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); }
 .crm-topbar-title { font-size: 20px; font-weight: 800; color: #0b1720; }
 .crm-body { flex: 1; overflow-y: auto; padding: 20px 28px 28px; width: 100%; }
+
+/* ── ADMIN: OBSERVATORY MODULES ──────────────────────────────────────────────
+   Shared card/grid/label primitives for the 10 Observatory modules, so each
+   module's component only needs to describe its data, not restyle a stat
+   grid from scratch every time. */
+.obs-panel { padding: 14px; }
+.obs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.obs-stat { background: var(--panel-surface, #f8f8f8); border: 1px solid var(--panel-border, #e8e8e8); border-radius: 10px; padding: 14px 16px; text-align: center; }
+.obs-stat-value { font-size: 24px; font-weight: 800; color: #0099CC; }
+.obs-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+.obs-section-label { font-size: 11px; font-weight: 700; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+.obs-section { margin-bottom: 20px; }
+.obs-empty { text-align: center; color: #aaa; padding: 40px 0; font-size: 13px; }
+.obs-badge-experimental {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: #a9660a; background: rgba(169,102,10,.12); border: 1px solid rgba(169,102,10,.3);
+  padding: 3px 8px; border-radius: 20px; margin-bottom: 8px;
+}
+.obs-activity-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid var(--panel-border, #eee); font-size: 12px;
+}
+.obs-activity-row:last-child { border-bottom: none; }
+.obs-activity-kind {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #888;
+  background: rgba(0,0,0,.05); border-radius: 5px; padding: 2px 6px; flex-shrink: 0;
+}
+.obs-activity-label { flex: 1; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-activity-ts { color: #aaa; font-size: 10px; flex-shrink: 0; }
+.obs-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.obs-bar-track { flex: 1; background: #f0f0f0; border-radius: 4px; height: 8px; }
+.obs-bar-fill { height: 100%; background: #0099CC; border-radius: 4px; }
+.obs-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.obs-form input, .obs-form textarea, .obs-form select {
+  font-family: inherit; font-size: 13px; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--panel-border, #e0e0e0); background: #fff;
+}
+.obs-form textarea { min-height: 80px; resize: vertical; }
+.obs-item-card {
+  background: var(--panel-surface, #f8f8f8); border: 1px solid var(--panel-border, #e8e8e8);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+}
+.obs-item-title { font-size: 13px; font-weight: 700; color: #222; margin-bottom: 4px; }
+.obs-item-meta { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.obs-item-body { font-size: 12px; color: #555; line-height: 1.6; white-space: pre-wrap; }
+
+/* ── AGENT DOCK (Jarvis) ──────────────────────────────────────────────────────
+   Floating assistant mounted once inside the admin-mode tree — present
+   regardless of which Verwaltung/Observatory section is active. */
+.agent-dock-fab {
+  position: fixed; right: 26px; bottom: 26px; z-index: 500;
+  width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
+  background: #0a0e1a; color: #63f0ff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28); transition: transform .2s ease;
+}
+.agent-dock-fab:hover { transform: scale(1.06); }
+.agent-dock-panel {
+  position: fixed; right: 26px; bottom: 90px; z-index: 500;
+  width: 340px; max-width: calc(100vw - 40px); height: 460px; max-height: calc(100vh - 140px);
+  background: #fff; border-radius: 14px; box-shadow: 0 20px 48px rgba(0,0,0,.28);
+  display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e8e8e8;
+}
+.agent-dock-head {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #0a0e1a; color: #fff;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.agent-dock-context {
+  font-size: 10px; font-weight: 600; color: #63f0ff; background: rgba(99,240,255,.14);
+  border-radius: 20px; padding: 2px 9px; text-transform: uppercase; letter-spacing: .03em;
+}
+.agent-dock-close { margin-left: auto; background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; line-height: 1; opacity: .7; }
+.agent-dock-close:hover { opacity: 1; }
+.agent-dock-messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.agent-dock-empty { font-size: 12px; color: #999; line-height: 1.6; text-align: center; padding: 20px 6px; }
+.agent-dock-msg { font-size: 13px; line-height: 1.5; padding: 8px 12px; border-radius: 10px; max-width: 88%; white-space: pre-wrap; }
+.agent-dock-msg.user { align-self: flex-end; background: #0099CC; color: #fff; }
+.agent-dock-msg.assistant { align-self: flex-start; background: #f2f4f5; color: #222; }
+.agent-dock-typing { opacity: .6; }
+.agent-dock-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #eee; flex-shrink: 0; }
+.agent-dock-input-row input {
+  flex: 1; font-family: inherit; font-size: 13px; padding: 9px 12px; border-radius: 20px;
+  border: 1px solid #e0e0e0;
+}
+.agent-dock-input-row button {
+  font-size: 12px; font-weight: 700; color: #fff; background: #0099CC; border: none;
+  border-radius: 20px; padding: 0 16px; cursor: pointer;
+}
+.agent-dock-input-row button:disabled { opacity: .5; cursor: default; }
 
 /* ── ADMIN: FORSCHUNG (RESEARCH CHAT) ────────────────────────────────────────
    Mini-ChatGPT-style RAG interface replacing the old rich-text editor.

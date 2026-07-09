@@ -1,6 +1,6 @@
-use axum::{extract::State, Json};
+use axum::{extract::State, http::{HeaderMap, StatusCode}, response::IntoResponse, Json};
 use serde::Serialize;
-use crate::AppState;
+use crate::{authz::require_admin, AppState};
 
 #[derive(Serialize)]
 pub struct DayCount { pub day: String, pub views: i64 }
@@ -17,7 +17,10 @@ pub struct AnalyticsData {
     pub top_paths: Vec<Bucket>,
 }
 
-pub async fn stats(State(state): State<AppState>) -> Json<AnalyticsData> {
+pub async fn stats(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    if !require_admin(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
     let (total_views, unique_visitors) = sqlx::query_as::<_, (i64, i64)>(
         "SELECT COUNT(*), COUNT(DISTINCT visitor) FROM web_visits WHERE created_at > datetime('now', '-30 days')"
     ).fetch_one(&state.db).await.unwrap_or((0, 0));
@@ -40,5 +43,5 @@ pub async fn stats(State(state): State<AppState>) -> Json<AnalyticsData> {
     ).fetch_all(&state.db).await.unwrap_or_default()
     .into_iter().map(|(label, count)| Bucket { label, count }).collect();
 
-    Json(AnalyticsData { total_views, unique_visitors, views_by_day, top_sources, top_paths })
+    Json(AnalyticsData { total_views, unique_visitors, views_by_day, top_sources, top_paths }).into_response()
 }

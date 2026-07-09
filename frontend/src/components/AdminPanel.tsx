@@ -1,8 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
 import type { SiteContent, NewsItem, PageItem, SectionId } from '../types/content'
+import type { AdminSection } from '../types/admin'
 import { PublicSite } from './PublicSite'
 import { ResearchChat } from './ResearchChat'
+import { AgentDock } from './AgentDock'
 import { API_BASE } from '../lib/apiBase'
+import { authHeaders } from '../lib/adminApi'
+import { OBSERVATORY_MODULES, SECTION_LABELS } from './observatory/registry'
+import { SystemOverview } from './observatory/SystemOverview'
+import { SystemMap } from './observatory/SystemMap'
+import { EmergenceMonitor } from './observatory/EmergenceMonitor'
+import { BehavioralObservatory } from './observatory/BehavioralObservatory'
+import { InformationDynamics } from './observatory/InformationDynamics'
+import { HumanAiInteraction } from './observatory/HumanAiInteraction'
+import { SystemDiagnostics } from './observatory/SystemDiagnostics'
+import { SimulationLab } from './observatory/SimulationLab'
+import { ResearchWorkspace } from './observatory/ResearchWorkspace'
+import { InnovationLab } from './observatory/InnovationLab'
 
 interface Props {
   content: SiteContent
@@ -13,7 +27,6 @@ interface Props {
 }
 
 type PanelTab = 'hero' | 'contact' | 'style' | 'pages' | 'about'
-type AdminSection = 'inbox' | 'forschung' | 'blog' | 'analytics'
 
 interface AnalyticsData {
   total_views: number
@@ -70,7 +83,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   useEffect(() => {
     if (!(adminMode && adminSection === 'analytics')) return
     setAnalyticsLoading(true)
-    fetch(`${API_BASE}/api/analytics`)
+    fetch(`${API_BASE}/api/analytics`, { headers: authHeaders() })
       .then(r => r.json())
       .then(d => { setAnalyticsData(d); setAnalyticsLoading(false) })
       .catch(() => setAnalyticsLoading(false))
@@ -638,6 +651,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               </div>
             </div>
             <nav className="crm-nav">
+              <div className="crm-nav-group-label">Verwaltung</div>
               <button className={`crm-nav-item ${adminSection === 'inbox' ? 'active' : ''}`} onClick={() => setAdminSection('inbox')}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 Inbox
@@ -655,14 +669,20 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
                 Analytics
               </button>
+
+              <div className="crm-nav-group-label">Observatory</div>
+              {OBSERVATORY_MODULES.map(mod => (
+                <button key={mod.id} className={`crm-nav-item ${adminSection === mod.id ? 'active' : ''}`} onClick={() => setAdminSection(mod.id)}>
+                  {mod.icon}
+                  {mod.label}
+                </button>
+              ))}
             </nav>
           </aside>
 
           <div className="crm-main">
             <div className="crm-topbar">
-              <div className="crm-topbar-title">
-                {adminSection === 'inbox' ? 'Inbox' : adminSection === 'forschung' ? 'Forschung' : adminSection === 'blog' ? 'Blog' : 'Analytics'}
-              </div>
+              <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
             </div>
             <div className="crm-body">
             {/* ── NEWS TAB ──────────────────────────────────────────────── */}
@@ -783,8 +803,21 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
 
               {adminSection === 'forschung' && <ResearchChat />}
+
+              {/* ── OBSERVATORY MODULES ──────────────────────────────────── */}
+              {adminSection === 'overview' && <SystemOverview />}
+              {adminSection === 'systemmap' && <SystemMap />}
+              {adminSection === 'emergence' && <EmergenceMonitor />}
+              {adminSection === 'behavior' && <BehavioralObservatory />}
+              {adminSection === 'information' && <InformationDynamics />}
+              {adminSection === 'humanai' && <HumanAiInteraction />}
+              {adminSection === 'diagnostics' && <SystemDiagnostics />}
+              {adminSection === 'simulation' && <SimulationLab />}
+              {adminSection === 'research' && <ResearchWorkspace />}
+              {adminSection === 'innovation' && <InnovationLab />}
             </div>
           </div>
+          <AgentDock currentModule={adminSection} siteContent={draft} />
         </div>
       )}
 

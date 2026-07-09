@@ -1,17 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
+import { authHeaders } from '../lib/adminApi'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
 interface TokenAlt { token: string; probability: number }
 interface TokenInfo { token: string; probability: number; alternatives: TokenAlt[] }
 interface ChatMessage { id: string; role: 'user' | 'assistant'; content: string; token_info: string | null; created_at: string }
 interface DocumentItem { id: string; filename: string; created_at: string }
-
-const SECRET = import.meta.env.VITE_CHAT_API_SECRET as string | undefined
-
-function authHeaders(extra?: Record<string, string>): Record<string, string> {
-  return { ...(SECRET ? { 'x-chat-secret': SECRET } : {}), ...(extra ?? {}) }
-}
 
 async function streamChat(
   conversationId: string,
