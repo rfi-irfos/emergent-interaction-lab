@@ -43,6 +43,9 @@ export function InformationDynamics() {
           />
         </div>
       )}
+      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
+        Wissensbasis und wie gut sie tatsächlich wiederverwendet wird — Score und Trefferzahl zeigen, ob frühere Gespräche und Dokumente aktiv ins Denken einfließen, nicht nur wie viel gespeichert ist.
+      </p>
     </div>
   )
 }
