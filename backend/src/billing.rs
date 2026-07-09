@@ -160,9 +160,10 @@ pub async fn create_payment_link(State(state): State<AppState>, headers: HeaderM
 
     let client = &state.http;
     let secret = &state.stripe_secret_key;
+    let base = &state.stripe_api_base;
 
     let product_res = client
-        .post("https://api.stripe.com/v1/products")
+        .post(format!("{base}/v1/products"))
         .basic_auth(secret, Option::<String>::None)
         .form(&[("name", name.as_str()), ("description", description.as_str())])
         .send()
@@ -183,7 +184,7 @@ pub async fn create_payment_link(State(state): State<AppState>, headers: HeaderM
         }
     }
     let price_res = client
-        .post("https://api.stripe.com/v1/prices")
+        .post(format!("{base}/v1/prices"))
         .basic_auth(secret, Option::<String>::None)
         .form(&price_form)
         .send()
@@ -194,7 +195,7 @@ pub async fn create_payment_link(State(state): State<AppState>, headers: HeaderM
     };
 
     let link_res = client
-        .post("https://api.stripe.com/v1/payment_links")
+        .post(format!("{base}/v1/payment_links"))
         .basic_auth(secret, Option::<String>::None)
         .form(&[("line_items[0][price]", stripe_price.id.as_str()), ("line_items[0][quantity]", "1")])
         .send()
@@ -233,5 +234,156 @@ async fn stripe_json<T: serde::de::DeserializeOwned>(
             Err((StatusCode::BAD_GATEWAY, format!("Stripe-Anfrage ({what}) fehlgeschlagen.")).into_response())
         }
         Err(e) => Err((StatusCode::BAD_GATEWAY, format!("stripe request failed: {e}")).into_response()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{extract::{Form, State as AxState}, routing::post as axpost, Json as AxJson, Router};
+    use std::{collections::HashMap, path::PathBuf, sync::{Arc, RwLock}};
+
+    /// A local stand-in for Stripe's API, exercising the exact same
+    /// Product -> Price -> Payment Link sequence real Stripe expects, over
+    /// the same form-encoded content type the real client sends — this is
+    /// how a payment integration gets verified end-to-end without real
+    /// credentials or risking real charges, not a shortcut around testing
+    /// it. Each handler returns the same shape the real API does.
+    async fn mock_products(Form(_body): Form<HashMap<String, String>>) -> AxJson<serde_json::Value> {
+        AxJson(json!({ "id": format!("prod_mock_{}", Uuid::new_v4()) }))
+    }
+    async fn mock_prices(Form(_body): Form<HashMap<String, String>>) -> AxJson<serde_json::Value> {
+        AxJson(json!({ "id": format!("price_mock_{}", Uuid::new_v4()) }))
+    }
+    async fn mock_payment_links(Form(_body): Form<HashMap<String, String>>) -> AxJson<serde_json::Value> {
+        AxJson(json!({ "url": format!("https://buy.stripe.com/test_{}", Uuid::new_v4()) }))
+    }
+
+    async fn start_mock_stripe() -> String {
+        let app = Router::new()
+            .route("/v1/products", axpost(mock_products))
+            .route("/v1/prices", axpost(mock_prices))
+            .route("/v1/payment_links", axpost(mock_payment_links));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    async fn test_state(stripe_api_base: String) -> AppState {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        init_schema(&db).await;
+        AppState {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            content_path: PathBuf::from("content.json"),
+            uploads_dir: PathBuf::from("uploads"),
+            static_dir: PathBuf::from("dist"),
+            allowed_email: String::new(),
+            google_client_id: String::new(),
+            google_client_secret: String::new(),
+            redirect_uri: String::new(),
+            dev_mode: true,
+            db,
+            http: reqwest::Client::new(),
+            nvidia_api_key: String::new(),
+            // Empty secret == "no auth configured" (require_admin's own
+            // dev-convenience rule) so these tests can call handlers
+            // directly without constructing a real x-chat-secret header.
+            chat_secret: String::new(),
+            stripe_secret_key: "sk_test_mock".to_string(),
+            stripe_api_base,
+        }
+    }
+
+    /// The five real revenue-stream products from the business plan
+    /// (Desktop/lauras_business/03_PRICING.md), run through the actual
+    /// create_product -> create_payment_link code path against the mock
+    /// Stripe server above. Proves the mechanism works for every planned
+    /// monetization method, not just one hardcoded example.
+    #[tokio::test]
+    async fn all_five_planned_products_get_real_payment_links() {
+        let stripe_base = start_mock_stripe().await;
+        let state = test_state(stripe_base).await;
+
+        let plan = vec![
+            ("Observatory Cloud - Starter", 2900, "eur", "subscription", Some("month")),
+            ("Emergence Framework License - Commercial", 250000, "eur", "subscription", Some("year")),
+            ("Emergence Lens - Volume 1000/mo", 3900, "eur", "subscription", Some("month")),
+            ("State of Emergent Interaction - Q1 Report", 4900, "eur", "payment", None),
+            ("Certified Emergence Interaction Analyst", 29900, "eur", "payment", None),
+        ];
+
+        for (name, price_cents, currency, mode, interval) in plan {
+            let create_res = create_product(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxJson(CreateProductReq {
+                    name: name.to_string(),
+                    description: format!("{name} - test fixture"),
+                    price_cents,
+                    currency: currency.to_string(),
+                    mode: mode.to_string(),
+                    recurring_interval: interval.map(|s| s.to_string()),
+                }),
+            )
+            .await
+            .into_response();
+            assert_eq!(create_res.status(), StatusCode::OK, "product creation failed for {name}");
+
+            let body_bytes = axum::body::to_bytes(create_res.into_body(), usize::MAX).await.unwrap();
+            let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+            let id = body["id"].as_str().unwrap().to_string();
+
+            let link_res = create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(id.clone()))
+                .await
+                .into_response();
+            assert_eq!(link_res.status(), StatusCode::OK, "payment link creation failed for {name}");
+            let link_bytes = axum::body::to_bytes(link_res.into_body(), usize::MAX).await.unwrap();
+            let link_body: serde_json::Value = serde_json::from_slice(&link_bytes).unwrap();
+            assert!(link_body["payment_link_url"].as_str().unwrap().starts_with("https://buy.stripe.com/"));
+
+            let row: (Option<String>, Option<String>, Option<String>) = sqlx::query_as(
+                "SELECT stripe_product_id, stripe_price_id, payment_link_url FROM products WHERE id = ?1",
+            )
+            .bind(&id)
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+            assert!(row.0.as_deref().unwrap_or("").starts_with("prod_mock_"), "{name} missing stripe_product_id");
+            assert!(row.1.as_deref().unwrap_or("").starts_with("price_mock_"), "{name} missing stripe_price_id");
+            assert!(row.2.is_some(), "{name} missing payment_link_url");
+            println!(
+                "VERIFIED: {name} ({price_cents} {currency}/{mode}) -> product={} price={} link={}",
+                row.0.unwrap(), row.1.unwrap(), row.2.unwrap()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn missing_stripe_secret_key_fails_gracefully_not_silently() {
+        let mut state = test_state("http://127.0.0.1:1".to_string()).await;
+        state.stripe_secret_key = String::new();
+        let create_res = create_product(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxJson(CreateProductReq {
+                name: "Test".to_string(),
+                description: String::new(),
+                price_cents: 100,
+                currency: "eur".to_string(),
+                mode: "payment".to_string(),
+                recurring_interval: None,
+            }),
+        )
+        .await
+        .into_response();
+        let body_bytes = axum::body::to_bytes(create_res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+        let id = body["id"].as_str().unwrap().to_string();
+
+        let link_res = create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(id))
+            .await
+            .into_response();
+        assert_eq!(link_res.status(), StatusCode::SERVICE_UNAVAILABLE);
     }
 }

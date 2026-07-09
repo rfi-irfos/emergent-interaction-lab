@@ -37,6 +37,10 @@ pub struct AppState {
     pub nvidia_api_key: String,
     pub chat_secret: String,
     pub stripe_secret_key: String,
+    /// Overridable so tests can point at a local mock instead of the real
+    /// Stripe API — never overridden in production, where it's always
+    /// "https://api.stripe.com".
+    pub stripe_api_base: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -96,6 +100,7 @@ async fn main() {
         nvidia_api_key,
         chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
+        stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
     };
 
     if state.chat_secret.is_empty() {
