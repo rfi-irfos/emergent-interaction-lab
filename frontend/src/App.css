@@ -214,8 +214,39 @@ button { cursor: pointer; font-family: inherit; }
 .site-logo-img { height: 50px; }
 .site-logo-text { font-size: 20px; font-weight: 900; color: var(--primary); }
 .site-main-nav { display: flex; gap: 26px; }
-.site-main-nav a { font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
+.site-main-nav a { position: relative; font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
 .site-main-nav a:hover { color: var(--primary); }
+.site-main-nav a::after {
+  content: ''; position: absolute; left: 0; right: 100%; bottom: -4px; height: 2px;
+  background: var(--primary); transition: right .25s ease;
+}
+.site-main-nav a:hover::after { right: 0; }
+
+/* State-aware header: flat bar until the visitor scrolls, then a glass panel
+   with a slow animated accent line — replaces the old always-static look. */
+.site-nav {
+  transition: background .4s ease, backdrop-filter .4s ease, border-color .4s ease, box-shadow .4s ease;
+}
+.site-nav.scrolled { box-shadow: 0 8px 24px var(--shadow); }
+.site[data-theme="dark"] .site-nav.scrolled {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom-color: var(--glass-border);
+}
+.site-nav.scrolled::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand-cyan), transparent);
+  background-size: 200% 100%;
+  animation: nav-accent-sweep 6s linear infinite;
+}
+@keyframes nav-accent-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-nav.scrolled::before { animation: none; }
+}
 .site-nav-right { display: flex; gap: 12px; align-items: center; }
 .site-nav-desktop { display: flex; gap: 12px; align-items: center; }
 .site-nav-phone {
@@ -256,6 +287,31 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-hero-graphic {
   position: absolute; inset: 0; width: 100%; height: 100%;
+}
+.site-hero-parallax { position: absolute; inset: 0; }
+
+/* Occasional specular light-sweep across the hero — a slow, mostly-idle glint
+   rather than a constant scrolling shine. */
+.site-hero-sheen {
+  position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none;
+}
+.site-hero-sheen::after {
+  content: ''; position: absolute; top: -50%; left: -60%;
+  width: 40%; height: 200%;
+  background: linear-gradient(100deg,
+    transparent 0%, rgba(255,255,255,.16) 45%, rgba(214,247,255,.26) 50%,
+    rgba(255,255,255,.16) 55%, transparent 100%);
+  transform: rotate(8deg) translateX(-120%);
+  mix-blend-mode: screen;
+  animation: hero-sheen-sweep 11s ease-in-out infinite;
+  animation-delay: 3s;
+}
+@keyframes hero-sheen-sweep {
+  0%, 60%  { transform: rotate(8deg) translateX(-120%); }
+  74%, 100% { transform: rotate(8deg) translateX(340%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-hero-sheen { display: none; }
 }
 .site-hero-inner {
   position: relative; z-index: 2;
@@ -452,6 +508,15 @@ button { cursor: pointer; font-family: inherit; }
   background: var(--surface); padding: 44px 36px; border-radius: 14px;
   border: 1px solid var(--border); border-top: 3px solid var(--primary);
   display: flex; flex-direction: column; align-items: center; text-align: center;
+  transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+}
+.site-usp-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--brand-cyan);
+  box-shadow: 0 12px 32px rgba(99,240,255,.18);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-usp-card:hover { transform: none; }
 }
 .site-usp-card.accent { border-top-color: var(--accent); }
 .site-usp-icon { color: var(--primary); margin-bottom: 16px; }

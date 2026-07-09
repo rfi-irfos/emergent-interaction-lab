@@ -45,6 +45,27 @@ export function Reveal({
   return <div ref={ref} style={{ opacity: 0, willChange: 'transform, opacity', ...extra }}>{children}</div>
 }
 
+// Scroll-linked parallax for the hero graphic: drifts slightly slower than the
+// foreground headline as the page scrolls, so the sky reads as further away —
+// same rAF-batched scroll pattern as Reveal above, no new dependency.
+function HeroParallax({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let rafId = 0
+    const update = () => {
+      const y = Math.min(window.scrollY, 900) * 0.12
+      el.style.transform = `translateY(${y}px)`
+    }
+    const onScroll = () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(update) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    update()
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId) }
+  }, [])
+  return <div ref={ref} className="site-hero-parallax" style={{ willChange: 'transform' }}>{children}</div>
+}
+
 // ── Edit context ─────────────────────────────────────────────────────────────
 
 interface EditCtx {
@@ -660,6 +681,17 @@ export function PublicSite({
   const heightDragRef = useRef<{ startY: number; startH: number } | null>(null)
   const heroRef = useRef<HTMLElement | null>(null)
 
+  // Nav goes from a flat transparent bar to a glass panel with an accent line
+  // once the visitor scrolls past the hero — a state-aware header instead of
+  // a static one.
+  const [navScrolled, setNavScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setNavScrolled(window.scrollY > 80)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   const vars = { '--primary': meta.primaryColor, '--accent': meta.accentColor, fontFamily: meta.font } as React.CSSProperties
 
   const ctx: EditCtx = {
@@ -920,7 +952,7 @@ export function PublicSite({
         {editMode && <FormatToolbar anchorEl={focusedEl} />}
 
         {/* ── NAV ──────────────────────────────────────────────────────── */}
-        <header className="site-nav">
+        <header className={`site-nav ${navScrolled ? 'scrolled' : ''}`}>
           <div className="site-nav-inner">
             {nav.logo
               ? <EImg field="nav.logo" src={nav.logo} alt={nav.brand} className="site-logo-img" />
@@ -1003,7 +1035,12 @@ export function PublicSite({
             heroDragRef.current = { startX: e.clientX, startY: e.clientY, startBgX: heroBgPos.x, startBgY: heroBgPos.y }
           }}
         >
-          {!hero.image && <HeroFieldGraphic />}
+          {!hero.image && (
+            <HeroParallax>
+              <HeroFieldGraphic />
+            </HeroParallax>
+          )}
+          <div className="site-hero-sheen" aria-hidden="true" />
           {editMode && (
             <div className="site-hero-controls">
               <button className="site-hero-swap-btn" onClick={() => onImageClick?.('hero.image')}>
