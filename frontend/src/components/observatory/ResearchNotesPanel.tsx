@@ -12,6 +12,7 @@ interface NoteOut {
   source: string
   created_at: string
   updated_at: string
+  source_conversation_id: string | null
 }
 
 const CATEGORY_ACCENT: Record<string, string> = {
@@ -23,10 +24,11 @@ const CATEGORY_ACCENT: Record<string, string> = {
 /// category (see backend/src/research.rs) — one shared panel, two thin
 /// wrappers configuring which categories it shows. Avoids building two
 /// near-identical CRUD surfaces for structurally identical data.
-export function ResearchNotesPanel({ categories, addLabel, placeholder }: {
+export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenConversation }: {
   categories: string[]
   addLabel: string
   placeholder: string
+  onOpenConversation?: (conversationId: string) => void
 }) {
   const query = `?category=${categories.join(',')}`
   const { data, loading } = useAdminFetch<NoteOut[]>(`/api/research/items${query}`, [query])
@@ -84,6 +86,18 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder }: {
           <div className="obs-item-meta">
             <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
             {' · '}{n.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {n.updated_at}
+            {n.source_conversation_id && onOpenConversation && (
+              <>
+                {' · '}
+                <button
+                  className="chat-inspect-toggle"
+                  style={{ fontSize: 11, padding: 0 }}
+                  onClick={() => onOpenConversation(n.source_conversation_id!)}
+                >
+                  aus Gespräch ↗
+                </button>
+              </>
+            )}
           </div>
           <div className="obs-item-body">{n.body}</div>
         </div>

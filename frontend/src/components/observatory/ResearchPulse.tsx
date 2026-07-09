@@ -28,15 +28,19 @@ function BlogActivity() {
 /// actual editing/publishing stays in Verwaltung → Blog). Simulations used
 /// to be embedded here too, but moved to their own "Simulation Center" —
 /// simulation is a Kernbereich in its own right, not a Research Pulse
-/// sub-panel (see plan).
-export function ResearchPulse({ onNavigate }: { onNavigate: (s: AdminSection) => void }) {
+/// sub-panel (see plan). Notes/ideas can each carry a source_conversation_id
+/// back to the Forschung talk that prompted them (see ResearchNotesPanel).
+export function ResearchPulse({ onNavigate, onOpenConversation }: {
+  onNavigate: (s: AdminSection) => void
+  onOpenConversation?: (conversationId: string) => void
+}) {
   return (
     <div className="obs-panel">
       <div className="obs-section-label">Papers &amp; Hypothesen</div>
-      <ResearchNotesPanel categories={['paper', 'hypothesis']} addLabel="Eintrag hinzufügen" placeholder="Titel (Paper oder Hypothese)" />
+      <ResearchNotesPanel categories={['paper', 'hypothesis']} addLabel="Eintrag hinzufügen" placeholder="Titel (Paper oder Hypothese)" onOpenConversation={onOpenConversation} />
 
       <div className="obs-section-label" style={{ marginTop: 8 }}>Ideen, Konzepte &amp; Frameworks</div>
-      <ResearchNotesPanel categories={['idea', 'concept', 'framework', 'prototype']} addLabel="Idee hinzufügen" placeholder="Titel (Idee, Konzept, Framework oder Prototyp)" />
+      <ResearchNotesPanel categories={['idea', 'concept', 'framework', 'prototype']} addLabel="Idee hinzufügen" placeholder="Titel (Idee, Konzept, Framework oder Prototyp)" onOpenConversation={onOpenConversation} />
 
       <div className="obs-section-label" style={{ marginTop: 8 }}>Simulationen</div>
       <button type="button" className="panel-add-btn" onClick={() => onNavigate('simulationcenter')}>
