@@ -1,9 +1,15 @@
+mod agent;
 mod analytics;
 mod auth;
+mod authz;
+mod blog;
 mod chat;
 mod contact;
 mod content;
 mod inspect;
+mod observatory;
+mod research;
+mod simulation;
 mod track;
 mod upload;
 
@@ -58,6 +64,10 @@ async fn main() {
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_wv_source ON web_visits(source, created_at)")
         .execute(&db).await.ok();
     chat::init_schema(&db).await;
+    blog::init_schema(&db).await;
+    research::init_schema(&db).await;
+    simulation::init_schema(&db).await;
+    agent::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -108,6 +118,25 @@ async fn main() {
         .route("/api/chat/stream", post(chat::stream_chat))
         .route("/api/chat/documents", get(chat::list_documents).post(chat::upload_document))
         .route("/api/chat/documents/:id", axum::routing::delete(chat::delete_document))
+        // Observatory (real-data-backed, some explicitly-labeled experimental indicators)
+        .route("/api/observatory/overview", get(observatory::overview))
+        .route("/api/observatory/emergence", get(observatory::emergence))
+        .route("/api/observatory/behavior", get(observatory::behavior))
+        .route("/api/observatory/information", get(observatory::information))
+        .route("/api/observatory/human-ai", get(observatory::human_ai))
+        .route("/api/observatory/diagnostics", get(observatory::diagnostics))
+        // Blog (agent can draft, only a human publishes)
+        .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
+        .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))
+        .route("/api/blog/posts/:id/publish", post(blog::publish_post))
+        // Research Workspace + Innovation Lab (shared table, filtered by category)
+        .route("/api/research/items", get(research::list_items).post(research::create_item))
+        .route("/api/research/items/:id", get(research::get_item).put(research::update_item).delete(research::delete_item))
+        // Simulation Lab (genuinely functional, LLM-reasoned, always labeled exploratory)
+        .route("/api/simulation/runs", get(simulation::list_runs).post(simulation::create_run))
+        .route("/api/simulation/runs/:id", get(simulation::get_run).delete(simulation::delete_run))
+        // Jarvis — ambient agent, tool-calling loop, shares chat_conversations/messages
+        .route("/api/agent/message", post(agent::message))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))

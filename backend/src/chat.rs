@@ -13,9 +13,10 @@ use serde_json::json;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use crate::authz::require_admin as is_authorized;
 use crate::AppState;
 
-const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
+pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 const EMBED_MODEL: &str = "nvidia/nv-embedqa-e5-v5";
 const CHUNK_CHARS: usize = 900;
 const CHUNK_OVERLAP: usize = 150;
@@ -86,13 +87,34 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
-}
 
-fn is_authorized(state: &AppState, headers: &HeaderMap) -> bool {
-    if state.chat_secret.is_empty() {
-        return true;
-    }
-    headers.get("x-chat-secret").and_then(|v| v.to_str().ok()) == Some(state.chat_secret.as_str())
+    // Additive: distinguishes Forschung research-chat conversations from the
+    // ambient Jarvis agent dock, while both share the same conversation/message
+    // storage. Errors here (column already exists) are expected on 2nd+ boot.
+    sqlx::query("ALTER TABLE chat_conversations ADD COLUMN kind TEXT NOT NULL DEFAULT 'chat'")
+        .execute(db)
+        .await
+        .ok();
+
+    // Logs what retrieval already computes on every message but used to
+    // discard — feeds the Information Dynamics observatory module.
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS chat_retrievals (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            query_text TEXT NOT NULL,
+            top_score REAL NOT NULL,
+            hit_count INTEGER NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+        )",
+    )
+    .execute(db)
+    .await
+    .expect("create chat_retrievals");
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_cr_created ON chat_retrievals(created_at)")
+        .execute(db)
+        .await
+        .ok();
 }
 
 // ── embeddings + vector search (brute-force cosine over SQLite BLOBs) ────────
@@ -238,13 +260,24 @@ struct ConversationOut {
     updated_at: String,
 }
 
-pub async fn list_conversations(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+#[derive(Deserialize)]
+pub struct ListConversationsQuery {
+    kind: Option<String>,
+}
+
+pub async fn list_conversations(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    axum::extract::Query(q): axum::extract::Query<ListConversationsQuery>,
+) -> impl IntoResponse {
     if !is_authorized(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
+    let kind = q.kind.unwrap_or_else(|| "chat".to_string());
     let rows: Vec<(String, String, String, String)> = sqlx::query_as(
-        "SELECT id, title, created_at, updated_at FROM chat_conversations ORDER BY updated_at DESC",
+        "SELECT id, title, created_at, updated_at FROM chat_conversations WHERE kind = ?1 ORDER BY updated_at DESC",
     )
+    .bind(&kind)
     .fetch_all(&state.db)
     .await
     .unwrap_or_default();
@@ -258,6 +291,10 @@ pub async fn list_conversations(State(state): State<AppState>, headers: HeaderMa
 #[derive(Deserialize)]
 pub struct CreateConversationReq {
     title: Option<String>,
+    /// 'chat' (default, Forschung research-chat) or 'agent' (ambient Jarvis
+    /// dock) — same storage, distinguished only by this column, so both
+    /// surfaces share one memory instead of forking it.
+    kind: Option<String>,
 }
 
 pub async fn create_conversation(
@@ -270,12 +307,14 @@ pub async fn create_conversation(
     }
     let id = Uuid::new_v4().to_string();
     let title = body.title.unwrap_or_else(|| "Neue Unterhaltung".to_string());
-    let _ = sqlx::query("INSERT INTO chat_conversations (id, title) VALUES (?1, ?2)")
+    let kind = body.kind.unwrap_or_else(|| "chat".to_string());
+    let _ = sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, ?2, ?3)")
         .bind(&id)
         .bind(&title)
+        .bind(&kind)
         .execute(&state.db)
         .await;
-    Json(json!({ "id": id, "title": title })).into_response()
+    Json(json!({ "id": id, "title": title, "kind": kind })).into_response()
 }
 
 #[derive(Serialize)]
@@ -498,7 +537,18 @@ pub async fn stream_chat(
         let context_block = match embed(&state, &user_message, "query").await {
             Ok(query_vec) => {
                 let hits = retrieve_context(&state, &query_vec).await;
+                let top_score = hits.first().map(|(_, _, s)| *s).unwrap_or(0.0);
                 let relevant: Vec<_> = hits.into_iter().filter(|(_, _, score)| *score > RETRIEVAL_MIN_SCORE).collect();
+                let _ = sqlx::query(
+                    "INSERT INTO chat_retrievals (id, conversation_id, query_text, top_score, hit_count) VALUES (?1,?2,?3,?4,?5)",
+                )
+                .bind(Uuid::new_v4().to_string())
+                .bind(&conversation_id)
+                .bind(user_message.chars().take(200).collect::<String>())
+                .bind(top_score as f64)
+                .bind(relevant.len() as i64)
+                .execute(&state.db)
+                .await;
                 if relevant.is_empty() {
                     String::new()
                 } else {

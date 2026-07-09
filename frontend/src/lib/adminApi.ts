@@ -1,3 +1,6 @@
+import { useEffect, useState, type DependencyList } from 'react'
+import { API_BASE } from './apiBase'
+
 // Shared admin/agent request auth — the one auth mechanism the shipped admin
 // UI actually round-trips through today (see backend/src/chat.rs is_authorized).
 // Used by ResearchChat, the Observatory modules and AgentDock so the header
@@ -6,4 +9,26 @@ const SECRET = import.meta.env.VITE_CHAT_API_SECRET as string | undefined
 
 export function authHeaders(extra?: Record<string, string>): Record<string, string> {
   return { ...(SECRET ? { 'x-chat-secret': SECRET } : {}), ...(extra ?? {}) }
+}
+
+/// Shared fetch-on-mount pattern for the Observatory modules (10 near-identical
+/// "load this endpoint, show loading/empty/data states" call sites) — mirrors
+/// the analyticsData/analyticsLoading pattern already in AdminPanel.tsx, just
+/// generic instead of copy-pasted per module.
+export function useAdminFetch<T>(path: string, deps: DependencyList = []): { data: T | null; loading: boolean; error: boolean } {
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(false)
+    fetch(`${API_BASE}${path}`, { headers: authHeaders() })
+      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
+      .then(d => { if (!cancelled) { setData(d); setLoading(false) } })
+      .catch(() => { if (!cancelled) { setError(true); setLoading(false) } })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+  return { data, loading, error }
 }
