@@ -8,3 +8,4 @@
 export type AdminSection =
   | 'inbox' | 'forschung' | 'blog' | 'analytics' | 'website-kit'
   | 'systemmap' | 'emergence' | 'systemstate' | 'interaction' | 'information' | 'behavior' | 'research'
+  | 'simulationcenter' | 'knowledgegraph'

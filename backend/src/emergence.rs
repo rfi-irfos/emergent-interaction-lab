@@ -35,6 +35,19 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+    // Additive: separates signals into 4 genuinely different categories
+    // (see plan — the dashboard must not read as one flat list of emergence
+    // observations). Default 'interaction' for pre-existing rows: the prompt
+    // that generated them only ever asked about dialogue-level dynamics
+    // (Muster/Rückkopplung/Rollenveränderung), which is squarely
+    // "interaction" under the 4-way split — the honest backfill choice.
+    sqlx::query(
+        "ALTER TABLE emergence_signals ADD COLUMN level TEXT NOT NULL DEFAULT 'interaction' \
+         CHECK(level IN ('human','ai','interaction','system'))",
+    )
+    .execute(db)
+    .await
+    .ok();
 }
 
 fn extract_json_array(text: &str) -> Option<Vec<serde_json::Value>> {
@@ -90,8 +103,14 @@ pub async fn analyze_recent_interactions(state: &AppState, conversation_id: &str
         "Hier ist ein Ausschnitt aus einem laufenden Forschungsgespräch (neueste Nachricht zuletzt):\n\n{transcript}\n\nZuletzt verwendete Werkzeuge: {tool_summary}\n\n\
 Schau dir an, was in diesem Gespräch strukturell passiert — nicht den Inhalt zusammenfassen, sondern: entstehen neue Muster? Verschiebt sich der Fokus? Gibt es Rückkopplung, Wiederholung, Anpassung, Rollenveränderung? \
 Skaliere die Tiefe deiner Beobachtung mit dem, was das Gespräch tatsächlich hergibt: wenn nur eine kurze Verschiebung erkennbar ist, reichen 1-2 Sätze — aber wenn du eine mehrschichtige Dynamik siehst (z.B. eine Verschiebung, die sich über mehrere Nachrichten aufbaut, oder ein Muster, das mit einem früheren zusammenhängt), schreib das auch aus, in einem kurzen Absatz statt einem Einzeiler. Nie künstlich aufblähen, aber auch nie eine echte Beobachtung auf einen Halbsatz zusammenstauchen, wenn mehr zu sagen ist. \
+Ordne jedes Signal genau einer von vier Ebenen zu (\"level\"): \
+\"human\" — neues Verhaltensmuster, neues Denkmodell, Wissensentwicklung, Hypothese, Forschungsfortschritt auf Seiten von Laura; \
+\"ai\" — Antwortentwicklung, Modellverhalten, semantische Veränderung, Konsistenz, Unsicherheit, neue Verknüpfungen auf Seiten des Modells; \
+\"interaction\" — gemeinsames Muster, neues Konzept, rekursive Schleife, Co-Reasoning, Strukturänderung im Dialog selbst; \
+\"system\" — Veränderung im Gesamtsystem, neue Cluster oder Beziehungen, Drift, Selbstorganisation über den einzelnen Dialog hinaus. \
+Für \"scope\" (worum es inhaltlich geht): bevorzuge, wo sinnvoll, einen dieser etablierten Systemnamen statt eigener Formulierungen, damit gleiche Systeme nicht unter leicht unterschiedlichen Namen auseinanderfallen: Human, AI, Human-AI, Organization, Information Space, Behavioral Model, Research System, Knowledge Base. Wenn keiner passt, formuliere frei. \
 Antworte NUR mit einem JSON-Array (kein Text davor oder danach, keine Code-Block-Markierung) von 0 bis 3 Objekten in genau dieser Form:\n\
-[{{\"pattern\": \"kurzer Name des Musters\", \"status\": \"emerging|stable|fading|hypothetical\", \"confidence\": \"experimental|tentative|moderate\", \"evolution\": \"increasing|decreasing|steady|unclear\", \"observation\": \"so lang wie die Beobachtung es hergibt — ein Satz oder ein kurzer Absatz\", \"scope\": \"worum es inhaltlich geht\"}}]\n\
+[{{\"pattern\": \"kurzer Name des Musters\", \"level\": \"human|ai|interaction|system\", \"status\": \"emerging|stable|fading|hypothetical\", \"confidence\": \"experimental|tentative|moderate\", \"evolution\": \"increasing|decreasing|steady|unclear\", \"observation\": \"so lang wie die Beobachtung es hergibt — ein Satz oder ein kurzer Absatz\", \"scope\": \"worum es inhaltlich geht\"}}]\n\
 Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren Array []."
     );
 
@@ -131,6 +150,8 @@ Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren 
         if pattern.is_empty() {
             continue;
         }
+        let level = sig.get("level").and_then(|v| v.as_str()).unwrap_or("interaction").to_string();
+        let level = if ["human", "ai", "interaction", "system"].contains(&level.as_str()) { level } else { "interaction".to_string() };
         let status = sig.get("status").and_then(|v| v.as_str()).unwrap_or("hypothetical").to_string();
         let confidence = sig.get("confidence").and_then(|v| v.as_str()).unwrap_or("experimental").to_string();
         let evolution = sig.get("evolution").and_then(|v| v.as_str()).unwrap_or("unclear").to_string();
@@ -138,10 +159,11 @@ Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren 
         let scope = sig.get("scope").and_then(|v| v.as_str()).map(|s| s.to_string());
 
         let _ = sqlx::query(
-            "INSERT INTO emergence_signals (id, pattern, status, confidence, evolution, observation, scope, source_conversation_id) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)",
+            "INSERT INTO emergence_signals (id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
         )
         .bind(Uuid::new_v4().to_string())
         .bind(&pattern)
+        .bind(&level)
         .bind(&status)
         .bind(&confidence)
         .bind(&evolution)
@@ -157,6 +179,7 @@ Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren 
 pub struct SignalOut {
     id: String,
     pattern: String,
+    level: String,
     status: String,
     confidence: String,
     evolution: String,
@@ -166,11 +189,11 @@ pub struct SignalOut {
     created_at: String,
 }
 
-type SignalRow = (String, String, String, String, String, String, Option<String>, Option<String>, String);
+type SignalRow = (String, String, String, String, String, String, String, Option<String>, Option<String>, String);
 fn to_out(r: SignalRow) -> SignalOut {
     SignalOut {
-        id: r.0, pattern: r.1, status: r.2, confidence: r.3, evolution: r.4,
-        observation: r.5, scope: r.6, source_conversation_id: r.7, created_at: r.8,
+        id: r.0, pattern: r.1, level: r.2, status: r.3, confidence: r.4, evolution: r.5,
+        observation: r.6, scope: r.7, source_conversation_id: r.8, created_at: r.9,
     }
 }
 
@@ -179,7 +202,7 @@ pub async fn list_signals(State(state): State<AppState>, headers: HeaderMap) -> 
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let rows: Vec<SignalRow> = sqlx::query_as(
-        "SELECT id, pattern, status, confidence, evolution, observation, scope, source_conversation_id, created_at FROM emergence_signals ORDER BY created_at DESC LIMIT 50",
+        "SELECT id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id, created_at FROM emergence_signals ORDER BY created_at DESC LIMIT 50",
     )
     .fetch_all(&state.db)
     .await

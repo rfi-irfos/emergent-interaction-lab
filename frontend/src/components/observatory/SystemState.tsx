@@ -11,6 +11,16 @@ interface Signal {
   created_at: string
 }
 
+function AlertRow({ label, detail }: { label: string; detail: string }) {
+  return (
+    <div className="obs-activity-row">
+      <span className="obs-activity-kind" style={{ background: '#f59e0b' }}>Achtung</span>
+      <span className="obs-activity-label">{label}</span>
+      <span className="obs-activity-ts">{detail}</span>
+    </div>
+  )
+}
+
 interface DiagnosticsData {
   db_reachable: boolean
   nvidia_api_key_configured: boolean
@@ -39,15 +49,40 @@ export function SystemState() {
   const { data: diag, loading: diagLoading } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
 
   const byScope = new Map<string, Signal>()
+  const countByScope = new Map<string, number>()
   ;(signals ?? []).forEach(s => {
     const key = s.scope ?? 'Allgemein'
     const existing = byScope.get(key)
     if (!existing || s.created_at > existing.created_at) byScope.set(key, s)
+    countByScope.set(key, (countByScope.get(key) ?? 0) + 1)
   })
   const states = Array.from(byScope.entries())
 
+  // Real "erhöhte Aufmerksamkeit" list — status='emerging' signals plus
+  // existing diagnostics failure flags. Not "anomaly detection" (no
+  // baseline exists to detect an anomaly against), just a surfaced view of
+  // data that's already real elsewhere on this page.
+  const emergingSignals = (signals ?? []).filter(s => s.status === 'emerging')
+  const diagAlerts: { label: string; detail: string }[] = []
+  if (diag) {
+    if (!diag.db_reachable) diagAlerts.push({ label: 'Datenbank nicht erreichbar', detail: 'technisch' })
+    if (!diag.nvidia_api_key_configured) diagAlerts.push({ label: 'NVIDIA_API_KEY fehlt', detail: 'technisch' })
+    if (diag.agent_tool_call_errors_7d > 0) diagAlerts.push({ label: `${diag.agent_tool_call_errors_7d} Jarvis-Fehler in 7 Tagen`, detail: 'technisch' })
+  }
+  const hasAlerts = emergingSignals.length > 0 || diagAlerts.length > 0
+
   return (
     <div className="obs-panel">
+      {hasAlerts && (
+        <>
+          <div className="obs-section-label">Signale mit erhöhter Aufmerksamkeit</div>
+          <div className="obs-card" style={{ marginBottom: 22 }}>
+            {emergingSignals.map(s => <AlertRow key={s.id} label={s.pattern} detail={s.scope ?? 'Allgemein'} />)}
+            {diagAlerts.map((a, i) => <AlertRow key={`diag-${i}`} label={a.label} detail={a.detail} />)}
+          </div>
+        </>
+      )}
+
       <div className="obs-section-label">Beobachtete Systeme</div>
       {signalsLoading && <div className="obs-empty">Lade…</div>}
       {!signalsLoading && states.length === 0 && (
@@ -55,7 +90,10 @@ export function SystemState() {
       )}
       {states.map(([scope, s]) => (
         <div className="obs-item-card" key={scope}>
-          <div className="obs-item-title">{scope}</div>
+          <div className="obs-item-title">
+            {scope}
+            <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
+          </div>
           <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
           <div className="obs-item-body">{s.observation}</div>
         </div>
