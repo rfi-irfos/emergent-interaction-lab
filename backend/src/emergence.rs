@@ -88,8 +88,10 @@ pub async fn analyze_recent_interactions(state: &AppState, conversation_id: &str
 
     let user_prompt = format!(
         "Hier ist ein Ausschnitt aus einem laufenden Forschungsgespräch (neueste Nachricht zuletzt):\n\n{transcript}\n\nZuletzt verwendete Werkzeuge: {tool_summary}\n\n\
-Schau dir an, was in diesem Gespräch strukturell passiert — nicht den Inhalt zusammenfassen, sondern: entstehen neue Muster? Verschiebt sich der Fokus? Gibt es Rückkopplung, Wiederholung, Anpassung, Rollenveränderung? Antworte NUR mit einem JSON-Array (kein Text davor oder danach, keine Code-Block-Markierung) von 0 bis 3 Objekten in genau dieser Form:\n\
-[{{\"pattern\": \"kurzer Name des Musters\", \"status\": \"emerging|stable|fading|hypothetical\", \"confidence\": \"experimental|tentative|moderate\", \"evolution\": \"increasing|decreasing|steady|unclear\", \"observation\": \"1-2 Sätze, was genau du beobachtest\", \"scope\": \"worum es inhaltlich geht\"}}]\n\
+Schau dir an, was in diesem Gespräch strukturell passiert — nicht den Inhalt zusammenfassen, sondern: entstehen neue Muster? Verschiebt sich der Fokus? Gibt es Rückkopplung, Wiederholung, Anpassung, Rollenveränderung? \
+Skaliere die Tiefe deiner Beobachtung mit dem, was das Gespräch tatsächlich hergibt: wenn nur eine kurze Verschiebung erkennbar ist, reichen 1-2 Sätze — aber wenn du eine mehrschichtige Dynamik siehst (z.B. eine Verschiebung, die sich über mehrere Nachrichten aufbaut, oder ein Muster, das mit einem früheren zusammenhängt), schreib das auch aus, in einem kurzen Absatz statt einem Einzeiler. Nie künstlich aufblähen, aber auch nie eine echte Beobachtung auf einen Halbsatz zusammenstauchen, wenn mehr zu sagen ist. \
+Antworte NUR mit einem JSON-Array (kein Text davor oder danach, keine Code-Block-Markierung) von 0 bis 3 Objekten in genau dieser Form:\n\
+[{{\"pattern\": \"kurzer Name des Musters\", \"status\": \"emerging|stable|fading|hypothetical\", \"confidence\": \"experimental|tentative|moderate\", \"evolution\": \"increasing|decreasing|steady|unclear\", \"observation\": \"so lang wie die Beobachtung es hergibt — ein Satz oder ein kurzer Absatz\", \"scope\": \"worum es inhaltlich geht\"}}]\n\
 Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren Array []."
     );
 
@@ -103,7 +105,7 @@ Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren 
                 { "role": "system", "content": "Du analysierst Forschungsgespräche für ein Emergence-Observatory. Du interpretierst qualitativ, wie ein Forschungspartner, nicht wie eine Statistik-Pipeline. Antworte ausschließlich mit validem JSON, wie angefordert — kein Fließtext." },
                 { "role": "user", "content": user_prompt },
             ],
-            "max_tokens": 700,
+            "max_tokens": 1600,
             "temperature": 0.4,
             "stream": false,
         }))
