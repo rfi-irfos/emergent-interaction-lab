@@ -23,29 +23,36 @@ export function BehavioralObservatory() {
   return (
     <div className="obs-panel">
       <div className="obs-grid">
-        <div className="obs-stat"><div className="obs-stat-value">{data.total_visitors_30d}</div><div className="obs-stat-label">Besucher (30 T.)</div></div>
-        <div className="obs-stat"><div className="obs-stat-value">{data.returning_visitors_30d}</div><div className="obs-stat-label">Wiederkehrend</div></div>
-        <div className="obs-stat"><div className="obs-stat-value">{returnRate}%</div><div className="obs-stat-label">Rückkehrrate</div></div>
+        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_visitors_30d}</div><div className="obs-stat-label">Besucher (30 T.)</div></div>
+        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.returning_visitors_30d}</div><div className="obs-stat-label">Wiederkehrend</div></div>
+        <div className="obs-stat c-purple"><div className="obs-stat-value">{returnRate}%</div><div className="obs-stat-label">Rückkehrrate</div></div>
       </div>
 
-      <div className="obs-section">
-        <div className="obs-section-label">Nach Tageszeit</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 50 }}>
+      <div className="obs-section-label">Nach Tageszeit</div>
+      <div className="obs-card">
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 70 }}>
           {data.by_hour.map(h => (
-            <div key={h.hour} title={`${h.hour}:00 — ${h.count}`} style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end' }}>
-              <div style={{ width: '100%', height: `${Math.max((h.count / maxHour) * 100, 3)}%`, background: '#0099CC', borderRadius: '2px 2px 0 0' }} />
+            <div key={h.hour} title={`${h.hour}:00 Uhr — ${h.count} Besuche`} style={{ flex: 1, height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+              <div style={{
+                width: '100%', height: `${Math.max((h.count / maxHour) * 100, 3)}%`,
+                background: 'linear-gradient(180deg, #3b6bf6, #6d92f9)', borderRadius: '4px 4px 1px 1px',
+                transition: 'opacity .12s',
+              }} />
             </div>
           ))}
         </div>
+        <div className="obs-chart-axis" style={{ marginTop: 8 }}>
+          <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
+        </div>
       </div>
 
-      <div className="obs-section">
-        <div className="obs-section-label">Nach Wochentag</div>
+      <div className="obs-section-label">Nach Wochentag</div>
+      <div className="obs-card">
         {data.by_day_of_week.map(d => (
           <div className="obs-bar-row" key={d.day}>
-            <span style={{ width: 28, fontSize: 11, color: '#555', flexShrink: 0 }}>{DOW[Number(d.day)] ?? d.day}</span>
+            <span style={{ width: 28, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0 }}>{DOW[Number(d.day)] ?? d.day}</span>
             <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(d.count / maxDow) * 100}%` }} /></div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#0099CC', minWidth: 24, textAlign: 'right' }}>{d.count}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#3b6bf6', minWidth: 24, textAlign: 'right' }}>{d.count}</span>
           </div>
         ))}
       </div>

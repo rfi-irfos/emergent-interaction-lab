@@ -1497,8 +1497,14 @@ button { cursor: pointer; font-family: inherit; }
   border: none; background: none; color: rgba(255,255,255,.5); font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all .15s; text-align: left; font-family: inherit; margin-bottom: 2px; position: relative;
 }
+.crm-nav-item { transition: background .15s ease, color .15s ease, transform .1s ease; }
 .crm-nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
 .crm-nav-item.active { background: rgba(99,240,255,.14); color: #63f0ff; font-weight: 600; }
+.crm-nav-item.active::before {
+  content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 16px; border-radius: 3px; background: #63f0ff;
+}
+.crm-nav-item:active { transform: scale(.98); }
 .crm-nav-item svg { flex-shrink: 0; opacity: .65; }
 .crm-nav-item.active svg { stroke: #63f0ff; opacity: 1; }
 
@@ -1520,62 +1526,137 @@ button { cursor: pointer; font-family: inherit; }
 .crm-body { flex: 1; overflow-y: auto; padding: 20px 28px 28px; width: 100%; }
 
 /* ── ADMIN: OBSERVATORY MODULES ──────────────────────────────────────────────
-   Shared card/grid/label primitives for the 10 Observatory modules, so each
-   module's component only needs to describe its data, not restyle a stat
-   grid from scratch every time. */
-.obs-panel { padding: 14px; }
-.obs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
-.obs-stat { background: var(--panel-surface, #f8f8f8); border: 1px solid var(--panel-border, #e8e8e8); border-radius: 10px; padding: 14px 16px; text-align: center; }
-.obs-stat-value { font-size: 24px; font-weight: 800; color: #0099CC; }
-.obs-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
-.obs-section-label { font-size: 11px; font-weight: 700; color: #555; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
-.obs-section { margin-bottom: 20px; }
-.obs-empty { text-align: center; color: #aaa; padding: 40px 0; font-size: 13px; }
+   A proper BI-dashboard design language (Looker/Linear-adjacent: layered
+   shadows instead of flat borders, per-metric accent colors, generous
+   whitespace) — shared so each module's component only describes its data,
+   never restyles a stat grid or chart from scratch. */
+.obs-accents {
+  --obs-blue: #3b6bf6; --obs-purple: #8b5cf6; --obs-teal: #14b8a6;
+  --obs-amber: #f59e0b; --obs-green: #10b981; --obs-red: #ef4444;
+}
+.obs-panel { padding: 18px 4px; }
+.obs-panel { --obs-blue: #3b6bf6; --obs-purple: #8b5cf6; --obs-teal: #14b8a6; --obs-amber: #f59e0b; --obs-green: #10b981; --obs-red: #ef4444; }
+
+.obs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.obs-stat {
+  --obs-accent: var(--obs-blue);
+  background: #fff; border: 1px solid rgba(15,23,42,.06); border-radius: 12px; padding: 16px 18px 15px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03);
+  position: relative; overflow: hidden; transition: box-shadow .18s ease, transform .18s ease;
+}
+.obs-stat::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--obs-accent); }
+.obs-stat:hover { box-shadow: 0 2px 6px rgba(15,23,42,.07), 0 10px 24px rgba(15,23,42,.06); transform: translateY(-1px); }
+.obs-stat.c-blue { --obs-accent: var(--obs-blue); }
+.obs-stat.c-purple { --obs-accent: var(--obs-purple); }
+.obs-stat.c-teal { --obs-accent: var(--obs-teal); }
+.obs-stat.c-amber { --obs-accent: var(--obs-amber); }
+.obs-stat.c-green { --obs-accent: var(--obs-green); }
+.obs-stat.c-red { --obs-accent: var(--obs-red); }
+
+.obs-status-pill {
+  font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 20px;
+}
+.obs-status-pill.ok { color: #065f46; background: rgba(16,185,129,.13); }
+.obs-status-pill.bad { color: #991b1b; background: rgba(239,68,68,.13); }
+
+.obs-warning-note {
+  font-size: 12.5px; line-height: 1.6; color: #92400e;
+  background: linear-gradient(180deg, #fffbeb, #fef3c7); border: 1px solid rgba(245,158,11,.3);
+  border-radius: 11px; padding: 12px 16px;
+}
+.obs-stat-value { font-size: 27px; font-weight: 800; color: #111827; letter-spacing: -.01em; line-height: 1.1; }
+.obs-stat-label { font-size: 10.5px; color: #8a8f98; margin-top: 5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+
+.obs-section-label {
+  font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .07em;
+  display: flex; align-items: center; gap: 8px;
+}
+.obs-section-label::after { content: ''; flex: 1; height: 1px; background: rgba(15,23,42,.07); }
+.obs-section { margin-bottom: 24px; }
+.obs-empty { text-align: center; color: #9aa0a8; padding: 40px 0; font-size: 13px; }
+
+.obs-card {
+  background: #fff; border: 1px solid rgba(15,23,42,.06); border-radius: 14px; padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03); margin-bottom: 18px;
+}
+.obs-map-card { background: linear-gradient(180deg, #fbfcfe, #f5f7fb); padding: 24px 20px 16px; }
+
 .obs-badge-experimental {
-  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-  color: #a9660a; background: rgba(169,102,10,.12); border: 1px solid rgba(169,102,10,.3);
-  padding: 3px 8px; border-radius: 20px; margin-bottom: 8px;
+  display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #92400e; background: linear-gradient(180deg, #fffbeb, #fef3c7); border: 1px solid rgba(245,158,11,.35);
+  padding: 4px 10px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(245,158,11,.08);
 }
+.obs-badge-experimental::before { content: '⚠'; font-size: 10px; }
+
 .obs-activity-row {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0;
-  border-bottom: 1px solid var(--panel-border, #eee); font-size: 12px;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 4px;
+  border-bottom: 1px solid rgba(15,23,42,.055); font-size: 12.5px; transition: background .12s;
 }
+.obs-activity-row:hover { background: rgba(59,107,246,.03); }
 .obs-activity-row:last-child { border-bottom: none; }
 .obs-activity-kind {
-  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #888;
-  background: rgba(0,0,0,.05); border-radius: 5px; padding: 2px 6px; flex-shrink: 0;
+  font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #fff;
+  background: var(--obs-blue); border-radius: 5px; padding: 3px 7px; flex-shrink: 0;
 }
-.obs-activity-label { flex: 1; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.obs-activity-ts { color: #aaa; font-size: 10px; flex-shrink: 0; }
-.obs-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-.obs-bar-track { flex: 1; background: #f0f0f0; border-radius: 4px; height: 8px; }
-.obs-bar-fill { height: 100%; background: #0099CC; border-radius: 4px; }
-.obs-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.obs-activity-row:nth-child(4n+2) .obs-activity-kind { background: var(--obs-purple); }
+.obs-activity-row:nth-child(4n+3) .obs-activity-kind { background: var(--obs-teal); }
+.obs-activity-row:nth-child(4n+4) .obs-activity-kind { background: var(--obs-amber); }
+.obs-activity-label { flex: 1; color: #1f2937; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-activity-ts { color: #9aa0a8; font-size: 10.5px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+.obs-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.obs-bar-track { flex: 1; background: #eef0f4; border-radius: 5px; height: 9px; overflow: hidden; }
+.obs-bar-fill { height: 100%; background: linear-gradient(90deg, var(--obs-blue), #6d92f9); border-radius: 5px; transition: width .3s ease; }
+
+/* Smooth-curve area/line chart (ObsChart component) */
+.obs-chart-wrap { position: relative; }
+.obs-chart { width: 100%; height: 110px; display: block; overflow: visible; }
+.obs-chart-grid { stroke: rgba(15,23,42,.06); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.obs-chart-crosshair { stroke: rgba(15,23,42,.18); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.obs-chart-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: #9aa0a8; font-variant-numeric: tabular-nums; }
+.obs-chart-tooltip {
+  position: absolute; top: -6px; transform: translate(-50%, -100%); background: #111827; color: #fff;
+  padding: 6px 10px; border-radius: 8px; font-size: 11px; white-space: nowrap; pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25); z-index: 5;
+}
+.obs-chart-tooltip-value { font-weight: 800; font-size: 13px; }
+.obs-chart-tooltip-label { color: rgba(255,255,255,.65); font-size: 10px; margin-top: 1px; }
+
+.obs-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
 .obs-form input, .obs-form textarea, .obs-form select {
-  font-family: inherit; font-size: 13px; padding: 9px 12px; border-radius: 8px;
-  border: 1px solid var(--panel-border, #e0e0e0); background: #fff;
+  font-family: inherit; font-size: 13px; padding: 10px 13px; border-radius: 9px;
+  border: 1px solid rgba(15,23,42,.1); background: #fff; transition: border-color .15s, box-shadow .15s;
+}
+.obs-form input:focus, .obs-form textarea:focus, .obs-form select:focus {
+  outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12);
 }
 .obs-form textarea { min-height: 80px; resize: vertical; }
+
 .obs-item-card {
-  background: var(--panel-surface, #f8f8f8); border: 1px solid var(--panel-border, #e8e8e8);
-  border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+  background: #fff; border: 1px solid rgba(15,23,42,.07); border-left: 3px solid var(--obs-accent, var(--obs-blue));
+  border-radius: 11px; padding: 14px 16px; margin-bottom: 11px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.03), 0 4px 10px rgba(15,23,42,.02); transition: box-shadow .15s, transform .15s;
 }
-.obs-item-title { font-size: 13px; font-weight: 700; color: #222; margin-bottom: 4px; }
-.obs-item-meta { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-.obs-item-body { font-size: 12px; color: #555; line-height: 1.6; white-space: pre-wrap; }
+.obs-item-card:hover { box-shadow: 0 2px 6px rgba(15,23,42,.05), 0 8px 18px rgba(15,23,42,.05); transform: translateY(-1px); }
+.obs-item-title { font-size: 13.5px; font-weight: 700; color: #111827; margin-bottom: 5px; }
+.obs-item-meta { font-size: 10px; color: #9aa0a8; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; margin-bottom: 7px; }
+.obs-item-body { font-size: 12.5px; color: #4b5563; line-height: 1.65; white-space: pre-wrap; }
+.obs-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
 
 /* ── LIVE OBSERVATORY CARDS (above Forschung chat) ───────────────────────────── */
-.live-cards { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 0 14px; flex-shrink: 0; }
+.live-cards { display: flex; gap: 10px; flex-wrap: wrap; padding: 0 0 16px; flex-shrink: 0; }
 .live-card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  background: var(--panel-surface, #f8f8f8); border: 1px solid var(--panel-border, #e8e8e8);
-  border-radius: 10px; padding: 8px 14px; cursor: pointer; font-family: inherit; text-align: left;
-  transition: border-color .15s, transform .15s;
+  --obs-accent: #3b6bf6;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; position: relative; overflow: hidden;
+  background: #fff; border: 1px solid rgba(15,23,42,.07); border-radius: 11px; padding: 10px 16px 9px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.03);
+  cursor: pointer; font-family: inherit; text-align: left; transition: box-shadow .15s, transform .15s;
 }
-.live-card:hover { border-color: #0099CC; transform: translateY(-1px); }
-.live-card-value { font-size: 18px; font-weight: 800; color: #0099CC; }
-.live-card-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: .03em; }
-.live-card-more { justify-content: center; color: #555; font-weight: 700; font-size: 12px; }
+.live-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; background: var(--obs-accent); }
+.live-card:hover { box-shadow: 0 2px 6px rgba(15,23,42,.08), 0 8px 20px rgba(15,23,42,.07); transform: translateY(-1px); }
+.live-card-value { font-size: 19px; font-weight: 800; color: #111827; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.live-card-label { font-size: 9.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; white-space: nowrap; }
 
 /* ── AGENT DOCK (Jarvis shortcut) ─────────────────────────────────────────────
    Floating button mounted once inside the admin-mode tree — jumps into the
@@ -1684,6 +1765,14 @@ button { cursor: pointer; font-family: inherit; }
   border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; min-width: 140px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
 }
 .chat-inspector-alt { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: rgba(233,251,255,.75); }
+
+/* TokenBreakdown is shared with the light-themed Human–AI Interaction
+   module (.obs-item-card sits on white, unlike the dark Forschung chat) —
+   override to legible dark-on-light instead of the cyan-on-dark defaults. */
+.obs-item-card .chat-inspector-token { background: rgba(59,107,246,.1); color: #1d4ed8; }
+.obs-item-card .chat-inspector-token:hover { outline-color: #3b6bf6; }
+.obs-item-card .chat-inspector-pop { background: #111827; border-color: rgba(255,255,255,.12); }
+.obs-item-card .chat-inspector-alt { color: rgba(255,255,255,.75); }
 
 /* Real-time tool-call visibility — never show raw tool JSON, always this
    badge instead, appearing as soon as the tool executes (even before the

@@ -14,6 +14,11 @@ interface NoteOut {
   updated_at: string
 }
 
+const CATEGORY_ACCENT: Record<string, string> = {
+  paper: '#3b6bf6', hypothesis: '#8b5cf6', idea: '#14b8a6',
+  concept: '#f59e0b', framework: '#10b981', prototype: '#ef4444',
+}
+
 /// Research Workspace and Innovation Lab are the same table filtered by
 /// category (see backend/src/research.rs) — one shared panel, two thin
 /// wrappers configuring which categories it shows. Avoids building two
@@ -56,25 +61,30 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder }: {
 
   return (
     <div className="obs-panel">
-      <div className="obs-form">
-        <input placeholder={placeholder} value={title} onChange={e => setTitle(e.target.value)} />
-        <textarea placeholder="Inhalt" value={body} onChange={e => setBody(e.target.value)} />
-        {categories.length > 1 && (
-          <select value={category} onChange={e => setCategory(e.target.value)}>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-        <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={submit} disabled={saving || !title.trim()}>
-          {saving ? 'Speichert…' : addLabel}
-        </button>
+      <div className="obs-card">
+        <div className="obs-form" style={{ marginBottom: 0 }}>
+          <input placeholder={placeholder} value={title} onChange={e => setTitle(e.target.value)} />
+          <textarea placeholder="Inhalt" value={body} onChange={e => setBody(e.target.value)} />
+          {categories.length > 1 && (
+            <select value={category} onChange={e => setCategory(e.target.value)}>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={submit} disabled={saving || !title.trim()}>
+            {saving ? 'Speichert…' : addLabel}
+          </button>
+        </div>
       </div>
 
       {loading && !items && <div className="obs-empty">Lade…</div>}
       {list.length === 0 && !loading && <div className="obs-empty">Noch keine Einträge.</div>}
       {list.map(n => (
-        <div className="obs-item-card" key={n.id}>
+        <div className="obs-item-card" key={n.id} style={{ ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>
           <div className="obs-item-title">{n.title}</div>
-          <div className="obs-item-meta">{n.category} · {n.source === 'agent' ? 'von Jarvis' : 'manuell'} · {n.updated_at}</div>
+          <div className="obs-item-meta">
+            <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
+            {' · '}{n.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {n.updated_at}
+          </div>
           <div className="obs-item-body">{n.body}</div>
         </div>
       ))}

@@ -24,31 +24,29 @@ export function HumanAiInteraction() {
 
   return (
     <div className="obs-panel">
-      <div className="obs-section">
-        <div className="obs-section-label">Letzte Antwort — Token für Token</div>
-        {data.latest_tokens && data.latest_tokens.length > 0 ? (
-          <div className="obs-item-card">
-            {data.latest_reply && <div className="obs-item-meta">{data.latest_at}</div>}
-            <TokenBreakdown tokens={data.latest_tokens} />
-          </div>
-        ) : (
-          <div className="obs-empty">Noch keine Antwort mit Token-Daten.</div>
-        )}
-      </div>
+      <div className="obs-section-label">Letzte Antwort — Token für Token</div>
+      {data.latest_tokens && data.latest_tokens.length > 0 ? (
+        <div className="obs-item-card" style={{ ['--obs-accent' as string]: '#3b6bf6' }}>
+          {data.latest_reply && <div className="obs-item-meta">{data.latest_at}</div>}
+          <TokenBreakdown tokens={data.latest_tokens} />
+        </div>
+      ) : (
+        <div className="obs-card"><div className="obs-empty">Noch keine Antwort mit Token-Daten.</div></div>
+      )}
 
       <div className="obs-grid">
-        <div className="obs-stat"><div className="obs-stat-value">{data.user_messages}</div><div className="obs-stat-label">Nachrichten (Mensch)</div></div>
-        <div className="obs-stat"><div className="obs-stat-value">{data.assistant_messages}</div><div className="obs-stat-label">Nachrichten (KI)</div></div>
-        <div className="obs-stat">
+        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.user_messages}</div><div className="obs-stat-label">Nachrichten (Mensch)</div></div>
+        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.assistant_messages}</div><div className="obs-stat-label">Nachrichten (KI)</div></div>
+        <div className="obs-stat c-blue">
           <div className="obs-stat-value">{data.mean_token_confidence !== null ? `${Math.round(data.mean_token_confidence * 100)}%` : '—'}</div>
           <div className="obs-stat-label">Ø Modell-Konfidenz</div>
         </div>
-        <div className="obs-stat">
+        <div className="obs-stat c-teal">
           <div className="obs-stat-value">{data.mean_latency_seconds !== null ? `${data.mean_latency_seconds.toFixed(1)}s` : '—'}</div>
           <div className="obs-stat-label">Ø Antwortzeit ({data.latency_sample_size} Proben)</div>
         </div>
       </div>
-      <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6 }}>
+      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
         Konfidenz ist der Token-Wahrscheinlichkeitswert direkt aus dem Modell — ein Signal über Modellsicherheit,
         keine Aussage über inhaltliche Richtigkeit. Klick auf ein Token oben für die Alternativen, die das Modell erwogen hat.
       </p>
