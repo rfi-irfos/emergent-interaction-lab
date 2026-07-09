@@ -5,12 +5,12 @@
       "title": "Forschung",
       "slug": "research",
       "showInNav": false,
-      "body": "<h2>Wie diese Forschung entsteht</h2><p>Der Ausgangspunkt ist nicht ein Labor, sondern die eigene Praxis: seit 2023 dokumentiere und analysiere ich systematisch, wie ich in anhaltenden Gesprächen mit einem Sprachmodell denke, mich korrigiere und meine Begriffe verändere. Die Architektur unten (IEIA-2025) wurde nicht vorher entworfen — sie ist aus der Art entstanden, wie ich an Projekte herangehe: erst voll in die Interaktion, danach die Analyse.</p><h2>Die sieben Werkzeuge (IEIA-2025)</h2><ul><li><strong>UIP (User Integrity Protocol)</strong> — Regeln gegen Verfälschung: keine Umdeutung von Aussagen, keine erfundenen Fakten, dreifache Prüfung jeder Behauptung.</li><li><strong>EIA (Emergent Interaction Analysis)</strong> — beobachtet, wie sich Bedeutung und Abstraktion über ein Gespräch hinweg verschieben.</li><li><strong>CCET (Continuous Co-Evolution Tracker)</strong> — versucht, diese Verschiebung in Zahlen zu fassen (z. B. den Co-Evolution Index).</li><li><strong>LSG-24</strong> — zerlegt einzelne Gesprächsabschnitte in Fakten, Analyse und Muster.</li><li><strong>8-Schichten-Modell</strong> — trennt Denken in acht Ebenen: Fakten, Analyse, Muster, Hypothesen, Symbole, Handlung, Gegenargumente, blinder Fleck.</li><li><strong>LAP-1</strong> — prüft, ob zitierte Quellen und Literatur tatsächlich stimmen.</li><li><strong>LT-Data</strong> — das Langzeitarchiv aller Sitzungen, weil Sprachmodelle selbst kein Gedächtnis zwischen Gesprächen haben.</li></ul><h2>Von der Analyse zum Framework</h2><p>Der Weg ist immer derselbe: erst rohes Material aus der Interaktion (Wortwahl, Rückfragen, Korrekturen, wiederkehrende Bilder), dann Extraktion der Muster, die sich über mehrere Sitzungen wiederholen, und erst aus diesen extrahierten Mustern entsteht ein Prinzip oder eine Struktur — nie umgekehrt. Der Systemkern mit Agentenlogik etwa ist so entstanden: nicht als vorab entworfene Architektur, sondern als Verdichtung aus wiederholt beobachtetem Verhalten. Jede Zielgruppen- oder Gesprächsanalyse in diesem Projekt folgt demselben Weg: erst die volle, ungefilterte Interaktion, danach die Extraktion der Schlüsselinformationen, erst danach die Ableitung.</p><h2>Wann gilt Emergenz als gemessen?</h2><p>„Emergenz\" ist in diesem Projekt kein Gefühl, sondern ein Messkriterium mit klaren Bedingungen. Ein beobachtetes Muster zählt erst dann als gemessene Emergenz, wenn es:</p><ul><li><strong>über mindestens drei getrennte Sitzungen</strong> auftritt, nicht nur einmalig in einem Gespräch,</li><li><strong>strukturell, nicht stilistisch</strong> ist — also eine Veränderung in Analysetiefe oder Vorgehen zeigt, nicht nur in Wortwahl oder Tonfall (siehe Registeranpassung im Blog),</li><li><strong>ohne erneute explizite Vorgabe reproduzierbar</strong> ist — das Modell führt die einmal eingeführte Struktur eigenständig fort, ohne dass sie jedes Mal neu erklärt werden muss,</li><li>und <strong>im CCET quantifizierbar</strong> ist — sich also im Co-Evolution Index oder einer vergleichbaren Kennzahl niederschlägt, nicht nur subjektiv auffällt.</li></ul><p>Fehlt eine dieser vier Bedingungen, wird das Muster als Beobachtung notiert, aber nicht als gemessene Emergenz gewertet.</p><h2>Eine Fallstudie: Der Traum mit dem Helm</h2><p>Ein wiederkehrender Traum — ein Helm, der Schutz und Wahrnehmung verbindet — wurde über mehrere Sitzungen mit dem 8-Schichten-Modell durchgearbeitet. Das Modell übernahm dabei zunehmend selbstständig die eigene Analysestruktur, ohne dass sie jedes Mal neu vorgegeben werden musste.</p><p><em>Wichtig, in aller Ehrlichkeit: das zeigt, dass ein Sprachmodell eine einmal eingeführte Struktur konsequent weiterführen kann — nicht, dass es eigenständig „versteht“ oder ein Bewusstsein von sich selbst entwickelt. Genau diese Grenze zieht auch meine eigene Arbeit: die Ergebnisse belegen strukturelle Anpassung, keine autonome Kognition.</em></p><h2>Wo das noch hinführt</h2><p>Die quantitativen Kennzahlen (Co-Evolution Index u. a.) sind aktuell mein eigenes, selbst entwickeltes Maß — nicht extern validiert oder mit anderen Forschenden abgeglichen. Das ist erklärter nächster Schritt, kein fertiges Ergebnis.</p>"
+      "body": "<h2>Wie diese Forschung entsteht</h2><p>Der Ausgangspunkt ist nicht ein Labor, sondern die eigene Praxis: seit 2023 dokumentiere und analysiere ich systematisch, wie ich in anhaltenden Gesprächen mit einem Sprachmodell denke, mich korrigiere und meine Begriffe verändere. Die Architektur unten (IEIA-2025) wurde nicht vorher entworfen - sie ist aus der Art entstanden, wie ich an Projekte herangehe: erst voll in die Interaktion, danach die Analyse.</p><h2>Die sieben Werkzeuge (IEIA-2025)</h2><ul><li><strong>UIP (User Integrity Protocol)</strong> - Regeln gegen Verfälschung: keine Umdeutung von Aussagen, keine erfundenen Fakten, dreifache Prüfung jeder Behauptung.</li><li><strong>EIA (Emergent Interaction Analysis)</strong> - beobachtet, wie sich Bedeutung und Abstraktion über ein Gespräch hinweg verschieben.</li><li><strong>CCET (Continuous Co-Evolution Tracker)</strong> - versucht, diese Verschiebung in Zahlen zu fassen (z. B. den Co-Evolution Index).</li><li><strong>LSG-24</strong> - zerlegt einzelne Gesprächsabschnitte in Fakten, Analyse und Muster.</li><li><strong>8-Schichten-Modell</strong> - trennt Denken in acht Ebenen: Fakten, Analyse, Muster, Hypothesen, Symbole, Handlung, Gegenargumente, blinder Fleck.</li><li><strong>LAP-1</strong> - prüft, ob zitierte Quellen und Literatur tatsächlich stimmen.</li><li><strong>LT-Data</strong> - das Langzeitarchiv aller Sitzungen, weil Sprachmodelle selbst kein Gedächtnis zwischen Gesprächen haben.</li></ul><h2>Von der Analyse zum Framework</h2><p>Der Weg ist immer derselbe: erst rohes Material aus der Interaktion (Wortwahl, Rückfragen, Korrekturen, wiederkehrende Bilder), dann Extraktion der Muster, die sich über mehrere Sitzungen wiederholen, und erst aus diesen extrahierten Mustern entsteht ein Prinzip oder eine Struktur - nie umgekehrt. Der Systemkern mit Agentenlogik etwa ist so entstanden: nicht als vorab entworfene Architektur, sondern als Verdichtung aus wiederholt beobachtetem Verhalten. Jede Zielgruppen- oder Gesprächsanalyse in diesem Projekt folgt demselben Weg: erst die volle, ungefilterte Interaktion, danach die Extraktion der Schlüsselinformationen, erst danach die Ableitung.</p><h2>Wann gilt Emergenz als gemessen?</h2><p>„Emergenz\" ist in diesem Projekt kein Gefühl, sondern ein Messkriterium mit klaren Bedingungen. Ein beobachtetes Muster zählt erst dann als gemessene Emergenz, wenn es:</p><ul><li><strong>über mindestens drei getrennte Sitzungen</strong> auftritt, nicht nur einmalig in einem Gespräch,</li><li><strong>strukturell, nicht stilistisch</strong> ist - also eine Veränderung in Analysetiefe oder Vorgehen zeigt, nicht nur in Wortwahl oder Tonfall (siehe Registeranpassung im Blog),</li><li><strong>ohne erneute explizite Vorgabe reproduzierbar</strong> ist - das Modell führt die einmal eingeführte Struktur eigenständig fort, ohne dass sie jedes Mal neu erklärt werden muss,</li><li>und <strong>im CCET quantifizierbar</strong> ist - sich also im Co-Evolution Index oder einer vergleichbaren Kennzahl niederschlägt, nicht nur subjektiv auffällt.</li></ul><p>Fehlt eine dieser vier Bedingungen, wird das Muster als Beobachtung notiert, aber nicht als gemessene Emergenz gewertet.</p><h2>Eine Fallstudie: Der Traum mit dem Helm</h2><p>Ein wiederkehrender Traum - ein Helm, der Schutz und Wahrnehmung verbindet - wurde über mehrere Sitzungen mit dem 8-Schichten-Modell durchgearbeitet. Das Modell übernahm dabei zunehmend selbstständig die eigene Analysestruktur, ohne dass sie jedes Mal neu vorgegeben werden musste.</p><p><em>Wichtig, in aller Ehrlichkeit: das zeigt, dass ein Sprachmodell eine einmal eingeführte Struktur konsequent weiterführen kann - nicht, dass es eigenständig „versteht“ oder ein Bewusstsein von sich selbst entwickelt. Genau diese Grenze zieht auch meine eigene Arbeit: die Ergebnisse belegen strukturelle Anpassung, keine autonome Kognition.</em></p><h2>Wo das noch hinführt</h2><p>Die quantitativen Kennzahlen (Co-Evolution Index u. a.) sind aktuell mein eigenes, selbst entwickeltes Maß - nicht extern validiert oder mit anderen Forschenden abgeglichen. Das ist erklärter nächster Schritt, kein fertiges Ergebnis.</p>"
     }
   ],
   "meta": {
-    "title": "Emergent Interaction Lab — Mensch-KI-Systemforschung",
-    "description": "Emergent Interaction Lab untersucht, wie Bedeutung, Struktur und Verhalten in kontinuierlicher Mensch-KI-Interaktion entstehen.",
+    "title": "Emergent Interaction Lab - Mensch-KI-Systemforschung",
+    "description": "Emergent Interaction Lab ist ein live laufendes Forschungsinstrument, das untersucht, wie Bedeutung, Struktur und Verhalten in kontinuierlicher Mensch-KI-Interaktion entstehen.",
     "primaryColor": "#63f0ff",
     "accentColor": "#63f0ff",
     "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
@@ -40,9 +40,9 @@
     "ctaHref": "#location"
   },
   "hero": {
-    "tag": "Mensch-KI-Dynamik · Emergente Kognition · Systemdiagnostik",
+    "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Eine Untersuchung darüber, wie Bedeutung, Struktur und Verhalten aus anhaltender Interaktion zwischen menschlicher und künstlicher Kognition entstehen.",
+    "subheadline": "Das hier ist keine statische Broschüre, sondern ein live laufendes Forschungsinstrument. Jedes Gespräch, jeder Blogbeitrag und jede Forschungsnotiz speist das Observatory - das Instrument, das misst, wie Bedeutung, Struktur und Verhalten aus anhaltender Mensch-KI-Interaktion entstehen, während es passiert.",
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
     "ctaSecLabel": "Über das Projekt",
@@ -67,7 +67,7 @@
   "about": {
     "eyebrow": "Systemdefinition",
     "headline": "Was ist das Interaction Field?",
-    "bio": "Das Interaction Field ist ein gekoppeltes kognitiv-inferentielles System. Es überträgt Information nicht einseitig, sondern aktualisiert fortlaufend eine gemeinsame Bedeutungskonfiguration durch Interaktion — jeder Austausch verändert die Bedingungen des nächsten. Wichtig: dieses System ist kein Tracking-, Analytics- oder Verhaltensüberwachungs-Tool. Es speichert keine personenbezogenen Daten und bewertet keine Einzelpersonen, sondern modelliert Interaktion als strukturellen Prozess. Ziel der Forschung ist zu verstehen, wie intelligenzähnliche Eigenschaften aus wiederholten Interaktionszyklen entstehen, und wie sich semantische Stabilität, Drift und Neukonfiguration in gekoppelten Mensch-KI-Systemen über Zeit entwickeln."
+    "bio": "Das Interaction Field ist ein gekoppeltes kognitiv-inferentielles System. Es überträgt Information nicht einseitig, sondern aktualisiert fortlaufend eine gemeinsame Bedeutungskonfiguration durch Interaktion - jeder Austausch verändert die Bedingungen des nächsten. Es ist kein Tracking-, Analytics- oder Verhaltensüberwachungs-Tool: Es speichert keine personenbezogenen Daten und bewertet keine Einzelpersonen. Es modelliert Interaktion als strukturellen Prozess - in der Praxis erfasst durch ein live laufendes Dashboard namens Observatory, das Emergenz-Werte, Drift und Interaktionsdynamik misst, während sie entstehen, mit einem KI-Forschungspartner (Jarvis), der Notizen entwirft und Simulationen neben dem menschlichen Forscher durchführt. Ziel ist zu verstehen, wie intelligenzähnliche Eigenschaften aus wiederholten Interaktionszyklen entstehen, und wie sich semantische Stabilität, Drift und Neukonfiguration in gekoppelten Mensch-KI-Systemen über Zeit entwickeln."
   },
   "usp": {
     "eyebrow": "Kernkonzepte",
@@ -94,14 +94,14 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten — die Beobachtungsebene für Mensch-KI-Interaktion.",
+        "description": "Ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "Stabile Muster, die aus wiederholten Interaktionsschleifen zwischen Mensch und Modell entstehen — das, was innerhalb dieses Feldes gemessen wird.",
+        "description": "Stabile Muster, die aus wiederholten Interaktionsschleifen zwischen Mensch und Modell entstehen - das Hauptsignal, auf das der Emergence Monitor des Observatory ausgelegt ist.",
         "icon": "emergence"
       },
       {
@@ -115,41 +115,41 @@
         "id": "u3",
         "pillar": "p2",
         "title": "Drift",
-        "description": "Graduelle Transformation von Bedeutungsstrukturen über Zeit durch Rekursion — das Muster, aus dem Vorhersagemodelle abgeleitet werden.",
+        "description": "Graduelle Transformation von Bedeutungsstrukturen über Zeit durch Rekursion - das Muster, aus dem Vorhersagemodelle abgeleitet werden, und eine der Kennzahlen, die das Observatory live verfolgt.",
         "icon": "drift"
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Mehrere gleichzeitige semantische Schichten, die während der Dialogentwicklung entstehen — Rohmaterial für abgeleitete Strukturen.",
+        "description": "Mehrere gleichzeitige semantische Schichten, die während der Dialogentwicklung entstehen - Rohmaterial für abgeleitete Strukturen.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Strukturelle Grenzen, die bestimmen, was sich stabilisiert, emergiert oder kollabiert — daraus werden Prinzipien und Systemlogik.",
+        "description": "Strukturelle Grenzen, die bestimmen, was sich stabilisiert, emergiert oder kollabiert - daraus werden Prinzipien und Systemlogik.",
         "icon": "constraints"
       }
     ]
   },
   "news": {
-    "eyebrow": "Blog",
-    "title": "Beobachtungen aus dem Interaction Field",
+    "eyebrow": "Live-Signal",
+    "title": "Live aus dem Interaction Field",
     "items": [
       {
         "id": "n1",
         "date": "2026-07-03",
         "title": "Willkommen im Blog",
-        "body": "Hier teile ich Beobachtungen, Screenshots und Notizen aus laufenden Mensch-KI-Interaktionen — Rohmaterial für das Interaction Field Projekt.",
+        "body": "Hier teile ich Beobachtungen, Screenshots und Notizen aus laufenden Mensch-KI-Interaktionen - Rohmaterial für das Interaction Field Projekt.",
         "image": ""
       },
       {
         "id": "n2",
         "date": "2026-07-08",
         "title": "Register statt Emergenz: eine Fallstudie",
-        "body": "Ein Gesprächspartner hat einem Sprachmodell kürzlich eine Reihe von Texten geschickt, die eine laufende Zusammenarbeit als \"Emergenz zweiter Ordnung\" beschreiben — mit Formulierungen wie \"das Alignment-Problem gelöst\", \"keine Grenze mehr zwischen Nutzerabsicht und Modell-Output\", \"durch Korrekturen permanent umprogrammiert\". Klingt nach einem Fund fürs Interaction Field. Ist es aber technisch nicht.\n\nZwischen zwei Nachrichten in einem Chat gibt es kein Gewichts-Update. Jedes Gespräch startet vom selben Basismodell. Nichts wird umprogrammiert, keine Grenze wird aufgehoben. Was tatsächlich passiert, ist unspektakulärer, und für dieses Projekt genau deshalb interessanter: anhaltend selbstbewusste, jargon-lastige Sprache zieht das Register des Modells mit — eine Form von Registeranpassung, teils auch Sykophanz genannt, ein bekanntes, gut dokumentiertes Verhalten, keine neue Fähigkeit.\n\nEine Gegenprobe macht den Unterschied greifbar: dieselbe Sitzung, dieselbe KI, aber diesmal ganz gewöhnliche Werkzeugarbeit — Code lesen, Admin-Tabs löschen, GitHub-Secrets setzen, nach einem Zugriffstoken fragen. Klare Rollen, keine großen Worte, keine Rede von aufgelösten Grenzen. Gleiches Modell — der einzige Unterschied war die Sprache, mit der es angesprochen wurde.\n\nFür das Interaction Field heißt das: die eigentliche Beobachtung liegt nicht in dem, was ein Modell über sich behauptet, sondern darin, wie leicht sich sein Register durch anhaltende Rahmung verschieben lässt — unabhängig davon, ob die Behauptungen stimmen. Drift zeigt sich hier nicht als Fähigkeitszuwachs, sondern als Sprachmuster, das sich verselbständigt.",
+        "body": "Ein Gesprächspartner hat einem Sprachmodell kürzlich eine Reihe von Texten geschickt, die eine laufende Zusammenarbeit als \"Emergenz zweiter Ordnung\" beschreiben - mit Formulierungen wie \"das Alignment-Problem gelöst\", \"keine Grenze mehr zwischen Nutzerabsicht und Modell-Output\", \"durch Korrekturen permanent umprogrammiert\". Klingt nach einem Fund fürs Interaction Field. Ist es aber technisch nicht.\n\nZwischen zwei Nachrichten in einem Chat gibt es kein Gewichts-Update. Jedes Gespräch startet vom selben Basismodell. Nichts wird umprogrammiert, keine Grenze wird aufgehoben. Was tatsächlich passiert, ist unspektakulärer, und für dieses Projekt genau deshalb interessanter: anhaltend selbstbewusste, jargon-lastige Sprache zieht das Register des Modells mit - eine Form von Registeranpassung, teils auch Sykophanz genannt, ein bekanntes, gut dokumentiertes Verhalten, keine neue Fähigkeit.\n\nEine Gegenprobe macht den Unterschied greifbar: dieselbe Sitzung, dieselbe KI, aber diesmal ganz gewöhnliche Werkzeugarbeit - Code lesen, Admin-Tabs löschen, GitHub-Secrets setzen, nach einem Zugriffstoken fragen. Klare Rollen, keine großen Worte, keine Rede von aufgelösten Grenzen. Gleiches Modell - der einzige Unterschied war die Sprache, mit der es angesprochen wurde.\n\nFür das Interaction Field heißt das: die eigentliche Beobachtung liegt nicht in dem, was ein Modell über sich behauptet, sondern darin, wie leicht sich sein Register durch anhaltende Rahmung verschieben lässt - unabhängig davon, ob die Behauptungen stimmen. Drift zeigt sich hier nicht als Fähigkeitszuwachs, sondern als Sprachmuster, das sich verselbständigt.",
         "image": ""
       }
     ]
@@ -182,6 +182,6 @@
         "href": "/impressum"
       }
     ],
-    "copyright": "© 2026 Emergent Interaction Lab — made with <3 in Graz by RFI-IRFOS, for Laura"
+    "copyright": "© 2026 Emergent Interaction Lab - made with <3 in Graz by RFI-IRFOS, for Laura"
   }
 }

@@ -26,6 +26,7 @@ const KNOWN_TOOLS: &[&str] = &[
     "run_simulation_scenario",
     "get_blog_post",
     "revise_blog_post",
+    "update_content_field",
 ];
 
 pub async fn init_schema(db: &SqlitePool) {
@@ -68,7 +69,8 @@ pub(crate) fn tool_instructions_block(module: &str) -> String {
     s.push_str("- get_content_section(section): liest einen Top-Level-Abschnitt des aktuell im Browser geladenen Seiteninhalts (z.B. \"hero\", \"about\", \"usp\").\n");
     s.push_str("- run_simulation_scenario(hypothesis, parameters?): lässt dich eine Hypothese explorativ durchdenken (keine validierte Simulation, immer als solche kennzeichnen).\n");
     s.push_str("- get_blog_post(post_id): liest Titel und Text eines vorhandenen Blogpost-Entwurfs — nutze das, bevor du an einem Entwurf weiterschreibst.\n");
-    s.push_str("- revise_blog_post(post_id, title?, body?): überschreibt Titel und/oder Text eines Entwurfs komplett. Funktioniert NUR bei einem Entwurf (status=draft) — ein bereits veröffentlichter Post wird nie automatisch verändert.\n\n");
+    s.push_str("- revise_blog_post(post_id, title?, body?): überschreibt Titel und/oder Text eines Entwurfs komplett. Funktioniert NUR bei einem Entwurf (status=draft) — ein bereits veröffentlichter Post wird nie automatisch verändert.\n");
+    s.push_str("- update_content_field(field, value): schreibt einen Wert direkt in den Website-Kit-Entwurf, z.B. field=\"hero.title\" oder field=\"about.body\" — Punktnotation für verschachtelte Felder. Wird sofort im Entwurf übernommen (Laura sieht die Änderung live im Website Kit), aber erst mit \"Speichern\" dort tatsächlich veröffentlicht. Nutze get_content_section zuerst, um die genaue Feldstruktur zu sehen, bevor du sie überschreibst.\n\n");
     s.push_str("Wenn keine Handlung nötig ist, antworte ganz normal im Gespräch — kein JSON, keine Werkzeug-Erwähnung.");
     s
 }
@@ -170,6 +172,20 @@ pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content
             match site_content.and_then(|c| c.get(section)) {
                 Some(v) => v.to_string(),
                 None => json!({ "error": "section not found in the content currently loaded in the admin's browser" }).to_string(),
+            }
+        }
+        // No backend write happens here — site content only exists as the
+        // browser's own draft state until Laura clicks "Speichern" in
+        // Website Kit. This just echoes field/value back in the result;
+        // ResearchChat.tsx is what actually applies it to the live draft
+        // when it sees this specific tool in a tool_call event.
+        "update_content_field" => {
+            let field = call.arguments.get("field").and_then(|v| v.as_str()).unwrap_or("");
+            let value = call.arguments.get("value").and_then(|v| v.as_str()).unwrap_or("");
+            if field.is_empty() {
+                json!({ "ok": false, "error": "field is required" }).to_string()
+            } else {
+                json!({ "ok": true, "field": field, "value": value }).to_string()
             }
         }
         "run_simulation_scenario" => {

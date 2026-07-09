@@ -29,6 +29,24 @@ interface DiagnosticsData {
   agent_tool_call_errors_7d: number
 }
 
+interface ScopeTrend {
+  scope: string
+  conversation_count: number
+  messages_7d: number
+  messages_prev_7d: number
+}
+
+// Real Interaction Dynamics figure, cited inline instead of the two modules
+// staying disconnected: the message-volume trend of the specific
+// conversations this scope's signals actually came from.
+function trendLine(t: ScopeTrend | undefined): string | null {
+  if (!t || t.messages_7d === 0) return null
+  if (t.messages_prev_7d === 0) return `${t.messages_7d} Nachrichten in den letzten 7 Tagen in ${t.conversation_count} beteiligten Gespräch(en) - neu diese Woche.`
+  const pct = Math.round(((t.messages_7d - t.messages_prev_7d) / t.messages_prev_7d) * 100)
+  const direction = pct > 0 ? `+${pct}%` : `${pct}%`
+  return `${t.messages_7d} Nachrichten in den letzten 7 Tagen in ${t.conversation_count} beteiligten Gespräch(en) (${direction} ggü. Vorwoche).`
+}
+
 function StatusRow({ label, ok }: { label: string; ok: boolean }) {
   return (
     <div className="obs-activity-row">
@@ -47,6 +65,8 @@ function StatusRow({ label, ok }: { label: string; ok: boolean }) {
 export function SystemState() {
   const { data: signals, loading: signalsLoading } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals')
   const { data: diag, loading: diagLoading } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
+  const { data: scopeTrends } = useAdminFetch<ScopeTrend[]>('/api/observatory/scope-trends')
+  const trendByScope = new Map((scopeTrends ?? []).map(t => [t.scope, t]))
 
   const byScope = new Map<string, Signal>()
   const countByScope = new Map<string, number>()
@@ -88,16 +108,20 @@ export function SystemState() {
       {!signalsLoading && states.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Noch kein Systemzustand erkannt — entsteht automatisch aus Forschungsgesprächen.</div></div>
       )}
-      {states.map(([scope, s]) => (
-        <div className="obs-item-card" key={scope}>
-          <div className="obs-item-title">
-            {scope}
-            <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
+      {states.map(([scope, s]) => {
+        const trend = trendLine(trendByScope.get(scope))
+        return (
+          <div className="obs-item-card" key={scope}>
+            <div className="obs-item-title">
+              {scope}
+              <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
+            </div>
+            <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
+            <div className="obs-item-body">{s.observation}</div>
+            {trend && <div className="obs-item-meta" style={{ marginTop: 8 }}>📈 Interaction Dynamics: {trend}</div>}
           </div>
-          <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
-          <div className="obs-item-body">{s.observation}</div>
-        </div>
-      ))}
+        )
+      })}
 
       <div className="obs-section-label" style={{ marginTop: 26 }}>Technische Systemgesundheit</div>
       {diagLoading && <div className="obs-empty">Lade…</div>}

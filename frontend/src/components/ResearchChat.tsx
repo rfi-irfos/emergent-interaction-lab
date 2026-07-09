@@ -113,6 +113,9 @@ const TOOL_LABELS: Record<string, string> = {
   get_recent_analytics: 'Analytics abgerufen',
   get_content_section: 'Seiteninhalt gelesen',
   run_simulation_scenario: 'Simulation durchgespielt',
+  get_blog_post: 'Blogpost-Entwurf gelesen',
+  revise_blog_post: 'Blogpost-Entwurf überarbeitet',
+  update_content_field: 'Website-Kit-Entwurf aktualisiert',
 }
 
 function ToolCallBadge({ call }: { call: ToolCallEvent }) {
@@ -127,11 +130,12 @@ function ToolCallBadge({ call }: { call: ToolCallEvent }) {
   )
 }
 
-export function ResearchChat({ siteContent, onMessageComplete, openConversationId, onOpenConversationHandled }: {
+export function ResearchChat({ siteContent, onMessageComplete, openConversationId, onOpenConversationHandled, onUpdate }: {
   siteContent?: unknown
   onMessageComplete?: () => void
   openConversationId?: string | null
   onOpenConversationHandled?: () => void
+  onUpdate?: (field: string, value: unknown) => void
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -244,6 +248,16 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       },
       (call) => {
         setToolCalls(t => ({ ...t, [assistantId]: [...(t[assistantId] ?? []), call] }))
+        // "hey jarvis, lass uns diese karte umschreiben" — applies immediately
+        // to the Website Kit draft, same as draft_blog_post/log_research_note
+        // already apply immediately server-side. Still draft-only until
+        // Laura clicks "Speichern" there, same as any other content edit.
+        if (call.tool === 'update_content_field' && onUpdate) {
+          try {
+            const parsed = JSON.parse(call.result)
+            if (parsed.ok && parsed.field) onUpdate(parsed.field, parsed.value)
+          } catch { /* malformed tool result, ignore */ }
+        }
       },
       () => {
         setStreaming(false)

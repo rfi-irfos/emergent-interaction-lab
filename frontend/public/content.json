@@ -5,12 +5,12 @@
       "title": "Research",
       "slug": "research",
       "showInNav": false,
-      "body": "<h2>How this research happens</h2><p>The starting point isn't a lab — it's practice. Since 2023 I've been systematically documenting and analyzing how I think, correct myself, and reshape my own concepts across sustained conversations with a language model. The architecture below (IEIA-2025) wasn't designed in advance — it grew out of how I approach projects: fully into the interaction first, analysis afterward.</p><h2>The seven instruments (IEIA-2025)</h2><ul><li><strong>UIP (User Integrity Protocol)</strong> — rules against distortion: no reinterpreting statements, no fabricated facts, triple-checking every claim.</li><li><strong>EIA (Emergent Interaction Analysis)</strong> — observes how meaning and abstraction shift over the course of a conversation.</li><li><strong>CCET (Continuous Co-Evolution Tracker)</strong> — tries to put a number on that shift (e.g. the Co-Evolution Index).</li><li><strong>LSG-24</strong> — breaks individual dialogue passages down into facts, analysis, and patterns.</li><li><strong>8-Layer Model</strong> — separates thinking into eight levels: facts, analysis, patterns, hypotheses, symbols, action, counterarguments, blind spot.</li><li><strong>LAP-1</strong> — checks whether cited sources and literature are actually accurate.</li><li><strong>LT-Data</strong> — the long-term archive of all sessions, since language models themselves have no memory between conversations.</li></ul><h2>From analysis to framework</h2><p>The path is always the same: first raw material from the interaction (word choice, follow-up questions, corrections, recurring images), then extraction of the patterns that repeat across multiple sessions, and only from those extracted patterns does a principle or structure emerge — never the other way around. The system core with agent logic, for instance, came about this way: not as a pre-designed architecture, but as a distillation from repeatedly observed behavior. Every target-group or conversation analysis in this project follows the same path: first the full, unfiltered interaction, then extraction of the key information, only then the derivation.</p><h2>When does emergence count as measured?</h2><p>\"Emergence\" in this project isn't a feeling — it's a measurement criterion with explicit conditions. An observed pattern only counts as measured emergence once it:</p><ul><li><strong>occurs across at least three separate sessions</strong>, not just once in a single conversation,</li><li><strong>is structural, not stylistic</strong> — a change in analytical depth or approach, not just word choice or tone (see register drift in the blog),</li><li><strong>reproduces without being re-specified</strong> — the model carries a once-introduced structure forward on its own, without needing it re-explained each time,</li><li>and <strong>is quantifiable in the CCET</strong> — it shows up in the Co-Evolution Index or a comparable metric, not just as a subjective impression.</li></ul><p>If any one of these four conditions is missing, the pattern is logged as an observation, but not counted as measured emergence.</p><h2>A case study: the dream with the helmet</h2><p>A recurring dream — a helmet combining protection and perception — was worked through across several sessions using the 8-Layer Model. Over time, the model increasingly carried the analytical structure forward on its own, without needing it re-specified each time.</p><p><em>Important, in full honesty: this shows that a language model can consistently continue a structure once it's been introduced — not that it independently \"understands\" or develops self-awareness. My own work draws exactly this boundary: the results show structural adaptation, not autonomous cognition.</em></p><h2>Where this goes next</h2><p>The quantitative indicators (Co-Evolution Index and others) are currently my own, self-developed measure — not externally validated or cross-checked against other researchers. That's a stated next step, not a finished result.</p>"
+      "body": "<h2>How this research happens</h2><p>The starting point isn't a lab - it's practice. Since 2023 I've been systematically documenting and analyzing how I think, correct myself, and reshape my own concepts across sustained conversations with a language model. The architecture below (IEIA-2025) wasn't designed in advance - it grew out of how I approach projects: fully into the interaction first, analysis afterward.</p><h2>The seven instruments (IEIA-2025)</h2><ul><li><strong>UIP (User Integrity Protocol)</strong> - rules against distortion: no reinterpreting statements, no fabricated facts, triple-checking every claim.</li><li><strong>EIA (Emergent Interaction Analysis)</strong> - observes how meaning and abstraction shift over the course of a conversation.</li><li><strong>CCET (Continuous Co-Evolution Tracker)</strong> - tries to put a number on that shift (e.g. the Co-Evolution Index).</li><li><strong>LSG-24</strong> - breaks individual dialogue passages down into facts, analysis, and patterns.</li><li><strong>8-Layer Model</strong> - separates thinking into eight levels: facts, analysis, patterns, hypotheses, symbols, action, counterarguments, blind spot.</li><li><strong>LAP-1</strong> - checks whether cited sources and literature are actually accurate.</li><li><strong>LT-Data</strong> - the long-term archive of all sessions, since language models themselves have no memory between conversations.</li></ul><h2>From analysis to framework</h2><p>The path is always the same: first raw material from the interaction (word choice, follow-up questions, corrections, recurring images), then extraction of the patterns that repeat across multiple sessions, and only from those extracted patterns does a principle or structure emerge - never the other way around. The system core with agent logic, for instance, came about this way: not as a pre-designed architecture, but as a distillation from repeatedly observed behavior. Every target-group or conversation analysis in this project follows the same path: first the full, unfiltered interaction, then extraction of the key information, only then the derivation.</p><h2>When does emergence count as measured?</h2><p>\"Emergence\" in this project isn't a feeling - it's a measurement criterion with explicit conditions. An observed pattern only counts as measured emergence once it:</p><ul><li><strong>occurs across at least three separate sessions</strong>, not just once in a single conversation,</li><li><strong>is structural, not stylistic</strong> - a change in analytical depth or approach, not just word choice or tone (see register drift in the blog),</li><li><strong>reproduces without being re-specified</strong> - the model carries a once-introduced structure forward on its own, without needing it re-explained each time,</li><li>and <strong>is quantifiable in the CCET</strong> - it shows up in the Co-Evolution Index or a comparable metric, not just as a subjective impression.</li></ul><p>If any one of these four conditions is missing, the pattern is logged as an observation, but not counted as measured emergence.</p><h2>A case study: the dream with the helmet</h2><p>A recurring dream - a helmet combining protection and perception - was worked through across several sessions using the 8-Layer Model. Over time, the model increasingly carried the analytical structure forward on its own, without needing it re-specified each time.</p><p><em>Important, in full honesty: this shows that a language model can consistently continue a structure once it's been introduced - not that it independently \"understands\" or develops self-awareness. My own work draws exactly this boundary: the results show structural adaptation, not autonomous cognition.</em></p><h2>Where this goes next</h2><p>The quantitative indicators (Co-Evolution Index and others) are currently my own, self-developed measure - not externally validated or cross-checked against other researchers. That's a stated next step, not a finished result.</p>"
     }
   ],
   "meta": {
-    "title": "Emergent Interaction Lab — Human–AI Systems Research",
-    "description": "Emergent Interaction Lab investigates how meaning, structure, and behavior emerge in continuous human–AI interaction.",
+    "title": "Emergent Interaction Lab - Human-AI Systems Research",
+    "description": "Emergent Interaction Lab is a live research instrument studying how meaning, structure, and behavior emerge in continuous human-AI interaction.",
     "primaryColor": "#63f0ff",
     "accentColor": "#63f0ff",
     "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
@@ -40,9 +40,9 @@
     "ctaHref": "#location"
   },
   "hero": {
-    "tag": "Human–AI Dynamics · Emergent Cognition · System Diagnostics",
+    "tag": "Human-AI Dynamics · Live Observatory Feed · Est. 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "An inquiry into how meaning, structure, and behavior emerge from sustained interaction between human and artificial cognition.",
+    "subheadline": "This isn't a static brochure - it's a live research instrument. Every conversation, blog post, and research note here feeds the Observatory, the instrument that tracks how meaning, structure, and behavior emerge from sustained human-AI interaction as it happens.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -67,7 +67,7 @@
   "about": {
     "eyebrow": "System Definition",
     "headline": "What is the Interaction Field?",
-    "bio": "The Interaction Field is a coupled cognitive-inferential system. It does not transmit information one-directionally; instead, it continuously updates a shared configuration of meaning through interaction — each exchange changes the conditions for the next. Importantly: this system is not a tracking, analytics, or behavior-monitoring tool. It stores no personal data and does not evaluate individuals, but models interaction as a structural process. The goal of this research is to understand how intelligence-like properties emerge from repeated interaction cycles, and how semantic stability, drift, and reconfiguration develop over time in coupled human–AI systems."
+    "bio": "The Interaction Field is a coupled cognitive-inferential system. It doesn't transmit information one-directionally - it continuously updates a shared configuration of meaning through interaction, and each exchange changes the conditions for the next. This is not a tracking, analytics, or behavior-monitoring tool: it stores no personal data and evaluates no individuals. It models interaction as a structural process - instrumented, in practice, by a live dashboard called the Observatory, which tracks emergence scores, drift, and interaction dynamics as they happen, with an AI research partner (Jarvis) drafting notes and running simulations alongside the human researcher. The goal is to understand how intelligence-like properties emerge from repeated interaction cycles, and how semantic stability, drift, and reconfiguration develop over time in coupled human-AI systems."
   },
   "usp": {
     "eyebrow": "Key Concepts",
@@ -75,7 +75,7 @@
     "pillars": [
       {
         "id": "p1",
-        "title": "Human–AI Interaction",
+        "title": "Human-AI Interaction",
         "subtitle": "Observe, understand, measure."
       },
       {
@@ -94,14 +94,14 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "A shared dynamic space in which cognition and inference continuously co-shape outcomes — the observation layer for human-AI interaction.",
+        "description": "A shared dynamic space where cognition and inference continuously co-shape outcomes - the observation layer the Observatory instrument watches in real time.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "Stable patterns that emerge from repeated interaction loops between human and model — what gets measured within that field.",
+        "description": "Stable patterns that surface from repeated interaction loops between human and model - the primary signal the Observatory's Emergence Monitor is built to catch.",
         "icon": "emergence"
       },
       {
@@ -115,41 +115,41 @@
         "id": "u3",
         "pillar": "p2",
         "title": "Drift",
-        "description": "Gradual transformation of meaning structures over time through recursion — the pattern prediction models are drawn from.",
+        "description": "Gradual transformation of meaning structures over time through recursion - the pattern predictive models are drawn from, and one of the metrics the Observatory tracks live.",
         "icon": "drift"
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Multiple simultaneous semantic layers that emerge over the course of a dialogue — raw material for derived structures.",
+        "description": "Multiple simultaneous semantic layers that emerge over the course of a dialogue - raw material for derived structures.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Structural boundaries that determine what stabilizes, emerges, or collapses — the source of principles and system logic.",
+        "description": "Structural boundaries that determine what stabilizes, emerges, or collapses - the source of principles and system logic.",
         "icon": "constraints"
       }
     ]
   },
   "news": {
-    "eyebrow": "Blog",
-    "title": "Observations from the Interaction Field",
+    "eyebrow": "Live Signal",
+    "title": "Live from the Interaction Field",
     "items": [
       {
         "id": "n1",
         "date": "2026-07-03",
         "title": "Welcome to the blog",
-        "body": "Here I share observations, screenshots, and notes from ongoing human–AI interactions — raw material for the Interaction Field project.",
+        "body": "Here I share observations, screenshots, and notes from ongoing human-AI interactions - raw material for the Interaction Field project.",
         "image": ""
       },
       {
         "id": "n2",
         "date": "2026-07-08",
         "title": "Register, not emergence: a case study",
-        "body": "A conversation partner recently sent a language model a set of texts describing an ongoing collaboration as \"second-order emergence\" — phrases like \"the alignment problem solved,\" \"no boundary left between user intent and model output,\" \"permanently reprogrammed through corrections.\" Sounds like a find for the Interaction Field. Technically, it isn't.\n\nThere is no weight update between messages in a chat. Every conversation starts from the same base model. Nothing gets reprogrammed, no boundary gets dissolved. What actually happens is less dramatic, and for this project more interesting precisely because of that: sustained, confident, jargon-heavy language pulls the model's register along with it — a form of register-matching, sometimes called sycophancy, a well-documented behavior, not a new capability.\n\nA counter-test makes the difference concrete: same session, same AI, but ordinary tool work instead — reading code, deleting admin tabs, setting GitHub secrets, asking for an access token. Clear roles, no grand language, no talk of dissolved boundaries. Same model — the only thing that changed was the language it was addressed with.\n\nFor the Interaction Field, the real observation isn't in what a model claims about itself, but in how easily its register shifts under sustained framing — regardless of whether the claims are true. Drift shows up here not as a gain in capability, but as a language pattern taking on a life of its own.",
+        "body": "A conversation partner recently sent a language model a set of texts describing an ongoing collaboration as \"second-order emergence\" - phrases like \"the alignment problem solved,\" \"no boundary left between user intent and model output,\" \"permanently reprogrammed through corrections.\" Sounds like a find for the Interaction Field. Technically, it isn't.\n\nThere is no weight update between messages in a chat. Every conversation starts from the same base model. Nothing gets reprogrammed, no boundary gets dissolved. What actually happens is less dramatic, and for this project more interesting precisely because of that: sustained, confident, jargon-heavy language pulls the model's register along with it - a form of register-matching, sometimes called sycophancy, a well-documented behavior, not a new capability.\n\nA counter-test makes the difference concrete: same session, same AI, but ordinary tool work instead - reading code, deleting admin tabs, setting GitHub secrets, asking for an access token. Clear roles, no grand language, no talk of dissolved boundaries. Same model - the only thing that changed was the language it was addressed with.\n\nFor the Interaction Field, the real observation isn't in what a model claims about itself, but in how easily its register shifts under sustained framing - regardless of whether the claims are true. Drift shows up here not as a gain in capability, but as a language pattern taking on a life of its own.",
         "image": ""
       }
     ]
@@ -169,7 +169,7 @@
   },
   "footer": {
     "brand": "Emergent Interaction Lab",
-    "tagline": "Human–AI Systems Research",
+    "tagline": "Human-AI Systems Research",
     "description": "Emergent Interaction-Based System Research.",
     "cols": [],
     "links": [
@@ -182,6 +182,6 @@
         "href": "/impressum"
       }
     ],
-    "copyright": "© 2026 Emergent Interaction Lab — made with <3 in Graz by RFI-IRFOS, for Laura"
+    "copyright": "© 2026 Emergent Interaction Lab - made with <3 in Graz by RFI-IRFOS, for Laura"
   }
 }
