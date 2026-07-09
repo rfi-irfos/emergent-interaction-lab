@@ -22,6 +22,16 @@ const STATUS_ACCENT: Record<string, string> = {
   emerging: '#f59e0b', stable: '#10b981', fading: '#6b7280', hypothetical: '#8b5cf6',
 }
 
+function downloadJson(filename: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 /// The most important Observatory module: Jarvis's own qualitative read of
 /// what's emerging in the research dialogue, not a stats pipeline. A new
 /// signal set is generated automatically after every Forschung exchange
@@ -61,7 +71,18 @@ export function EmergenceMonitor() {
 
   return (
     <div className="obs-panel">
-      <div className="obs-badge-experimental">Modell-Interpretation, kein validiertes Emergenzmaß</div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
+          {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
+        </button>
+        <button
+          className="panel-add-btn"
+          disabled={signals.length === 0}
+          onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
+        >
+          ⬇ Exportieren
+        </button>
+      </div>
       {signals.length === 0 ? (
         <div className="obs-card"><div className="obs-empty">Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.</div></div>
       ) : (
@@ -79,9 +100,6 @@ export function EmergenceMonitor() {
           </div>
         ))
       )}
-      <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing} style={{ marginTop: 8 }}>
-        {analyzing ? 'Analysiert…' : 'Jetzt erneut analysieren'}
-      </button>
     </div>
   )
 }

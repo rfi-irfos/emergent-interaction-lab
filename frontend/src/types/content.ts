@@ -36,12 +36,15 @@ export interface CategoryItem {
   subcategories?: SubCategoryItem[]
 }
 
+export interface NewsCategory { id: string; name: string }
+
 export interface NewsItem {
   id: string
   date: string
   title: string
   body: string
   image?: string
+  category?: string
 }
 
 export interface TrustItem {
@@ -112,7 +115,7 @@ export interface SiteContent {
   categories: { eyebrow?: string; title: string; items: CategoryItem[] }
   products: { title: string; tabs: string[]; items: ProductItem[] }
   usp: { eyebrow?: string; title: string; pillars?: FrameworkPillar[]; items: FeatureItem[] }
-  news: { eyebrow?: string; title: string; items: NewsItem[] }
+  news: { eyebrow?: string; title: string; items: NewsItem[]; categories?: NewsCategory[] }
   contact: {
     title: string
     subtitle?: string

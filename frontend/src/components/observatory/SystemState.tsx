@@ -48,8 +48,6 @@ export function SystemState() {
 
   return (
     <div className="obs-panel">
-      <div className="obs-badge-experimental">Zustand aus Modell-Interpretation abgeleitet, kein Messwert</div>
-
       <div className="obs-section-label">Beobachtete Systeme</div>
       {signalsLoading && <div className="obs-empty">Lade…</div>}
       {!signalsLoading && states.length === 0 && (
