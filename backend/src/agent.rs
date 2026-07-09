@@ -24,6 +24,8 @@ const KNOWN_TOOLS: &[&str] = &[
     "get_recent_analytics",
     "get_content_section",
     "run_simulation_scenario",
+    "get_blog_post",
+    "revise_blog_post",
 ];
 
 pub async fn init_schema(db: &SqlitePool) {
@@ -64,7 +66,9 @@ pub(crate) fn tool_instructions_block(module: &str) -> String {
     s.push_str("- log_research_note(category, title, body, tags?): category ist eines von paper/hypothesis/idea/concept/framework/prototype.\n");
     s.push_str("- get_recent_analytics(days?): liefert Seitenaufrufe/Unique Visitors der letzten N Tage (Standard 7).\n");
     s.push_str("- get_content_section(section): liest einen Top-Level-Abschnitt des aktuell im Browser geladenen Seiteninhalts (z.B. \"hero\", \"about\", \"usp\").\n");
-    s.push_str("- run_simulation_scenario(hypothesis, parameters?): lässt dich eine Hypothese explorativ durchdenken (keine validierte Simulation, immer als solche kennzeichnen).\n\n");
+    s.push_str("- run_simulation_scenario(hypothesis, parameters?): lässt dich eine Hypothese explorativ durchdenken (keine validierte Simulation, immer als solche kennzeichnen).\n");
+    s.push_str("- get_blog_post(post_id): liest Titel und Text eines vorhandenen Blogpost-Entwurfs — nutze das, bevor du an einem Entwurf weiterschreibst.\n");
+    s.push_str("- revise_blog_post(post_id, title?, body?): überschreibt Titel und/oder Text eines Entwurfs komplett. Funktioniert NUR bei einem Entwurf (status=draft) — ein bereits veröffentlichter Post wird nie automatisch verändert.\n\n");
     s.push_str("Wenn keine Handlung nötig ist, antworte ganz normal im Gespräch — kein JSON, keine Werkzeug-Erwähnung.");
     s
 }
@@ -118,13 +122,29 @@ pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
     None
 }
 
-pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&serde_json::Value>) -> String {
+pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&serde_json::Value>, conversation_id: &str) -> String {
     match call.tool.as_str() {
         "draft_blog_post" => {
             let title = call.arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Unbenannt");
             let body = call.arguments.get("body").and_then(|v| v.as_str()).unwrap_or("");
-            let id = crate::blog::insert_post(state, title, body, "agent").await;
+            let id = crate::blog::insert_post(state, title, body, "agent", Some(conversation_id)).await;
             json!({ "ok": true, "id": id, "status": "draft" }).to_string()
+        }
+        "get_blog_post" => {
+            let post_id = call.arguments.get("post_id").and_then(|v| v.as_str()).unwrap_or("");
+            match crate::blog::fetch_post_json(state, post_id).await {
+                Some(v) => v.to_string(),
+                None => json!({ "error": "post not found" }).to_string(),
+            }
+        }
+        "revise_blog_post" => {
+            let post_id = call.arguments.get("post_id").and_then(|v| v.as_str()).unwrap_or("");
+            let title = call.arguments.get("title").and_then(|v| v.as_str());
+            let body = call.arguments.get("body").and_then(|v| v.as_str());
+            match crate::blog::revise_draft(state, post_id, title, body).await {
+                Ok(()) => json!({ "ok": true }).to_string(),
+                Err(e) => json!({ "ok": false, "error": e }).to_string(),
+            }
         }
         "log_research_note" => {
             let category = call.arguments.get("category").and_then(|v| v.as_str()).unwrap_or("idea");

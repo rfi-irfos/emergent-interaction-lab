@@ -677,6 +677,8 @@ export function PublicSite({
   }, [modalArticle])
   const [heroBgPos, setHeroBgPos] = useState({ x: hero.bgX ?? 50, y: hero.bgY ?? 50 })
   const [heroHeight, setHeroHeight] = useState(hero.minHeight ?? 680)
+  const heroBgPosRef = useRef(heroBgPos)
+  const heroHeightRef = useRef(heroHeight)
   const heroDragRef  = useRef<{ startX: number; startY: number; startBgX: number; startBgY: number } | null>(null)
   const heightDragRef = useRef<{ startY: number; startH: number } | null>(null)
   const heroRef = useRef<HTMLElement | null>(null)
@@ -708,14 +710,18 @@ export function PublicSite({
     const onMove = (e: MouseEvent) => {
       if (!heroDragRef.current || !heroRef.current) return
       const rect = heroRef.current.getBoundingClientRect()
-      setHeroBgPos({
+      const next = {
         x: Math.max(0, Math.min(100, heroDragRef.current.startBgX - (e.clientX - heroDragRef.current.startX) / rect.width * 100)),
         y: Math.max(0, Math.min(100, heroDragRef.current.startBgY - (e.clientY - heroDragRef.current.startY) / rect.height * 100)),
-      })
+      }
+      heroBgPosRef.current = next
+      setHeroBgPos(next)
     }
     const onUp = () => {
+      if (!heroDragRef.current) return
       heroDragRef.current = null
-      setHeroBgPos(p => { onUpdate?.('hero.bgX', p.x); onUpdate?.('hero.bgY', p.y); return p })
+      onUpdate?.('hero.bgX', heroBgPosRef.current.x)
+      onUpdate?.('hero.bgY', heroBgPosRef.current.y)
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
@@ -727,11 +733,14 @@ export function PublicSite({
     if (!heightDragRef.current) return
     const onMove = (e: MouseEvent) => {
       if (!heightDragRef.current) return
-      setHeroHeight(Math.max(300, heightDragRef.current.startH + e.clientY - heightDragRef.current.startY))
+      const next = Math.max(300, heightDragRef.current.startH + e.clientY - heightDragRef.current.startY)
+      heroHeightRef.current = next
+      setHeroHeight(next)
     }
     const onUp = () => {
+      if (!heightDragRef.current) return
       heightDragRef.current = null
-      setHeroHeight(h => { onUpdate?.('hero.minHeight', h); return h })
+      onUpdate?.('hero.minHeight', heroHeightRef.current)
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)

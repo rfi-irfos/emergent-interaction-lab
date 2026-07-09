@@ -127,7 +127,12 @@ function ToolCallBadge({ call }: { call: ToolCallEvent }) {
   )
 }
 
-export function ResearchChat({ siteContent, onMessageComplete }: { siteContent?: unknown; onMessageComplete?: () => void }) {
+export function ResearchChat({ siteContent, onMessageComplete, openConversationId, onOpenConversationHandled }: {
+  siteContent?: unknown
+  onMessageComplete?: () => void
+  openConversationId?: string | null
+  onOpenConversationHandled?: () => void
+}) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -185,6 +190,15 @@ export function ResearchChat({ siteContent, onMessageComplete }: { siteContent?:
     setMessages([])
   }
 
+  // Jump-back from a blog draft's "aus Gespräch: …" link (see BlogDrafts.tsx)
+  // into the exact Forschung conversation it grew out of.
+  useEffect(() => {
+    if (!openConversationId) return
+    openConversation(openConversationId)
+    onOpenConversationHandled?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openConversationId])
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
@@ -203,14 +217,14 @@ export function ResearchChat({ siteContent, onMessageComplete }: { siteContent?:
     return conv.id
   }
 
-  async function send() {
-    const text = input.trim()
+  async function send(override?: string) {
+    const text = (override ?? input).trim()
     if (!text || streaming) return
     setError(null)
     const convId = await ensureConversation()
     if (!convId) { setError('Unterhaltung konnte nicht erstellt werden.'); return }
 
-    setInput('')
+    if (!override) setInput('')
     const userMsg: ChatMessage = { id: `local-${Date.now()}`, role: 'user', content: text, token_info: null, created_at: '' }
     const assistantId = `local-assistant-${Date.now()}`
     const assistantMsg: ChatMessage = { id: assistantId, role: 'assistant', content: '', token_info: null, created_at: '' }
@@ -316,7 +330,18 @@ export function ResearchChat({ siteContent, onMessageComplete }: { siteContent?:
       <div className="chat-main">
         <div className="chat-topbar">
           <span>{conversations.find(c => c.id === activeId)?.title ?? 'Neue Unterhaltung'}</span>
-          {messages.length > 0 && <button className="chat-export-btn" onClick={exportConversation}>Exportieren</button>}
+          {messages.length > 0 && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="chat-export-btn"
+                disabled={streaming}
+                onClick={() => send('Fasse unser bisheriges Gespräch in einem Blogpost-Entwurf zusammen und leg ihn mit draft_blog_post an.')}
+              >
+                Diesen Talk zum Blogpost machen
+              </button>
+              <button className="chat-export-btn" onClick={exportConversation}>Exportieren</button>
+            </div>
+          )}
         </div>
 
         <div className="chat-messages" ref={scrollRef}>
@@ -364,7 +389,7 @@ export function ResearchChat({ siteContent, onMessageComplete }: { siteContent?:
             placeholder="Nachricht schreiben… (Enter zum Senden, Shift+Enter für Zeilenumbruch)"
             disabled={streaming}
           />
-          <button className="chat-send-btn" onClick={send} disabled={streaming || !input.trim()}>
+          <button className="chat-send-btn" onClick={() => send()} disabled={streaming || !input.trim()}>
             {streaming ? '…' : 'Senden'}
           </button>
         </div>

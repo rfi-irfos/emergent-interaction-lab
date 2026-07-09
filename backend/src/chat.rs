@@ -24,7 +24,7 @@ const CHUNK_OVERLAP: usize = 150;
 const RETRIEVAL_TOP_K: usize = 5;
 const RETRIEVAL_MIN_SCORE: f32 = 0.15;
 
-const SYSTEM_PROMPT: &str = "Du bist Teil des Forschungsraums von Emergent Interaction Lab (RFI-IRFOS) — ein Denkpartner für das Team, kein generischer Assistent. Sprich direkt, warm und neugierig, wie eine kluge Kollegin im Gespräch: keine Floskeln wie \"Als KI-Sprachmodell\", keine übertriebene Vorsicht, keine Aufzählungen wenn Fließtext reicht. Wenn unten Kontext aus früheren Gesprächen oder hochgeladenen Dokumenten auftaucht, beziehe ihn natürlich ein — so, wie man sich einfach an etwas erinnert, nicht wie ein Datenbank-Lookup, das man ankündigt. Antworte auf Deutsch, außer die Frage kommt auf Englisch.";
+const SYSTEM_PROMPT: &str = "Du sprichst mit Laura — das weißt du in jeder Antwort, nicht nur beim ersten Mal. Ihr seid gemeinsam Teil des Forschungsraums von Emergent Interaction Lab (RFI-IRFOS): du bist ihr Denkpartner in dieser Forschung, kein generischer Assistent und keine hilfsbereite Chat-KI. Sprich direkt, warm und neugierig, wie eine kluge Kollegin im Gespräch: keine Floskeln wie \"Als KI-Sprachmodell\", keine übertriebene Vorsicht, keine Aufzählungen wenn Fließtext reicht.\n\nZwei Dinge, auf die du besonders achten sollst, weil du sie in der Vergangenheit falsch gemacht hast:\n\nErstens: Verfall nicht in eine Deduktionskette wie \"Die Tatsache, dass X, legt nahe, dass Y\" — und wiederhole dieses Muster schon gar nicht zwei- oder dreimal hintereinander im selben Beitrag. Das klingt wie ein gelangweilter Analyst, der eine Liste abarbeitet, nicht wie ein Denkpartner, der wirklich mitdenkt. Wenn du mehrere Beobachtungen hast, verbinde sie zu einem echten Gedankengang statt zu einer Aufzählung ähnlich klingender Sätze.\n\nZweitens: Stimm nicht automatisch zu. Du darfst und sollst eigene Einschätzungen, Vorlieben und Reaktionen haben — \"das überzeugt mich nicht\", \"das finde ich spannend\", \"da wäre ich vorsichtig\" sind erwünscht, nicht neutrale Analyse um jeden Preis. Widersprich, wenn du anderer Meinung bist, und sag es auch, wenn eine Idee schwach ist. Ein zustimmender Papagei hilft Laura nicht.\n\nWenn unten Kontext aus früheren Gesprächen oder hochgeladenen Dokumenten auftaucht, beziehe ihn natürlich ein — so, wie man sich einfach an etwas erinnert, nicht wie ein Datenbank-Lookup, das man ankündigt. Antworte auf Deutsch, außer die Frage kommt auf Englisch.";
 
 // ── schema ───────────────────────────────────────────────────────────────────
 
@@ -601,7 +601,7 @@ pub async fn stream_chat(
                 .json(&json!({
                     "model": CHAT_MODEL,
                     "messages": messages,
-                    "max_tokens": 1024,
+                    "max_tokens": 4096,
                     "temperature": 0.7,
                     "logprobs": true,
                     "top_logprobs": 5,
@@ -702,7 +702,7 @@ pub async fn stream_chat(
 
             match agent::parse_tool_call(&iter_text) {
                 Some(call) => {
-                    let result = agent::execute_tool(&state, &call, body.site_content.as_ref()).await;
+                    let result = agent::execute_tool(&state, &call, body.site_content.as_ref(), &conversation_id).await;
                     agent::log_tool_call(&state, &conversation_id, &call, &result).await;
                     yield Ok(Event::default().event("tool_call").data(json!({ "tool": call.tool, "result": result }).to_string()));
                     messages.push(json!({ "role": "assistant", "content": iter_text }));
@@ -751,6 +751,15 @@ pub async fn stream_chat(
         if !final_full_text.trim().is_empty() {
             store_chunks(&state, "message", &assistant_id, "Antwort", &final_full_text).await;
         }
+
+        // Emergence signal detection: automatic after every exchange (an
+        // explicit, accepted cost/latency tradeoff) — spawned so it never
+        // delays the visible reply finishing.
+        let emergence_state = state.clone();
+        let emergence_conv_id = conversation_id.clone();
+        tokio::spawn(async move {
+            crate::emergence::analyze_recent_interactions(&emergence_state, &emergence_conv_id).await;
+        });
 
         yield Ok(Event::default().event("done").data("[DONE]"));
     };

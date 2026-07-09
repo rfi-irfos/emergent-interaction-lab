@@ -6,6 +6,7 @@ mod blog;
 mod chat;
 mod contact;
 mod content;
+mod emergence;
 mod inspect;
 mod observatory;
 mod research;
@@ -68,6 +69,7 @@ async fn main() {
     research::init_schema(&db).await;
     simulation::init_schema(&db).await;
     agent::init_schema(&db).await;
+    emergence::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -118,13 +120,13 @@ async fn main() {
         .route("/api/chat/stream", post(chat::stream_chat))
         .route("/api/chat/documents", get(chat::list_documents).post(chat::upload_document))
         .route("/api/chat/documents/:id", axum::routing::delete(chat::delete_document))
-        // Observatory (real-data-backed, some explicitly-labeled experimental indicators)
-        .route("/api/observatory/overview", get(observatory::overview))
-        .route("/api/observatory/emergence", get(observatory::emergence))
+        // Observatory (emergence signals only — business/CMS metrics live in /api/analytics)
         .route("/api/observatory/behavior", get(observatory::behavior))
         .route("/api/observatory/information", get(observatory::information))
         .route("/api/observatory/human-ai", get(observatory::human_ai))
         .route("/api/observatory/diagnostics", get(observatory::diagnostics))
+        .route("/api/observatory/emergence/signals", get(emergence::list_signals))
+        .route("/api/observatory/emergence/analyze", post(emergence::analyze))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

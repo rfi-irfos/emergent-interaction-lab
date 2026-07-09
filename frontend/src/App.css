@@ -855,6 +855,17 @@ button { cursor: pointer; font-family: inherit; }
 .builder-btn-ghost { background: none; border: 1.5px solid #ddd; border-radius: 6px; padding: 5px 12px; font-size: 13px; color: #555; transition: .2s; }
 .builder-btn-ghost:hover { border-color: #0099CC; color: #0099CC; }
 .builder-btn-ghost.active { background: #0099CC; border-color: #0099CC; color: #fff; }
+
+/* Minimal shell topbar: just two icon buttons (view live site, logout) — the
+   old Forschung/Verwaltung mode-toggle and Speichern buttons are gone, since
+   every destination is one sidebar click away in the unified shell now. */
+.topbar-icon-btn {
+  display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;
+  border-radius: 9px; border: 1.5px solid #e0e0e0; background: #fff; color: #555; transition: .15s;
+}
+.topbar-icon-btn:hover { border-color: #0099CC; color: #0099CC; background: #f0f9fc; }
+.topbar-icon-btn-danger { color: #c53030; }
+.topbar-icon-btn-danger:hover { border-color: #e53e3e; color: #e53e3e; background: #fef2f2; }
 .builder-save-btn-top {
   background: #0099CC; color: #fff; border: none;
   padding: 7px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; transition: .2s;
@@ -1524,6 +1535,27 @@ button { cursor: pointer; font-family: inherit; }
 .crm-topbar { display: flex; align-items: center; padding: 20px 28px 16px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); }
 .crm-topbar-title { font-size: 20px; font-weight: 800; color: #0b1720; }
 .crm-body { flex: 1; overflow-y: auto; padding: 20px 28px 28px; width: 100%; }
+/* Website Kit needs a full-bleed, fixed-height two-pane layout (canvas +
+   resizable settings panel), unlike every other section which just scrolls
+   inside the padded crm-body — let it take over completely when active. */
+.crm-body:has(> .website-kit) { padding: 0; overflow: hidden; display: flex; }
+.website-kit { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+.website-kit .builder-device-switch { margin: 10px 16px; flex-shrink: 0; align-self: flex-start; }
+
+/* ── SIDEBAR COLLAPSE ─────────────────────────────────────────────────────── */
+.crm-sidebar { transition: width .18s ease; }
+.crm-sidebar.collapsed { width: 60px; }
+.crm-sidebar.collapsed .crm-sidebar-brand { padding: 18px 0; justify-content: center; }
+.crm-sidebar.collapsed .crm-nav-item { justify-content: center; padding: 10px 0; }
+.crm-sidebar.collapsed .crm-nav-item.active::before { left: 0; }
+.crm-sidebar.collapsed .crm-badge { position: absolute; top: 2px; right: 6px; margin-left: 0; }
+.crm-sidebar-collapse-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 8px 10px 12px; padding: 8px; border: none; border-radius: 8px;
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background .15s, color .15s; flex-shrink: 0;
+}
+.crm-sidebar-collapse-btn:hover { background: rgba(255,255,255,.09); color: rgba(255,255,255,.8); }
 
 /* ── ADMIN: OBSERVATORY MODULES ──────────────────────────────────────────────
    A proper BI-dashboard design language (Looker/Linear-adjacent: layered
