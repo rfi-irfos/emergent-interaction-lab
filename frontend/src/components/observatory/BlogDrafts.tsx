@@ -42,27 +42,32 @@ export function BlogDrafts({ onPromoteToSite }: { onPromoteToSite: (title: strin
     await refresh()
   }
 
+  const STATUS_ACCENT: Record<string, string> = { draft: '#f59e0b', published: '#10b981' }
+
   if (loading && !posts) return <div className="obs-empty">Lade…</div>
 
   return (
     <div>
-      <p style={{ fontSize: 12, color: '#888', margin: '4px 0 14px', lineHeight: 1.6 }}>
+      <p style={{ fontSize: 12, color: '#9aa0a8', margin: '4px 0 16px', lineHeight: 1.6 }}>
         Entwürfe, die Jarvis (im Forschungstab) oder du hier angelegt habt. „Veröffentlichen" übernimmt den Beitrag in
         den öffentlichen Blog oben — anschließend oben rechts auf „Speichern" klicken, um ihn live zu schalten.
       </p>
       {list.length === 0 && <div className="obs-empty">Noch keine Blogpost-Entwürfe.</div>}
       {list.map(p => (
-        <div className="obs-item-card" key={p.id}>
+        <div className="obs-item-card" key={p.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>
           <div className="obs-item-title">{p.title}</div>
-          <div className="obs-item-meta">{p.status} · {p.source === 'agent' ? 'von Jarvis' : 'manuell'} · {p.updated_at}</div>
+          <div className="obs-item-meta">
+            <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{p.status}</span>
+            {' · '}{p.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {p.updated_at}
+          </div>
           <div className="obs-item-body">{p.body}</div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             {p.status === 'draft' && (
               <button className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => publish(p)}>
                 Veröffentlichen
               </button>
             )}
-            {p.status === 'published' && <span style={{ fontSize: 11, color: '#38A169', fontWeight: 700 }}>✓ Im öffentlichen Blog vorgemerkt</span>}
+            {p.status === 'published' && <span className="obs-status-pill ok">✓ Im öffentlichen Blog vorgemerkt</span>}
             <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => remove(p.id)}>Löschen</button>
           </div>
         </div>
