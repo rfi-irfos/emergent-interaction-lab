@@ -48,7 +48,7 @@ function downloadJson(filename: string, data: unknown) {
 /// (see backend/src/emergence.rs) — this page just lists what's accumulated.
 /// Every card carries the experimental badge deliberately: this is model
 /// interpretation, never presented as validated fact.
-export function EmergenceMonitor() {
+export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [refreshKey, setRefreshKey] = useState(0)
   const { data, loading } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals', [refreshKey])
   const [analyzing, setAnalyzing] = useState(false)
@@ -113,6 +113,18 @@ export function EmergenceMonitor() {
                     {' · '}Verlauf: {EVOLUTION_ARROW[s.evolution] ?? '?'} {s.evolution}
                     {s.scope && <> · {s.scope}</>}
                     {' · '}{s.created_at}
+                    {s.source_conversation_id && onOpenConversation && (
+                      <>
+                        {' · '}
+                        <button
+                          className="chat-inspect-toggle"
+                          style={{ fontSize: 11, padding: 0 }}
+                          onClick={() => onOpenConversation(s.source_conversation_id!)}
+                        >
+                          aus Gespräch ↗
+                        </button>
+                      </>
+                    )}
                   </div>
                   <div className="obs-item-body">{s.observation}</div>
                 </div>
