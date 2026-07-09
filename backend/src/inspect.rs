@@ -1,5 +1,7 @@
-use axum::{http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, http::{HeaderMap, StatusCode}, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+
+use crate::{authz::require_admin, AppState};
 
 const MODEL: &str = "meta/llama-3.1-8b-instruct";
 const MAX_PROMPT_CHARS: usize = 300;
@@ -51,7 +53,14 @@ struct NvidiaTopLogprob {
     logprob: f64,
 }
 
-pub async fn inspect(Json(body): Json<InspectRequest>) -> impl IntoResponse {
+pub async fn inspect(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<InspectRequest>,
+) -> impl IntoResponse {
+    if !require_admin(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
     let prompt = body.prompt.trim();
     if prompt.is_empty() {
         return (StatusCode::BAD_REQUEST, "Prompt darf nicht leer sein.").into_response();

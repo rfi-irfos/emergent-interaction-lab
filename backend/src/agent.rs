@@ -90,6 +90,42 @@ fn try_parse_as_tool_call(candidate: &str) -> Option<ToolCall> {
     Some(ToolCall { tool, arguments })
 }
 
+/// Finds the byte index of the `}` that closes the `{` at `start`, tracking
+/// brace depth and skipping over string contents (so braces inside a quoted
+/// argument value don't throw off the count). Operating on bytes is safe
+/// here because every delimiter tracked (`{`, `}`, `"`, `\`) is single-byte
+/// ASCII — a multi-byte UTF-8 continuation byte can never match one.
+fn matching_brace_end(text: &str, start: usize) -> Option<usize> {
+    let bytes = text.as_bytes();
+    let mut depth = 0i32;
+    let mut in_string = false;
+    let mut escaped = false;
+    for (i, &b) in bytes.iter().enumerate().skip(start) {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if b == b'\\' {
+                escaped = true;
+            } else if b == b'"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match b {
+            b'"' => in_string = true,
+            b'{' => depth += 1,
+            b'}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(i);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
     let trimmed = text.trim();
 
@@ -99,25 +135,43 @@ pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
         return Some(call);
     }
 
-    // 2. A fenced ```json ... ``` block, per the original instruction.
-    if let Some(start) = trimmed.find("```") {
-        let after_start = &trimmed[start + 3..];
+    // 2. A fenced ```json ... ``` block, per the original instruction. Tries
+    //    every fenced block in order, not just the first — the model can
+    //    emit an unrelated code fence before the one actually carrying the
+    //    tool call.
+    let mut rest = trimmed;
+    while let Some(start) = rest.find("```") {
+        let after_start = &rest[start + 3..];
         let after_start = after_start.strip_prefix("json").unwrap_or(after_start);
         let after_start = after_start.trim_start_matches('\n');
-        if let Some(end) = after_start.find("```") {
-            if let Some(call) = try_parse_as_tool_call(&after_start[..end]) {
-                return Some(call);
+        match after_start.find("```") {
+            Some(end) => {
+                if let Some(call) = try_parse_as_tool_call(&after_start[..end]) {
+                    return Some(call);
+                }
+                rest = &after_start[end + 3..];
             }
+            None => break,
         }
     }
 
     // 3. A bare JSON object embedded in surrounding prose (model adds
     //    commentary around the call instead of replying with only JSON).
-    if let (Some(first), Some(last)) = (trimmed.find('{'), trimmed.rfind('}')) {
-        if last > first {
-            if let Some(call) = try_parse_as_tool_call(&trimmed[first..=last]) {
-                return Some(call);
+    //    Tries every `{` in the text in turn, using brace-depth matching to
+    //    find its real closing `}`, instead of only the outermost
+    //    first-`{`-to-last-`}` span — that greedy span silently swallows a
+    //    valid call when the reply contains more than one brace pair.
+    let mut search_from = 0;
+    while let Some(rel_start) = trimmed[search_from..].find('{') {
+        let start = search_from + rel_start;
+        match matching_brace_end(trimmed, start) {
+            Some(end) => {
+                if let Some(call) = try_parse_as_tool_call(&trimmed[start..=end]) {
+                    return Some(call);
+                }
+                search_from = start + 1;
             }
+            None => break,
         }
     }
 
@@ -284,6 +338,27 @@ mod tests {
         let text = "Klar, das mache ich: {\"tool\": \"get_recent_analytics\", \"arguments\": {\"days\": 7}} Einen Moment.";
         let call = parse_tool_call(text).expect("should detect embedded tool call");
         assert_eq!(call.tool, "get_recent_analytics");
+    }
+
+    #[test]
+    fn detects_fenced_call_when_an_unrelated_fence_comes_first() {
+        // Regression: the model sometimes shows an example code fence before
+        // the fence that actually carries the tool call — the parser used to
+        // give up after the first fence failed to parse as a known tool.
+        let text = "So sieht das Format aus:\n```\n{\"beispiel\": true}\n```\nUnd hier der echte Aufruf:\n```json\n{\"tool\": \"log_research_note\", \"arguments\": {\"category\": \"idea\", \"title\": \"x\", \"body\": \"y\"}}\n```";
+        let call = parse_tool_call(text).expect("should detect the second fenced tool call");
+        assert_eq!(call.tool, "log_research_note");
+    }
+
+    #[test]
+    fn detects_embedded_call_when_an_unrelated_brace_pair_comes_first() {
+        // Regression: a first-`{`-to-last-`}` greedy span used to swallow an
+        // unrelated brace pair earlier in the reply, producing invalid JSON
+        // for the whole span and silently missing the real tool call.
+        let text = "Die Konfiguration { key: val } war schon da. Jetzt aber: {\"tool\": \"get_recent_analytics\", \"arguments\": {\"days\": 3}}";
+        let call = parse_tool_call(text).expect("should detect the second embedded tool call");
+        assert_eq!(call.tool, "get_recent_analytics");
+        assert_eq!(call.arguments["days"], 3);
     }
 
     #[test]

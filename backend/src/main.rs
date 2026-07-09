@@ -94,6 +94,10 @@ async fn main() {
         chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
     };
 
+    if state.chat_secret.is_empty() {
+        tracing::warn!("CHAT_API_SECRET missing at startup — all admin endpoints are unauthenticated, do not use in production");
+    }
+
     if dev_mode {
         tracing::warn!("DEV_MODE=true — auth is bypassed, do not use in production");
     }
