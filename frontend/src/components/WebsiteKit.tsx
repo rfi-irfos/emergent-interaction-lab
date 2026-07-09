@@ -325,7 +325,7 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                         <input value={editingPageItem.slug} onChange={e => updatePage(editingPageItem.id, 'slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} placeholder="meine-seite" />
                       </Field>
                       <Field label="">
-                        <div style={{ padding: '6px 10px', background: '#f0f7ff', borderRadius: 6, fontSize: 12, color: '#0099CC', fontFamily: 'monospace' }}>
+                        <div style={{ padding: '6px 10px', background: 'var(--panel-surface, #f0f7ff)', borderRadius: 6, fontSize: 12, color: 'var(--hud-cyan, #0099CC)', fontFamily: 'monospace' }}>
                           Link: <strong>#p/{editingPageItem.slug}</strong>
                         </div>
                       </Field>
@@ -359,7 +359,7 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                   ) : (
                     <div className="panel-product-list">
                       {(draft.pages ?? []).length === 0 && (
-                        <div style={{ padding: '20px 16px', color: '#aaa', fontSize: 13, textAlign: 'center' }}>
+                        <div style={{ padding: '20px 16px', color: 'var(--panel-text-dim, #aaa)', fontSize: 13, textAlign: 'center' }}>
                           Noch keine Seiten. Klicke auf "+ Neue Seite".
                         </div>
                       )}
@@ -367,9 +367,9 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                         <div key={p.id} className="panel-product-row" onClick={() => setEditingPage(p.id)}>
                           <div style={{ flex: 1, padding: '8px 12px' }}>
                             <div style={{ fontWeight: 600, fontSize: 13 }}>{p.title}</div>
-                            <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>#p/{p.slug}</div>
+                            <div style={{ fontSize: 11, color: 'var(--panel-text-dim, #888)', fontFamily: 'monospace' }}>#p/{p.slug}</div>
                           </div>
-                          {p.showInNav && <span style={{ fontSize: 10, background: '#e8f4ff', color: '#0099CC', borderRadius: 4, padding: '2px 6px', margin: '0 8px', fontWeight: 700 }}>NAV</span>}
+                          {p.showInNav && <span style={{ fontSize: 10, background: 'var(--panel-surface, #e8f4ff)', color: 'var(--hud-cyan, #0099CC)', borderRadius: 4, padding: '2px 6px', margin: '0 8px', fontWeight: 700 }}>NAV</span>}
                         </div>
                       ))}
                     </div>
