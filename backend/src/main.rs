@@ -2,6 +2,7 @@ mod agent;
 mod analytics;
 mod auth;
 mod authz;
+mod billing;
 mod blog;
 mod chat;
 mod contact;
@@ -35,6 +36,7 @@ pub struct AppState {
     pub http: reqwest::Client,
     pub nvidia_api_key: String,
     pub chat_secret: String,
+    pub stripe_secret_key: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -70,6 +72,7 @@ async fn main() {
     simulation::init_schema(&db).await;
     agent::init_schema(&db).await;
     emergence::init_schema(&db).await;
+    billing::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -92,10 +95,14 @@ async fn main() {
         http: reqwest::Client::new(),
         nvidia_api_key,
         chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
+        stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
     };
 
     if state.chat_secret.is_empty() {
         tracing::warn!("CHAT_API_SECRET missing at startup — all admin endpoints are unauthenticated, do not use in production");
+    }
+    if state.stripe_secret_key.is_empty() {
+        tracing::warn!("STRIPE_SECRET_KEY missing at startup — payment link creation will be unavailable");
     }
 
     if dev_mode {
@@ -142,6 +149,10 @@ async fn main() {
         // Simulation Lab (genuinely functional, LLM-reasoned, always labeled exploratory)
         .route("/api/simulation/runs", get(simulation::list_runs).post(simulation::create_run))
         .route("/api/simulation/runs/:id", get(simulation::get_run).delete(simulation::delete_run))
+        // Monetization (Verwaltung, not Observatory — business concern, not a research signal)
+        .route("/api/billing/products", get(billing::list_products).post(billing::create_product))
+        .route("/api/billing/products/:id", axum::routing::delete(billing::delete_product))
+        .route("/api/billing/products/:id/payment-link", post(billing::create_payment_link))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))
