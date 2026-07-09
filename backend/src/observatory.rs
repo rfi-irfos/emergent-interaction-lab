@@ -55,10 +55,26 @@ pub async fn information(State(state): State<AppState>, headers: HeaderMap) -> i
         "SELECT date(created_at) as day, AVG(top_score), AVG(hit_count) FROM chat_retrievals WHERE created_at > datetime('now','-14 days') GROUP BY day ORDER BY day"
     ).fetch_all(db).await.unwrap_or_default();
 
+    // Real, per-query view of what retrieval actually returned — the daily
+    // averages above wash out individual failures. Surfaces genuine
+    // knowledge gaps (a query with zero hits, or a top hit too weak to pass
+    // chat.rs's own relevance threshold) instead of only ever averaging
+    // scores away.
+    let recent_retrievals: Vec<(String, f64, i64, String)> = sqlx::query_as(
+        "SELECT query_text, top_score, hit_count, created_at FROM chat_retrievals ORDER BY created_at DESC LIMIT 10"
+    ).fetch_all(db).await.unwrap_or_default();
+
     Json(json!({
         "documents": documents,
         "chunks": chunks,
         "retrieval_by_day": retrieval_by_day.into_iter().map(|(day, avg_score, avg_hits)| json!({"day":day,"avg_top_score":avg_score,"avg_hit_count":avg_hits})).collect::<Vec<_>>(),
+        "recent_retrievals": recent_retrievals.into_iter().map(|(query_text, top_score, hit_count, created_at)| json!({
+            "query_text": query_text,
+            "top_score": top_score,
+            "hit_count": hit_count,
+            "created_at": created_at,
+            "is_gap": hit_count == 0 || (top_score as f32) < crate::chat::RETRIEVAL_MIN_SCORE,
+        })).collect::<Vec<_>>(),
     })).into_response()
 }
 
