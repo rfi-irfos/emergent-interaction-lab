@@ -135,8 +135,6 @@ async fn main() {
         // Simulation Lab (genuinely functional, LLM-reasoned, always labeled exploratory)
         .route("/api/simulation/runs", get(simulation::list_runs).post(simulation::create_run))
         .route("/api/simulation/runs/:id", get(simulation::get_run).delete(simulation::delete_run))
-        // Jarvis — ambient agent, tool-calling loop, shares chat_conversations/messages
-        .route("/api/agent/message", post(agent::message))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))

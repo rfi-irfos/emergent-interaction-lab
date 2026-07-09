@@ -13,6 +13,7 @@ use serde_json::json;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use crate::agent;
 use crate::authz::require_admin as is_authorized;
 use crate::AppState;
 
@@ -487,6 +488,13 @@ pub async fn upload_document(
 pub struct StreamChatReq {
     conversation_id: String,
     message: String,
+    /// Which admin section is currently open — injected into the tool
+    /// instructions so Jarvis knows what the admin is looking at.
+    current_module: Option<String>,
+    /// The SiteContent object as currently loaded in the admin's browser —
+    /// lets get_content_section answer from live state without the backend
+    /// needing its own GitHub credentials/repo config.
+    site_content: Option<serde_json::Value>,
 }
 
 pub async fn stream_chat(
@@ -573,116 +581,163 @@ pub async fn stream_chat(
         .await
         .unwrap_or_default();
 
+        let module_ctx = body.current_module.as_deref().unwrap_or("Forschung");
         let mut messages = vec![json!({
             "role": "system",
-            "content": format!("{SYSTEM_PROMPT}{context_block}"),
+            "content": format!("{SYSTEM_PROMPT}{context_block}{}", agent::tool_instructions_block(module_ctx)),
         })];
         for (role, content) in &history {
             messages.push(json!({ "role": role, "content": content }));
         }
 
-        let res = state
-            .http
-            .post("https://integrate.api.nvidia.com/v1/chat/completions")
-            .bearer_auth(&state.nvidia_api_key)
-            .json(&json!({
-                "model": CHAT_MODEL,
-                "messages": messages,
-                "max_tokens": 1024,
-                "temperature": 0.7,
-                "logprobs": true,
-                "top_logprobs": 5,
-                "stream": true,
-            }))
-            .send()
-            .await;
+        let mut final_full_text = String::new();
+        let mut final_tokens: Vec<serde_json::Value> = Vec::new();
 
-        let res = match res {
-            Ok(r) => r,
-            Err(e) => {
-                tracing::error!("NVIDIA stream request failed: {e}");
-                yield Ok::<_, std::convert::Infallible>(Event::default().event("error").data("Verbindung zum Modell fehlgeschlagen."));
-                return;
-            }
-        };
+        'rounds: for _round in 0..agent::MAX_TOOL_ITERATIONS {
+            let res = state
+                .http
+                .post("https://integrate.api.nvidia.com/v1/chat/completions")
+                .bearer_auth(&state.nvidia_api_key)
+                .json(&json!({
+                    "model": CHAT_MODEL,
+                    "messages": messages,
+                    "max_tokens": 1024,
+                    "temperature": 0.7,
+                    "logprobs": true,
+                    "top_logprobs": 5,
+                    "stream": true,
+                }))
+                .send()
+                .await;
 
-        if !res.status().is_success() {
-            let status = res.status();
-            let body_text = res.text().await.unwrap_or_default();
-            tracing::error!("NVIDIA API error {status}: {body_text}");
-            yield Ok(Event::default().event("error").data("Modell-Anfrage fehlgeschlagen."));
-            return;
-        }
-
-        let mut full_text = String::new();
-        let mut all_tokens: Vec<serde_json::Value> = Vec::new();
-        let mut buf = String::new();
-        let mut byte_stream = res.bytes_stream();
-
-        while let Some(chunk) = byte_stream.next().await {
-            let bytes = match chunk {
-                Ok(b) => b,
+            let res = match res {
+                Ok(r) => r,
                 Err(e) => {
-                    tracing::error!("NVIDIA stream read error: {e}");
-                    break;
+                    tracing::error!("NVIDIA stream request failed: {e}");
+                    yield Ok::<_, std::convert::Infallible>(Event::default().event("error").data("Verbindung zum Modell fehlgeschlagen."));
+                    return;
                 }
             };
-            buf.push_str(&String::from_utf8_lossy(&bytes));
 
-            while let Some(pos) = buf.find('\n') {
-                let line = buf[..pos].trim_end_matches('\r').to_string();
-                buf.drain(..=pos);
-                let Some(data) = line.strip_prefix("data: ") else { continue };
-                if data == "[DONE]" { continue; }
+            if !res.status().is_success() {
+                let status = res.status();
+                let body_text = res.text().await.unwrap_or_default();
+                tracing::error!("NVIDIA API error {status}: {body_text}");
+                yield Ok(Event::default().event("error").data("Modell-Anfrage fehlgeschlagen."));
+                return;
+            }
 
-                let parsed: serde_json::Value = match serde_json::from_str(data) {
-                    Ok(v) => v,
-                    Err(_) => continue,
+            let mut iter_text = String::new();
+            let mut iter_tokens: Vec<serde_json::Value> = Vec::new();
+            let mut buf = String::new();
+            let mut byte_stream = res.bytes_stream();
+            // Decided once the first non-whitespace character of this
+            // round's reply arrives: Some(true) = looks like a tool call
+            // (buffer silently, never forward raw JSON to the client),
+            // Some(false) = ordinary reply (forward live, as before).
+            let mut looks_like_tool_call: Option<bool> = None;
+
+            while let Some(chunk) = byte_stream.next().await {
+                let bytes = match chunk {
+                    Ok(b) => b,
+                    Err(e) => {
+                        tracing::error!("NVIDIA stream read error: {e}");
+                        break;
+                    }
                 };
-                let choice = &parsed["choices"][0];
-                let delta_text = choice["delta"]["content"].as_str().unwrap_or("").to_string();
-                if !delta_text.is_empty() {
-                    full_text.push_str(&delta_text);
-                }
+                buf.push_str(&String::from_utf8_lossy(&bytes));
 
-                let mut chunk_tokens = Vec::new();
-                if let Some(content_arr) = choice["logprobs"]["content"].as_array() {
-                    for tk in content_arr {
-                        let alternatives: Vec<serde_json::Value> = match tk["top_logprobs"].as_array() {
-                            Some(arr) => arr
-                                .iter()
-                                .map(|a| json!({
-                                    "token": a["token"].as_str().unwrap_or(""),
-                                    "probability": a["logprob"].as_f64().unwrap_or(0.0).exp(),
-                                }))
-                                .collect(),
-                            None => Vec::new(),
-                        };
-                        let tok_json = json!({
-                            "token": tk["token"].as_str().unwrap_or(""),
-                            "probability": tk["logprob"].as_f64().unwrap_or(0.0).exp(),
-                            "alternatives": alternatives,
-                        });
-                        chunk_tokens.push(tok_json.clone());
-                        all_tokens.push(tok_json);
+                while let Some(pos) = buf.find('\n') {
+                    let line = buf[..pos].trim_end_matches('\r').to_string();
+                    buf.drain(..=pos);
+                    let Some(data) = line.strip_prefix("data: ") else { continue };
+                    if data == "[DONE]" { continue; }
+
+                    let parsed: serde_json::Value = match serde_json::from_str(data) {
+                        Ok(v) => v,
+                        Err(_) => continue,
+                    };
+                    let choice = &parsed["choices"][0];
+                    let delta_text = choice["delta"]["content"].as_str().unwrap_or("").to_string();
+                    if !delta_text.is_empty() {
+                        iter_text.push_str(&delta_text);
+                    }
+
+                    let mut chunk_tokens = Vec::new();
+                    if let Some(content_arr) = choice["logprobs"]["content"].as_array() {
+                        for tk in content_arr {
+                            let alternatives: Vec<serde_json::Value> = match tk["top_logprobs"].as_array() {
+                                Some(arr) => arr
+                                    .iter()
+                                    .map(|a| json!({
+                                        "token": a["token"].as_str().unwrap_or(""),
+                                        "probability": a["logprob"].as_f64().unwrap_or(0.0).exp(),
+                                    }))
+                                    .collect(),
+                                None => Vec::new(),
+                            };
+                            let tok_json = json!({
+                                "token": tk["token"].as_str().unwrap_or(""),
+                                "probability": tk["logprob"].as_f64().unwrap_or(0.0).exp(),
+                                "alternatives": alternatives,
+                            });
+                            chunk_tokens.push(tok_json.clone());
+                            iter_tokens.push(tok_json);
+                        }
+                    }
+
+                    if looks_like_tool_call.is_none() {
+                        let trimmed = iter_text.trim_start();
+                        if !trimmed.is_empty() {
+                            looks_like_tool_call = Some(trimmed.starts_with('{') || trimmed.starts_with('`'));
+                        }
+                    }
+
+                    if looks_like_tool_call == Some(false) && (!delta_text.is_empty() || !chunk_tokens.is_empty()) {
+                        let payload = json!({ "delta": delta_text, "tokens": chunk_tokens });
+                        yield Ok(Event::default().data(payload.to_string()));
                     }
                 }
+            }
 
-                if !delta_text.is_empty() || !chunk_tokens.is_empty() {
-                    let payload = json!({ "delta": delta_text, "tokens": chunk_tokens });
-                    yield Ok(Event::default().data(payload.to_string()));
+            match agent::parse_tool_call(&iter_text) {
+                Some(call) => {
+                    let result = agent::execute_tool(&state, &call, body.site_content.as_ref()).await;
+                    agent::log_tool_call(&state, &conversation_id, &call, &result).await;
+                    yield Ok(Event::default().event("tool_call").data(json!({ "tool": call.tool, "result": result }).to_string()));
+                    messages.push(json!({ "role": "assistant", "content": iter_text }));
+                    messages.push(json!({ "role": "system", "content": format!("[Ergebnis von {}]: {}", call.tool, result) }));
+                    continue 'rounds;
+                }
+                None => {
+                    // Not a tool call after all. If the leading-character
+                    // guess said "tool call" and suppressed live forwarding,
+                    // the client never saw these tokens — flush them as one
+                    // chunk now (loses the token-by-token typing effect for
+                    // this one edge case, but the reply still shows up).
+                    if looks_like_tool_call == Some(true) {
+                        yield Ok(Event::default().data(json!({ "delta": iter_text, "tokens": iter_tokens.clone() }).to_string()));
+                    }
+                    final_full_text = iter_text;
+                    final_tokens = iter_tokens;
+                    break 'rounds;
                 }
             }
+        }
+
+        if final_full_text.trim().is_empty() {
+            final_full_text = "Ich habe mehrere Werkzeuge aufgerufen, konnte aber noch keine abschließende Antwort formulieren — frag gern nochmal genauer nach.".to_string();
+            yield Ok(Event::default().data(json!({ "delta": final_full_text, "tokens": Vec::<serde_json::Value>::new() }).to_string()));
         }
 
         let assistant_id = Uuid::new_v4().to_string();
-        let token_info = serde_json::to_string(&all_tokens).unwrap_or_default();
+        let token_info = serde_json::to_string(&final_tokens).unwrap_or_default();
         let _ = sqlx::query(
             "INSERT INTO chat_messages (id, conversation_id, role, content, token_info) VALUES (?1,?2,'assistant',?3,?4)",
         )
         .bind(&assistant_id)
         .bind(&conversation_id)
-        .bind(&full_text)
+        .bind(&final_full_text)
         .bind(&token_info)
         .execute(&state.db)
         .await;
@@ -693,8 +748,8 @@ pub async fn stream_chat(
 
         // Cross-chat memory: both sides of this exchange become recallable in future conversations.
         store_chunks(&state, "message", &user_msg_id, "Nachricht", &user_message).await;
-        if !full_text.trim().is_empty() {
-            store_chunks(&state, "message", &assistant_id, "Antwort", &full_text).await;
+        if !final_full_text.trim().is_empty() {
+            store_chunks(&state, "message", &assistant_id, "Antwort", &final_full_text).await;
         }
 
         yield Ok(Event::default().event("done").data("[DONE]"));
