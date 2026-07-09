@@ -1,6 +1,6 @@
 import { useAdminFetch } from '../../lib/adminApi'
 import { ResearchNotesPanel } from './ResearchNotesPanel'
-import { SimulationLab } from './SimulationLab'
+import type { AdminSection } from '../../types/admin'
 
 interface BlogPost { id: string; title: string; status: string; source: string; updated_at: string }
 
@@ -23,12 +23,13 @@ function BlogActivity() {
 }
 
 /// Research activity in one place: papers/hypotheses, ideas/concepts/
-/// frameworks/prototypes, simulations, and blog activity as a read-only feed
-/// (per the lab's own rule: the only place blog may appear in the
-/// Observatory — actual editing/publishing stays in Verwaltung → Blog).
-/// Consolidates what used to be three separate nav items (Research
-/// Workspace, Innovation Lab, Simulation Lab).
-export function ResearchPulse() {
+/// frameworks/prototypes, and blog activity as a read-only feed (per the
+/// lab's own rule: the only place blog may appear in the Observatory —
+/// actual editing/publishing stays in Verwaltung → Blog). Simulations used
+/// to be embedded here too, but moved to their own "Simulation Center" —
+/// simulation is a Kernbereich in its own right, not a Research Pulse
+/// sub-panel (see plan).
+export function ResearchPulse({ onNavigate }: { onNavigate: (s: AdminSection) => void }) {
   return (
     <div className="obs-panel">
       <div className="obs-section-label">Papers &amp; Hypothesen</div>
@@ -38,9 +39,11 @@ export function ResearchPulse() {
       <ResearchNotesPanel categories={['idea', 'concept', 'framework', 'prototype']} addLabel="Idee hinzufügen" placeholder="Titel (Idee, Konzept, Framework oder Prototyp)" />
 
       <div className="obs-section-label" style={{ marginTop: 8 }}>Simulationen</div>
-      <SimulationLab />
+      <button type="button" className="panel-add-btn" onClick={() => onNavigate('simulationcenter')}>
+        → Simulation Center öffnen
+      </button>
 
-      <div className="obs-section-label" style={{ marginTop: 8 }}>Blog-Aktivität</div>
+      <div className="obs-section-label" style={{ marginTop: 24 }}>Blog-Aktivität</div>
       <BlogActivity />
     </div>
   )

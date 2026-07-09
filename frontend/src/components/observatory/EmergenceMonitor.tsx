@@ -5,6 +5,7 @@ import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 interface Signal {
   id: string
   pattern: string
+  level: string
   status: string
   confidence: string
   evolution: string
@@ -21,6 +22,15 @@ const EVOLUTION_ARROW: Record<string, string> = {
 const STATUS_ACCENT: Record<string, string> = {
   emerging: '#f59e0b', stable: '#10b981', fading: '#6b7280', hypothetical: '#8b5cf6',
 }
+
+// Nicht nur Human-AI — vier Ebenen, getrennt nach Laura's eigener
+// Definition (siehe emergence.rs's Prompt für die genauen Kriterien).
+const LEVEL_SECTIONS: { key: string; label: string; empty: string }[] = [
+  { key: 'human', label: 'Human', empty: 'Noch keine Human-Signale erkannt — neue Verhaltensmuster, Hypothesen oder Forschungsfortschritt auf Lauras Seite.' },
+  { key: 'ai', label: 'AI', empty: 'Noch keine AI-Signale erkannt — Antwortentwicklung, Modellverhalten oder semantische Verschiebung.' },
+  { key: 'interaction', label: 'Interaction', empty: 'Noch keine Interaction-Signale erkannt — geteilte Muster, Co-Reasoning, rekursive Schleifen.' },
+  { key: 'system', label: 'System', empty: 'Noch keine System-Signale erkannt — gesamtsystemische Veränderungen, neue Cluster, Drift.' },
+]
 
 function downloadJson(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -83,23 +93,34 @@ export function EmergenceMonitor() {
           ⬇ Exportieren
         </button>
       </div>
-      {signals.length === 0 ? (
+      {signals.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.</div></div>
-      ) : (
-        signals.map(s => (
-          <div className="obs-item-card" key={s.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>
-            <div className="obs-item-title">{s.pattern}</div>
-            <div className="obs-item-meta">
-              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>
-              {' · '}Konfidenz: {s.confidence}
-              {' · '}Verlauf: {EVOLUTION_ARROW[s.evolution] ?? '?'} {s.evolution}
-              {s.scope && <> · {s.scope}</>}
-              {' · '}{s.created_at}
-            </div>
-            <div className="obs-item-body">{s.observation}</div>
-          </div>
-        ))
       )}
+      {signals.length > 0 && LEVEL_SECTIONS.map(section => {
+        const levelSignals = signals.filter(s => s.level === section.key)
+        return (
+          <div key={section.key} style={{ marginBottom: 8 }}>
+            <div className="obs-section-label">{section.label}</div>
+            {levelSignals.length === 0 ? (
+              <div className="obs-empty" style={{ padding: '12px 0', textAlign: 'left' }}>{section.empty}</div>
+            ) : (
+              levelSignals.map(s => (
+                <div className="obs-item-card" key={s.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>
+                  <div className="obs-item-title">{s.pattern}</div>
+                  <div className="obs-item-meta">
+                    <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>
+                    {' · '}Konfidenz: {s.confidence}
+                    {' · '}Verlauf: {EVOLUTION_ARROW[s.evolution] ?? '?'} {s.evolution}
+                    {s.scope && <> · {s.scope}</>}
+                    {' · '}{s.created_at}
+                  </div>
+                  <div className="obs-item-body">{s.observation}</div>
+                </div>
+              ))
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

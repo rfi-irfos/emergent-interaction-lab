@@ -5,7 +5,7 @@ import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { AgentDock } from './AgentDock'
-import { OBSERVATORY_MODULES, SECTION_LABELS } from './observatory/registry'
+import { OBSERVATORY_MODULES, SECTION_LABELS, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
 import { Analytics } from './observatory/Analytics'
 import { BlogDrafts } from './observatory/BlogDrafts'
 import { LiveCards } from './observatory/LiveCards'
@@ -16,6 +16,8 @@ import { InteractionDynamics } from './observatory/InteractionDynamics'
 import { InformationDynamics } from './observatory/InformationDynamics'
 import { BehavioralLandscape } from './observatory/BehavioralLandscape'
 import { ResearchPulse } from './observatory/ResearchPulse'
+import { SimulationCenter } from './observatory/SimulationCenter'
+import { KnowledgeGraph } from './observatory/KnowledgeGraph'
 
 interface Props {
   content: SiteContent
@@ -261,11 +263,16 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             </button>
 
             {!sidebarCollapsed && <div className="crm-nav-group-label">Observatory</div>}
-            {OBSERVATORY_MODULES.map(mod => (
-              <button key={mod.id} className={`crm-nav-item ${adminSection === mod.id ? 'active' : ''}`} onClick={() => setAdminSection(mod.id)} title={mod.label}>
-                {mod.icon}
-                {!sidebarCollapsed && mod.label}
-              </button>
+            {(['research', 'system', 'technical'] as ObservatoryTier[]).map(tier => (
+              <div key={tier}>
+                {!sidebarCollapsed && <div className="crm-nav-group-label crm-nav-group-label--tier">{TIER_LABELS[tier]}</div>}
+                {groupByTier()[tier].map(mod => (
+                  <button key={mod.id} className={`crm-nav-item ${adminSection === mod.id ? 'active' : ''}`} onClick={() => setAdminSection(mod.id)} title={mod.label}>
+                    {mod.icon}
+                    {!sidebarCollapsed && mod.label}
+                  </button>
+                ))}
+              </div>
             ))}
           </nav>
         </aside>
@@ -396,7 +403,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
             {adminSection === 'behavior' && <BehavioralLandscape />}
-            {adminSection === 'research' && <ResearchPulse />}
+            {adminSection === 'research' && <ResearchPulse onNavigate={setAdminSection} />}
+            {adminSection === 'simulationcenter' && <SimulationCenter />}
+            {adminSection === 'knowledgegraph' && <KnowledgeGraph />}
           </div>
         </div>
         <AgentDock onJumpToForschung={() => setAdminSection('forschung')} />

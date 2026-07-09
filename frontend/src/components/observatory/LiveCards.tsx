@@ -2,20 +2,24 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import type { AdminSection } from '../../types/admin'
+import type { ObservatoryTier } from './registry'
 
-// One card per Observatory module (mirrors the sidebar exactly) — the
-// reframed 7-concept Observatory, not the old 10-module business-KPI mix.
-// Each card shows that module's own real-time emergence-relevant metric.
-// Refetches after every completed chat exchange (refreshSignal), so it
-// reads as "the system updating as you talk to it."
-const MODULE_META: { id: AdminSection; label: string; accent: string }[] = [
-  { id: 'systemmap', label: 'System Map', accent: '#3b6bf6' },
-  { id: 'emergence', label: 'Emergence Monitor', accent: '#f59e0b' },
-  { id: 'systemstate', label: 'System State', accent: '#10b981' },
-  { id: 'interaction', label: 'Interaction Dynamics', accent: '#8b5cf6' },
-  { id: 'information', label: 'Information Dynamics', accent: '#14b8a6' },
-  { id: 'behavior', label: 'Behavioral Landscape', accent: '#3b6bf6' },
-  { id: 'research', label: 'Research Pulse', accent: '#14b8a6' },
+// One card per Observatory module, grouped into the same 3 tiers as the
+// sidebar (Forschungsebene/Systemebene/Technische Ebene) — a flat row mixing
+// all of them was the concrete manifestation of "33 Embedding Chunks reading
+// next to Emergenz with no hierarchy" (see plan). Refetches after every
+// completed chat exchange (refreshSignal), so it reads as "the system
+// updating as you talk to it."
+const MODULE_META: { id: AdminSection; label: string; accent: string; tier: ObservatoryTier }[] = [
+  { id: 'emergence', label: 'Emergence Monitor', accent: '#f59e0b', tier: 'research' },
+  { id: 'simulationcenter', label: 'Simulation Center', accent: '#8b5cf6', tier: 'research' },
+  { id: 'research', label: 'Research Pulse', accent: '#14b8a6', tier: 'research' },
+  { id: 'knowledgegraph', label: 'Knowledge Graph', accent: '#22d3ee', tier: 'research' },
+  { id: 'systemmap', label: 'System Map', accent: '#3b6bf6', tier: 'system' },
+  { id: 'systemstate', label: 'System State', accent: '#10b981', tier: 'system' },
+  { id: 'interaction', label: 'Interaction Dynamics', accent: '#8b5cf6', tier: 'system' },
+  { id: 'behavior', label: 'Behavioral Landscape', accent: '#3b6bf6', tier: 'system' },
+  { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', tier: 'technical' },
 ]
 
 async function fetchJson(path: string): Promise<any> {
@@ -33,45 +37,72 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const [humanAi, signals, diagnostics, information, behavior, research] = await Promise.all([
+      const [humanAi, signals, information, behavior, research, runs, notes, docs] = await Promise.all([
         fetchJson('/api/observatory/human-ai'),
         fetchJson('/api/observatory/emergence/signals'),
-        fetchJson('/api/observatory/diagnostics'),
         fetchJson('/api/observatory/information'),
         fetchJson('/api/observatory/behavior'),
         fetchJson('/api/research/items'),
+        fetchJson('/api/simulation/runs'),
+        fetchJson('/api/research/items?category=paper,hypothesis,idea,concept,framework,prototype'),
+        fetchJson('/api/chat/documents'),
       ])
       if (cancelled) return
       const toolTotal = Array.isArray(behavior?.tool_distribution)
         ? behavior.tool_distribution.reduce((sum: number, b: any) => sum + (b.count ?? 0), 0)
         : 0
+      // systemstate must agree with what SystemState.tsx itself actually
+      // shows (distinct systems/scopes tracked via emergence_signals) — it
+      // previously sourced from technical diagnostics.db_reachable, which
+      // silently disagreed with the page's own content. Fixed here.
+      const distinctScopes = Array.isArray(signals)
+        ? new Set(signals.map((s: any) => s.scope ?? 'Allgemein')).size
+        : 0
       setValues({
-        systemmap: humanAi ? String((humanAi.user_messages ?? 0) + (humanAi.assistant_messages ?? 0)) : '—',
         emergence: Array.isArray(signals) ? String(signals.length) : '—',
-        systemstate: diagnostics ? (diagnostics.db_reachable ? 'OK' : 'Issue') : '—',
-        interaction: typeof humanAi?.mean_token_confidence === 'number' ? `${Math.round(humanAi.mean_token_confidence * 100)}%` : '—',
-        information: information ? String(information.chunks) : '—',
-        behavior: String(toolTotal),
+        simulationcenter: Array.isArray(runs) ? String(runs.length) : '—',
         research: Array.isArray(research) ? String(research.length) : '—',
+        knowledgegraph: (Array.isArray(notes) ? notes.length : 0) + (Array.isArray(docs) ? docs.length : 0) > 0
+          ? String((Array.isArray(notes) ? notes.length : 0) + (Array.isArray(docs) ? docs.length : 0))
+          : '—',
+        systemmap: humanAi ? String((humanAi.user_messages ?? 0) + (humanAi.assistant_messages ?? 0)) : '—',
+        systemstate: String(distinctScopes),
+        interaction: typeof humanAi?.mean_token_confidence === 'number' ? `${Math.round(humanAi.mean_token_confidence * 100)}%` : '—',
+        behavior: String(toolTotal),
+        information: information ? String(information.chunks) : '—',
       })
     })()
     return () => { cancelled = true }
   }, [refreshSignal])
 
+  const row = (tier: ObservatoryTier) => MODULE_META.filter(m => m.tier === tier)
+
   return (
-    <div className="live-cards">
-      {MODULE_META.map(m => (
-        <button
-          key={m.id}
-          className="live-card"
-          style={{ ['--obs-accent' as string]: m.accent }}
-          onClick={() => onNavigate(m.id)}
-          title="Granulare Analyse öffnen"
-        >
-          <span className="live-card-value">{values[m.id] ?? '…'}</span>
-          <span className="live-card-label">{m.label}</span>
-        </button>
-      ))}
+    <div className="live-cards-tiered">
+      <div className="live-cards live-cards-research">
+        {row('research').map(m => (
+          <button key={m.id} className="live-card" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
+            <span className="live-card-value">{values[m.id] ?? '…'}</span>
+            <span className="live-card-label">{m.label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="live-cards live-cards-system">
+        {row('system').map(m => (
+          <button key={m.id} className="live-card live-card-secondary" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
+            <span className="live-card-value">{values[m.id] ?? '…'}</span>
+            <span className="live-card-label">{m.label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="live-cards live-cards-technical">
+        {row('technical').map(m => (
+          <button key={m.id} className="live-card live-card-technical" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
+            <span className="live-card-value">{values[m.id] ?? '…'}</span>
+            <span className="live-card-label">{m.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
