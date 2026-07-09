@@ -124,6 +124,34 @@ pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
     None
 }
 
+/// Applies a dot-notation field update (e.g. "hero.title") to a JSON object
+/// in place, creating intermediate objects as needed. Used to keep the
+/// in-memory site_content snapshot for one exchange in sync with
+/// update_content_field calls made earlier in that same exchange, so a
+/// later get_content_section call in the same exchange sees the edit
+/// instead of the value the exchange originally started with.
+pub(crate) fn apply_content_field_update(content: &mut serde_json::Value, field: &str, value: serde_json::Value) {
+    let parts: Vec<&str> = field.split('.').filter(|p| !p.is_empty()).collect();
+    if parts.is_empty() {
+        return;
+    }
+    if !content.is_object() {
+        *content = json!({});
+    }
+    let mut current = content;
+    for part in &parts[..parts.len() - 1] {
+        let obj = current.as_object_mut().expect("just ensured object above");
+        let entry = obj.entry(part.to_string()).or_insert_with(|| json!({}));
+        if !entry.is_object() {
+            *entry = json!({});
+        }
+        current = entry;
+    }
+    if let Some(obj) = current.as_object_mut() {
+        obj.insert(parts[parts.len() - 1].to_string(), value);
+    }
+}
+
 pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content: Option<&serde_json::Value>, conversation_id: &str) -> String {
     match call.tool.as_str() {
         "draft_blog_post" => {
@@ -181,10 +209,15 @@ pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content
         // when it sees this specific tool in a tool_call event.
         "update_content_field" => {
             let field = call.arguments.get("field").and_then(|v| v.as_str()).unwrap_or("");
-            let value = call.arguments.get("value").and_then(|v| v.as_str()).unwrap_or("");
             if field.is_empty() {
                 json!({ "ok": false, "error": "field is required" }).to_string()
             } else {
+                // Keep the argument's original JSON type (bool/number/object/
+                // array/string) instead of forcing it through .as_str() —
+                // several real SiteContent fields (e.g. whatsapp.enabled,
+                // hero.minHeight) aren't strings, and .as_str() silently
+                // turned those into "" while still reporting ok:true.
+                let value = call.arguments.get("value").cloned().unwrap_or(serde_json::Value::Null);
                 json!({ "ok": true, "field": field, "value": value }).to_string()
             }
         }
@@ -269,5 +302,23 @@ mod tests {
     fn ordinary_reply_is_never_misdetected() {
         let text = "Guten Tag! Es geht so: wir haben gerade über die Interaction Field Forschung gesprochen.";
         assert!(parse_tool_call(text).is_none());
+    }
+
+    #[test]
+    fn apply_content_field_update_sets_nested_non_string_value() {
+        // Regression: update_content_field used to force every value through
+        // .as_str(), silently blanking non-string fields (e.g. a bool toggle
+        // or a numeric minHeight) while still reporting ok:true.
+        let mut content = json!({ "hero": { "title": "Alt", "minHeight": 400 } });
+        apply_content_field_update(&mut content, "hero.minHeight", json!(720));
+        assert_eq!(content["hero"]["minHeight"], 720);
+        assert_eq!(content["hero"]["title"], "Alt");
+    }
+
+    #[test]
+    fn apply_content_field_update_creates_missing_intermediate_objects() {
+        let mut content = json!({});
+        apply_content_field_update(&mut content, "whatsapp.enabled", json!(true));
+        assert_eq!(content["whatsapp"]["enabled"], true);
     }
 }

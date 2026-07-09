@@ -601,6 +601,11 @@ pub async fn stream_chat(
         // once, keep using it; if it fails once, stop retrying it and stay
         // on the proven fallback for the rest of this exchange.
         let mut active_model: &str = CHAT_MODEL_LARGE;
+        // A local, mutable snapshot of site_content that's updated in place
+        // whenever update_content_field runs — without this, a second
+        // get_content_section call later in the same exchange would still
+        // see the value the exchange started with, not the edit just made.
+        let mut local_site_content = body.site_content.clone();
 
         'rounds: for _round in 0..agent::MAX_TOOL_ITERATIONS {
             let build_body = |model: &str| json!({
@@ -726,8 +731,19 @@ pub async fn stream_chat(
 
             match agent::parse_tool_call(&iter_text) {
                 Some(call) => {
-                    let result = agent::execute_tool(&state, &call, body.site_content.as_ref(), &conversation_id).await;
+                    let result = agent::execute_tool(&state, &call, local_site_content.as_ref(), &conversation_id).await;
                     agent::log_tool_call(&state, &conversation_id, &call, &result).await;
+                    if call.tool == "update_content_field" {
+                        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&result) {
+                            if parsed["ok"].as_bool() == Some(true) {
+                                if let Some(field) = parsed["field"].as_str() {
+                                    let mut content = local_site_content.take().unwrap_or(json!({}));
+                                    agent::apply_content_field_update(&mut content, field, parsed["value"].clone());
+                                    local_site_content = Some(content);
+                                }
+                            }
+                        }
+                    }
                     yield Ok(Event::default().event("tool_call").data(json!({ "tool": call.tool, "result": result }).to_string()));
                     messages.push(json!({ "role": "assistant", "content": iter_text }));
                     messages.push(json!({ "role": "system", "content": format!("[Ergebnis von {}]: {}", call.tool, result) }));
