@@ -373,6 +373,18 @@ pub async fn delete_conversation(
             .execute(&state.db)
             .await;
     }
+    let _ = sqlx::query("DELETE FROM chat_retrievals WHERE conversation_id = ?1")
+        .bind(&id)
+        .execute(&state.db)
+        .await;
+    let _ = sqlx::query("DELETE FROM agent_tool_calls WHERE conversation_id = ?1")
+        .bind(&id)
+        .execute(&state.db)
+        .await;
+    let _ = sqlx::query("DELETE FROM emergence_signals WHERE source_conversation_id = ?1")
+        .bind(&id)
+        .execute(&state.db)
+        .await;
     let _ = sqlx::query("DELETE FROM chat_messages WHERE conversation_id = ?1")
         .bind(&id)
         .execute(&state.db)
@@ -658,7 +670,17 @@ pub async fn stream_chat(
 
             let mut iter_text = String::new();
             let mut iter_tokens: Vec<serde_json::Value> = Vec::new();
-            let mut buf = String::new();
+            // Raw bytes, not a String: reqwest's bytes_stream() yields chunks
+            // at arbitrary network boundaries that don't have to align with
+            // UTF-8 character boundaries. Decoding each chunk independently
+            // (the previous `String::from_utf8_lossy` per chunk) corrupted
+            // any multi-byte character (ä/ö/ü/ß — common in German replies)
+            // split across two chunks into U+FFFD on both sides of the split.
+            // Buffering bytes and only decoding once a full '\n'-terminated
+            // line has arrived guarantees every multi-byte sequence is intact
+            // by the time it's turned into a String, regardless of how many
+            // network chunks it was split across.
+            let mut buf: Vec<u8> = Vec::new();
             let mut byte_stream = res.bytes_stream();
             // Decided once the first non-whitespace character of this
             // round's reply arrives: Some(true) = looks like a tool call
@@ -674,11 +696,12 @@ pub async fn stream_chat(
                         break;
                     }
                 };
-                buf.push_str(&String::from_utf8_lossy(&bytes));
+                buf.extend_from_slice(&bytes);
 
-                while let Some(pos) = buf.find('\n') {
-                    let line = buf[..pos].trim_end_matches('\r').to_string();
-                    buf.drain(..=pos);
+                while let Some(pos) = buf.iter().position(|&b| b == b'\n') {
+                    let line_bytes: Vec<u8> = buf.drain(..=pos).collect();
+                    let line = String::from_utf8_lossy(&line_bytes[..line_bytes.len() - 1]);
+                    let line = line.trim_end_matches('\r');
                     let Some(data) = line.strip_prefix("data: ") else { continue };
                     if data == "[DONE]" { continue; }
 

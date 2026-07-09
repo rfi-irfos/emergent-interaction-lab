@@ -39,8 +39,9 @@ function RunColumn({ run }: { run: RunOut | null }) {
 /// needs no new schema or query: list_runs already returns everything
 /// (hypothesis/parameters/narrative/status) a side-by-side comparison needs.
 export function SimulationCenter() {
-  const { data } = useAdminFetch<RunOut[]>('/api/simulation/runs')
-  const runs = data ?? []
+  const { data, loading } = useAdminFetch<RunOut[]>('/api/simulation/runs')
+  const [overrideRuns, setOverrideRuns] = useState<RunOut[] | null>(null)
+  const runs = overrideRuns ?? data ?? []
   const [idA, setIdA] = useState('')
   const [idB, setIdB] = useState('')
 
@@ -50,7 +51,7 @@ export function SimulationCenter() {
   return (
     <div className="obs-panel">
       <div className="obs-section-label">Aktive Simulationen</div>
-      <SimulationLab />
+      <SimulationLab runs={runs} loading={loading} onRunsChange={setOverrideRuns} />
 
       <div className="obs-section-label" style={{ marginTop: 24 }}>Vergleich</div>
       <div className="obs-form" style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>

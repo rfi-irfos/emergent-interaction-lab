@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { authHeaders } from '../../lib/adminApi'
 
 interface RunOut {
   id: string
@@ -11,14 +11,16 @@ interface RunOut {
   created_at: string
 }
 
-export function SimulationLab() {
-  const { data, loading } = useAdminFetch<RunOut[]>('/api/simulation/runs')
-  const [runs, setRuns] = useState<RunOut[] | null>(null)
+interface SimulationLabProps {
+  runs: RunOut[]
+  loading: boolean
+  onRunsChange: (runs: RunOut[]) => void
+}
+
+export function SimulationLab({ runs: list, loading, onRunsChange }: SimulationLabProps) {
   const [hypothesis, setHypothesis] = useState('')
   const [parameters, setParameters] = useState('')
   const [running, setRunning] = useState(false)
-
-  const list = runs ?? data ?? []
 
   const submit = async () => {
     if (!hypothesis.trim() || running) return
@@ -35,7 +37,7 @@ export function SimulationLab() {
       })
       await res.json()
       const refreshed = await fetch(`${API_BASE}/api/simulation/runs`, { headers: authHeaders() })
-      setRuns(await refreshed.json())
+      onRunsChange(await refreshed.json())
       setHypothesis(''); setParameters('')
     } finally {
       setRunning(false)
@@ -57,7 +59,7 @@ export function SimulationLab() {
       </div>
 
       <div className="obs-section-label">Bisherige Läufe</div>
-      {loading && !runs && <div className="obs-empty">Lade…</div>}
+      {loading && list.length === 0 && <div className="obs-empty">Lade…</div>}
       {list.length === 0 && !loading && <div className="obs-empty">Noch keine Simulationen.</div>}
       {list.map(r => (
         <div className="obs-item-card" key={r.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>

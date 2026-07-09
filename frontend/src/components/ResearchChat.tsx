@@ -150,6 +150,8 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const baseTitleRef = useRef(document.title)
+  const sendingRef = useRef(false)
+  const latestConvRequestRef = useRef<string | null>(null)
 
   // Backgrounded/inactive browser tabs don't get repainted until they're
   // focused again — the reply has already arrived and rendered into the DOM,
@@ -183,13 +185,19 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   // (still empty) server state and silently dropping the whole reply.
   function openConversation(id: string) {
     setActiveId(id)
+    // Guards against out-of-order resolution: click A then B quickly, and
+    // if A's response happens to resolve after B's, this ref (updated
+    // synchronously, unlike activeId which lags a render behind) makes A's
+    // stale .then() a no-op instead of overwriting B's messages.
+    latestConvRequestRef.current = id
     fetch(`${API_BASE}/api/chat/conversations/${id}`, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
-      .then(setMessages)
-      .catch(() => setMessages([]))
+      .then(data => { if (latestConvRequestRef.current === id) setMessages(data) })
+      .catch(() => { if (latestConvRequestRef.current === id) setMessages([]) })
   }
 
   function startNewConversation() {
+    latestConvRequestRef.current = null
     setActiveId(null)
     setMessages([])
   }
@@ -223,50 +231,61 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
 
   async function send(override?: string) {
     const text = (override ?? input).trim()
-    if (!text || streaming) return
-    setError(null)
-    const convId = await ensureConversation()
-    if (!convId) { setError('Unterhaltung konnte nicht erstellt werden.'); return }
+    // `sendingRef` (not just `streaming` state) closes the real race: two
+    // rapid sends on a brand-new conversation both read `streaming === false`
+    // from the same render, because `setStreaming(true)` only fires after
+    // `await ensureConversation()` — a real network round-trip — resolves.
+    // A synchronous ref has no such gap: it's set on the very first line,
+    // before any await, so a second call in the same tick sees it immediately.
+    if (!text || streaming || sendingRef.current) return
+    sendingRef.current = true
+    try {
+      setError(null)
+      const convId = await ensureConversation()
+      if (!convId) { setError('Unterhaltung konnte nicht erstellt werden.'); return }
 
-    if (!override) setInput('')
-    const userMsg: ChatMessage = { id: `local-${Date.now()}`, role: 'user', content: text, token_info: null, created_at: '' }
-    const assistantId = `local-assistant-${Date.now()}`
-    const assistantMsg: ChatMessage = { id: assistantId, role: 'assistant', content: '', token_info: null, created_at: '' }
-    setMessages(m => [...m, userMsg, assistantMsg])
-    setStreaming(true)
+      if (!override) setInput('')
+      const userMsg: ChatMessage = { id: `local-${Date.now()}`, role: 'user', content: text, token_info: null, created_at: '' }
+      const assistantId = `local-assistant-${Date.now()}`
+      const assistantMsg: ChatMessage = { id: assistantId, role: 'assistant', content: '', token_info: null, created_at: '' }
+      setMessages(m => [...m, userMsg, assistantMsg])
+      setStreaming(true)
 
-    let fullText = ''
-    const allTokens: TokenInfo[] = []
-    await streamChat(
-      convId,
-      text,
-      siteContent,
-      (delta, tokens) => {
-        fullText += delta
-        allTokens.push(...tokens)
-        setMessages(m => m.map(msg => msg.id === assistantId ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens) } : msg))
-      },
-      (call) => {
-        setToolCalls(t => ({ ...t, [assistantId]: [...(t[assistantId] ?? []), call] }))
-        // "hey jarvis, lass uns diese karte umschreiben" — applies immediately
-        // to the Website Kit draft, same as draft_blog_post/log_research_note
-        // already apply immediately server-side. Still draft-only until
-        // Laura clicks "Speichern" there, same as any other content edit.
-        if (call.tool === 'update_content_field' && onUpdate) {
-          try {
-            const parsed = JSON.parse(call.result)
-            if (parsed.ok && parsed.field) onUpdate(parsed.field, parsed.value)
-          } catch { /* malformed tool result, ignore */ }
-        }
-      },
-      () => {
-        setStreaming(false)
-        refreshConversations()
-        onMessageComplete?.()
-        if (document.hidden) document.title = `💬 ${baseTitleRef.current}`
-      },
-      (msg) => { setStreaming(false); setError(msg) },
-    )
+      let fullText = ''
+      const allTokens: TokenInfo[] = []
+      await streamChat(
+        convId,
+        text,
+        siteContent,
+        (delta, tokens) => {
+          fullText += delta
+          allTokens.push(...tokens)
+          setMessages(m => m.map(msg => msg.id === assistantId ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens) } : msg))
+        },
+        (call) => {
+          setToolCalls(t => ({ ...t, [assistantId]: [...(t[assistantId] ?? []), call] }))
+          // "hey jarvis, lass uns diese karte umschreiben" — applies immediately
+          // to the Website Kit draft, same as draft_blog_post/log_research_note
+          // already apply immediately server-side. Still draft-only until
+          // Laura clicks "Speichern" there, same as any other content edit.
+          if (call.tool === 'update_content_field' && onUpdate) {
+            try {
+              const parsed = JSON.parse(call.result)
+              if (parsed.ok && parsed.field) onUpdate(parsed.field, parsed.value)
+            } catch { /* malformed tool result, ignore */ }
+          }
+        },
+        () => {
+          setStreaming(false)
+          refreshConversations()
+          onMessageComplete?.()
+          if (document.hidden) document.title = `💬 ${baseTitleRef.current}`
+        },
+        (msg) => { setStreaming(false); setError(msg) },
+      )
+    } finally {
+      sendingRef.current = false
+    }
   }
 
   async function deleteConversation(id: string) {
