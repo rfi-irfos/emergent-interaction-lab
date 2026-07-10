@@ -41,19 +41,18 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
   onOpenConversation?: (conversationId: string) => void
 }) {
   const query = `?category=${categories.join(',')}`
-  const { data, loading } = useAdminFetch<NoteOut[]>(`/api/research/items${query}`, [query])
-  const [items, setItems] = useState<NoteOut[] | null>(null)
+  // 18s background poll — same refreshKey idiom EmergenceMonitor uses for its
+  // manual "reanalyze" button, just on a timer too: Jarvis's log_research_note
+  // tool writes rows here autonomously mid-session, so this panel needs to
+  // notice on its own instead of only ever refreshing after a manual submit.
+  const [refreshKey, setRefreshKey] = useState(0)
+  const { data, loading } = useAdminFetch<NoteOut[]>(`/api/research/items${query}`, [query, refreshKey], 18000)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [category, setCategory] = useState(categories[0])
   const [saving, setSaving] = useState(false)
 
-  const list = items ?? data ?? []
-
-  const refresh = async () => {
-    const res = await fetch(`${API_BASE}/api/research/items${query}`, { headers: authHeaders() })
-    setItems(await res.json())
-  }
+  const list = data ?? []
 
   const submit = async () => {
     if (!title.trim() || saving) return
@@ -64,7 +63,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ category, title, body }),
       })
-      await refresh()
+      setRefreshKey(k => k + 1)
       setTitle(''); setBody('')
     } finally {
       setSaving(false)
@@ -88,7 +87,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
         </div>
       </div>
 
-      {loading && !items && <div className="obs-empty">Lade…</div>}
+      {loading && !data && <div className="obs-empty">Lade…</div>}
       {list.length === 0 && !loading && <div className="obs-empty">Noch keine Einträge.</div>}
       {list.map(n => {
         const tags = parseTags(n.tags)
