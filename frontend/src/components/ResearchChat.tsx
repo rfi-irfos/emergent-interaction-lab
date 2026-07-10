@@ -3,6 +3,7 @@ import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
 import { TOOL_LABELS } from '../lib/toolLabels'
 import { renderMarkdown } from '../lib/markdown'
+import { groupByDate, type DateGroup } from '../lib/dateGroups'
 import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
@@ -23,44 +24,15 @@ interface DocumentItem { id: string; filename: string; created_at: string }
 
 interface ToolCallEvent { tool: string; result: string }
 
-// SQLite's `datetime('now')` (see backend/src/chat.rs's chat_conversations
-// schema) stores UTC as "YYYY-MM-DD HH:MM:SS" — no 'T', no timezone marker.
-// Handing that straight to `new Date(...)` is parsed inconsistently across
-// browsers (some treat it as local time, not UTC). Reformatting into a
-// proper ISO-8601 UTC string first makes the grouping below reliable.
-function parseServerTimestamp(ts: string): Date {
-  return new Date(`${ts.replace(' ', 'T')}Z`)
-}
-
-interface ConversationGroup { label: string; items: Conversation[] }
-
 // Client-side date bucketing for the sidebar (no new backend endpoint
 // needed — grouping is derived purely from each conversation's existing
-// `updated_at`). Buckets, newest-first within each: "Heute" (today, local
-// calendar day), "Diese Woche" (the 7 days before today), "Älter"
-// (everything before that). `conversations` already arrives sorted
-// newest-first (see list_conversations' `ORDER BY updated_at DESC`), so a
-// single pass preserves that order within each bucket without re-sorting.
+// `updated_at`), via the shared groupByDate helper in lib/dateGroups.ts
+// (also used by observatory/Inbox.tsx). `conversations` already arrives
+// sorted newest-first (see list_conversations' `ORDER BY updated_at DESC`),
+// which groupByDate relies on to avoid re-sorting.
+type ConversationGroup = DateGroup<Conversation>
 function groupConversationsByDate(conversations: Conversation[]): ConversationGroup[] {
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const weekStart = new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000)
-
-  const today: Conversation[] = []
-  const week: Conversation[] = []
-  const older: Conversation[] = []
-  for (const c of conversations) {
-    const updated = parseServerTimestamp(c.updated_at)
-    if (updated >= startOfToday) today.push(c)
-    else if (updated >= weekStart) week.push(c)
-    else older.push(c)
-  }
-
-  const groups: ConversationGroup[] = []
-  if (today.length) groups.push({ label: 'Heute', items: today })
-  if (week.length) groups.push({ label: 'Diese Woche', items: week })
-  if (older.length) groups.push({ label: 'Älter', items: older })
-  return groups
+  return groupByDate(conversations, c => c.updated_at)
 }
 
 // Stable reference for "no tool calls on this message" — a fresh `[]` at the

@@ -170,6 +170,7 @@ async fn main() {
         "model-ladder state seeded from DB at startup: model_idx={chat_model_idx_seed}, request_count={chat_request_count_seed}"
     );
     blog::init_schema(&db).await;
+    contact::init_schema(&db).await;
     research::init_schema(&db).await;
     simulation::init_schema(&db).await;
     agent::init_schema(&db).await;
@@ -245,6 +246,8 @@ async fn main() {
         .route("/api/content", get(content::get_content).put(content::update_content))
         .route("/api/upload", post(upload::upload_file))
         .route("/api/contact", post(contact::submit_contact))
+        .route("/api/contact/messages", get(contact::list_messages))
+        .route("/api/contact/messages/:id", axum::routing::patch(contact::update_status))
         .route("/api/analytics", get(analytics::stats))
         .route("/api/inspect", post(inspect::inspect))
         // Research chat (RAG + streaming)
