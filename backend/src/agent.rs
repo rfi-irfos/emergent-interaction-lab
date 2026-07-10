@@ -665,6 +665,8 @@ mod tests {
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
             ddg_api_base,
+            github_token: String::new(),
+            github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }

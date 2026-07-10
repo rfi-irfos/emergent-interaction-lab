@@ -1297,6 +1297,8 @@ mod tests {
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            github_token: String::new(),
+            github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
@@ -1819,6 +1821,8 @@ mod tests {
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
             ddg_api_base: "http://127.0.0.1:1".to_string(),
+            github_token: String::new(),
+            github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(seeded_idx)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(seeded_count)),
         };

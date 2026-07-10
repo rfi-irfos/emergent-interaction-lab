@@ -16,6 +16,7 @@ import { SystemState } from './observatory/SystemState'
 import { InteractionDynamics } from './observatory/InteractionDynamics'
 import { InformationDynamics } from './observatory/InformationDynamics'
 import { BehavioralLandscape } from './observatory/BehavioralLandscape'
+import { AgentActivity } from './observatory/AgentActivity'
 import { ResearchPulse } from './observatory/ResearchPulse'
 import { SimulationCenter } from './observatory/SimulationCenter'
 import { KnowledgeGraph } from './observatory/KnowledgeGraph'
@@ -419,6 +420,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <EmergenceMonitor onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
             {adminSection === 'systemstate' && <SystemState />}
+            {adminSection === 'agentactivity' && <AgentActivity />}
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
             {adminSection === 'behavior' && (
