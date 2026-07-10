@@ -1670,7 +1670,7 @@ button { cursor: pointer; font-family: inherit; }
   background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
 }
 .crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
-.crm-sidebar-brand-actions { display: flex; gap: 8px; margin-top: 12px; }
+.crm-sidebar-brand-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .crm-sidebar-brand-actions .topbar-icon-btn { width: 30px; height: 30px; border-radius: 8px; }
 .crm-sidebar.collapsed .crm-sidebar-brand { padding: 14px 0; gap: 8px; }
 .crm-sidebar.collapsed .crm-sidebar-brand-row { flex-direction: column; gap: 8px; }
