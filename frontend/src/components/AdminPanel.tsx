@@ -431,7 +431,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               />
             )}
             {adminSection === 'simulationcenter' && <SimulationCenter />}
-            {adminSection === 'knowledgegraph' && <KnowledgeGraph />}
+            {adminSection === 'knowledgegraph' && (
+              <KnowledgeGraph onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
           </div>
         </div>
         <AgentDock onJumpToForschung={() => setAdminSection('forschung')} />

@@ -2,12 +2,30 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 
-interface SignalRow { id: string; scope: string | null; source_conversation_id: string | null }
-interface BlogRow { id: string; title: string; source_conversation_id: string | null }
-interface NoteRow { id: string; category: string }
-interface DocRow { id: string }
+interface SignalRow { id: string; pattern: string; observation: string; scope: string | null; source_conversation_id: string | null; created_at: string }
+interface BlogRow { id: string; title: string; body: string; source_conversation_id: string | null; updated_at: string }
+interface NoteRow { id: string; category: string; title: string; body: string; source_conversation_id: string | null; updated_at: string }
+interface DocRow { id: string; filename: string; created_at: string }
 
 const CX = 300, CY = 230, R = 160
+
+const KIND_LABEL: Record<DetailItem['kind'], string> = {
+  signal: 'Signal', post: 'Blogpost', note: 'Research Note', doc: 'Dokument',
+}
+
+interface DetailItem {
+  id: string
+  kind: 'signal' | 'post' | 'note' | 'doc'
+  title: string
+  excerpt: string
+  timestamp: string
+  conversationId: string | null
+}
+
+function truncate(text: string, len = 160): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  return clean.length > len ? `${clean.slice(0, len)}…` : clean
+}
 
 function hash(n: number): number {
   const x = Math.sin(n * 12.9898) * 43758.5453
@@ -32,7 +50,7 @@ async function fetchJson(path: string): Promise<any> {
 /// exists rather than leaving a stale disclaimer around forever. Today that
 /// condition is always true (no such backend exists yet), so the tag always
 /// shows — the check itself is what needs to change, not the tag's text.
-export function KnowledgeGraph() {
+export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [signals, setSignals] = useState<SignalRow[] | null>(null)
   const [posts, setPosts] = useState<BlogRow[] | null>(null)
   const [notes, setNotes] = useState<NoteRow[] | null>(null)
@@ -73,6 +91,20 @@ export function KnowledgeGraph() {
     return posts.filter(p => p.source_conversation_id && convIds.has(p.source_conversation_id))
   }
 
+  // Real per-item records behind each node — this is the actual drill-down
+  // content (title/excerpt/timestamp/conversation-link), not just the
+  // aggregate count the node bubble already shows.
+  const scopeItems = (scope: string): DetailItem[] => {
+    const sigItems: DetailItem[] = signals
+      .filter(s => s.scope === scope)
+      .map(s => ({ id: s.id, kind: 'signal', title: s.pattern, excerpt: s.observation, timestamp: s.created_at, conversationId: s.source_conversation_id }))
+    const postItems: DetailItem[] = linkedPosts(scope)
+      .map(p => ({ id: p.id, kind: 'post', title: p.title, excerpt: p.body, timestamp: p.updated_at, conversationId: p.source_conversation_id }))
+    return [...sigItems, ...postItems]
+  }
+  const noteItems: DetailItem[] = notes.map(n => ({ id: n.id, kind: 'note', title: n.title, excerpt: n.body, timestamp: n.updated_at, conversationId: n.source_conversation_id }))
+  const docItems: DetailItem[] = docs.map(d => ({ id: d.id, kind: 'doc', title: d.filename, excerpt: '', timestamp: d.created_at, conversationId: null }))
+
   const nodes = [
     ...scopeNames.map((scope, i) => ({ id: `scope-${i}`, label: scope, kind: 'scope' as const, accent: '#22d3ee', count: scopeSignalCount(scope), scope })),
     { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: '#8b5cf6', count: notes.length, scope: null },
@@ -86,6 +118,11 @@ export function KnowledgeGraph() {
 
   const expandedNode = expanded ? positions.find(p => p.id === expanded) : null
   const expandedLinkedPosts = expandedNode?.scope ? linkedPosts(expandedNode.scope) : []
+  const expandedItems: DetailItem[] =
+    expandedNode?.kind === 'scope' && expandedNode.scope ? scopeItems(expandedNode.scope)
+    : expandedNode?.kind === 'notes' ? noteItems
+    : expandedNode?.kind === 'docs' ? docItems
+    : []
 
   return (
     <div className="obs-panel">
@@ -129,17 +166,43 @@ export function KnowledgeGraph() {
             <span className="mycelium-detail-text">
               {expandedNode.kind === 'scope' && (
                 expandedLinkedPosts.length > 0
-                  ? `${expandedNode.count} Emergenz-Signale · verknüpft mit ${expandedLinkedPosts.length} Blogpost(s): ${expandedLinkedPosts.map(p => p.title).join(', ')}`
+                  ? `${expandedNode.count} Emergenz-Signale · verknüpft mit ${expandedLinkedPosts.length} Blogpost(s)`
                   : `${expandedNode.count} Emergenz-Signale · noch keine verknüpften Blogposts aus diesem Gesprächskontext.`
               )}
-              {expandedNode.kind === 'notes' && `${expandedNode.count} Research Notes im Bestand — noch nicht mit Emergenz-Signalen verknüpft (kein Relations-Feld vorhanden).`}
-              {expandedNode.kind === 'docs' && `${expandedNode.count} hochgeladene Dokumente — noch nicht mit Emergenz-Signalen verknüpft (kein Relations-Feld vorhanden).`}
+              {expandedNode.kind === 'notes' && `${expandedNode.count} Research Notes im Bestand.`}
+              {expandedNode.kind === 'docs' && `${expandedNode.count} hochgeladene Dokumente.`}
             </span>
+
+            {expandedItems.length > 0 && (
+              <div className="mycelium-detail-list">
+                {expandedItems.map(item => (
+                  <div className="mycelium-detail-item" key={`${item.kind}-${item.id}`} style={{ borderLeftColor: expandedNode.accent }}>
+                    <div className="mycelium-detail-item-title">{KIND_LABEL[item.kind]}: {item.title}</div>
+                    {item.excerpt && <div className="mycelium-detail-item-excerpt">{truncate(item.excerpt)}</div>}
+                    <div className="mycelium-detail-item-meta">
+                      {item.timestamp}
+                      {item.conversationId && onOpenConversation && (
+                        <>
+                          {' · '}
+                          <button
+                            className="chat-inspect-toggle"
+                            style={{ fontSize: 11, padding: 0 }}
+                            onClick={() => onOpenConversation(item.conversationId!)}
+                          >
+                            aus Gespräch ↗
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
       <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
-        Kantenstärke = Anzahl über die Gesprächs-ID verknüpfter Blogposts. Research Notes und Dokumente sind aktuell nur als eigenständige Bestände sichtbar, nicht in den Graph eingebunden — dafür fehlt ein echtes Verknüpfungsfeld.
+        Kantenstärke = Anzahl über die Gesprächs-ID verknüpfter Blogposts. Klick auf einen Knoten für die echten Einzeleinträge dahinter.
       </p>
     </div>
   )
