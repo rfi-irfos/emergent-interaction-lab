@@ -311,29 +311,6 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-hero-parallax { position: absolute; inset: 0; }
 
-/* Occasional specular light-sweep across the hero — a slow, mostly-idle glint
-   rather than a constant scrolling shine. */
-.site-hero-sheen {
-  position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none;
-}
-.site-hero-sheen::after {
-  content: ''; position: absolute; top: -50%; left: -60%;
-  width: 40%; height: 200%;
-  background: linear-gradient(100deg,
-    transparent 0%, rgba(255,255,255,.16) 45%, rgba(214,247,255,.26) 50%,
-    rgba(255,255,255,.16) 55%, transparent 100%);
-  transform: rotate(8deg) translateX(-120%);
-  mix-blend-mode: screen;
-  animation: hero-sheen-sweep 11s ease-in-out infinite;
-  animation-delay: 3s;
-}
-@keyframes hero-sheen-sweep {
-  0%, 60%  { transform: rotate(8deg) translateX(-120%); }
-  74%, 100% { transform: rotate(8deg) translateX(340%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .site-hero-sheen { display: none; }
-}
 .site-hero-inner {
   position: relative; z-index: 2;
   padding: 0 80px 80px; max-width: 760px;

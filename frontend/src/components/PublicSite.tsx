@@ -1050,7 +1050,6 @@ export function PublicSite({
               <HeroFieldGraphic />
             </HeroParallax>
           )}
-          <div className="site-hero-sheen" aria-hidden="true" />
           {editMode && (
             <div className="site-hero-controls">
               <button className="site-hero-swap-btn" onClick={() => onImageClick?.('hero.image')}>
