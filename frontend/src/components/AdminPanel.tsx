@@ -306,7 +306,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {/* ── BLOG TAB ──────────────────────────────────────────────── */}
             {adminSection === 'blog' && (
               <div className="panel-products">
-                <div className="obs-section-label">Themen</div>
+                {/* Two entirely separate data models live in this tab and used
+                    to look like one system: this section edits draft.news.items
+                    (the manually-managed public news list), while "Jarvis-
+                    Entwürfe" further down is the blog_posts table Jarvis writes
+                    to via draft_blog_post/revise_blog_post. Labelled + boxed
+                    off below so it's clear which button touches which data. */}
+                <div className="obs-section-label">Manuell · Themen</div>
                 <div className="pem-tags" style={{ marginBottom: 10 }}>
                   {(draft.news?.categories ?? []).map(c => (
                     <span className="pem-tag" key={c.id}>
@@ -345,10 +351,10 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 </div>
                 <button className="panel-add-big-btn" onClick={addNews}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Blogbeitrag hinzufügen
+                  Blogbeitrag hinzufügen (manuell)
                 </button>
-                <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--panel-border, #e8e8e8)' }}>
-                  <div className="obs-section-label">Jarvis-Entwürfe</div>
+                <div className="obs-section blog-jarvis-section">
+                  <div className="obs-section-label">🤖 Von Jarvis generiert</div>
                   <BlogDrafts
                     onPromoteToSite={promoteBlogPostToSite}
                     onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}

@@ -31,8 +31,27 @@ async function fetchJson(path: string): Promise<any> {
   }
 }
 
+// Collapsed by default: these dashboard stat rows used to sit directly above
+// the Forschung chat as bare siblings with only a sliver of gap, crowding
+// the chat's reading area every time the tab opened. Collapsing them by
+// default (remembered per-browser, same pattern as the sidebar) lets the
+// chat read as a clean, focused REPL — the numbers are still one click away,
+// not removed.
+function loadLiveCardsCollapsed(): boolean {
+  try { return localStorage.getItem('rfi_live_cards_collapsed') !== '0' } catch { return true }
+}
+
 export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number; onNavigate: (s: AdminSection) => void }) {
   const [values, setValues] = useState<Partial<Record<AdminSection, string>>>({})
+  const [collapsed, setCollapsed] = useState(loadLiveCardsCollapsed)
+
+  const toggleCollapsed = () => {
+    setCollapsed(c => {
+      const next = !c
+      try { localStorage.setItem('rfi_live_cards_collapsed', next ? '1' : '0') } catch { /* ignore */ }
+      return next
+    })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -78,31 +97,40 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
   const row = (tier: ObservatoryTier) => MODULE_META.filter(m => m.tier === tier)
 
   return (
-    <div className="live-cards-tiered">
-      <div className="live-cards live-cards-research">
-        {row('research').map(m => (
-          <button key={m.id} className="live-card" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
-            <span className="live-card-value">{values[m.id] ?? '…'}</span>
-            <span className="live-card-label">{m.label}</span>
-          </button>
-        ))}
-      </div>
-      <div className="live-cards live-cards-system">
-        {row('system').map(m => (
-          <button key={m.id} className="live-card live-card-secondary" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
-            <span className="live-card-value">{values[m.id] ?? '…'}</span>
-            <span className="live-card-label">{m.label}</span>
-          </button>
-        ))}
-      </div>
-      <div className="live-cards live-cards-technical">
-        {row('technical').map(m => (
-          <button key={m.id} className="live-card live-card-technical" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
-            <span className="live-card-value">{values[m.id] ?? '…'}</span>
-            <span className="live-card-label">{m.label}</span>
-          </button>
-        ))}
-      </div>
+    <div className={`live-cards-panel ${collapsed ? 'collapsed' : ''}`}>
+      <button type="button" className="live-cards-panel-toggle" onClick={toggleCollapsed} aria-expanded={!collapsed}>
+        <span className="live-cards-panel-chevron">{collapsed ? '▸' : '▾'}</span>
+        Observatory-Kennzahlen
+        {collapsed && <span className="live-cards-panel-hint">einblenden</span>}
+      </button>
+      {!collapsed && (
+        <div className="live-cards-tiered">
+          <div className="live-cards live-cards-research">
+            {row('research').map(m => (
+              <button key={m.id} className="live-card" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
+                <span className="live-card-value">{values[m.id] ?? '…'}</span>
+                <span className="live-card-label">{m.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="live-cards live-cards-system">
+            {row('system').map(m => (
+              <button key={m.id} className="live-card live-card-secondary" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
+                <span className="live-card-value">{values[m.id] ?? '…'}</span>
+                <span className="live-card-label">{m.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="live-cards live-cards-technical">
+            {row('technical').map(m => (
+              <button key={m.id} className="live-card live-card-technical" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
+                <span className="live-card-value">{values[m.id] ?? '…'}</span>
+                <span className="live-card-label">{m.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

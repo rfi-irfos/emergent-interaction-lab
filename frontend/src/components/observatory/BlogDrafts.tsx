@@ -48,7 +48,14 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
     await refresh()
   }
 
-  const remove = async (id: string) => {
+  // The backend does an unconditional hard delete (no soft-delete, no status
+  // guard) and there used to be nothing at all in front of it here — one
+  // misclick permanently destroyed a real Jarvis-generated draft. A native
+  // confirm() is a deliberately minimal fix: this codebase has no existing
+  // custom modal pattern to reuse, and the point is just to force a
+  // deliberate second step before an unrecoverable action.
+  const remove = async (id: string, title: string) => {
+    if (!window.confirm(`„${title}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return
     await fetch(`${API_BASE}/api/blog/posts/${id}`, { method: 'DELETE', headers: authHeaders() })
     await refresh()
   }
@@ -133,7 +140,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                   </>
                 )}
                 {p.status === 'published' && <span className="obs-status-pill ok">✓ Im öffentlichen Blog vorgemerkt</span>}
-                <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => remove(p.id)}>Löschen</button>
+                <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => remove(p.id, p.title)}>Löschen</button>
               </div>
             </>
           )}

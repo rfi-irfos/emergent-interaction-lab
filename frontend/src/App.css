@@ -1693,6 +1693,16 @@ button { cursor: pointer; font-family: inherit; }
   background: #fff; border: 1px solid rgba(15,23,42,.06); border-radius: 14px; padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03); margin-bottom: 18px;
 }
+
+/* Boxes the Jarvis-generated blog drafts (blog_posts table) off from the
+   manually-managed news list above it in the same Blog tab — a background
+   tint + rounded border read as "a separate module," not just another row
+   in the same list, since the two buttons above/below this line write to
+   completely different data (draft.news.items vs blog_posts). */
+.blog-jarvis-section {
+  margin-top: 26px; padding: 18px 18px 6px; border-radius: 12px;
+  background: rgba(59,107,246,.035); border: 1px solid rgba(59,107,246,.12);
+}
 .obs-map-card { background: linear-gradient(180deg, #fbfcfe, #f5f7fb); padding: 24px 20px 16px; }
 
 .obs-badge-experimental {
@@ -1992,10 +2002,30 @@ button { cursor: pointer; font-family: inherit; }
 .mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan); }
 
 /* ── LIVE OBSERVATORY CARDS (above Forschung chat) ───────────────────────────── */
+/* Collapsed by default and visually boxed off from the chat below it — these
+   dashboard stat rows used to sit directly above ResearchChat as bare
+   siblings with only a sliver of gap, crowding the chat's reading area every
+   time the tab opened. The toggle bar + border give it a distinct "widget
+   strip" identity instead of competing with the chat for attention; the data
+   itself is unchanged, just not shown until asked for. */
+.live-cards-panel {
+  flex-shrink: 0; margin-bottom: 14px; padding: 2px 2px 10px;
+  border-bottom: 1px solid rgba(148,197,214,.16);
+}
+.live-cards-panel.collapsed { padding-bottom: 2px; }
+.live-cards-panel-toggle {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  background: none; border: none; cursor: pointer; text-align: left;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: #7d8a97; padding: 6px 4px; transition: color .15s;
+}
+.live-cards-panel-toggle:hover { color: #63f0ff; }
+.live-cards-panel-chevron { display: inline-flex; font-size: 10px; width: 10px; }
+.live-cards-panel-hint { font-weight: 500; text-transform: none; letter-spacing: 0; color: #576270; }
 /* Three tiers, not one flat row — a research signal must not read with the
    same visual weight as a technical figure (see plan). Prominent research
    row, secondary system row, small muted technical chip row last. */
-.live-cards-tiered { display: flex; flex-direction: column; gap: 8px; padding: 0 0 16px; flex-shrink: 0; }
+.live-cards-tiered { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 4px; flex-shrink: 0; }
 .live-cards { display: flex; gap: 10px; flex-wrap: wrap; }
 .live-card {
   --obs-accent: #3b6bf6;
