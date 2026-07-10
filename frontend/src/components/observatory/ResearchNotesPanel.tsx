@@ -20,6 +20,16 @@ const CATEGORY_ACCENT: Record<string, string> = {
   concept: '#f59e0b', framework: '#10b981', prototype: '#ef4444',
 }
 
+// `tags` has been on research_notes since day one — Jarvis's own
+// log_research_note(category, title, body, tags?) tool already populates it
+// on every note it logs autonomously — but this panel only ever read
+// n.category off the row, silently dropping tags on the floor. Free-text
+// field, so split defensively on the two separators a model or human is
+// likely to use.
+function parseTags(raw: string): string[] {
+  return raw.split(/[,;]+/).map(t => t.trim()).filter(Boolean)
+}
+
 /// Research Workspace and Innovation Lab are the same table filtered by
 /// category (see backend/src/research.rs) — one shared panel, two thin
 /// wrappers configuring which categories it shows. Avoids building two
@@ -80,28 +90,38 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
 
       {loading && !items && <div className="obs-empty">Lade…</div>}
       {list.length === 0 && !loading && <div className="obs-empty">Noch keine Einträge.</div>}
-      {list.map(n => (
-        <div className="obs-item-card" key={n.id} style={{ ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>
-          <div className="obs-item-title">{n.title}</div>
-          <div className="obs-item-meta">
-            <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
-            {' · '}{n.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {n.updated_at}
-            {n.source_conversation_id && onOpenConversation && (
-              <>
-                {' · '}
-                <button
-                  className="chat-inspect-toggle"
-                  style={{ fontSize: 11, padding: 0 }}
-                  onClick={() => onOpenConversation(n.source_conversation_id!)}
-                >
-                  aus Gespräch ↗
-                </button>
-              </>
+      {list.map(n => {
+        const tags = parseTags(n.tags)
+        return (
+          <div className="obs-item-card" key={n.id} style={{ ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>
+            <div className="obs-item-title">{n.title}</div>
+            <div className="obs-item-meta">
+              <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
+              {' · '}{n.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {n.updated_at}
+              {n.source_conversation_id && onOpenConversation && (
+                <>
+                  {' · '}
+                  <button
+                    className="chat-inspect-toggle"
+                    style={{ fontSize: 11, padding: 0 }}
+                    onClick={() => onOpenConversation(n.source_conversation_id!)}
+                  >
+                    aus Gespräch ↗
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="obs-item-body">{n.body}</div>
+            {tags.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 9 }}>
+                {tags.map((t, i) => (
+                  <span key={i} className="obs-pill" style={{ background: 'rgba(107,114,128,.12)', color: '#6b7280' }}>{t}</span>
+                ))}
+              </div>
             )}
           </div>
-          <div className="obs-item-body">{n.body}</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
