@@ -659,6 +659,8 @@ mod tests {
             db,
             http: reqwest::Client::new(),
             nvidia_api_key: String::new(),
+            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
+            nvidia_connect_timeout: crate::chat::NVIDIA_CONNECT_TIMEOUT,
             chat_secret: String::new(),
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
