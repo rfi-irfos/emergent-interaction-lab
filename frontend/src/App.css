@@ -2159,6 +2159,7 @@ button { cursor: pointer; font-family: inherit; }
 .chat-bubble.user { align-self: flex-end; }
 .chat-bubble.assistant { align-self: flex-start; }
 .chat-bubble-content {
+  position: relative;
   white-space: pre-wrap; word-break: break-word; font-size: 13.5px; line-height: 1.55; padding: 10px 14px; border-radius: 12px;
 }
 .chat-bubble-content p { margin: 0 0 10px; }
@@ -2212,6 +2213,37 @@ button { cursor: pointer; font-family: inherit; }
   border-radius: 8px; font-size: 11px; color: rgba(233,251,255,.8); white-space: pre-wrap; word-break: break-word;
   max-width: 420px; max-height: 160px; overflow: auto;
 }
+
+/* Web search gets its own look instead of the generic 🔧 badge — real,
+   live results deserve to read differently from an internal tool call. */
+.chat-web-search-toggle { border-color: rgba(139,123,240,.35); background: rgba(139,123,240,.1); color: #c7bdfb; }
+.chat-web-search-toggle:hover { background: rgba(139,123,240,.18); }
+.chat-web-search-detail {
+  margin: 4px 0 0; padding: 8px 10px; background: #0d1524; border: 1px solid rgba(148,197,214,.2);
+  border-radius: 8px; font-size: 11.5px; color: rgba(233,251,255,.85); max-width: 420px; max-height: 220px; overflow: auto;
+}
+.chat-web-search-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.chat-web-search-results li { display: flex; flex-direction: column; gap: 2px; }
+.chat-web-search-results a { color: #63f0ff; font-weight: 600; text-decoration: none; word-break: break-word; }
+.chat-web-search-results a:hover { text-decoration: underline; }
+.chat-web-search-results strong { color: #e9fbff; }
+.chat-web-search-snippet { color: rgba(233,251,255,.6); font-size: 11px; line-height: 1.4; }
+.chat-web-search-empty { color: rgba(233,251,255,.5); font-style: italic; }
+.chat-web-search-footnote { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(148,197,214,.14); color: rgba(233,251,255,.4); font-size: 10.5px; }
+
+/* Hover-revealed copy button on assistant bubbles — always focusable
+   (opacity still flips on :focus-visible) so keyboard users aren't locked
+   out of a hover-only affordance. */
+.chat-copy-btn {
+  position: absolute; top: 6px; right: 6px; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center; border-radius: 6px;
+  border: 1px solid rgba(148,197,214,.25); background: rgba(10,14,26,.6); color: rgba(233,251,255,.55);
+  font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s, color .15s, border-color .15s;
+}
+.chat-bubble.assistant:hover .chat-copy-btn,
+.chat-copy-btn:focus-visible { opacity: 1; }
+.chat-copy-btn:hover { border-color: #63f0ff; color: #63f0ff; }
+.chat-copy-btn.copied { opacity: 1; border-color: #22c55e; color: #22c55e; }
 
 .chat-error { margin: 0 20px 10px; padding: 8px 12px; border-radius: 8px; background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.3); color: #ff9b9b; font-size: 12.5px; }
 

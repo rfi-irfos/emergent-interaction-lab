@@ -41,6 +41,10 @@ pub struct AppState {
     /// Stripe API — never overridden in production, where it's always
     /// "https://api.stripe.com".
     pub stripe_api_base: String,
+    /// Overridable so tests can point the web_search tool at a local mock
+    /// instead of the real DuckDuckGo Instant Answer API — never overridden
+    /// in production, where it's always "https://api.duckduckgo.com".
+    pub ddg_api_base: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -101,6 +105,7 @@ async fn main() {
         chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
+        ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
     };
 
     if state.chat_secret.is_empty() {

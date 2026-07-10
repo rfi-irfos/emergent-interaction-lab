@@ -27,6 +27,7 @@ const KNOWN_TOOLS: &[&str] = &[
     "get_blog_post",
     "revise_blog_post",
     "update_content_field",
+    "web_search",
 ];
 
 pub async fn init_schema(db: &SqlitePool) {
@@ -70,7 +71,8 @@ pub(crate) fn tool_instructions_block(module: &str) -> String {
     s.push_str("- run_simulation_scenario(hypothesis, parameters?): lässt dich eine Hypothese explorativ durchdenken (keine validierte Simulation, immer als solche kennzeichnen).\n");
     s.push_str("- get_blog_post(post_id): liest Titel und Text eines vorhandenen Blogpost-Entwurfs — nutze das, bevor du an einem Entwurf weiterschreibst.\n");
     s.push_str("- revise_blog_post(post_id, title?, body?): überschreibt Titel und/oder Text eines Entwurfs komplett. Funktioniert NUR bei einem Entwurf (status=draft) — ein bereits veröffentlichter Post wird nie automatisch verändert.\n");
-    s.push_str("- update_content_field(field, value): schreibt einen Wert direkt in den Website-Kit-Entwurf, z.B. field=\"hero.title\" oder field=\"about.body\" — Punktnotation für verschachtelte Felder. Wird sofort im Entwurf übernommen (Laura sieht die Änderung live im Website Kit), aber erst mit \"Speichern\" dort tatsächlich veröffentlicht. Nutze get_content_section zuerst, um die genaue Feldstruktur zu sehen, bevor du sie überschreibst.\n\n");
+    s.push_str("- update_content_field(field, value): schreibt einen Wert direkt in den Website-Kit-Entwurf, z.B. field=\"hero.title\" oder field=\"about.body\" — Punktnotation für verschachtelte Felder. Wird sofort im Entwurf übernommen (Laura sieht die Änderung live im Website Kit), aber erst mit \"Speichern\" dort tatsächlich veröffentlicht. Nutze get_content_section zuerst, um die genaue Feldstruktur zu sehen, bevor du sie überschreibst.\n");
+    s.push_str("- web_search(query): sucht im offenen Web über die DuckDuckGo Instant Answer API — echte, live abgerufene Ergebnisse, keine Erfindung. Liefert aber nur bei bekannten Begriffen/Themen etwas (eine Zusammenfassung plus verwandte Themen), keine vollständige Trefferliste wie eine normale Suchmaschine — bei speziellen, sehr aktuellen oder ungewöhnlichen Fragen kommt oft nichts zurück. Wenn nichts gefunden wurde, sag das ehrlich (\"dazu hat die Websuche nichts gefunden\") statt etwas zu erfinden, und präsentiere Treffer nie als vollständiger oder autoritativer, als sie sind.\n\n");
     s.push_str("Wenn keine Handlung nötig ist, antworte ganz normal im Gespräch — kein JSON, keine Werkzeug-Erwähnung.");
     s
 }
@@ -295,8 +297,152 @@ pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content
                 Err(e) => json!({ "ok": false, "error": e }).to_string(),
             }
         }
+        "web_search" => {
+            let query = call.arguments.get("query").and_then(|v| v.as_str()).unwrap_or("");
+            web_search(state, query).await
+        }
         other => json!({ "error": format!("unknown tool: {other}") }).to_string(),
     }
+}
+
+/// Live web grounding via DuckDuckGo's Instant Answer API (`format=json`,
+/// no key required). Deliberately NOT scraping DuckDuckGo's `/html/`
+/// results page: tested both from this deployment's network position, and
+/// the HTML endpoint's anti-bot "anomaly" challenge blocked the
+/// overwhelming majority of attempts (roughly 7 of 8, with the one
+/// success not reproducible with the same technique afterward) — a
+/// datacenter egress IP reads as automated traffic to DuckDuckGo, and
+/// Fly.io's IP ranges are exactly that kind of IP too, so the same wall
+/// would very plausibly bite in production. That would silently degrade
+/// the tool to "search failed" most of the time — worse for genuine
+/// grounding than an API that reliably answers but is thin for anything
+/// that isn't a well-known topic/entity. The thinness is real (see
+/// `extract_ddg_results`), so an empty result set is reported honestly as
+/// "nothing found" rather than papered over.
+pub(crate) async fn web_search(state: &AppState, query: &str) -> String {
+    let query = query.trim();
+    if query.is_empty() {
+        return json!({ "ok": false, "error": "query darf nicht leer sein" }).to_string();
+    }
+
+    let res = state
+        .http
+        .get(format!("{}/", state.ddg_api_base))
+        .query(&[("q", query), ("format", "json"), ("no_html", "1"), ("skip_disambig", "1")])
+        .timeout(std::time::Duration::from_secs(8))
+        .send()
+        .await;
+
+    let res = match res {
+        Ok(r) if r.status().is_success() => r,
+        Ok(r) => {
+            tracing::warn!("DuckDuckGo search returned {}", r.status());
+            return json!({
+                "ok": false,
+                "query": query,
+                "error": "Websuche fehlgeschlagen — DuckDuckGo hat mit einem Fehler geantwortet.",
+            })
+            .to_string();
+        }
+        Err(e) => {
+            tracing::warn!("DuckDuckGo search request failed: {e}");
+            return json!({
+                "ok": false,
+                "query": query,
+                "error": "Websuche fehlgeschlagen — keine Verbindung zu DuckDuckGo.",
+            })
+            .to_string();
+        }
+    };
+
+    let body: serde_json::Value = match res.json().await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!("DuckDuckGo search response could not be parsed: {e}");
+            return json!({
+                "ok": false,
+                "query": query,
+                "error": "Websuche fehlgeschlagen — Antwort von DuckDuckGo war nicht lesbar.",
+            })
+            .to_string();
+        }
+    };
+
+    let results = extract_ddg_results(&body);
+    let note = if results.is_empty() {
+        "Keine Treffer über die DuckDuckGo Instant Answer API — die liefert nur bei bekannten Themen/Begriffen etwas, keine vollständige Trefferliste wie eine normale Suchmaschine. Das ist ein ehrliches 'nichts gefunden', keine Erfindung."
+    } else {
+        "Echte, live abgerufene Web-Ergebnisse, keine Erfindung — aber nicht automatisch vollständig oder abschließend."
+    };
+
+    json!({
+        "ok": true,
+        "query": query,
+        "source": "DuckDuckGo Instant Answer API (live, kein API-Key)",
+        "results": results,
+        "note": note,
+    })
+    .to_string()
+}
+
+/// Pulls up to 5 usable `{title, url, snippet}` entries out of a DuckDuckGo
+/// Instant Answer API response: the topic abstract (if any), then a direct
+/// Answer/Definition quick-fact (if any), then RelatedTopics — which mixes
+/// plain `{Text, FirstURL}` entries with `{Name, Topics: [...]}` category
+/// groups, so both shapes are handled rather than assuming one.
+fn extract_ddg_results(body: &serde_json::Value) -> Vec<serde_json::Value> {
+    let mut out = Vec::new();
+
+    let abstract_text = body.get("AbstractText").and_then(|v| v.as_str()).unwrap_or("");
+    if !abstract_text.is_empty() {
+        out.push(json!({
+            "title": body.get("Heading").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("Übersicht"),
+            "url": body.get("AbstractURL").and_then(|v| v.as_str()).unwrap_or(""),
+            "snippet": abstract_text,
+        }));
+    }
+
+    let answer = body.get("Answer").and_then(|v| v.as_str()).unwrap_or("");
+    if !answer.is_empty() {
+        out.push(json!({ "title": "Direkte Antwort", "url": "", "snippet": answer }));
+    }
+
+    let definition = body.get("Definition").and_then(|v| v.as_str()).unwrap_or("");
+    if !definition.is_empty() {
+        out.push(json!({
+            "title": body.get("DefinitionSource").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("Definition"),
+            "url": body.get("DefinitionURL").and_then(|v| v.as_str()).unwrap_or(""),
+            "snippet": definition,
+        }));
+    }
+
+    fn push_related(entry: &serde_json::Value, out: &mut Vec<serde_json::Value>) {
+        if let Some(topics) = entry.get("Topics").and_then(|v| v.as_array()) {
+            for t in topics {
+                push_related(t, out);
+            }
+            return;
+        }
+        let text = entry.get("Text").and_then(|v| v.as_str()).unwrap_or("");
+        if text.is_empty() {
+            return;
+        }
+        let url = entry.get("FirstURL").and_then(|v| v.as_str()).unwrap_or("");
+        let (title, snippet) = text.split_once(" - ").unwrap_or((text, text));
+        out.push(json!({ "title": title, "url": url, "snippet": snippet }));
+    }
+
+    if let Some(related) = body.get("RelatedTopics").and_then(|v| v.as_array()) {
+        for entry in related {
+            if out.len() >= 5 {
+                break;
+            }
+            push_related(entry, &mut out);
+        }
+    }
+
+    out.truncate(5);
+    out
 }
 
 pub(crate) async fn log_tool_call(state: &AppState, conversation_id: &str, call: &ToolCall, result: &str) {
@@ -395,5 +541,128 @@ mod tests {
         let mut content = json!({});
         apply_content_field_update(&mut content, "whatsapp.enabled", json!(true));
         assert_eq!(content["whatsapp"]["enabled"], true);
+    }
+
+    #[test]
+    fn detects_bare_web_search_tool_call() {
+        let text = r#"{"tool": "web_search", "arguments": {"query": "emergent interaction lab"}}"#;
+        let call = parse_tool_call(text).expect("should detect web_search tool call");
+        assert_eq!(call.tool, "web_search");
+        assert_eq!(call.arguments["query"], "emergent interaction lab");
+    }
+
+    // ── web_search dispatch, against a local mock of the DuckDuckGo Instant
+    // Answer API (never the real network in the test suite) ────────────────
+
+    use axum::{routing::get as axget, Json as AxJson, Router};
+    use std::{collections::HashMap, path::PathBuf, sync::{Arc, RwLock}};
+
+    /// Canned response shaped like a real DuckDuckGo Instant Answer API hit
+    /// with both an abstract and a mix of plain/grouped RelatedTopics —
+    /// exercises both shapes extract_ddg_results has to handle.
+    async fn mock_ddg_hit() -> AxJson<serde_json::Value> {
+        AxJson(json!({
+            "AbstractText": "Human–computer interaction is the process through which people operate and engage with computer systems.",
+            "AbstractURL": "https://en.wikipedia.org/wiki/Human-computer_interaction",
+            "Heading": "Human-computer interaction",
+            "Answer": "",
+            "Definition": "",
+            "RelatedTopics": [
+                { "Text": "Information architecture - the structural design of shared information environments.", "FirstURL": "https://duckduckgo.com/Information_architecture" },
+                { "Name": "Grouped", "Topics": [
+                    { "Text": "Information design - presenting information for effective understanding.", "FirstURL": "https://duckduckgo.com/Information_design" }
+                ] }
+            ],
+        }))
+    }
+
+    async fn mock_ddg_miss() -> AxJson<serde_json::Value> {
+        AxJson(json!({
+            "AbstractText": "", "AbstractURL": "", "Heading": "", "Answer": "", "Definition": "",
+            "RelatedTopics": [],
+        }))
+    }
+
+    async fn start_mock_ddg(hit: bool) -> String {
+        let app = Router::new().route(
+            "/",
+            axget(move || async move { if hit { mock_ddg_hit().await } else { mock_ddg_miss().await } }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    async fn test_state(ddg_api_base: String) -> AppState {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        AppState {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            content_path: PathBuf::from("content.json"),
+            uploads_dir: PathBuf::from("uploads"),
+            static_dir: PathBuf::from("dist"),
+            allowed_email: String::new(),
+            google_client_id: String::new(),
+            google_client_secret: String::new(),
+            redirect_uri: String::new(),
+            dev_mode: true,
+            db,
+            http: reqwest::Client::new(),
+            nvidia_api_key: String::new(),
+            chat_secret: String::new(),
+            stripe_secret_key: String::new(),
+            stripe_api_base: "https://api.stripe.com".to_string(),
+            ddg_api_base,
+        }
+    }
+
+    #[tokio::test]
+    async fn web_search_tool_call_dispatches_and_parses_a_real_shaped_ddg_response() {
+        let base = start_mock_ddg(true).await;
+        let state = test_state(base).await;
+        let call = ToolCall { tool: "web_search".to_string(), arguments: json!({ "query": "human computer interaction" }) };
+
+        let result = execute_tool(&state, &call, None, "conv-1").await;
+        let parsed: serde_json::Value = serde_json::from_str(&result).expect("valid JSON result");
+
+        assert_eq!(parsed["ok"], true);
+        assert_eq!(parsed["query"], "human computer interaction");
+        let results = parsed["results"].as_array().expect("results array");
+        // Abstract entry, plus the plain RelatedTopics entry, plus the one
+        // nested inside a {Topics: [...]} group — proves both shapes flatten.
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0]["title"], "Human-computer interaction");
+        assert!(results[0]["snippet"].as_str().unwrap().contains("Human–computer interaction"));
+        assert_eq!(results[1]["title"], "Information architecture");
+        assert_eq!(results[2]["title"], "Information design");
+    }
+
+    #[tokio::test]
+    async fn web_search_tool_call_reports_an_honest_no_results_instead_of_fabricating() {
+        let base = start_mock_ddg(false).await;
+        let state = test_state(base).await;
+        let call = ToolCall { tool: "web_search".to_string(), arguments: json!({ "query": "something obscure" }) };
+
+        let result = execute_tool(&state, &call, None, "conv-1").await;
+        let parsed: serde_json::Value = serde_json::from_str(&result).expect("valid JSON result");
+
+        assert_eq!(parsed["ok"], true);
+        assert_eq!(parsed["results"].as_array().unwrap().len(), 0);
+        assert!(parsed["note"].as_str().unwrap().contains("Keine Treffer"));
+    }
+
+    #[tokio::test]
+    async fn web_search_tool_call_fails_gracefully_instead_of_crashing_the_round() {
+        // Nothing is listening on this base URL — simulates the network
+        // failing outright (down, timeout, DNS) rather than mocking a
+        // well-formed response, matching the "graceful failure" requirement.
+        let state = test_state("http://127.0.0.1:1".to_string()).await;
+        let call = ToolCall { tool: "web_search".to_string(), arguments: json!({ "query": "anything" }) };
+
+        let result = execute_tool(&state, &call, None, "conv-1").await;
+        let parsed: serde_json::Value = serde_json::from_str(&result).expect("valid JSON result even on failure");
+
+        assert_eq!(parsed["ok"], false);
+        assert!(parsed["error"].as_str().unwrap().contains("Websuche fehlgeschlagen"));
     }
 }

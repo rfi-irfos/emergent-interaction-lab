@@ -7,4 +7,5 @@ export const TOOL_LABELS: Record<string, string> = {
   get_blog_post: 'Blogpost-Entwurf gelesen',
   revise_blog_post: 'Blogpost-Entwurf überarbeitet',
   update_content_field: 'Website-Kit-Entwurf aktualisiert',
+  web_search: 'Web-Suche durchgeführt',
 }
