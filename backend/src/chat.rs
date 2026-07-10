@@ -499,6 +499,27 @@ pub async fn upload_document(
     (StatusCode::BAD_REQUEST, "Keine Datei im Request.").into_response()
 }
 
+/// True as long as `accumulated_text` (a round's streamed reply so far,
+/// re-evaluated after every new delta) gives no sign of turning into a tool
+/// call — i.e. it's still safe to forward live to the client as visible chat
+/// prose. Once this returns false for a round, the caller must stop
+/// forwarding for the REST of that round (see stream_chat's inner loop).
+///
+/// This replaces a latched, first-character-only guess that caused a real
+/// bug: a model that leads with prose before emitting a `{"tool": ...}` JSON
+/// blob later in the SAME completion made the old check decide "ordinary
+/// reply" once, from the leading prose, and then forward every subsequent
+/// delta live — including the embedded tool-call JSON — even though
+/// `agent::parse_tool_call` (run once the round finishes) is deliberately
+/// lenient and scans the whole text, so it still found and executed the
+/// call. Net effect in production: both a clean tool-call badge AND the raw
+/// leaked JSON showed up in the same chat bubble. Re-checking the FULL
+/// accumulated text on every delta — instead of only its first character —
+/// makes the streaming decision at least as lenient as that final parser.
+pub(crate) fn safe_to_forward_live(accumulated_text: &str) -> bool {
+    !(accumulated_text.contains('{') || accumulated_text.contains('`'))
+}
+
 // ── streaming chat (SSE) ─────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
@@ -682,11 +703,17 @@ pub async fn stream_chat(
             // network chunks it was split across.
             let mut buf: Vec<u8> = Vec::new();
             let mut byte_stream = res.bytes_stream();
-            // Decided once the first non-whitespace character of this
-            // round's reply arrives: Some(true) = looks like a tool call
-            // (buffer silently, never forward raw JSON to the client),
-            // Some(false) = ordinary reply (forward live, as before).
-            let mut looks_like_tool_call: Option<bool> = None;
+            // See `safe_to_forward_live` — continuously re-checked against
+            // the full accumulated reply so far, not just its first
+            // character, so a tool call embedded after leading prose can
+            // never leak its raw JSON to the client as visible chat text.
+            // `forwarded_len`/`forwarded_tok_count` mark exactly how much of
+            // `iter_text`/`iter_tokens` has already been sent live, so the
+            // held-back tail can be flushed once (and only once) at the end
+            // of the round without duplicating anything.
+            let mut forwarding_suppressed = false;
+            let mut forwarded_len = 0usize;
+            let mut forwarded_tok_count = 0usize;
 
             while let Some(chunk) = byte_stream.next().await {
                 let bytes = match chunk {
@@ -738,16 +765,15 @@ pub async fn stream_chat(
                         }
                     }
 
-                    if looks_like_tool_call.is_none() {
-                        let trimmed = iter_text.trim_start();
-                        if !trimmed.is_empty() {
-                            looks_like_tool_call = Some(trimmed.starts_with('{') || trimmed.starts_with('`'));
+                    if !forwarding_suppressed {
+                        if !safe_to_forward_live(&iter_text) {
+                            forwarding_suppressed = true;
+                        } else if !delta_text.is_empty() || !chunk_tokens.is_empty() {
+                            let payload = json!({ "delta": delta_text, "tokens": chunk_tokens });
+                            yield Ok(Event::default().data(payload.to_string()));
+                            forwarded_len = iter_text.len();
+                            forwarded_tok_count = iter_tokens.len();
                         }
-                    }
-
-                    if looks_like_tool_call == Some(false) && (!delta_text.is_empty() || !chunk_tokens.is_empty()) {
-                        let payload = json!({ "delta": delta_text, "tokens": chunk_tokens });
-                        yield Ok(Event::default().data(payload.to_string()));
                     }
                 }
             }
@@ -773,13 +799,16 @@ pub async fn stream_chat(
                     continue 'rounds;
                 }
                 None => {
-                    // Not a tool call after all. If the leading-character
-                    // guess said "tool call" and suppressed live forwarding,
-                    // the client never saw these tokens — flush them as one
-                    // chunk now (loses the token-by-token typing effect for
-                    // this one edge case, but the reply still shows up).
-                    if looks_like_tool_call == Some(true) {
-                        yield Ok(Event::default().data(json!({ "delta": iter_text, "tokens": iter_tokens.clone() }).to_string()));
+                    // Not a tool call after all. Flush whatever forwarding
+                    // suppression held back — from the point a `{`/`` ` ``
+                    // first appeared in this round's text to its end — as
+                    // one chunk now (loses the token-by-token typing effect
+                    // for that tail, but nothing already forwarded live gets
+                    // duplicated or dropped).
+                    let remainder_text = &iter_text[forwarded_len..];
+                    let remainder_tokens = &iter_tokens[forwarded_tok_count..];
+                    if !remainder_text.is_empty() || !remainder_tokens.is_empty() {
+                        yield Ok(Event::default().data(json!({ "delta": remainder_text, "tokens": remainder_tokens }).to_string()));
                     }
                     final_full_text = iter_text;
                     final_tokens = iter_tokens;
@@ -828,4 +857,92 @@ pub async fn stream_chat(
     };
 
     Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Drives `safe_to_forward_live` exactly the way stream_chat's inner
+    /// loop does: append each delta to the round's accumulated text, and
+    /// forward it only while the check still says it's safe. Returns the
+    /// text that would actually have reached the client as visible chat
+    /// prose during streaming.
+    fn simulate_forwarding(deltas: &[&str]) -> (String, String) {
+        let mut iter_text = String::new();
+        let mut forwarding_suppressed = false;
+        let mut forwarded = String::new();
+        for delta in deltas {
+            iter_text.push_str(delta);
+            if !forwarding_suppressed {
+                if safe_to_forward_live(&iter_text) {
+                    forwarded.push_str(delta);
+                } else {
+                    forwarding_suppressed = true;
+                }
+            }
+        }
+        (iter_text, forwarded)
+    }
+
+    /// Regression for the production bug: raw tool-call JSON leaking into
+    /// the visible chat text. The model leads with commentary, then emits
+    /// the tool-call JSON later in the SAME completion, then trails with a
+    /// bit more prose — the exact shape that slipped past the old
+    /// first-character-only check (it decided "ordinary reply" from the
+    /// leading prose and never reconsidered).
+    #[test]
+    fn prose_before_json_never_reaches_the_client_as_chat_text() {
+        let deltas = [
+            "Klar, ",
+            "mache ich ",
+            "gleich: ",
+            "{\"tool\": \"draft_blog_post\", ",
+            "\"arguments\": {\"title\": \"T\", \"body\": \"B\"}}",
+            " Fertig!",
+        ];
+        let (full_text, forwarded) = simulate_forwarding(&deltas);
+
+        // The final parser is deliberately lenient (see agent.rs) and still
+        // finds the tool call buried after the leading prose, exactly like
+        // it does in production — this round DOES turn out to be a tool call.
+        let call = agent::parse_tool_call(&full_text).expect("parser should still find the embedded call");
+        assert_eq!(call.tool, "draft_blog_post");
+
+        // The invariant this fix exists for: since the parser found a tool
+        // call anywhere in this round's text, none of the raw JSON for it
+        // may ever have been forwarded to the client as visible chat text.
+        assert!(!forwarded.contains("\"tool\""), "raw tool-call JSON leaked into forwarded chat text: {forwarded:?}");
+        assert!(!forwarded.contains("draft_blog_post"));
+
+        // Sanity: the leading prose still streamed live — the fix must not
+        // regress the common case (a round that never turns out to be a
+        // tool call) into full-round buffering.
+        assert_eq!(forwarded, "Klar, mache ich gleich: ");
+    }
+
+    /// An ordinary reply with no braces at all must still stream live in
+    /// full — the fix must not make every round buffer-and-flush-once.
+    #[test]
+    fn ordinary_reply_with_no_braces_streams_live_in_full() {
+        let deltas = ["Guten Tag! ", "Wie kann ich helfen?"];
+        let (full_text, forwarded) = simulate_forwarding(&deltas);
+        assert!(agent::parse_tool_call(&full_text).is_none());
+        assert_eq!(forwarded, "Guten Tag! Wie kann ich helfen?");
+    }
+
+    /// A round that merely looks like it might be heading toward a tool
+    /// call (an incidental brace) but never actually resolves into one:
+    /// nothing is forwarded live once the brace appears, but the parser
+    /// correctly finds no call, so stream_chat's `None` branch is
+    /// responsible for flushing the whole held-back remainder afterward
+    /// (exercised at the SSE-stream level, not here — this test only
+    /// covers the forwarding/detection boundary itself).
+    #[test]
+    fn incidental_brace_with_no_tool_call_is_not_forwarded_live() {
+        let deltas = ["Die Konfiguration ", "{ key: val } ", "war schon da."];
+        let (full_text, forwarded) = simulate_forwarding(&deltas);
+        assert!(agent::parse_tool_call(&full_text).is_none());
+        assert_eq!(forwarded, "Die Konfiguration ");
+    }
 }
