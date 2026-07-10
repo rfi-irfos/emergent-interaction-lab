@@ -8,8 +8,9 @@ function BlogActivity() {
   // 18s poll — Jarvis's draft_blog_post/revise_blog_post tools write here
   // autonomously mid-session; this feed should notice without the user
   // navigating away from Research Pulse and back.
-  const { data, loading } = useAdminFetch<BlogPost[]>('/api/blog/posts', [], 18000)
+  const { data, loading, error } = useAdminFetch<BlogPost[]>('/api/blog/posts', [], 18000)
   if (loading) return <div className="obs-empty">Lade…</div>
+  if (error) return <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>
   const posts = (data ?? []).slice(0, 8)
   if (posts.length === 0) return <div className="obs-card"><div className="obs-empty">Noch keine Blogbeiträge.</div></div>
   return (

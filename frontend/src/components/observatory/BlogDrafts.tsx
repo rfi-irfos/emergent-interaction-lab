@@ -28,14 +28,27 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
   onPromoteToSite: (title: string, body: string) => void
   onOpenConversation?: (conversationId: string) => void
 }) {
-  const { data, loading } = useAdminFetch<BlogPost[]>('/api/blog/posts')
+  const { data, loading, error } = useAdminFetch<BlogPost[]>('/api/blog/posts')
   const [posts, setPosts] = useState<BlogPost[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editBody, setEditBody] = useState('')
   const [savingEdit, setSavingEdit] = useState(false)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
 
   const list = posts ?? data ?? []
+  // Growing draft count with no way to narrow it down — plain substring
+  // match over title+body, plus the same status vocabulary the pill/filter
+  // dropdown already use elsewhere (draft/published), nothing fancier.
+  const filtered = list.filter(p => {
+    if (statusFilter && p.status !== statusFilter) return false
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      if (!p.title.toLowerCase().includes(q) && !p.body.toLowerCase().includes(q)) return false
+    }
+    return true
+  })
 
   const refresh = async () => {
     const res = await fetch(`${API_BASE}/api/blog/posts`, { headers: authHeaders() })
@@ -87,6 +100,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
   const STATUS_ACCENT: Record<string, string> = { draft: '#f59e0b', published: '#10b981' }
 
   if (loading && !posts) return <div className="obs-empty">Lade…</div>
+  if (error && !posts) return <div className="obs-empty">Fehler beim Laden.</div>
 
   return (
     <div>
@@ -94,8 +108,23 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
         Entwürfe, die Jarvis (im Forschungstab) oder du hier angelegt habt. „Veröffentlichen" übernimmt den Beitrag in
         den öffentlichen Blog oben — anschließend oben rechts auf „Speichern" klicken, um ihn live zu schalten.
       </p>
+      {list.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input
+            placeholder="Suche in Titel oder Inhalt…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+            <option value="">Alle Status</option>
+            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+      )}
       {list.length === 0 && <div className="obs-empty">Noch keine Blogpost-Entwürfe.</div>}
-      {list.map(p => (
+      {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
+      {filtered.map(p => (
         <div className="obs-item-card" key={p.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>
           {editingId === p.id ? (
             <div className="obs-form" style={{ marginBottom: 0 }}>

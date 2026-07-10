@@ -20,6 +20,12 @@ const CATEGORY_ACCENT: Record<string, string> = {
   concept: '#f59e0b', framework: '#10b981', prototype: '#ef4444',
 }
 
+// research_notes.status has no CHECK constraint server-side (see
+// backend/src/research.rs) — 'active' is just the column default. This is
+// the only vocabulary this panel offers; a note is either live in the
+// current research picture or archived out of it.
+const STATUS_ACCENT: Record<string, string> = { active: '#10b981', archived: '#6b7280' }
+
 // `tags` has been on research_notes since day one — Jarvis's own
 // log_research_note(category, title, body, tags?) tool already populates it
 // on every note it logs autonomously — but this panel only ever read
@@ -51,6 +57,8 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
   const [body, setBody] = useState('')
   const [category, setCategory] = useState(categories[0])
   const [saving, setSaving] = useState(false)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const list = data ?? []
 
@@ -67,6 +75,37 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
       setTitle(''); setBody('')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const changeStatus = async (id: string, status: string) => {
+    setUpdatingId(id)
+    try {
+      await fetch(`${API_BASE}/api/research/items/${id}`, {
+        method: 'PUT',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ status }),
+      })
+      setRefreshKey(k => k + 1)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  // The backend does an unconditional hard delete (no soft-delete, no status
+  // guard — see research::delete_item) and until now nothing in the frontend
+  // ever called it (confirmed dead capability, not just unused UI). Same
+  // window.confirm pattern as BlogDrafts.tsx and SimulationLab.tsx, adopted
+  // after the incident that motivated both: a deliberate second step before
+  // an unrecoverable action, since this codebase has no custom modal.
+  const remove = async (id: string, title: string) => {
+    if (!window.confirm(`„${title}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return
+    setDeletingId(id)
+    try {
+      await fetch(`${API_BASE}/api/research/items/${id}`, { method: 'DELETE', headers: authHeaders() })
+      setRefreshKey(k => k + 1)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -97,6 +136,8 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
             <div className="obs-item-title">{n.title}</div>
             <div className="obs-item-meta">
               <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
+              {' · '}
+              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[n.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[n.status] ?? '#3b6bf6' }}>{n.status}</span>
               {' · '}{n.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {n.updated_at}
               {n.source_conversation_id && onOpenConversation && (
                 <>
@@ -119,6 +160,25 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
                 ))}
               </div>
             )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+              <select
+                value={n.status}
+                onChange={e => changeStatus(n.id, e.target.value)}
+                disabled={updatingId === n.id}
+                style={{ fontSize: 11, padding: '3px 6px' }}
+              >
+                {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+              <button
+                type="button"
+                className="panel-delete-btn"
+                style={{ fontSize: 11, padding: '4px 10px' }}
+                disabled={deletingId === n.id}
+                onClick={() => remove(n.id, n.title)}
+              >
+                {deletingId === n.id ? 'Löscht…' : 'Löschen'}
+              </button>
+            </div>
           </div>
         )
       })}

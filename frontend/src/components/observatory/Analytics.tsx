@@ -28,12 +28,15 @@ interface AnalyticsData {
 /// views, conversations, blog drafts, research notes, simulations, Jarvis
 /// actions). The Observatory itself is reserved for emergence signals now.
 export function Analytics() {
-  const { data, loading } = useAdminFetch<AnalyticsData>('/api/analytics')
+  const { data, loading, error } = useAdminFetch<AnalyticsData>('/api/analytics')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>
 
   const maxSrc = Math.max(...data.top_sources.map(s => s.count), 1)
+  const maxTool = Math.max(...data.tool_call_counts.map(t => t.count), 1)
+  const toolCallCounts = [...data.tool_call_counts].sort((a, b) => b.count - a.count)
 
   return (
     <div className="obs-panel">
@@ -77,6 +80,19 @@ export function Analytics() {
               <span className="obs-activity-kind">#{i + 1}</span>
               <span className="obs-activity-label" style={{ fontFamily: 'monospace' }}>{p.label || '/'}</span>
               <span className="obs-activity-ts">{p.count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {toolCallCounts.length > 0 && (
+        <div className="obs-card">
+          <div className="obs-section-label">Jarvis-Werkzeugaufrufe (30 T.)</div>
+          {toolCallCounts.map(t => (
+            <div className="obs-bar-row" key={t.tool}>
+              <span style={{ width: 120, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0, fontFamily: 'monospace' }}>{t.tool}</span>
+              <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(t.count / maxTool) * 100}%` }} /></div>
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#3b6bf6', minWidth: 24, textAlign: 'right' }}>{t.count}</span>
             </div>
           ))}
         </div>

@@ -95,7 +95,16 @@ export function Monetization() {
     }
   }
 
-  const deleteProduct = async (id: string) => {
+  // Same window.confirm pattern as BlogDrafts.tsx / SimulationLab.tsx / the
+  // research notes panel: the backend does an unconditional hard delete of
+  // the local row (no soft-delete, no status guard — see
+  // backend/src/billing.rs::delete_product), and there was nothing at all in
+  // front of it here. Deleting only removes the local record; an
+  // already-created Stripe payment link stays live until deactivated at
+  // Stripe directly (see the note below the product list) — the confirm
+  // copy says so explicitly since that's easy to assume otherwise.
+  const deleteProduct = async (id: string, name: string) => {
+    if (!window.confirm(`„${name}" endgültig löschen?\n\nDas entfernt nur den lokalen Eintrag - ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird. Das kann hier nicht rückgängig gemacht werden.`)) return
     await fetch(`${API_BASE}/api/billing/products/${id}`, { method: 'DELETE', headers: authHeaders() })
     await refresh()
   }
@@ -160,7 +169,7 @@ export function Monetization() {
                 {linkingId === p.id ? 'Erstellt…' : 'Zahlungslink erstellen'}
               </button>
             )}
-            <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => deleteProduct(p.id)}>Löschen</button>
+            <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => deleteProduct(p.id, p.name)}>Löschen</button>
           </div>
         </div>
       ))}
