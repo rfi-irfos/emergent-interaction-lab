@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { ObsChart } from './ObsChart'
 
@@ -6,12 +7,22 @@ interface RecentRetrieval { query_text: string; top_score: number; hit_count: nu
 interface InformationData {
   documents: number
   chunks: number
+  gap_only: boolean
   retrieval_by_day: RetrievalDay[]
   recent_retrievals: RecentRetrieval[]
 }
 
 export function InformationDynamics() {
-  const { data, loading, error } = useAdminFetch<InformationData>('/api/observatory/information')
+  // `is_gap` was already computed and shown as a per-row pill, but there was
+  // no way to filter *to* just the gaps — see backend/src/observatory.rs's
+  // `?gap_only=true`, which narrows `recent_retrievals` server-side (so the
+  // capped top-10 feed is the 10 most recent gaps, not 10 most-recent-of-
+  // anything with gaps buried among them).
+  const [gapOnly, setGapOnly] = useState(false)
+  const { data, loading, error } = useAdminFetch<InformationData>(
+    `/api/observatory/information${gapOnly ? '?gap_only=true' : ''}`,
+    [gapOnly],
+  )
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
@@ -46,9 +57,15 @@ export function InformationDynamics() {
           />
         </div>
       )}
-      <div className="obs-section-label" style={{ marginTop: 22 }}>Letzte Anfragen</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, marginBottom: 10 }}>
+        <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>Letzte Anfragen</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+          <input type="checkbox" checked={gapOnly} onChange={e => setGapOnly(e.target.checked)} />
+          Nur Wissenslücken
+        </label>
+      </div>
       {data.recent_retrievals.length === 0
-        ? <div className="obs-card"><div className="obs-empty">Noch keine Anfragen protokolliert.</div></div>
+        ? <div className="obs-card"><div className="obs-empty">{gapOnly ? 'Keine Wissenslücken in den letzten Anfragen.' : 'Noch keine Anfragen protokolliert.'}</div></div>
         : data.recent_retrievals.map((r, i) => (
             <div className="obs-item-card" key={i} style={{ ['--obs-accent' as string]: r.is_gap ? '#f59e0b' : '#14b8a6' }}>
               <div className="obs-item-title">{r.query_text}</div>

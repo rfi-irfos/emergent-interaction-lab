@@ -1,22 +1,44 @@
+import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
 interface BehaviorData {
+  range: string
   category_mix: Bucket[]
   tool_distribution: Bucket[]
   length_distribution: Bucket[]
   recent_tool_calls: ToolCallEntry[]
 }
 
+const RANGE_OPTIONS: { value: string; label: string }[] = [
+  { value: '7d', label: 'Letzte 7 Tage' },
+  { value: '30d', label: 'Letzte 30 Tage' },
+  { value: 'all', label: 'Alle' },
+]
+
+/// Short, inline-friendly variant of the same labels for section headings
+/// (e.g. "Jarvis-Werkzeugnutzung (letzte 7 Tage)") — echoes the backend's
+/// resolved `range` (not the local `range` state) so the heading always
+/// matches what was actually applied, even if an unrecognized value fell
+/// back server-side.
+const RANGE_SUFFIX: Record<string, string> = { '7d': 'letzte 7 Tage', '30d': 'letzte 30 Tage', all: 'alle' }
+
 /// Group patterns, not individual surveillance: what kinds of research
 /// activity are happening, what Jarvis actually gets asked to do, and
 /// whether conversations tend to be quick check-ins or long deep-dives.
 /// Replaces the old visitor-hour/weekday bar charts entirely — those told
 /// you about website traffic, not about the research itself.
+///
+/// Previously every breakdown here was either an all-time snapshot
+/// (category_mix, length_distribution) or a hardcoded 30-day window
+/// (tool_distribution), with no way to ask "how did this look last week"
+/// instead of "right now" — `range` below (see backend/src/observatory.rs's
+/// `?range=7d|30d|all`) fixes that.
 export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
-  const { data, loading, error } = useAdminFetch<BehaviorData>('/api/observatory/behavior')
+  const [range, setRange] = useState('30d')
+  const { data, loading, error } = useAdminFetch<BehaviorData>(`/api/observatory/behavior?range=${range}`, [range])
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
@@ -28,6 +50,11 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
 
   return (
     <div className="obs-panel">
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+        <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+          {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
       <div className="obs-section-label">Research-Aktivität nach Kategorie</div>
       <div className="obs-card">
         {data.category_mix.length === 0 && <div className="obs-empty">Noch keine Research Notes.</div>}
@@ -40,7 +67,7 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
         ))}
       </div>
 
-      <div className="obs-section-label">Jarvis-Werkzeugnutzung (30 T.)</div>
+      <div className="obs-section-label">Jarvis-Werkzeugnutzung ({RANGE_SUFFIX[data.range] ?? data.range})</div>
       <div className="obs-card">
         {data.tool_distribution.length === 0 && <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>}
         {data.tool_distribution.map(b => (
