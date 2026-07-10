@@ -203,6 +203,7 @@ mod tests {
             chat_secret: String::new(),
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
+            stripe_webhook_secret: String::new(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),

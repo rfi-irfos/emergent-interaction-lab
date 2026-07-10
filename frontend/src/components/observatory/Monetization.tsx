@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 
@@ -16,9 +16,31 @@ interface ProductOut {
   created_at: string
 }
 
+// Mirrors backend/src/billing.rs's OrderOut — one row per real, verified
+// `checkout.session.completed` Stripe webhook event (see
+// billing::stripe_webhook). `customer_email` carries the same sensitivity as
+// contact_messages.email: admin-only, never rendered anywhere outside this
+// authenticated view.
+interface OrderOut {
+  id: string
+  stripe_event_id: string
+  stripe_session_id: string
+  product_id: string | null
+  product_name: string | null
+  amount_cents: number
+  currency: string
+  customer_email: string | null
+  created_at: string
+}
+
 function formatPrice(cents: number, currency: string): string {
   return new Intl.NumberFormat('de-AT', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
 }
+
+// Backend default page size for GET /api/billing/orders (see
+// billing.rs::DEFAULT_ORDERS_LIMIT) — kept in sync here the same way
+// EmergenceMonitor.tsx's PAGE_SIZE mirrors emergence.rs's own default.
+const ORDERS_PAGE_SIZE = 50
 
 /// Verwaltung's business-model view, not an Observatory concern — a generic
 /// "define something sellable, get a real Stripe Payment Link" mechanism,
@@ -109,6 +131,50 @@ export function Monetization() {
     await refresh()
   }
 
+  // Real sales/orders visibility (see backend/src/billing.rs::stripe_webhook
+  // + list_orders): before this, a completed Stripe purchase left zero
+  // trace anywhere in this admin panel — payment links existed, but nobody
+  // could see whether one had actually been paid. Same
+  // accumulated-set-plus-total pagination shape as EmergenceMonitor.tsx's
+  // signals list: `orders` grows via "Weitere laden", `ordersTotal` is the
+  // true count from the X-Total-Count header, not just what's loaded so far.
+  const [orders, setOrders] = useState<OrderOut[]>([])
+  const [ordersTotal, setOrdersTotal] = useState<number | null>(null)
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [ordersLoadingMore, setOrdersLoadingMore] = useState(false)
+  const [ordersError, setOrdersError] = useState(false)
+
+  const loadOrders = async (offset: number, append: boolean) => {
+    if (append) setOrdersLoadingMore(true); else setOrdersLoading(true)
+    setOrdersError(false)
+    try {
+      const params = new URLSearchParams({ limit: String(ORDERS_PAGE_SIZE), offset: String(offset) })
+      const res = await fetch(`${API_BASE}/api/billing/orders?${params}`, { headers: authHeaders() })
+      if (!res.ok) throw new Error(String(res.status))
+      const totalHeader = res.headers.get('X-Total-Count')
+      const page: OrderOut[] = await res.json()
+      setOrders(prev => (append ? [...prev, ...page] : page))
+      setOrdersTotal(totalHeader !== null ? Number(totalHeader) : null)
+    } catch {
+      setOrdersError(true)
+    } finally {
+      setOrdersLoading(false)
+      setOrdersLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    loadOrders(0, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const loadMoreOrders = () => loadOrders(orders.length, true)
+
+  const totalRevenueByCurrency = orders.reduce<Record<string, number>>((acc, o) => {
+    acc[o.currency] = (acc[o.currency] ?? 0) + o.amount_cents
+    return acc
+  }, {})
+
   return (
     <div className="obs-panel">
       <div className="obs-section-label">Neues Produkt</div>
@@ -175,6 +241,61 @@ export function Monetization() {
       ))}
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
         Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
+      </p>
+
+      {/* Real sales, not just the mechanism to sell — every row here comes
+          from a verified Stripe webhook event (checkout.session.completed),
+          never a manual entry. Same "Übersicht" + accumulated-list pattern
+          as EmergenceMonitor.tsx. */}
+      <div className="obs-section-label" style={{ marginTop: 28 }}>Bestellungen</div>
+      {ordersTotal !== null && (
+        <div className="obs-grid" style={{ marginBottom: 14 }}>
+          <div className="obs-stat c-green">
+            <div className="obs-stat-value">{ordersTotal}</div>
+            <div className="obs-stat-label">Bestellungen gesamt</div>
+          </div>
+          {Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
+            <div className="obs-stat c-blue" key={cur}>
+              <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
+              <div className="obs-stat-label">Umsatz, geladen ({cur.toUpperCase()})</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {ordersLoading && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Lade…</div></div>}
+      {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
+      {!ordersLoading && !ordersError && orders.length === 0 && (
+        <div className="obs-card">
+          <div className="obs-empty">Noch keine Bestellungen — Verkäufe erscheinen hier automatisch, sobald Stripe eine abgeschlossene Zahlung meldet.</div>
+        </div>
+      )}
+      {orders.map(o => (
+        <div className="obs-item-card" key={o.id}>
+          <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
+          <div className="obs-item-meta">
+            <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>
+              {formatPrice(o.amount_cents, o.currency)}
+            </span>
+            {' · '}{o.customer_email ?? 'keine E-Mail übermittelt'}
+            {' · '}{o.created_at}
+          </div>
+          <div className="obs-item-body" style={{ fontSize: 11, color: '#9aa0a8' }}>
+            Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}
+          </div>
+        </div>
+      ))}
+      {ordersError && orders.length > 0 && (
+        <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Nachladen.</div>
+      )}
+      {ordersTotal !== null && orders.length < ordersTotal && (
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <button className="panel-add-btn" onClick={loadMoreOrders} disabled={ordersLoadingMore}>
+            {ordersLoadingMore ? 'Lädt…' : `Weitere laden (${orders.length} / ${ordersTotal})`}
+          </button>
+        </div>
+      )}
+      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
+        Jede Zeile stammt aus einem echten, signaturgeprüften Stripe-Webhook-Event (checkout.session.completed) - keine manuelle Eingabe, keine Simulation. E-Mail-Adressen sind nur hier, admin-only, sichtbar - nie öffentlich.
       </p>
     </div>
   )
