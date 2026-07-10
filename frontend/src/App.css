@@ -2117,7 +2117,27 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-new-btn:hover { background: rgba(99,240,255,.2); }
 
+/* Sidebar search (title + message-content, see backend/src/chat.rs's
+   list_conversations `?q=`) — sits between "+ Neue Unterhaltung" and the
+   scrollable list itself, so it stays put (not scrolled away) once there
+   are enough conversations to scroll. */
+.chat-conv-search {
+  margin: 0 14px 10px; padding: 7px 10px; border-radius: 8px; border: 1px solid rgba(148,197,214,.22);
+  background: rgba(255,255,255,.04); color: #e9fbff; font-size: 12.5px; font-family: inherit;
+}
+.chat-conv-search::placeholder { color: rgba(233,251,255,.35); }
+.chat-conv-search:focus { outline: none; border-color: rgba(99,240,255,.45); background: rgba(255,255,255,.06); }
+
 .chat-conv-list { flex: 1; overflow-y: auto; padding: 0 10px; min-height: 60px; }
+/* Date-bucketed headers ("Heute" / "Diese Woche" / "Älter" — see
+   groupConversationsByDate in ResearchChat.tsx). Same visual language as
+   .chat-docs-title below: quiet, uppercase, out of the way of the titles
+   themselves. */
+.chat-conv-group + .chat-conv-group { margin-top: 10px; }
+.chat-conv-group-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.32);
+  padding: 6px 10px 4px;
+}
 .chat-conv-item {
   display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 8px; cursor: pointer;
   color: rgba(233,251,255,.6); font-size: 12.5px; margin-bottom: 2px;

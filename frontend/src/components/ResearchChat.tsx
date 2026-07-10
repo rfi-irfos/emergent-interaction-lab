@@ -22,6 +22,46 @@ interface DocumentItem { id: string; filename: string; created_at: string }
 
 interface ToolCallEvent { tool: string; result: string }
 
+// SQLite's `datetime('now')` (see backend/src/chat.rs's chat_conversations
+// schema) stores UTC as "YYYY-MM-DD HH:MM:SS" — no 'T', no timezone marker.
+// Handing that straight to `new Date(...)` is parsed inconsistently across
+// browsers (some treat it as local time, not UTC). Reformatting into a
+// proper ISO-8601 UTC string first makes the grouping below reliable.
+function parseServerTimestamp(ts: string): Date {
+  return new Date(`${ts.replace(' ', 'T')}Z`)
+}
+
+interface ConversationGroup { label: string; items: Conversation[] }
+
+// Client-side date bucketing for the sidebar (no new backend endpoint
+// needed — grouping is derived purely from each conversation's existing
+// `updated_at`). Buckets, newest-first within each: "Heute" (today, local
+// calendar day), "Diese Woche" (the 7 days before today), "Älter"
+// (everything before that). `conversations` already arrives sorted
+// newest-first (see list_conversations' `ORDER BY updated_at DESC`), so a
+// single pass preserves that order within each bucket without re-sorting.
+function groupConversationsByDate(conversations: Conversation[]): ConversationGroup[] {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const weekStart = new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+  const today: Conversation[] = []
+  const week: Conversation[] = []
+  const older: Conversation[] = []
+  for (const c of conversations) {
+    const updated = parseServerTimestamp(c.updated_at)
+    if (updated >= startOfToday) today.push(c)
+    else if (updated >= weekStart) week.push(c)
+    else older.push(c)
+  }
+
+  const groups: ConversationGroup[] = []
+  if (today.length) groups.push({ label: 'Heute', items: today })
+  if (week.length) groups.push({ label: 'Diese Woche', items: week })
+  if (older.length) groups.push({ label: 'Älter', items: older })
+  return groups
+}
+
 // Stable reference for "no tool calls on this message" — a fresh `[]` at the
 // call site would give ChatBubble a new array identity every render even
 // when nothing changed, defeating its React.memo (see ChatBubble below).
@@ -330,6 +370,12 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   onUpdate?: (field: string, value: unknown) => void
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([])
+  // Raw input value (updates on every keystroke, for a responsive-feeling
+  // textbox) vs. the debounced value that actually drives the backend query
+  // — see the debounce effect below. Kept separate so the input never feels
+  // laggy even though the network request behind it is throttled.
+  const [searchInput, setSearchInput] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [documents, setDocuments] = useState<DocumentItem[]>([])
@@ -357,6 +403,11 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const sendingRef = useRef(false)
   const latestConvRequestRef = useRef<string | null>(null)
 
+  // Grouped once per conversations-list change, not on every render — cheap
+  // either way at realistic list sizes, but avoids re-walking the (already
+  // sorted) list on unrelated re-renders like a streaming delta landing.
+  const conversationGroups = useMemo(() => groupConversationsByDate(conversations), [conversations])
+
   // Backgrounded/inactive browser tabs don't get repainted until they're
   // focused again — the reply has already arrived and rendered into the DOM,
   // it just isn't visible yet. Flash the tab title as a cue instead of
@@ -367,8 +418,13 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
+  // Reads the CURRENT debouncedSearch at call time (this whole function is
+  // re-created every render, so a call from any handler — delete, send's
+  // onDone, etc. — always sees the latest search term, never a stale one).
   const refreshConversations = () => {
-    fetch(`${API_BASE}/api/chat/conversations`, { headers: authHeaders() })
+    const q = debouncedSearch.trim()
+    const url = `${API_BASE}/api/chat/conversations${q ? `?q=${encodeURIComponent(q)}` : ''}`
+    fetch(url, { headers: authHeaders() })
       .then(r => r.ok ? r.json() : [])
       .then(setConversations)
       .catch(() => {})
@@ -380,7 +436,22 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       .catch(() => {})
   }
 
-  useEffect(() => { refreshConversations(); refreshDocuments() }, [])
+  // Debounce: only re-query the backend once typing pauses for ~280ms,
+  // instead of firing a request (LIKE + JOIN across every conversation's
+  // messages) on every single keystroke — matters once there are hundreds
+  // or thousands of conversations to search across.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchInput), 280)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  useEffect(() => { refreshDocuments() }, [])
+  // Fires on mount (debouncedSearch starts at '', fetching the unfiltered
+  // list) and again every time the debounced search term settles.
+  useEffect(() => {
+    refreshConversations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])
 
   // Deliberately not a useEffect keyed on activeId: ensureConversation() below
   // also sets activeId for a brand-new (empty) conversation, and a reload
@@ -607,18 +678,34 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     <div className="chat-panel">
       <aside className="chat-sidebar">
         <button className="chat-new-btn" onClick={startNewConversation}>+ Neue Unterhaltung</button>
+        <input
+          type="text"
+          className="chat-conv-search"
+          placeholder="Unterhaltungen durchsuchen…"
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+        />
         <div className="chat-conv-list">
-          {conversations.map(c => (
-            <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''}`} onClick={() => openConversation(c.id)}>
-              <span className="chat-conv-title">{c.title}</span>
-              <button
-                className="chat-conv-delete"
-                title="Löschen"
-                onClick={e => { e.stopPropagation(); deleteConversation(c.id) }}
-              >×</button>
+          {conversationGroups.map(group => (
+            <div key={group.label} className="chat-conv-group">
+              <div className="chat-conv-group-label">{group.label}</div>
+              {group.items.map(c => (
+                <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''}`} onClick={() => openConversation(c.id)}>
+                  <span className="chat-conv-title">{c.title}</span>
+                  <button
+                    className="chat-conv-delete"
+                    title="Löschen"
+                    onClick={e => { e.stopPropagation(); deleteConversation(c.id) }}
+                  >×</button>
+                </div>
+              ))}
             </div>
           ))}
-          {conversations.length === 0 && <div className="chat-conv-empty">Noch keine Unterhaltungen.</div>}
+          {conversations.length === 0 && (
+            <div className="chat-conv-empty">
+              {debouncedSearch.trim() ? 'Keine Treffer.' : 'Noch keine Unterhaltungen.'}
+            </div>
+          )}
         </div>
 
         <div className="chat-docs">
