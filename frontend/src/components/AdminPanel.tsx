@@ -216,25 +216,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
               </button>
             </div>
-            {!sidebarCollapsed && (
-              <div className="crm-sidebar-brand-actions">
-                <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
-                  {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
-                </button>
-                <a
-                  href={window.location.origin + window.location.pathname}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="topbar-icon-btn"
-                  title="Live-Seite ansehen"
-                >
-                  <IconViewSite />
-                </a>
-                <button className="topbar-icon-btn topbar-icon-btn-danger" onClick={onLogout} title="Logout">
-                  <IconLogout />
-                </button>
-              </div>
-            )}
           </div>
           <nav className="crm-nav">
             {!sidebarCollapsed && <div className="crm-nav-group-label">Verwaltung</div>}
@@ -282,6 +263,23 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
         <div className={`crm-main ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection)) ? 'observatory-hud' : ''}`}>
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
+            <div className="crm-topbar-actions">
+              <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
+                {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
+              </button>
+              <a
+                href={window.location.origin + window.location.pathname}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="topbar-icon-btn"
+                title="Live-Seite ansehen"
+              >
+                <IconViewSite />
+              </a>
+              <button className="topbar-icon-btn topbar-icon-btn-danger" onClick={onLogout} title="Logout">
+                <IconLogout />
+              </button>
+            </div>
           </div>
           <div className="crm-body">
             {adminSection === 'website-kit' && (
