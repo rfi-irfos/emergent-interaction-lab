@@ -262,6 +262,7 @@ async fn main() {
         .route("/api/observatory/diagnostics", get(observatory::diagnostics))
         .route("/api/observatory/emergence/signals", get(emergence::list_signals))
         .route("/api/observatory/emergence/analyze", post(emergence::analyze))
+        .route("/api/observatory/emergence/ccet", get(chat::ccet_summary))
         .route("/api/observatory/agent-activity", get(github_activity::agent_activity))
         .route("/api/observatory/deploy-log", post(github_activity::log_deploy))
         // Blog (agent can draft, only a human publishes)
