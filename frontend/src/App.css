@@ -149,6 +149,9 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="dark"] .site-about,
 .site[data-theme="dark"] .site-livestats,
 .site[data-theme="dark"] .site-shipping,
+.site[data-theme="dark"] .site-signal-levels,
+.site[data-theme="dark"] .site-ccet-trend,
+.site[data-theme="dark"] .site-simulation-status,
 .site[data-theme="dark"] .site-location:has(> .site-location-info:only-child) {
   background: transparent;
 }
@@ -476,6 +479,89 @@ button { cursor: pointer; font-family: inherit; }
 @media (max-width: 640px) {
   .site-shipping-link { flex-direction: column; gap: 4px; }
   .site-shipping-date { width: auto; }
+}
+
+/* ── CURRENT FOCUS BADGE (public homepage, see PublicLiveActivity.tsx's
+   CurrentFocusBadge) — a slim, always-narrow line above the live stat
+   tiles: which Observatory level + research-note category are active right
+   now, both controlled-vocabulary labels only, never note/signal content. */
+.site-focus-badge {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  max-width: 900px; margin: 0 auto 28px; padding: 10px 20px;
+  border: 1px solid var(--border); border-radius: 24px; background: var(--surface);
+  font-size: 13px; color: var(--text-soft); text-align: center; flex-wrap: wrap;
+}
+.site[data-theme="dark"] .site-focus-badge {
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
+}
+.site-focus-dot {
+  flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--brand-cyan); box-shadow: 0 0 8px var(--brand-cyan);
+  animation: site-live-pulse 2.2s ease-in-out infinite;
+}
+.site-focus-eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); }
+.site-focus-badge strong { color: var(--text); font-weight: 700; }
+
+/* ── SIGNAL LEVEL BARS (public homepage) — 4 fixed, already-labeled
+   categories compared by magnitude, so one hue carries every bar; identity
+   comes from the text label beside it, not from color (see dataviz skill's
+   "sequential is the safe default unless the job is identity/polarity"). */
+.site-signal-bars {
+  display: flex; flex-direction: column; gap: 16px;
+  max-width: 720px; margin: 0 auto;
+}
+.site-signal-bar-row { display: flex; align-items: center; gap: 16px; }
+.site-signal-bar-label {
+  flex-shrink: 0; width: 96px; font-size: 13px; font-weight: 700; color: var(--text);
+}
+.site-signal-bar-track {
+  flex: 1; height: 10px; border-radius: 6px; background: var(--surface-sunken); overflow: hidden;
+}
+.site-signal-bar-fill {
+  height: 100%; border-radius: 6px; background: var(--primary);
+  transition: width .8s cubic-bezier(.16,1,.3,1);
+}
+.site-signal-bar-value {
+  flex-shrink: 0; width: 48px; text-align: right; font-family: var(--mono);
+  font-size: 14px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
+}
+
+/* ── CCET TREND (public homepage) — two-series line, CEI solid + Resonance
+   Frequency dashed. The dash pattern (not just var(--accent-purple)) carries
+   series identity so the two stay distinguishable in the high-contrast theme,
+   where --primary and --accent-purple both collapse to the same amber. */
+.site-ccet-chart-wrap { max-width: 720px; margin: 0 auto; }
+.site-ccet-chart { width: 100%; height: auto; display: block; }
+.site-ccet-gridline { stroke: var(--border); stroke-width: 1; }
+.site-ccet-placeholder-text { fill: var(--text-soft); font-size: 20px; font-family: var(--mono); }
+.site-ccet-line-cei { stroke: var(--primary); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.site-ccet-line-resonance {
+  stroke: var(--accent-purple); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 5 4;
+}
+.site-ccet-dot-cei { fill: var(--primary); stroke: var(--surface); stroke-width: 2; }
+.site-ccet-dot-resonance { fill: var(--accent-purple); stroke: var(--surface); stroke-width: 2; }
+.site-ccet-legend {
+  display: flex; justify-content: center; gap: 28px; margin-top: 18px; flex-wrap: wrap;
+}
+.site-ccet-legend-item {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-soft);
+}
+.site-ccet-swatch { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.site-ccet-swatch-cei { background: var(--primary); }
+.site-ccet-swatch-resonance {
+  background: var(--accent-purple);
+  /* small dashed ring so the legend echoes the dashed line even where hue
+     alone (HC theme) can't distinguish the two swatches */
+  outline: 1.5px dashed var(--accent-purple); outline-offset: 2px;
+}
+
+/* ── SIMULATION STATUS (public homepage) — reuses the .site-livestats tile
+   shell; a 3-column variant since there are 3 statuses, not 4 live-stats. */
+.site-livestats-grid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 640px) {
+  .site-livestats-grid-3 { grid-template-columns: 1fr; }
 }
 
 /* ── CATEGORIES / DRILL-DOWN BROWSER ─────────────────────────────────────── */
