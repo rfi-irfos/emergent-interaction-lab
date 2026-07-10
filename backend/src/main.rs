@@ -8,6 +8,7 @@ mod chat;
 mod contact;
 mod content;
 mod emergence;
+mod github_activity;
 mod inspect;
 mod observatory;
 mod research;
@@ -65,6 +66,17 @@ pub struct AppState {
     /// instead of the real DuckDuckGo Instant Answer API — never overridden
     /// in production, where it's always "https://api.duckduckgo.com".
     pub ddg_api_base: String,
+    /// Server-side-only classic GitHub PAT, read from `GITHUB_ACTIVITY_TOKEN`
+    /// — powers the Observatory's Agent-Aktivität transparency feed (real
+    /// PRs/commits/workflow runs on this repo, see github_activity.rs). Never
+    /// a `VITE_*` var: this must never reach the frontend bundle, unlike the
+    /// client-side github.ts calls used for the content.json CMS, which are
+    /// a completely different, unauthenticated read/write concern.
+    pub github_token: String,
+    /// Overridable so tests can point at a local mock instead of the real
+    /// GitHub REST API — never overridden in production, where it's always
+    /// "https://api.github.com".
+    pub github_api_base: String,
     /// Sticky across HTTP requests (not just within one exchange's
     /// tool-calling rounds): the last-known-good index into
     /// chat::CHAT_MODEL_CANDIDATES, so a fresh user message reuses whatever
@@ -162,11 +174,18 @@ async fn main() {
     agent::init_schema(&db).await;
     emergence::init_schema(&db).await;
     billing::init_schema(&db).await;
+    github_activity::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
         0 => tracing::warn!("NVIDIA_API_KEY missing at startup"),
         n => tracing::info!("NVIDIA_API_KEY present, length={n}"),
+    }
+
+    let github_token = std::env::var("GITHUB_ACTIVITY_TOKEN").unwrap_or_default();
+    match github_token.len() {
+        0 => tracing::warn!("GITHUB_ACTIVITY_TOKEN missing at startup — Agent-Aktivität will show only locally logged deploys, no real GitHub PRs/commits/workflow runs"),
+        n => tracing::info!("GITHUB_ACTIVITY_TOKEN present, length={n}"),
     }
 
     let state = AppState {
@@ -194,6 +213,8 @@ async fn main() {
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
         ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
+        github_token,
+        github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
         chat_model_idx: Arc::new(AtomicUsize::new(chat_model_idx_seed)),
         chat_request_count: Arc::new(AtomicU64::new(chat_request_count_seed)),
     };
@@ -241,6 +262,8 @@ async fn main() {
         .route("/api/observatory/diagnostics", get(observatory::diagnostics))
         .route("/api/observatory/emergence/signals", get(emergence::list_signals))
         .route("/api/observatory/emergence/analyze", post(emergence::analyze))
+        .route("/api/observatory/agent-activity", get(github_activity::agent_activity))
+        .route("/api/observatory/deploy-log", post(github_activity::log_deploy))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

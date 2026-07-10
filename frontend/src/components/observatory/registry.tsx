@@ -36,6 +36,7 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   { id: 'knowledgegraph', label: 'Knowledge Graph', tier: 'research', icon: I(<><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="18" r="2.5" /><circle cx="12" cy="12" r="2.5" /><line x1="8" y1="7.5" x2="10.2" y2="10.2" /><line x1="16" y1="7.5" x2="13.8" y2="10.2" /><line x1="8" y1="16.5" x2="10.2" y2="13.8" /><line x1="16" y1="16.5" x2="13.8" y2="13.8" /></>) },
   { id: 'systemmap', label: 'System Map', tier: 'system', icon: I(<><circle cx="6" cy="6" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="12" cy="18" r="3" /><line x1="8.5" y1="7.5" x2="15.5" y2="16" /><line x1="15.5" y1="7.5" x2="8.5" y2="16" /></>) },
   { id: 'systemstate', label: 'System State', tier: 'system', icon: I(<><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /><circle cx="12" cy="12" r="6" /></>) },
+  { id: 'agentactivity', label: 'Agent-Aktivität', tier: 'system', icon: I(<><path d="M9 18l-6-6 6-6M15 6l6 6-6 6" /></>) },
   { id: 'interaction', label: 'Interaction Dynamics', tier: 'system', icon: I(<><circle cx="9" cy="9" r="3" /><circle cx="17" cy="15" r="3" /><path d="M11 10.5 15 13.5" /></>) },
   { id: 'behavior', label: 'Behavioral Landscape', tier: 'system', icon: I(<><path d="M3 3v18h18" /><path d="M7 15l4-6 4 3 5-8" /></>) },
   { id: 'information', label: 'Information Dynamics', tier: 'technical', icon: I(<><circle cx="12" cy="12" r="3" /><path d="M12 3v6M12 15v6M3 12h6M15 12h6" /></>) },
@@ -65,4 +66,5 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   research: 'Research Pulse',
   simulationcenter: 'Simulation Center',
   knowledgegraph: 'Knowledge Graph',
+  agentactivity: 'Agent-Aktivität',
 }
