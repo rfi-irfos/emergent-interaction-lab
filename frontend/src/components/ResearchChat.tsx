@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
 import { TOOL_LABELS } from '../lib/toolLabels'
+import { renderMarkdown } from '../lib/markdown'
 import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
@@ -149,37 +150,10 @@ function downloadText(filename: string, text: string) {
   URL.revokeObjectURL(url)
 }
 
-// Minimal, safe markdown rendering for model replies — bold, numbered/bulleted
-// lists, paragraphs. Builds JSX directly (no dangerouslySetInnerHTML), so
-// there's no HTML-injection surface even though the text is model-generated.
-// Not a general-purpose parser: covers what these replies actually use.
-function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-    part.startsWith('**') && part.endsWith('**')
-      ? <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>
-      : part
-  )
-}
-
-function renderMarkdown(text: string): React.ReactNode {
-  return text.split(/\n{2,}/).map((block, bi) => {
-    const lines = block.split('\n').filter(l => l.trim() !== '')
-    if (lines.length === 0) return null
-    const isNumbered = lines.every(l => /^\d+\.\s/.test(l.trim()))
-    const isBulleted = lines.every(l => /^[-*]\s/.test(l.trim()))
-    if (isNumbered) {
-      return <ol key={bi}>{lines.map((l, li) => <li key={li}>{renderInline(l.trim().replace(/^\d+\.\s/, ''), `${bi}-${li}`)}</li>)}</ol>
-    }
-    if (isBulleted) {
-      return <ul key={bi}>{lines.map((l, li) => <li key={li}>{renderInline(l.trim().replace(/^[-*]\s/, ''), `${bi}-${li}`)}</li>)}</ul>
-    }
-    return (
-      <p key={bi}>
-        {lines.map((l, li) => <React.Fragment key={li}>{renderInline(l, `${bi}-${li}`)}{li < lines.length - 1 && <br />}</React.Fragment>)}
-      </p>
-    )
-  })
-}
+// renderMarkdown/renderInline (bold, numbered/bulleted lists, paragraphs —
+// no HTML-injection surface, builds JSX directly) now lives in
+// ../lib/markdown, shared with published blog post bodies in PublicSite.tsx
+// / BlogPostPage.tsx.
 
 function ToolCallBadge({ call }: { call: ToolCallEvent }) {
   const [open, setOpen] = useState(false)
