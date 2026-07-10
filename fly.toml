@@ -10,6 +10,14 @@ primary_region = "fra"
   CONTENT_PATH = "/app/data/content.json"
   DB_PATH = "/app/data/app.db"
   REDIRECT_URI = "https://emergent-interaction-lab.fly.dev/auth/callback"
+  # Belt-and-suspenders alongside the main.rs code fix (2026-07-10): without
+  # RUST_LOG set, tracing_subscriber's EnvFilter::from_default_env()
+  # defaults to ERROR-only, silently dropping every info!/warn! line in
+  # production — including the "chat round served by model X" line needed
+  # to diagnose which model actually serves requests. main.rs now defaults
+  # to "info" in code even without this, but setting it explicitly here too
+  # means it survives even if that code default is ever changed or removed.
+  RUST_LOG = "info"
 
 [http_service]
   internal_port = 3000

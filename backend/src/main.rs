@@ -17,7 +17,14 @@ mod upload;
 
 use axum::{routing::{get, post}, Router};
 use sqlx::SqlitePool;
-use std::{collections::HashMap, path::PathBuf, sync::{Arc, RwLock}};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicU64, AtomicUsize},
+        Arc, RwLock,
+    },
+};
 use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
 use serde::{Deserialize, Serialize};
 
@@ -45,6 +52,20 @@ pub struct AppState {
     /// instead of the real DuckDuckGo Instant Answer API — never overridden
     /// in production, where it's always "https://api.duckduckgo.com".
     pub ddg_api_base: String,
+    /// Sticky across HTTP requests (not just within one exchange's
+    /// tool-calling rounds): the last-known-good index into
+    /// chat::CHAT_MODEL_CANDIDATES, so a fresh user message reuses whatever
+    /// candidate last proved entitled on this NVIDIA account instead of
+    /// re-discovering it from index 0 on every single message. Shared
+    /// server-wide rather than per-conversation, since the ladder reflects
+    /// account entitlement, not anything conversation-specific. See
+    /// chat::stream_chat's model-selection loop.
+    pub chat_model_idx: Arc<AtomicUsize>,
+    /// Counts stream_chat invocations so the ladder can periodically ignore
+    /// the cache above and re-probe from the top (see
+    /// chat::CHAT_MODEL_RETRY_FROM_TOP_EVERY) in case a bigger model becomes
+    /// newly entitled on the account without a deploy.
+    pub chat_request_count: Arc<AtomicU64>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -56,8 +77,29 @@ pub struct SessionData {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    // Load .env BEFORE initializing tracing, so a local RUST_LOG set there
+    // (not present in production — the Docker image never copies a .env
+    // file, Fly injects real env vars directly) actually takes effect for
+    // local dev instead of being read too late.
     dotenvy::dotenv().ok();
+
+    // Root cause of "tracing::info!/warn!/error! output never reaches fly
+    // logs" (confirmed by reading tracing_subscriber 0.3's source in
+    // ~/.cargo/registry: tracing_subscriber::fmt::init(), when the
+    // "env-filter" feature is enabled — it is, see Cargo.toml — is shorthand
+    // for `.with_env_filter(EnvFilter::from_default_env()).init()`, and
+    // `EnvFilter::from_default_env()` installs `LevelFilter::ERROR` as the
+    // DEFAULT DIRECTIVE whenever RUST_LOG isn't set. fly.toml's [env] block
+    // never sets RUST_LOG, so production silently dropped every info!/warn!
+    // line — including the "chat round served by model X" line this fix
+    // depends on for verifying which model actually serves requests, and the
+    // "model unavailable/failed, falling back to Y" warning. Explicitly
+    // defaulting to "info" (while still honoring a real RUST_LOG if one IS
+    // set, e.g. to turn on debug tracing temporarily) fixes this without
+    // depending on Fly config to remember it.
+    let env_filter = tracing_subscriber::EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
+    tracing_subscriber::fmt().with_env_filter(env_filter).init();
 
     let dev_mode = std::env::var("DEV_MODE").unwrap_or_default() == "true";
     let uploads_dir = PathBuf::from(std::env::var("UPLOADS_DIR").unwrap_or("uploads".into()));
@@ -106,6 +148,8 @@ async fn main() {
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
         ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
+        chat_model_idx: Arc::new(AtomicUsize::new(0)),
+        chat_request_count: Arc::new(AtomicU64::new(0)),
     };
 
     if state.chat_secret.is_empty() {

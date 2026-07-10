@@ -333,6 +333,8 @@ mod tests {
             stripe_secret_key: "sk_test_mock".to_string(),
             stripe_api_base,
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
     }
 

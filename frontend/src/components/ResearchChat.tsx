@@ -31,6 +31,7 @@ async function streamChat(
   conversationId: string,
   message: string,
   siteContent: unknown,
+  reasoningRequested: boolean,
   onDelta: (delta: string, tokens: TokenInfo[]) => void,
   onReasoning: (delta: string) => void,
   onToolCall: (call: ToolCallEvent) => void,
@@ -42,7 +43,13 @@ async function streamChat(
     res = await fetch(`${API_BASE}/api/chat/stream`, {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ conversation_id: conversationId, message, current_module: 'Forschung', site_content: siteContent }),
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        message,
+        current_module: 'Forschung',
+        site_content: siteContent,
+        reasoning_requested: reasoningRequested,
+      }),
     })
   } catch {
     onError('Verbindung zum Server fehlgeschlagen.')
@@ -199,9 +206,23 @@ function WebSearchBadge({ call }: { call: ToolCallEvent }) {
 // Shown BEFORE the final answer, streamed live the same way the main reply
 // is — only ever populated for a request an actual reasoning-capable model
 // (e.g. deepseek-ai/deepseek-r1) served; for every other model this simply
-// never mounts (see the `reasoning` prop check at the call site).
-function ReasoningBlock({ text, streaming }: { text: string; streaming: boolean }) {
+// never mounts (see the `reasoning`/`unavailable` prop check at the call
+// site). Expanded (`open`) by default — Simeon explicitly asked to SEE the
+// thinking, not have it hidden behind a click.
+function ReasoningBlock({ text, streaming, unavailable }: { text: string; streaming: boolean; unavailable?: boolean }) {
   const [open, setOpen] = useState(true)
+  // Reasoning was explicitly requested (toggle ON) but this exchange's
+  // response never carried any reasoning_content — the model that actually
+  // served it isn't reasoning-capable (or isn't entitled on this account).
+  // Say so plainly instead of silently doing nothing (which reads as a bug)
+  // or fabricating a trace (this app's no-fabrication ethos applies here too).
+  if (unavailable) {
+    return (
+      <div className="chat-reasoning chat-reasoning-unavailable">
+        🧠 Kein Reasoning-Modell aktuell verfügbar.
+      </div>
+    )
+  }
   return (
     <div className="chat-reasoning">
       <button type="button" className="chat-reasoning-toggle" onClick={() => setOpen(o => !o)}>
@@ -248,11 +269,15 @@ function CopyMessageButton({ content }: { content: string }) {
 // them, toggling the inspector would otherwise needlessly re-run
 // renderMarkdown on unchanged text just because the component re-rendered.
 const ChatBubble = React.memo(function ChatBubble({
-  message, toolCalls, reasoning, streamingEmpty,
+  message, toolCalls, reasoning, reasoningUnavailable, streamingEmpty,
 }: {
   message: ChatMessage
   toolCalls: ToolCallEvent[]
   reasoning?: string
+  // True once streaming has finished for this message, reasoning was
+  // explicitly requested (toggle was ON when it was sent), and no
+  // reasoning_content ever arrived — see send()'s onDone handler.
+  reasoningUnavailable?: boolean
   // True while this specific bubble is the one actively streaming in with
   // no visible content yet — doubles as "the reasoning block (if any) is
   // still live" since reasoning always finishes before the main answer
@@ -277,7 +302,9 @@ const ChatBubble = React.memo(function ChatBubble({
           ))}
         </div>
       )}
-      {message.role === 'assistant' && !!reasoning && <ReasoningBlock text={reasoning} streaming={streamingEmpty} />}
+      {message.role === 'assistant' && (!!reasoning || reasoningUnavailable) && (
+        <ReasoningBlock text={reasoning ?? ''} streaming={streamingEmpty} unavailable={!reasoning && !!reasoningUnavailable} />
+      )}
       <div className="chat-bubble-content">
         {message.role === 'assistant' && message.content !== '' && <CopyMessageButton content={message.content} />}
         {rendered}
@@ -311,6 +338,17 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const [error, setError] = useState<string | null>(null)
   const [toolCalls, setToolCalls] = useState<Record<string, ToolCallEvent[]>>({})
   const [reasoningById, setReasoningById] = useState<Record<string, string>>({})
+  // Default OFF: most models on this account aren't reasoning-capable, so
+  // forcing an attempt against deepseek-ai/deepseek-r1 on every message
+  // would just cost a wasted failed round-trip (see build_model_ladder on
+  // the backend). Explicitly opt in when you actually want to see the
+  // step-by-step thinking.
+  const [reasoningEnabled, setReasoningEnabled] = useState(false)
+  // Per-message: true once a message that WAS sent with reasoning requested
+  // finishes streaming without ever receiving any reasoning_content — see
+  // send()'s onDone handler below. Drives the honest "kein Reasoning-Modell
+  // verfügbar" note instead of silently showing nothing.
+  const [reasoningUnavailableById, setReasoningUnavailableById] = useState<Record<string, boolean>>({})
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -417,6 +455,11 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       setMessages(m => [...m, userMsg, assistantMsg])
       setStreaming(true)
 
+      // Snapshot the toggle at send-time: if it flips mid-stream, this
+      // exchange still honors whatever the user actually asked for when
+      // they hit send.
+      const reasoningWasRequested = reasoningEnabled
+
       let fullText = ''
       let reasoningText = ''
       const allTokens: TokenInfo[] = []
@@ -457,6 +500,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
         convId,
         text,
         siteContent,
+        reasoningWasRequested,
         (delta, tokens) => {
           fullText += delta
           if (tokens.length) allTokens.push(...tokens)
@@ -488,6 +532,14 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
           setMessages(m => m.map(msg => msg.id === assistantId
             ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens), liveTokens: undefined }
             : msg))
+          // Reasoning was explicitly asked for but nothing ever arrived —
+          // the model that actually served this exchange isn't
+          // reasoning-capable (or isn't entitled on this account right now).
+          // Say so honestly rather than leaving the toggle looking like it
+          // silently did nothing.
+          if (reasoningWasRequested && reasoningText.trim() === '') {
+            setReasoningUnavailableById(u => ({ ...u, [assistantId]: true }))
+          }
           setStreaming(false)
           refreshConversations()
           onMessageComplete?.()
@@ -596,18 +648,30 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       <div className="chat-main">
         <div className="chat-topbar">
           <span>{conversations.find(c => c.id === activeId)?.title ?? 'Neue Unterhaltung'}</span>
-          {messages.length > 0 && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                className="chat-export-btn"
-                disabled={streaming}
-                onClick={() => send('Fasse unser bisheriges Gespräch in einem Blogpost-Entwurf zusammen und leg ihn mit draft_blog_post an.')}
-              >
-                Diesen Talk zum Blogpost machen
-              </button>
-              <button className="chat-export-btn" onClick={exportConversation}>Exportieren</button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className={`chat-export-btn chat-reasoning-toggle-btn ${reasoningEnabled ? 'active' : ''}`}
+              onClick={() => setReasoningEnabled(v => !v)}
+              title={reasoningEnabled
+                ? 'Reasoning an: versucht zuerst das Denkprozess-Modell, zeigt den Denkprozess an'
+                : 'Reasoning aus: direkte Antworten ohne den Versuch, ein Reasoning-Modell zu erreichen'}
+            >
+              🧠 Reasoning {reasoningEnabled ? 'an' : 'aus'}
+            </button>
+            {messages.length > 0 && (
+              <>
+                <button
+                  className="chat-export-btn"
+                  disabled={streaming}
+                  onClick={() => send('Fasse unser bisheriges Gespräch in einem Blogpost-Entwurf zusammen und leg ihn mit draft_blog_post an.')}
+                >
+                  Diesen Talk zum Blogpost machen
+                </button>
+                <button className="chat-export-btn" onClick={exportConversation}>Exportieren</button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="chat-messages" ref={scrollRef}>
@@ -622,6 +686,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
               message={m}
               toolCalls={toolCalls[m.id] ?? EMPTY_TOOL_CALLS}
               reasoning={reasoningById[m.id]}
+              reasoningUnavailable={reasoningUnavailableById[m.id]}
               streamingEmpty={streaming && m.role === 'assistant' && m.content === ''}
             />
           ))}
