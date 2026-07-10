@@ -118,6 +118,7 @@ export function SystemState() {
               <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
             </div>
             <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
+            <div className="obs-item-meta" style={{ marginTop: -6 }}>Konfidenz: {s.confidence} · Entwicklung: {s.evolution}</div>
             <div className="obs-item-body">{s.observation}</div>
             {trend && <div className="obs-item-meta" style={{ marginTop: 8 }}>📈 Interaction Dynamics: {trend}</div>}
           </div>
