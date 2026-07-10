@@ -290,6 +290,7 @@ mod tests {
             chat_secret: String::new(),
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
+            stripe_webhook_secret: String::new(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             chat_model_idx: Arc::new(AtomicUsize::new(0)),
             chat_request_count: Arc::new(AtomicU64::new(0)),
