@@ -5,10 +5,12 @@ import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { AgentDock } from './AgentDock'
+import { useAdminFetch } from '../lib/adminApi'
 import { OBSERVATORY_MODULES, SECTION_LABELS, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
 import { Analytics } from './observatory/Analytics'
 import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
+import { Inbox, type ContactMessage } from './observatory/Inbox'
 import { LiveCards } from './observatory/LiveCards'
 import { SystemMap } from './observatory/SystemMap'
 import { EmergenceMonitor } from './observatory/EmergenceMonitor'
@@ -28,9 +30,6 @@ interface Props {
   onUpload: (f: File) => Promise<string | null>
   onLogout: () => void
 }
-
-interface ContactInboxItem { name: string; email: string; phone: string; message: string; ts: string }
-function loadInbox(): ContactInboxItem[] { try { return JSON.parse(localStorage.getItem('rfi_contact_inbox') || '[]') } catch { return [] } }
 
 function loadSidebarCollapsed(): boolean { try { return localStorage.getItem('rfi_sidebar_collapsed') === '1' } catch { return false } }
 
@@ -81,7 +80,11 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [uploadTarget, setUploadTarget] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [editingNews, setEditingNews] = useState<string | null>(null)
-  const [contactInbox, setContactInbox] = useState<ContactInboxItem[]>(() => loadInbox())
+  // Lightweight badge count only — the Inbox tab itself (observatory/Inbox.tsx)
+  // does its own full fetch when open. Polled so a new visitor submission
+  // shows up on the sidebar badge without needing to open the tab.
+  const { data: inboxBadgeData } = useAdminFetch<ContactMessage[]>('/api/contact/messages', [], 20000)
+  const inboxNewCount = (inboxBadgeData ?? []).filter(m => m.status === 'new').length
   const [forschungRefresh, setForschungRefresh] = useState(0)
   const [openConversationId, setOpenConversationId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -187,13 +190,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
     fileRef.current?.click()
   }
 
-  // ── Inbox helpers ─────────────────────────────────────────────────────────
-  const dismissInboxItem = (ts: string) => {
-    const next = contactInbox.filter(i => i.ts !== ts)
-    setContactInbox(next)
-    localStorage.setItem('rfi_contact_inbox', JSON.stringify(next))
-  }
-
   const editingNewsItem = editingNews ? draft.news?.items?.find(n => n.id === editingNews) : null
 
   return (
@@ -226,7 +222,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             <button className={`crm-nav-item ${adminSection === 'inbox' ? 'active' : ''}`} onClick={() => setAdminSection('inbox')} title="Inbox">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
               {!sidebarCollapsed && 'Inbox'}
-              {contactInbox.length > 0 && <span className="crm-badge red">{contactInbox.length}</span>}
+              {inboxNewCount > 0 && <span className="crm-badge red">{inboxNewCount}</span>}
             </button>
             <button className={`crm-nav-item ${adminSection === 'forschung' ? 'active' : ''}`} onClick={() => setAdminSection('forschung')} title="Forschung">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -359,33 +355,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
 
             {/* ── INBOX TAB ─────────────────────────────────────────────── */}
-            {adminSection === 'inbox' && (
-              <div style={{ padding: 14 }}>
-                {contactInbox.length === 0 ? (
-                  <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>
-                    Keine neuen Anfragen.
-                  </div>
-                ) : (
-                  contactInbox.map(item => (
-                    <div key={item.ts} style={{ background: 'var(--panel-surface, #f8f8f8)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--panel-border, #e8e8e8)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
-                          <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: 'var(--hud-cyan, #0099CC)' }}>{item.email}</a>
-                          {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, #666)' }}>{item.phone}</div>}
-                        </div>
-                        <div style={{ fontSize: 10, color: 'var(--panel-text-dim, #aaa)', whiteSpace: 'nowrap' }}>{new Date(item.ts).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
-                      </div>
-                      {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, #444)', lineHeight: 1.5 }}>{item.message}</p>}
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <a href={`mailto:${item.email}?subject=Re: Ihre Anfrage`} className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}>Antworten</a>
-                        <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => dismissInboxItem(item.ts)}>Erledigt</button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+            {adminSection === 'inbox' && <Inbox />}
 
             {/* ── ANALYTICS TAB ──────────────────────────────────────────── */}
             {adminSection === 'analytics' && <Analytics />}

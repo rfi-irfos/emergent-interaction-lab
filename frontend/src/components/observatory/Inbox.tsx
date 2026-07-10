@@ -1,0 +1,131 @@
+import { useState } from 'react'
+import { API_BASE } from '../../lib/apiBase'
+import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { groupByDate, parseServerTimestamp } from '../../lib/dateGroups'
+
+export interface ContactMessage {
+  id: string
+  name: string
+  email: string
+  phone: string
+  message: string
+  status: string
+  created_at: string
+}
+
+const STATUS_LABEL: Record<string, string> = { new: 'Neu', replied: 'Beantwortet', done: 'Erledigt' }
+const STATUS_COLOR: Record<string, string> = { new: '#ef4444', replied: '#f59e0b', done: '#10b981' }
+
+/// Real backend-persisted contact inbox (see backend/src/contact.rs) —
+/// replaces the old localStorage-only version, which was written in the
+/// VISITOR's browser on form submit and read in the ADMIN's browser: since
+/// localStorage never syncs across devices, a real visitor's submission on
+/// their own machine could never appear here. `status` (new/replied/done)
+/// backs the same Antworten/Erledigt UX the old version had, except
+/// Erledigt now sets status='done' instead of a hard, permanent, no-undo
+/// delete — "Wieder öffnen" is the undo.
+///
+/// Grouped by date with the same helper the Forschung conversation sidebar
+/// uses (lib/dateGroups.ts) — a real backend means this list will actually
+/// receive messages now, so it gets the same "unfilterable flat list at
+/// scale" fix pre-emptively.
+export function Inbox() {
+  const [refreshKey, setRefreshKey] = useState(0)
+  // 15s poll: a visitor can submit at any time, nobody should have to
+  // navigate away and back to see a new inquiry land (same idiom as
+  // ResearchNotesPanel's Jarvis-writes-mid-session poll).
+  const { data, loading, error } = useAdminFetch<ContactMessage[]>('/api/contact/messages', [refreshKey], 15000)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const list = data ?? []
+  const groups = groupByDate(list, m => m.created_at)
+
+  const setStatus = async (id: string, status: string) => {
+    setUpdatingId(id)
+    try {
+      await fetch(`${API_BASE}/api/contact/messages/${id}`, {
+        method: 'PATCH',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ status }),
+      })
+      setRefreshKey(k => k + 1)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  if (loading && !data) {
+    return <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>Lade…</div>
+  }
+  if (error) {
+    return <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>Konnte nicht geladen werden.</div>
+  }
+
+  return (
+    <div style={{ padding: 14 }}>
+      {list.length === 0 ? (
+        <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>
+          Keine neuen Anfragen.
+        </div>
+      ) : (
+        groups.map(group => (
+          <div key={group.label} style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--panel-text-dim, #999)', margin: '0 0 8px 2px' }}>
+              {group.label}
+            </div>
+            {group.items.map(item => (
+              <div key={item.id} style={{ background: 'var(--panel-surface, #f8f8f8)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--panel-border, #e8e8e8)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
+                    <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: 'var(--hud-cyan, #0099CC)' }}>{item.email}</a>
+                    {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, #666)' }}>{item.phone}</div>}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: `${STATUS_COLOR[item.status] ?? '#999'}1a`, color: STATUS_COLOR[item.status] ?? '#999' }}>
+                      {STATUS_LABEL[item.status] ?? item.status}
+                    </span>
+                    <div style={{ fontSize: 10, color: 'var(--panel-text-dim, #aaa)', whiteSpace: 'nowrap' }}>
+                      {parseServerTimestamp(item.created_at).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, #444)', lineHeight: 1.5 }}>{item.message}</p>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {item.status === 'done' ? (
+                    <button
+                      className="panel-add-btn"
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                      disabled={updatingId === item.id}
+                      onClick={() => setStatus(item.id, 'new')}
+                    >
+                      Wieder öffnen
+                    </button>
+                  ) : (
+                    <>
+                      <a
+                        href={`mailto:${item.email}?subject=Re: Ihre Anfrage`}
+                        className="panel-add-btn"
+                        style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}
+                        onClick={() => { if (item.status === 'new') setStatus(item.id, 'replied') }}
+                      >
+                        Antworten
+                      </a>
+                      <button
+                        className="panel-delete-btn"
+                        style={{ fontSize: 11, padding: '4px 10px' }}
+                        disabled={updatingId === item.id}
+                        onClick={() => setStatus(item.id, 'done')}
+                      >
+                        Erledigt
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))
+      )}
+    </div>
+  )
+}

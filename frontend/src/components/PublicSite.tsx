@@ -3,6 +3,7 @@ import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem } 
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
+import { API_BASE } from '../lib/apiBase'
 import { LiveStatsSection, ShippingFeedSection } from './PublicLiveActivity'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
@@ -434,34 +435,42 @@ function ContactForm({ email }: { email: string }) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const key = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined
-    if (!key) {
-      // Fallback: open mailto pre-filled
-      const body = encodeURIComponent(`Name: ${form.name}\nPhone: ${form.phone}\n\n${form.message}`)
-      window.location.href = `mailto:${to}?subject=${encodeURIComponent(`${t.mailSubject} ${form.name}`)}&body=${body}`
-      return
-    }
     setStatus('sending')
     try {
-      const res = await fetch('https://api.web3forms.com/submit', {
+      // Source of truth: persist server-side so the admin's Inbox (a
+      // separate browser, possibly a separate device) can actually see it —
+      // this used to only ever land in THIS browser's localStorage, which
+      // never syncs across devices, so a real visitor's submission could
+      // never reach the admin. See backend/src/contact.rs.
+      const res = await fetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_key: key,
-          subject: `${t.mailSubject} ${form.name}`,
-          ...form,
-        }),
+        body: JSON.stringify(form),
       })
-      const data = await res.json()
-      if (data.success) {
-        try {
-          const inbox = JSON.parse(localStorage.getItem('rfi_contact_inbox') || '[]')
-          inbox.unshift({ ...form, ts: new Date().toISOString() })
-          localStorage.setItem('rfi_contact_inbox', JSON.stringify(inbox))
-        } catch { /* non-critical */ }
+      if (!res.ok) throw new Error(String(res.status))
+
+      // Best-effort email notification, unchanged from before this fix —
+      // but no longer the only place a submission lands, so a missing or
+      // failed web3forms key no longer means the inquiry is lost.
+      const key = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined
+      if (key) {
+        fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_key: key,
+            subject: `${t.mailSubject} ${form.name}`,
+            ...form,
+          }),
+        }).catch(() => { /* non-critical: already persisted server-side above */ })
       }
-      setStatus(data.success ? 'ok' : 'err')
+
+      setStatus('ok')
     } catch {
+      // Backend unreachable — last-resort fallback so the message isn't
+      // just dropped: open a pre-filled mailto to the admin's address.
+      const body = encodeURIComponent(`Name: ${form.name}\nPhone: ${form.phone}\n\n${form.message}`)
+      window.location.href = `mailto:${to}?subject=${encodeURIComponent(`${t.mailSubject} ${form.name}`)}&body=${body}`
       setStatus('err')
     }
   }
