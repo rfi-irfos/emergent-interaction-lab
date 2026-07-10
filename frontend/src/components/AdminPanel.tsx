@@ -428,7 +428,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}
               />
             )}
-            {adminSection === 'simulationcenter' && <SimulationCenter />}
+            {adminSection === 'simulationcenter' && <SimulationCenter onNavigate={setAdminSection} />}
             {adminSection === 'knowledgegraph' && (
               <KnowledgeGraph onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
