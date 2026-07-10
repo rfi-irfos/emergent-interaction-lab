@@ -18,10 +18,18 @@ use crate::authz::require_admin as is_authorized;
 use crate::AppState;
 
 pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
-// Ordered best-to-safety-net candidate ladder, tried once per exchange (see
-// stream_chat's model-selection loop) and sticky across that exchange's
-// rounds: whichever candidate first succeeds is reused for the rest of the
-// exchange, and once a candidate fails it's never retried within it.
+// Ordered best-to-safety-net candidate ladder. Historically (through
+// 2026-07-10) tried from index 0 fresh on EVERY message, which is exactly
+// the "inference time is very long" bug: paying however many front
+// candidates aren't entitled on this NVIDIA account as a fresh failed
+// round-trip on every single message, forever. Fixed the same day: the
+// ladder position is now cached across HTTP requests in
+// AppState::chat_model_idx (see stream_chat's model-selection setup below),
+// not just within one exchange's tool-calling rounds — so a repeat message
+// reuses the last-known-good candidate instantly, and only a periodic
+// retry-from-the-top (CHAT_MODEL_RETRY_FROM_TOP_EVERY) or an explicit
+// reasoning-toggle request (see StreamChatReq::reasoning_requested and
+// build_model_ladder) ever re-probes earlier candidates.
 //
 // Simeon 2026-07-10: responses on the plain 70b felt repetitive/"not smart"
 // — wants a genuinely bigger/smarter model tried first. Availability on
@@ -30,8 +38,9 @@ pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // production only); this account is already confirmed NOT entitled to
 // nvidia/llama-3.1-nemotron-70b-instruct, so don't assume any of these
 // succeed either. The ladder just needs to try each in order and fall
-// through gracefully — production `fly logs` (see the tracing::info! below)
-// is what proves out which one actually ends up serving real traffic.
+// through gracefully — production `fly logs` (see the tracing::info! below,
+// and the Fix 3 logging-level fix that makes it actually visible now) is
+// what proves out which one actually ends up serving real traffic.
 const CHAT_MODEL_CANDIDATES: &[&str] = &[
     "meta/llama-3.1-405b-instruct", // much bigger, same family — likely on NVIDIA's catalog
     "meta/llama-3.3-70b-instruct",  // newer generation than the previous 70b default
@@ -39,6 +48,54 @@ const CHAT_MODEL_CANDIDATES: &[&str] = &[
     "meta/llama-3.1-70b-instruct",  // previous "large" default — kept as a mid-tier rung, not dropped
     CHAT_MODEL,                     // meta/llama-3.1-8b-instruct — final safety net, must always work
 ];
+// How often (in requests, server-wide) to ignore AppState::chat_model_idx's
+// cached position and re-probe the ladder from the top, so a bigger model
+// that becomes newly entitled on the account doesn't stay undiscovered
+// forever just because an earlier attempt once failed. The common case
+// (repeat messages within and across sessions) still reuses the cached
+// winner with zero wasted round-trips; only every Nth request pays to
+// re-check.
+const CHAT_MODEL_RETRY_FROM_TOP_EVERY: u64 = 20;
+
+/// Computes the ordered sequence of `CHAT_MODEL_CANDIDATES` indices to try
+/// for one exchange. Pure and side-effect free (no network, no AppState) so
+/// it's directly unit-testable — see the tests module below.
+///
+/// - `reasoning_requested` (see `StreamChatReq::reasoning_requested`, wired
+///   from the frontend's reasoning toggle): when true, the reasoning-capable
+///   candidate (`deepseek-ai/deepseek-r1`) is tried FIRST, ahead of the
+///   cached shortcut entirely — the user explicitly asked to see reasoning,
+///   so it's worth paying the round-trip to check, even if a different
+///   candidate is the cached steady-state winner. When false (the default),
+///   the reasoning candidate is skipped entirely: most models aren't
+///   reasoning-capable, so forcing a doomed attempt against it on every
+///   ordinary message would just be a wasted failed round-trip.
+/// - `cached_idx` (see `AppState::chat_model_idx`): the last-known-good
+///   index from a previous request, reused as the starting point instead of
+///   always restarting at 0 — only consulted on the non-reasoning path.
+/// - `force_top` (see `CHAT_MODEL_RETRY_FROM_TOP_EVERY`): when true, ignores
+///   `cached_idx` and starts from 0 anyway, so an earlier candidate that
+///   failed before can periodically be re-checked.
+fn build_model_ladder(reasoning_requested: bool, cached_idx: usize, force_top: bool) -> Vec<usize> {
+    let deepseek_idx = CHAT_MODEL_CANDIDATES
+        .iter()
+        .position(|&m| m == "deepseek-ai/deepseek-r1")
+        .expect("deepseek-ai/deepseek-r1 must be one of CHAT_MODEL_CANDIDATES");
+    if reasoning_requested {
+        std::iter::once(deepseek_idx)
+            .chain((0..CHAT_MODEL_CANDIDATES.len()).filter(|&i| i != deepseek_idx))
+            .collect()
+    } else {
+        let start = if force_top {
+            0
+        } else {
+            cached_idx.min(CHAT_MODEL_CANDIDATES.len() - 1)
+        };
+        (start..CHAT_MODEL_CANDIDATES.len())
+            .filter(|&i| i != deepseek_idx)
+            .collect()
+    }
+}
 const EMBED_MODEL: &str = "nvidia/nv-embedqa-e5-v5";
 const CHUNK_CHARS: usize = 900;
 const CHUNK_OVERLAP: usize = 150;
@@ -560,6 +617,12 @@ pub struct StreamChatReq {
     /// lets get_content_section answer from live state without the backend
     /// needing its own GitHub credentials/repo config.
     site_content: Option<serde_json::Value>,
+    /// Wired from the frontend's reasoning toggle (see ResearchChat.tsx).
+    /// `None`/`Some(false)` (default, matches the toggle's default-off
+    /// state): skip `deepseek-ai/deepseek-r1` in the candidate ladder
+    /// entirely for this request. `Some(true)`: prioritize trying it FIRST,
+    /// ahead of the cached-winner shortcut — see `build_model_ladder`.
+    reasoning_requested: Option<bool>,
 }
 
 pub async fn stream_chat(
@@ -657,12 +720,25 @@ pub async fn stream_chat(
 
         let mut final_full_text = String::new();
         let mut final_tokens: Vec<serde_json::Value> = Vec::new();
+
+        // Model-selection setup (Fix 1 + Fix 2, 2026-07-10): reasoning_requested
+        // comes straight from the frontend toggle; cached_idx/force_top
+        // determine where THIS exchange's ladder starts (see
+        // build_model_ladder's doc comment for the full picture). request_no
+        // is a server-wide counter (not per-conversation — the ladder
+        // reflects account entitlement, which doesn't vary per conversation).
+        let reasoning_requested = body.reasoning_requested.unwrap_or(false);
+        let request_no = state.chat_request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let force_top = request_no % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
+        let cached_idx = state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed);
+        let ladder = build_model_ladder(reasoning_requested, cached_idx, force_top);
+        // Position into `ladder` (not directly into CHAT_MODEL_CANDIDATES).
         // Sticky across rounds within one exchange: whichever candidate
         // first succeeds is reused for every later round of the same
         // exchange (tool-calling can take several rounds); once a candidate
         // fails it's never retried within this exchange, so we only ever
-        // move forward through CHAT_MODEL_CANDIDATES, never back.
-        let mut active_model_idx: usize = 0;
+        // move forward through `ladder`, never back.
+        let mut ladder_pos: usize = 0;
         // A local, mutable snapshot of site_content that's updated in place
         // whenever update_content_field runs — without this, a second
         // get_content_section call later in the same exchange would still
@@ -680,14 +756,14 @@ pub async fn stream_chat(
                 "stream": true,
             });
 
-            // Try candidates in order starting from wherever this exchange
-            // is currently stuck (active_model_idx), advancing on failure —
-            // network error or non-2xx alike — until one succeeds or we've
-            // exhausted the ladder down to CHAT_MODEL, the final entry,
-            // which we always accept the result of (success or not) since
-            // there's nothing left to fall back to.
+            // Try candidates in `ladder` order starting from wherever this
+            // exchange is currently stuck (ladder_pos), advancing on failure
+            // — network error or non-2xx alike — until one succeeds or we've
+            // exhausted the ladder down to its final entry, which we always
+            // accept the result of (success or not) since there's nothing
+            // left to fall back to.
             let (res, used_model) = loop {
-                let model = CHAT_MODEL_CANDIDATES[active_model_idx];
+                let model = CHAT_MODEL_CANDIDATES[ladder[ladder_pos]];
                 let attempt = state
                     .http
                     .post("https://integrate.api.nvidia.com/v1/chat/completions")
@@ -696,15 +772,29 @@ pub async fn stream_chat(
                     .send()
                     .await;
                 let ok = matches!(&attempt, Ok(r) if r.status().is_success());
-                if ok || active_model_idx + 1 >= CHAT_MODEL_CANDIDATES.len() {
+                if ok || ladder_pos + 1 >= ladder.len() {
                     break (attempt, model);
                 }
-                let next = CHAT_MODEL_CANDIDATES[active_model_idx + 1];
+                let next = CHAT_MODEL_CANDIDATES[ladder[ladder_pos + 1]];
                 tracing::warn!("model {model} unavailable/failed, falling back to {next}");
-                active_model_idx += 1;
+                ladder_pos += 1;
             };
             if matches!(&res, Ok(r) if r.status().is_success()) {
                 tracing::info!("chat round served by model {used_model}");
+            }
+            // Persist the resolved ladder position back to the shared,
+            // request-spanning cache (AppState::chat_model_idx) so the NEXT
+            // ordinary (non-reasoning) message starts here instead of
+            // re-discovering it from scratch — the actual fix for "inference
+            // time is very long". Guarded to non-reasoning traffic only: a
+            // reasoning-toggle request intentionally tries
+            // deepseek-ai/deepseek-r1 first regardless of the cache (see
+            // build_model_ladder), and persisting that special-cased
+            // position would wrongly make future ordinary messages skip past
+            // untried, possibly-better non-reasoning candidates the
+            // steady-state cache hadn't reached yet.
+            if !reasoning_requested {
+                state.chat_model_idx.store(ladder[ladder_pos], std::sync::atomic::Ordering::Relaxed);
             }
 
             let res = match res {
@@ -1172,5 +1262,109 @@ mod tests {
         let (full_reasoning, forwarded) = simulate_forwarding(&deltas);
         assert!(agent::parse_tool_call(&full_reasoning).is_none());
         assert_eq!(forwarded, full_reasoning);
+    }
+
+    // ── model-selection ladder (2026-07-10 fix) ─────────────────────────
+
+    fn deepseek_idx() -> usize {
+        CHAT_MODEL_CANDIDATES.iter().position(|&m| m == "deepseek-ai/deepseek-r1").unwrap()
+    }
+
+    /// The regression this fix exists for: `stream_chat` used to always
+    /// start a fresh HTTP request's ladder at index 0, re-paying however
+    /// many front candidates weren't entitled on the account as a failed
+    /// round-trip on EVERY message — "inference time is very long". This is
+    /// the same scenario end to end: a first request discovers (via
+    /// AppState::chat_model_idx, mimicked here by a plain cached_idx value)
+    /// that index 3 is the real winner; a second, later request must start
+    /// there directly, not restart the search at 0.
+    #[test]
+    fn second_request_reuses_cached_index_instead_of_restarting_at_zero() {
+        // First request: as if the ladder walked forward to index 3 and
+        // that got persisted (mirrors `state.chat_model_idx.store(...)`).
+        let cached_idx_after_first_request = 3usize;
+
+        // Second request, ordinary (no reasoning toggle), not a periodic
+        // retry-from-top slot.
+        let ladder = build_model_ladder(false, cached_idx_after_first_request, false);
+
+        assert_eq!(
+            ladder.first().copied(),
+            Some(3),
+            "must start from the cached index, not restart the discovery walk at 0"
+        );
+        assert!(!ladder.contains(&0) && !ladder.contains(&1), "must not re-try earlier candidates already known to have failed");
+    }
+
+    /// A totally fresh cache (no previous request yet, index 0) still walks
+    /// the full ladder top to bottom — the fix must not break the very
+    /// first request's discovery behavior.
+    #[test]
+    fn first_ever_request_starts_at_index_zero() {
+        let ladder = build_model_ladder(false, 0, false);
+        assert_eq!(ladder, vec![0, 1, 3, 4], "deepseek's slot (2) must be excluded on the default, non-reasoning path");
+    }
+
+    /// CHAT_MODEL_RETRY_FROM_TOP_EVERY's mechanism: even with a cached index
+    /// deep into the ladder, a request landing on a periodic retry slot
+    /// ignores the cache and re-walks from the top — otherwise a bigger
+    /// model that becomes newly entitled on the account would stay
+    /// undiscovered forever.
+    #[test]
+    fn periodic_retry_slot_ignores_the_cache_and_restarts_at_zero() {
+        let ladder = build_model_ladder(false, 4, true);
+        assert_eq!(ladder, vec![0, 1, 3, 4]);
+    }
+
+    /// Fix 2's core behavior: with the reasoning toggle ON, the
+    /// reasoning-capable candidate is tried FIRST, ahead of the cached
+    /// shortcut entirely — even when the cache points somewhere else deep in
+    /// the ladder, and even on a request that would NOT otherwise be a
+    /// periodic retry-from-top slot.
+    #[test]
+    fn reasoning_requested_tries_deepseek_first_ahead_of_the_cache() {
+        let ladder = build_model_ladder(true, 4, false);
+        assert_eq!(
+            ladder.first().copied(),
+            Some(deepseek_idx()),
+            "reasoning toggle must override the cached-winner shortcut"
+        );
+        // Falls through the rest of the ladder in its normal relative order
+        // if deepseek-r1 isn't entitled, rather than stopping there.
+        assert_eq!(ladder, vec![deepseek_idx(), 0, 1, 3, 4]);
+    }
+
+    /// The toggle-OFF counterpart (the default): deepseek-r1 must never
+    /// appear in the ladder at all, so a non-reasoning-capable-account
+    /// never pays for a doomed attempt against it on an ordinary message.
+    #[test]
+    fn reasoning_not_requested_never_includes_deepseek_in_the_ladder() {
+        for cached in 0..CHAT_MODEL_CANDIDATES.len() {
+            let ladder = build_model_ladder(false, cached, false);
+            assert!(!ladder.contains(&deepseek_idx()), "cached_idx={cached}: deepseek-r1 leaked into the non-reasoning ladder");
+        }
+    }
+
+    /// `StreamChatReq::reasoning_requested` wiring: absent (older client /
+    /// toggle never touched) and explicit `false` (toggle off, the UI's
+    /// default) must both behave as "not requested" — reasoning is opt-in,
+    /// never silently assumed.
+    #[test]
+    fn reasoning_requested_field_defaults_to_false_when_absent() {
+        let with_field_absent: StreamChatReq =
+            serde_json::from_value(json!({ "conversation_id": "c1", "message": "hi" })).unwrap();
+        assert_eq!(with_field_absent.reasoning_requested.unwrap_or(false), false);
+
+        let with_field_false: StreamChatReq = serde_json::from_value(
+            json!({ "conversation_id": "c1", "message": "hi", "reasoning_requested": false }),
+        )
+        .unwrap();
+        assert_eq!(with_field_false.reasoning_requested.unwrap_or(false), false);
+
+        let with_field_true: StreamChatReq = serde_json::from_value(
+            json!({ "conversation_id": "c1", "message": "hi", "reasoning_requested": true }),
+        )
+        .unwrap();
+        assert_eq!(with_field_true.reasoning_requested.unwrap_or(false), true);
     }
 }
