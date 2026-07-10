@@ -1,20 +1,38 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
 import { TOOL_LABELS } from '../lib/toolLabels'
 import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
 interface Conversation { id: string; title: string; created_at: string; updated_at: string }
-interface ChatMessage { id: string; role: 'user' | 'assistant'; content: string; token_info: string | null; created_at: string }
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  token_info: string | null
+  created_at: string
+  // Only ever set locally while a message is still streaming in (see
+  // send()'s batched flush below): the live token array kept as an actual
+  // array, not round-tripped through JSON.stringify/parse on every delta the
+  // way `token_info` (mirroring the server's stored TEXT column) would need.
+  // Cleared/superseded by `token_info` once streaming finishes.
+  liveTokens?: TokenInfo[]
+}
 interface DocumentItem { id: string; filename: string; created_at: string }
 
 interface ToolCallEvent { tool: string; result: string }
+
+// Stable reference for "no tool calls on this message" — a fresh `[]` at the
+// call site would give ChatBubble a new array identity every render even
+// when nothing changed, defeating its React.memo (see ChatBubble below).
+const EMPTY_TOOL_CALLS: ToolCallEvent[] = []
 
 async function streamChat(
   conversationId: string,
   message: string,
   siteContent: unknown,
   onDelta: (delta: string, tokens: TokenInfo[]) => void,
+  onReasoning: (delta: string) => void,
   onToolCall: (call: ToolCallEvent) => void,
   onDone: () => void,
   onError: (msg: string) => void,
@@ -55,6 +73,14 @@ async function streamChat(
       if (eventType === 'done') { onDone(); return }
       if (eventType === 'tool_call') {
         try { onToolCall(JSON.parse(data)) } catch { /* ignore malformed frame */ }
+        continue
+      }
+      // Reasoning models (e.g. deepseek-ai/deepseek-r1, if it's the one
+      // actually serving a given request — see backend/src/chat.rs's model
+      // ladder) stream step-by-step reasoning as its own event type, kept
+      // entirely separate from the visible reply text.
+      if (eventType === 'reasoning') {
+        try { onReasoning(JSON.parse(data).delta || '') } catch { /* ignore malformed frame */ }
         continue
       }
       try {
@@ -170,6 +196,27 @@ function WebSearchBadge({ call }: { call: ToolCallEvent }) {
   )
 }
 
+// Shown BEFORE the final answer, streamed live the same way the main reply
+// is — only ever populated for a request an actual reasoning-capable model
+// (e.g. deepseek-ai/deepseek-r1) served; for every other model this simply
+// never mounts (see the `reasoning` prop check at the call site).
+function ReasoningBlock({ text, streaming }: { text: string; streaming: boolean }) {
+  const [open, setOpen] = useState(true)
+  return (
+    <div className="chat-reasoning">
+      <button type="button" className="chat-reasoning-toggle" onClick={() => setOpen(o => !o)}>
+        🧠 {open ? 'Denkprozess ausblenden' : 'Denkprozess anzeigen'}
+      </button>
+      {open && (
+        <div className="chat-reasoning-content">
+          {text}
+          {streaming ? ' …' : ''}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Copies the rendered markdown source (what the model actually said), not
 // the rendered HTML/DOM — matches how "Exportieren" already treats message
 // content elsewhere in this file.
@@ -192,6 +239,62 @@ function CopyMessageButton({ content }: { content: string }) {
   )
 }
 
+// Memoized so a delta landing on the actively-streaming message doesn't
+// force every OTHER bubble in the conversation to re-run renderMarkdown and
+// re-parse its token_info — React bails out of re-rendering a bubble
+// entirely whenever its own props are unchanged. The internal useMemo calls
+// additionally protect against the one case React.memo can't: this
+// component's OWN local state changing (opening "Token-Analyse") — without
+// them, toggling the inspector would otherwise needlessly re-run
+// renderMarkdown on unchanged text just because the component re-rendered.
+const ChatBubble = React.memo(function ChatBubble({
+  message, toolCalls, reasoning, streamingEmpty,
+}: {
+  message: ChatMessage
+  toolCalls: ToolCallEvent[]
+  reasoning?: string
+  // True while this specific bubble is the one actively streaming in with
+  // no visible content yet — doubles as "the reasoning block (if any) is
+  // still live" since reasoning always finishes before the main answer
+  // starts arriving.
+  streamingEmpty: boolean
+}) {
+  const [showInspector, setShowInspector] = useState(false)
+  const tokens = useMemo<TokenInfo[]>(
+    () => message.liveTokens ?? (message.token_info ? JSON.parse(message.token_info) : []),
+    [message.liveTokens, message.token_info],
+  )
+  const rendered = useMemo(
+    () => (message.role === 'assistant' ? renderMarkdown(message.content) : message.content),
+    [message.role, message.content],
+  )
+  return (
+    <div className={`chat-bubble ${message.role}`}>
+      {message.role === 'assistant' && toolCalls.length > 0 && (
+        <div className="chat-tool-calls">
+          {toolCalls.map((c, i) => (
+            c.tool === 'web_search' ? <WebSearchBadge key={i} call={c} /> : <ToolCallBadge key={i} call={c} />
+          ))}
+        </div>
+      )}
+      {message.role === 'assistant' && !!reasoning && <ReasoningBlock text={reasoning} streaming={streamingEmpty} />}
+      <div className="chat-bubble-content">
+        {message.role === 'assistant' && message.content !== '' && <CopyMessageButton content={message.content} />}
+        {rendered}
+        {streamingEmpty ? '…' : ''}
+      </div>
+      {message.role === 'assistant' && tokens.length > 0 && (
+        <div className="chat-bubble-tools">
+          <button className="chat-inspect-toggle" onClick={() => setShowInspector(s => !s)}>
+            {showInspector ? 'Token-Analyse ausblenden' : '🔍 Token-Analyse'}
+          </button>
+          {showInspector && <TokenBreakdown tokens={tokens} />}
+        </div>
+      )}
+    </div>
+  )
+})
+
 export function ResearchChat({ siteContent, onMessageComplete, openConversationId, onOpenConversationHandled, onUpdate }: {
   siteContent?: unknown
   onMessageComplete?: () => void
@@ -206,8 +309,8 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showInspector, setShowInspector] = useState<Record<string, boolean>>({})
   const [toolCalls, setToolCalls] = useState<Record<string, ToolCallEvent[]>>({})
+  const [reasoningById, setReasoningById] = useState<Record<string, string>>({})
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -315,15 +418,53 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       setStreaming(true)
 
       let fullText = ''
+      let reasoningText = ''
       const allTokens: TokenInfo[] = []
+
+      // Deltas can arrive far faster than a screen repaints (the exact
+      // complaint behind "the typewriter effect is buffering differently
+      // than the actual model output speed"): without batching, every
+      // single delta forced a full messages.map() PLUS a from-scratch
+      // renderMarkdown() over the ever-growing reply text — work that grows
+      // with the reply, so a long answer got slower to render per token as
+      // it went. Coalescing every delta that lands within one animation
+      // frame into a single state update caps re-render/re-parse cost at
+      // the screen's own refresh rate, however fast tokens actually arrive.
+      let rafId: number | null = null
+      const flush = () => {
+        rafId = null
+        // A snapshot (`.slice()`), not the live `allTokens` reference itself:
+        // ChatBubble's internal useMemo keys off `message.liveTokens`'
+        // identity to decide whether to re-derive `tokens` — since
+        // `allTokens` is mutated in place across the WHOLE round, reusing
+        // that same reference here would mean every flush after the first
+        // non-empty one gets treated as "unchanged" and silently stops
+        // updating the Token-Analyse view. Copying only once per animation
+        // frame (not once per delta) keeps this cheap.
+        const tokensSnapshot = allTokens.slice()
+        setMessages(m => m.map(msg => msg.id === assistantId ? { ...msg, content: fullText, liveTokens: tokensSnapshot } : msg))
+        if (reasoningText) setReasoningById(r => ({ ...r, [assistantId]: reasoningText }))
+      }
+      const scheduleFlush = () => {
+        if (rafId === null) rafId = requestAnimationFrame(flush)
+      }
+      const flushNow = () => {
+        if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null }
+        flush()
+      }
+
       await streamChat(
         convId,
         text,
         siteContent,
         (delta, tokens) => {
           fullText += delta
-          allTokens.push(...tokens)
-          setMessages(m => m.map(msg => msg.id === assistantId ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens) } : msg))
+          if (tokens.length) allTokens.push(...tokens)
+          scheduleFlush()
+        },
+        (delta) => {
+          reasoningText += delta
+          scheduleFlush()
         },
         (call) => {
           setToolCalls(t => ({ ...t, [assistantId]: [...(t[assistantId] ?? []), call] }))
@@ -339,12 +480,20 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
           }
         },
         () => {
+          flushNow()
+          // Fold the live array into `token_info` (a JSON string) exactly
+          // like a server-loaded message carries it, dropping the transient
+          // `liveTokens` — matches the shape historical messages arrive in
+          // from GET /conversations/:id.
+          setMessages(m => m.map(msg => msg.id === assistantId
+            ? { ...msg, content: fullText, token_info: JSON.stringify(allTokens), liveTokens: undefined }
+            : msg))
           setStreaming(false)
           refreshConversations()
           onMessageComplete?.()
           if (document.hidden) document.title = `💬 ${baseTitleRef.current}`
         },
-        (msg) => { setStreaming(false); setError(msg) },
+        (msg) => { flushNow(); setStreaming(false); setError(msg) },
       )
     } finally {
       sendingRef.current = false
@@ -467,36 +616,15 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
               Frag einfach los — Konversationen, hochgeladene Dokumente und frühere Gespräche bleiben im Gedächtnis.
             </div>
           )}
-          {messages.map(m => {
-            const tokens: TokenInfo[] = m.token_info ? JSON.parse(m.token_info) : []
-            return (
-              <div key={m.id} className={`chat-bubble ${m.role}`}>
-                {m.role === 'assistant' && (toolCalls[m.id]?.length ?? 0) > 0 && (
-                  <div className="chat-tool-calls">
-                    {toolCalls[m.id].map((c, i) => (
-                      c.tool === 'web_search' ? <WebSearchBadge key={i} call={c} /> : <ToolCallBadge key={i} call={c} />
-                    ))}
-                  </div>
-                )}
-                <div className="chat-bubble-content">
-                  {m.role === 'assistant' && m.content !== '' && <CopyMessageButton content={m.content} />}
-                  {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
-                  {streaming && m.role === 'assistant' && m.content === '' ? '…' : ''}
-                </div>
-                {m.role === 'assistant' && tokens.length > 0 && (
-                  <div className="chat-bubble-tools">
-                    <button
-                      className="chat-inspect-toggle"
-                      onClick={() => setShowInspector(s => ({ ...s, [m.id]: !s[m.id] }))}
-                    >
-                      {showInspector[m.id] ? 'Token-Analyse ausblenden' : '🔍 Token-Analyse'}
-                    </button>
-                    {showInspector[m.id] && <TokenBreakdown tokens={tokens} />}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {messages.map(m => (
+            <ChatBubble
+              key={m.id}
+              message={m}
+              toolCalls={toolCalls[m.id] ?? EMPTY_TOOL_CALLS}
+              reasoning={reasoningById[m.id]}
+              streamingEmpty={streaming && m.role === 'assistant' && m.content === ''}
+            />
+          ))}
         </div>
 
         {error && <div className="chat-error">{error}</div>}

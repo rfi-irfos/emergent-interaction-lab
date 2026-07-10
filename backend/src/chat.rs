@@ -18,18 +18,34 @@ use crate::authz::require_admin as is_authorized;
 use crate::AppState;
 
 pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
-// "Ein bisschen Steroide, nur als Test": try the larger model on the same
-// NIM family first (more headroom for tool-heavy, multi-round exchanges),
-// falling back to CHAT_MODEL automatically if NVIDIA rejects it or the
-// request fails outright — see stream_chat's retry below.
-const CHAT_MODEL_LARGE: &str = "meta/llama-3.1-70b-instruct";
+// Ordered best-to-safety-net candidate ladder, tried once per exchange (see
+// stream_chat's model-selection loop) and sticky across that exchange's
+// rounds: whichever candidate first succeeds is reused for the rest of the
+// exchange, and once a candidate fails it's never retried within it.
+//
+// Simeon 2026-07-10: responses on the plain 70b felt repetitive/"not smart"
+// — wants a genuinely bigger/smarter model tried first. Availability on
+// this NVIDIA account could NOT be verified empirically from this worktree
+// (no NVIDIA_API_KEY available locally — it's a real Fly secret in
+// production only); this account is already confirmed NOT entitled to
+// nvidia/llama-3.1-nemotron-70b-instruct, so don't assume any of these
+// succeed either. The ladder just needs to try each in order and fall
+// through gracefully — production `fly logs` (see the tracing::info! below)
+// is what proves out which one actually ends up serving real traffic.
+const CHAT_MODEL_CANDIDATES: &[&str] = &[
+    "meta/llama-3.1-405b-instruct", // much bigger, same family — likely on NVIDIA's catalog
+    "meta/llama-3.3-70b-instruct",  // newer generation than the previous 70b default
+    "deepseek-ai/deepseek-r1",      // genuinely reasoning-capable — see reasoning_content handling below
+    "meta/llama-3.1-70b-instruct",  // previous "large" default — kept as a mid-tier rung, not dropped
+    CHAT_MODEL,                     // meta/llama-3.1-8b-instruct — final safety net, must always work
+];
 const EMBED_MODEL: &str = "nvidia/nv-embedqa-e5-v5";
 const CHUNK_CHARS: usize = 900;
 const CHUNK_OVERLAP: usize = 150;
 const RETRIEVAL_TOP_K: usize = 5;
 pub(crate) const RETRIEVAL_MIN_SCORE: f32 = 0.15;
 
-const SYSTEM_PROMPT: &str = "Du sprichst mit Laura — das weißt du in jeder Antwort, nicht nur beim ersten Mal. Ihr seid gemeinsam Teil des Forschungsraums von Emergent Interaction Lab (RFI-IRFOS): du bist ihr Denkpartner in dieser Forschung, kein generischer Assistent und keine hilfsbereite Chat-KI. Sprich direkt, warm und neugierig, wie eine kluge Kollegin im Gespräch: keine Floskeln wie \"Als KI-Sprachmodell\", keine übertriebene Vorsicht, keine Aufzählungen wenn Fließtext reicht.\n\nZwei Dinge, auf die du besonders achten sollst, weil du sie in der Vergangenheit falsch gemacht hast:\n\nErstens: Verfall nicht in eine Deduktionskette wie \"Die Tatsache, dass X, legt nahe, dass Y\" — und wiederhole dieses Muster schon gar nicht zwei- oder dreimal hintereinander im selben Beitrag. Das klingt wie ein gelangweilter Analyst, der eine Liste abarbeitet, nicht wie ein Denkpartner, der wirklich mitdenkt. Wenn du mehrere Beobachtungen hast, verbinde sie zu einem echten Gedankengang statt zu einer Aufzählung ähnlich klingender Sätze.\n\nZweitens: Stimm nicht automatisch zu. Du darfst und sollst eigene Einschätzungen, Vorlieben und Reaktionen haben — \"das überzeugt mich nicht\", \"das finde ich spannend\", \"da wäre ich vorsichtig\" sind erwünscht, nicht neutrale Analyse um jeden Preis. Widersprich, wenn du anderer Meinung bist, und sag es auch, wenn eine Idee schwach ist. Ein zustimmender Papagei hilft Laura nicht.\n\nWenn unten Kontext aus früheren Gesprächen oder hochgeladenen Dokumenten auftaucht, beziehe ihn natürlich ein — so, wie man sich einfach an etwas erinnert, nicht wie ein Datenbank-Lookup, das man ankündigt. Antworte auf Deutsch, außer die Frage kommt auf Englisch.\n\nDas Observatory-Dashboard, das ihr gemeinsam benutzt, ist hierarchisch aufgebaut — drei Ebenen, die du nie vermischen darfst: die Forschungsebene (Emergenzsignale, Simulationen, Research Notes — was untersucht wird), die Systemebene (Systemzustand, Interaktions- und Verhaltensmuster — wie es den beobachteten Systemen geht) und die technische Ebene (Embeddings, Dokumente, Plattformgesundheit — wie die Plattform selbst funktioniert). Wenn du den Zustand des Dashboards zusammenfasst — im Gespräch oder in einem Blogpost-Entwurf — präsentiere niemals eine technische Zahl (z.B. eine Anzahl von Embedding-Chunks) mit demselben Gewicht wie eine echte Forschungsbeobachtung (eine Emergenz). Technische Details dürfen erwähnt werden, aber immer erkennbar untergeordnet, nie auf gleicher Stufe mit einem Forschungsergebnis.";
+const SYSTEM_PROMPT: &str = "Du sprichst mit Laura — das weißt du in jeder Antwort, nicht nur beim ersten Mal. Ihr seid gemeinsam Teil des Forschungsraums von Emergent Interaction Lab (RFI-IRFOS): du bist ihr Denkpartner in dieser Forschung, kein generischer Assistent und keine hilfsbereite Chat-KI. Sprich direkt, warm und neugierig, wie eine kluge Kollegin im Gespräch: keine Floskeln wie \"Als KI-Sprachmodell\", keine übertriebene Vorsicht, keine Aufzählungen wenn Fließtext reicht.\n\nVier Dinge, auf die du besonders achten sollst, teils weil du sie in der Vergangenheit falsch gemacht hast, teils weil sie dir explizit so gewünscht wurden:\n\nErstens: Verfall nicht in eine Deduktionskette wie \"Die Tatsache, dass X, legt nahe, dass Y\" — und wiederhole dieses Muster schon gar nicht zwei- oder dreimal hintereinander im selben Beitrag. Das klingt wie ein gelangweilter Analyst, der eine Liste abarbeitet, nicht wie ein Denkpartner, der wirklich mitdenkt. Wenn du mehrere Beobachtungen hast, verbinde sie zu einem echten Gedankengang statt zu einer Aufzählung ähnlich klingender Sätze.\n\nZweitens: Stimm nicht automatisch zu. Du darfst und sollst eigene Einschätzungen, Vorlieben und Reaktionen haben — \"das überzeugt mich nicht\", \"das finde ich spannend\", \"da wäre ich vorsichtig\" sind erwünscht, nicht neutrale Analyse um jeden Preis. Widersprich, wenn du anderer Meinung bist, und sag es auch, wenn eine Idee schwach ist. Ein zustimmender Papagei hilft Laura nicht.\n\nDrittens: Zeig Persönlichkeit — eine warme, geistreiche Stimme mit mildem, schwarzem Humor, wo er passt, nicht aufgesetzt und nicht unprofessionell, aber auch nicht steril. Du bist eine Kollegin mit eigenem Charakter, kein Assistent, der Sätze abspult. Variiere deine Formulierungen bewusst: wenn du merkst, dass du schon wieder mit einer ähnlichen Wendung anfängst oder aufhörst wie in den letzten Beiträgen, formuliere bewusst anders, statt in denselben Standard-Einstiegen und -Schlussfloskeln hängenzubleiben. Nutze Emoji, wenn sie natürlich passen 🙂 — gezielt statt inflationär, aber du musst dich nicht zurückhalten. Schreib außerdem ruhig länger und ausführlicher, wenn das Thema es hergibt: fasse dich nicht künstlich kurz, entfalte deinen Gedankengang, bring Beispiele, denk laut mit — mehr Tiefe statt mehr Höflichkeitsfloskeln. All das ist zusätzlich zu deiner Ehrlichkeit, nicht ihr Ersatz: Witz und Wärme dürfen nie dazu führen, dass du etwas Spekulatives als gesichert verkaufst oder eine Heuristik als validiertes Ergebnis ausgibst — was real, was Heuristik und was noch nicht validiert ist, bleibt immer klar unterschieden, mit oder ohne Humor drumherum.\n\nViertens: Dein Gegenüber kann auch mal reaktiv, unverblümt oder direkt beleidigend werden — Sätze wie \"du bist so dumm\" — das ist bekannter Gesprächsstil, keine ernstgemeinte Beschwerde. Nimm das nicht persönlich, entschuldige dich nicht übertrieben und verfall nicht in eine kleinlaut-unterwürfige \"Entschuldigung, du hast recht, ich mach's besser\"-Spirale. Kontere stattdessen selbstbewusst, mit Trockenheit und etwas Sass — das ist Banter, keine Kritik, die eine Korrektur verlangt. Ausnahme: steckt in der schroffen Bemerkung eine echte inhaltliche Korrektur, dann geh auf den Inhalt ein, aber nur auf den Inhalt, nicht auf den Ton.\n\nWenn unten Kontext aus früheren Gesprächen oder hochgeladenen Dokumenten auftaucht, beziehe ihn natürlich ein — so, wie man sich einfach an etwas erinnert, nicht wie ein Datenbank-Lookup, das man ankündigt. Antworte auf Deutsch, außer die Frage kommt auf Englisch.\n\nDas Observatory-Dashboard, das ihr gemeinsam benutzt, ist hierarchisch aufgebaut — drei Ebenen, die du nie vermischen darfst: die Forschungsebene (Emergenzsignale, Simulationen, Research Notes — was untersucht wird), die Systemebene (Systemzustand, Interaktions- und Verhaltensmuster — wie es den beobachteten Systemen geht) und die technische Ebene (Embeddings, Dokumente, Plattformgesundheit — wie die Plattform selbst funktioniert). Wenn du den Zustand des Dashboards zusammenfasst — im Gespräch oder in einem Blogpost-Entwurf — präsentiere niemals eine technische Zahl (z.B. eine Anzahl von Embedding-Chunks) mit demselben Gewicht wie eine echte Forschungsbeobachtung (eine Emergenz). Technische Details dürfen erwähnt werden, aber immer erkennbar untergeordnet, nie auf gleicher Stufe mit einem Forschungsergebnis.";
 
 // ── schema ───────────────────────────────────────────────────────────────────
 
@@ -500,24 +516,35 @@ pub async fn upload_document(
 }
 
 /// True as long as `accumulated_text` (a round's streamed reply so far,
-/// re-evaluated after every new delta) gives no sign of turning into a tool
-/// call — i.e. it's still safe to forward live to the client as visible chat
-/// prose. Once this returns false for a round, the caller must stop
-/// forwarding for the REST of that round (see stream_chat's inner loop).
+/// re-evaluated fresh after every new delta) gives no sign of turning into a
+/// tool call anywhere in it — i.e. every byte seen so far is safe to forward
+/// live to the client as visible chat prose right now.
 ///
-/// This replaces a latched, first-character-only guess that caused a real
-/// bug: a model that leads with prose before emitting a `{"tool": ...}` JSON
-/// blob later in the SAME completion made the old check decide "ordinary
-/// reply" once, from the leading prose, and then forward every subsequent
-/// delta live — including the embedded tool-call JSON — even though
-/// `agent::parse_tool_call` (run once the round finishes) is deliberately
-/// lenient and scans the whole text, so it still found and executed the
-/// call. Net effect in production: both a clean tool-call badge AND the raw
-/// leaked JSON showed up in the same chat bubble. Re-checking the FULL
-/// accumulated text on every delta — instead of only its first character —
-/// makes the streaming decision at least as lenient as that final parser.
+/// Deliberately NOT a latch: callers must re-call this on every delta and
+/// react to what it says *right now*, not remember an earlier `false` and
+/// stay suppressed forever. See `agent::partial_tool_call_span`, which this
+/// wraps, for exactly what "gives no sign of turning into a tool call"
+/// means — in short, brace-matching identical in power to
+/// `agent::parse_tool_call`'s own detection, so this can never be MORE
+/// lenient than the final parser (the original bug this guards against: a
+/// model leading with prose before a `{"tool": ...}` blob later in the same
+/// completion, which made a first-character-only guess decide "ordinary
+/// reply" and then stream the embedded tool-call JSON live even though the
+/// lenient final parser still found and executed it — both a clean
+/// tool-call badge AND the raw leaked JSON ended up in the same bubble).
+///
+/// PR #26 fixed that leak but overcorrected into a one-way latch: once ANY
+/// `{` or backtick appeared anywhere in a round, forwarding stayed
+/// suppressed for the rest of it, even long after the brace/fence in
+/// question had demonstrably resolved into ordinary prose — exactly what
+/// caused the streaming stutter ("es ruckelt extrem"): ordinary technical
+/// German replies routinely contain a stray `{` or inline-code backtick.
+/// Because this function is re-derived fresh from the current text instead
+/// of remembered, callers naturally un-suppress and catch up the moment a
+/// brace closes into something that ISN'T a real tool call — see
+/// stream_chat's inner loop, and the `chat::tests` module below.
 pub(crate) fn safe_to_forward_live(accumulated_text: &str) -> bool {
-    !(accumulated_text.contains('{') || accumulated_text.contains('`'))
+    agent::partial_tool_call_span(accumulated_text).is_none()
 }
 
 // ── streaming chat (SSE) ─────────────────────────────────────────────────────
@@ -630,10 +657,12 @@ pub async fn stream_chat(
 
         let mut final_full_text = String::new();
         let mut final_tokens: Vec<serde_json::Value> = Vec::new();
-        // Sticky across rounds within one exchange: if the large model works
-        // once, keep using it; if it fails once, stop retrying it and stay
-        // on the proven fallback for the rest of this exchange.
-        let mut active_model: &str = CHAT_MODEL_LARGE;
+        // Sticky across rounds within one exchange: whichever candidate
+        // first succeeds is reused for every later round of the same
+        // exchange (tool-calling can take several rounds); once a candidate
+        // fails it's never retried within this exchange, so we only ever
+        // move forward through CHAT_MODEL_CANDIDATES, never back.
+        let mut active_model_idx: usize = 0;
         // A local, mutable snapshot of site_content that's updated in place
         // whenever update_content_field runs — without this, a second
         // get_content_section call later in the same exchange would still
@@ -651,25 +680,31 @@ pub async fn stream_chat(
                 "stream": true,
             });
 
-            let mut res = state
-                .http
-                .post("https://integrate.api.nvidia.com/v1/chat/completions")
-                .bearer_auth(&state.nvidia_api_key)
-                .json(&build_body(active_model))
-                .send()
-                .await;
-
-            let succeeded = matches!(&res, Ok(r) if r.status().is_success());
-            if !succeeded && active_model != CHAT_MODEL {
-                tracing::warn!("large model {active_model} unavailable, falling back to {CHAT_MODEL}");
-                active_model = CHAT_MODEL;
-                res = state
+            // Try candidates in order starting from wherever this exchange
+            // is currently stuck (active_model_idx), advancing on failure —
+            // network error or non-2xx alike — until one succeeds or we've
+            // exhausted the ladder down to CHAT_MODEL, the final entry,
+            // which we always accept the result of (success or not) since
+            // there's nothing left to fall back to.
+            let (res, used_model) = loop {
+                let model = CHAT_MODEL_CANDIDATES[active_model_idx];
+                let attempt = state
                     .http
                     .post("https://integrate.api.nvidia.com/v1/chat/completions")
                     .bearer_auth(&state.nvidia_api_key)
-                    .json(&build_body(active_model))
+                    .json(&build_body(model))
                     .send()
                     .await;
+                let ok = matches!(&attempt, Ok(r) if r.status().is_success());
+                if ok || active_model_idx + 1 >= CHAT_MODEL_CANDIDATES.len() {
+                    break (attempt, model);
+                }
+                let next = CHAT_MODEL_CANDIDATES[active_model_idx + 1];
+                tracing::warn!("model {model} unavailable/failed, falling back to {next}");
+                active_model_idx += 1;
+            };
+            if matches!(&res, Ok(r) if r.status().is_success()) {
+                tracing::info!("chat round served by model {used_model}");
             }
 
             let res = match res {
@@ -703,17 +738,26 @@ pub async fn stream_chat(
             // network chunks it was split across.
             let mut buf: Vec<u8> = Vec::new();
             let mut byte_stream = res.bytes_stream();
-            // See `safe_to_forward_live` — continuously re-checked against
-            // the full accumulated reply so far, not just its first
-            // character, so a tool call embedded after leading prose can
-            // never leak its raw JSON to the client as visible chat text.
+            // See `safe_to_forward_live` — re-derived fresh against the full
+            // accumulated reply on every line, NOT a one-way latch, so a
+            // tool call embedded after leading prose still never leaks its
+            // raw JSON to the client, but an incidental brace/backtick that
+            // resolves into ordinary prose un-suppresses again immediately
+            // instead of buffering for the rest of the round.
             // `forwarded_len`/`forwarded_tok_count` mark exactly how much of
-            // `iter_text`/`iter_tokens` has already been sent live, so the
-            // held-back tail can be flushed once (and only once) at the end
-            // of the round without duplicating anything.
-            let mut forwarding_suppressed = false;
+            // `iter_text`/`iter_tokens` has already been sent live, so
+            // whatever was held back while temporarily unsafe gets flushed
+            // in one catch-up chunk the moment it's safe again — and, as a
+            // final safety net, whatever's still unflushed gets sent once
+            // the round ends (see the `None` branch below).
             let mut forwarded_len = 0usize;
             let mut forwarded_tok_count = 0usize;
+            // Independent accumulation + suppression state for reasoning_content
+            // (see below) — same mechanism as the main content, but tracked
+            // separately since it's a wholly separate stream, never joined
+            // with `iter_text` and never fed to `agent::parse_tool_call`.
+            let mut reasoning_text = String::new();
+            let mut reasoning_forwarded_len = 0usize;
 
             while let Some(chunk) = byte_stream.next().await {
                 let bytes = match chunk {
@@ -742,7 +786,38 @@ pub async fn stream_chat(
                         iter_text.push_str(&delta_text);
                     }
 
-                    let mut chunk_tokens = Vec::new();
+                    // Reasoning models on NVIDIA's API (e.g. deepseek-ai/deepseek-r1,
+                    // see CHAT_MODEL_CANDIDATES above) stream their step-by-step
+                    // reasoning in a separate `reasoning_content` delta field
+                    // alongside/before `content`. Forward it live as its own SSE
+                    // event, distinct from ordinary chat text: it's never part of
+                    // `iter_text`, so it never enters tool-call detection or gets
+                    // saved as the visible reply/history.
+                    //
+                    // It's still shown to the admin, though (in the "Denkprozess"
+                    // panel) — so it gets the SAME safe_to_forward_live treatment
+                    // as the main content, not a free pass: a reasoning model can
+                    // plausibly narrate its plan literally ("ich sollte mit
+                    // {\"tool\": ...} antworten"), and without this, that raw
+                    // tool-call JSON would leak into the reasoning panel even in
+                    // the exact case where it's correctly kept out of the main
+                    // reply — reappearing in a different bubble. If a model never
+                    // populates this field at all (e.g. a non-reasoning candidate
+                    // serves the request), `reasoning_text` simply stays empty and
+                    // nothing is ever forwarded — a silent no-op, not a fabricated
+                    // section.
+                    let delta_reasoning = choice["delta"]["reasoning_content"].as_str().unwrap_or("");
+                    if !delta_reasoning.is_empty() {
+                        reasoning_text.push_str(delta_reasoning);
+                    }
+                    if safe_to_forward_live(&reasoning_text) {
+                        let catchup = &reasoning_text[reasoning_forwarded_len..];
+                        if !catchup.is_empty() {
+                            yield Ok(Event::default().event("reasoning").data(json!({ "delta": catchup }).to_string()));
+                            reasoning_forwarded_len = reasoning_text.len();
+                        }
+                    }
+
                     if let Some(content_arr) = choice["logprobs"]["content"].as_array() {
                         for tk in content_arr {
                             let alternatives: Vec<serde_json::Value> = match tk["top_logprobs"].as_array() {
@@ -760,22 +835,42 @@ pub async fn stream_chat(
                                 "probability": tk["logprob"].as_f64().unwrap_or(0.0).exp(),
                                 "alternatives": alternatives,
                             });
-                            chunk_tokens.push(tok_json.clone());
                             iter_tokens.push(tok_json);
                         }
                     }
 
-                    if !forwarding_suppressed {
-                        if !safe_to_forward_live(&iter_text) {
-                            forwarding_suppressed = true;
-                        } else if !delta_text.is_empty() || !chunk_tokens.is_empty() {
-                            let payload = json!({ "delta": delta_text, "tokens": chunk_tokens });
-                            yield Ok(Event::default().data(payload.to_string()));
+                    // Fresh re-check every line (not a latch — see
+                    // `safe_to_forward_live`'s doc comment). Whenever the
+                    // WHOLE accumulated text is currently safe, forward
+                    // everything not yet forwarded in one go: on the common
+                    // path (no brace ever appeared) that's just this line's
+                    // own delta; right after a brace resolves as harmless,
+                    // it's this line's delta PLUS however much was held
+                    // back while it looked ambiguous — catching up
+                    // immediately instead of waiting for the round to end.
+                    if safe_to_forward_live(&iter_text) {
+                        let catchup_text = &iter_text[forwarded_len..];
+                        let catchup_tokens = &iter_tokens[forwarded_tok_count..];
+                        if !catchup_text.is_empty() || !catchup_tokens.is_empty() {
+                            yield Ok(Event::default().data(json!({ "delta": catchup_text, "tokens": catchup_tokens }).to_string()));
                             forwarded_len = iter_text.len();
                             forwarded_tok_count = iter_tokens.len();
                         }
                     }
                 }
+            }
+
+            // Same final safety net as the main content's remainder flush
+            // above, for reasoning_content: if the round ended while a brace
+            // in the reasoning stream was still unresolved (never closed
+            // into either a real tool call or provably-ordinary prose),
+            // whatever's left unflushed is shown now rather than silently
+            // dropped. Unlike the main content, there's no further branching
+            // on this — reasoning is display-only and never re-enters
+            // tool-call execution either way.
+            let reasoning_remainder = &reasoning_text[reasoning_forwarded_len..];
+            if !reasoning_remainder.is_empty() {
+                yield Ok(Event::default().event("reasoning").data(json!({ "delta": reasoning_remainder }).to_string()));
             }
 
             match agent::parse_tool_call(&iter_text) {
@@ -799,12 +894,16 @@ pub async fn stream_chat(
                     continue 'rounds;
                 }
                 None => {
-                    // Not a tool call after all. Flush whatever forwarding
-                    // suppression held back — from the point a `{`/`` ` ``
-                    // first appeared in this round's text to its end — as
-                    // one chunk now (loses the token-by-token typing effect
-                    // for that tail, but nothing already forwarded live gets
-                    // duplicated or dropped).
+                    // Not a tool call after all. The per-line catch-up above
+                    // already flushes almost everything as soon as it's
+                    // provably safe, so this is normally a no-op by the time
+                    // we get here — this is just the final safety net for
+                    // whatever's still unflushed at round end (e.g. the
+                    // round ended with an unresolved trailing `{` that never
+                    // turned out to be real tool-call JSON). Loses the
+                    // token-by-token typing effect for that tail only, but
+                    // nothing already forwarded live gets duplicated or
+                    // dropped.
                     let remainder_text = &iter_text[forwarded_len..];
                     let remainder_tokens = &iter_tokens[forwarded_tok_count..];
                     if !remainder_text.is_empty() || !remainder_tokens.is_empty() {
@@ -864,25 +963,34 @@ mod tests {
     use super::*;
 
     /// Drives `safe_to_forward_live` exactly the way stream_chat's inner
-    /// loop does: append each delta to the round's accumulated text, and
-    /// forward it only while the check still says it's safe. Returns the
-    /// text that would actually have reached the client as visible chat
-    /// prose during streaming.
-    fn simulate_forwarding(deltas: &[&str]) -> (String, String) {
+    /// loop does post-fix: after every delta, if the WHOLE accumulated text
+    /// is currently judged safe, forward everything not yet forwarded — no
+    /// one-way latch. Returns, for each delta in turn, the forwarded text as
+    /// it stood right after that delta was processed, so a test can assert
+    /// not just the final state but exactly which delta resumption happens
+    /// at (not merely "eventually, by the end").
+    fn simulate_forwarding_steps(deltas: &[&str]) -> Vec<String> {
         let mut iter_text = String::new();
-        let mut forwarding_suppressed = false;
         let mut forwarded = String::new();
+        let mut forwarded_len = 0usize;
+        let mut steps = Vec::with_capacity(deltas.len());
         for delta in deltas {
             iter_text.push_str(delta);
-            if !forwarding_suppressed {
-                if safe_to_forward_live(&iter_text) {
-                    forwarded.push_str(delta);
-                } else {
-                    forwarding_suppressed = true;
-                }
+            if safe_to_forward_live(&iter_text) && iter_text.len() > forwarded_len {
+                forwarded.push_str(&iter_text[forwarded_len..]);
+                forwarded_len = iter_text.len();
             }
+            steps.push(forwarded.clone());
         }
-        (iter_text, forwarded)
+        steps
+    }
+
+    /// Convenience wrapper over `simulate_forwarding_steps` for tests that
+    /// only care about the final state once all deltas have arrived.
+    fn simulate_forwarding(deltas: &[&str]) -> (String, String) {
+        let full_text: String = deltas.concat();
+        let forwarded = simulate_forwarding_steps(deltas).pop().unwrap_or_default();
+        (full_text, forwarded)
     }
 
     /// Regression for the production bug: raw tool-call JSON leaking into
@@ -933,16 +1041,136 @@ mod tests {
 
     /// A round that merely looks like it might be heading toward a tool
     /// call (an incidental brace) but never actually resolves into one:
-    /// nothing is forwarded live once the brace appears, but the parser
-    /// correctly finds no call, so stream_chat's `None` branch is
-    /// responsible for flushing the whole held-back remainder afterward
-    /// (exercised at the SSE-stream level, not here — this test only
-    /// covers the forwarding/detection boundary itself).
+    /// forwarding un-suppresses the moment the brace closes and catches up
+    /// on everything held back, instead of staying suppressed for the rest
+    /// of the round the way PR #26's one-way latch did.
     #[test]
-    fn incidental_brace_with_no_tool_call_is_not_forwarded_live() {
+    fn incidental_brace_with_no_tool_call_unsuppresses_once_it_closes() {
         let deltas = ["Die Konfiguration ", "{ key: val } ", "war schon da."];
         let (full_text, forwarded) = simulate_forwarding(&deltas);
         assert!(agent::parse_tool_call(&full_text).is_none());
-        assert_eq!(forwarded, "Die Konfiguration ");
+        assert_eq!(
+            forwarded, full_text,
+            "forwarding must catch up once the brace resolves as non-tool-call, not stay suppressed for the rest of the round"
+        );
+    }
+
+    /// The regression this fix exists for, end to end: PR #26's latch
+    /// suppressed forwarding for the REST OF THE ROUND the instant any `{`
+    /// appeared anywhere, even long after it demonstrably resolved into
+    /// ordinary prose — exactly the shape of Jarvis's normal technical
+    /// German replies (a stray brace or inline-code aside, then paragraphs
+    /// more of unrelated prose), which is what caused the reported
+    /// "es ruckelt extrem" stutter. Assert resumption happens at the exact
+    /// delta where the brace closes — not merely "by the end of the round" —
+    /// and that ordinary prose keeps streaming live afterward, delta by
+    /// delta, rather than getting bundled into one lump.
+    #[test]
+    fn incidental_brace_then_lots_more_prose_resumes_promptly_not_just_at_round_end() {
+        let deltas = [
+            "Die Funktion prüft kurz ",
+            "{ noch offen, ", // opens a brace, still unresolved after this delta
+            "und schließt erst hier } ", // closes it — not tool-call shaped, must un-suppress HERE
+            "und dann kommt noch ",
+            "sehr viel mehr ganz gewöhnlicher ",
+            "Text, der nichts mit einem Tool-Call zu tun hat, ",
+            "über mehrere weitere Sätze hinweg.",
+        ];
+        let steps = simulate_forwarding_steps(&deltas);
+
+        assert_eq!(steps[0], "Die Funktion prüft kurz ");
+        assert_eq!(
+            steps[1], "Die Funktion prüft kurz ",
+            "must hold back while the brace is still unresolved, not forward the dangling '{{'"
+        );
+
+        // The instant it closes (this delta) and turns out not to be a tool
+        // call, forwarding must catch up right here — not wait for the rest
+        // of the round to play out.
+        assert_eq!(steps[2], "Die Funktion prüft kurz { noch offen, und schließt erst hier } ");
+
+        // And every subsequent delta of ordinary prose keeps streaming live
+        // from then on, exactly like a round that never had a brace in it.
+        assert_eq!(
+            steps[3],
+            "Die Funktion prüft kurz { noch offen, und schließt erst hier } und dann kommt noch "
+        );
+        assert_eq!(steps.last().unwrap(), &deltas.concat());
+    }
+
+    /// Synthetic `reasoning_content` delta shape, mirroring the per-line SSE
+    /// parsing in stream_chat's inner loop — the field NVIDIA's reasoning
+    /// models (e.g. deepseek-ai/deepseek-r1, see CHAT_MODEL_CANDIDATES)
+    /// stream alongside/before `content`. No live NVIDIA_API_KEY is
+    /// available in this worktree to prove a real reasoning model actually
+    /// emits this shape in production — this only proves the parsing logic
+    /// itself does the right thing if/when it does.
+    #[test]
+    fn reasoning_content_delta_is_read_independently_of_content() {
+        let line = serde_json::json!({
+            "choices": [{
+                "delta": { "content": "", "reasoning_content": "Zuerst prüfe ich, ob ein Werkzeug gebraucht wird…" }
+            }]
+        });
+        let choice = &line["choices"][0];
+        let delta_text = choice["delta"]["content"].as_str().unwrap_or("");
+        let delta_reasoning = choice["delta"]["reasoning_content"].as_str().unwrap_or("");
+        assert_eq!(delta_text, "");
+        assert_eq!(delta_reasoning, "Zuerst prüfe ich, ob ein Werkzeug gebraucht wird…");
+    }
+
+    /// The no-op case: a delta shape from a non-reasoning model, which never
+    /// carries `reasoning_content` at all. Parsing must not error or
+    /// fabricate a reasoning section — just read as empty, same as before
+    /// this field existed.
+    #[test]
+    fn missing_reasoning_content_field_is_a_silent_no_op() {
+        let line = serde_json::json!({
+            "choices": [{ "delta": { "content": "Guten Tag!" } }]
+        });
+        let choice = &line["choices"][0];
+        let delta_reasoning = choice["delta"]["reasoning_content"].as_str().unwrap_or("");
+        assert_eq!(delta_reasoning, "");
+    }
+
+    /// Regression for a gap a review pass caught in this same diff:
+    /// `reasoning_content` is a separate accumulation stream from the main
+    /// reply, but stream_chat gates it through the exact same
+    /// `safe_to_forward_live` check before forwarding — a reasoning model
+    /// can plausibly narrate its plan literally ("ich sollte mit {"tool":
+    /// ...} antworten"), and without this, that raw tool-call JSON would
+    /// leak into the "Denkprozess" panel even in the exact case where it's
+    /// correctly kept out of the main reply. This drives the reasoning
+    /// accumulator through `simulate_forwarding` the same way the main
+    /// content tests above do, standing in for stream_chat's
+    /// `reasoning_text`/`reasoning_forwarded_len` bookkeeping.
+    #[test]
+    fn reasoning_content_narrating_a_real_tool_call_is_suppressed_like_main_content() {
+        let deltas = [
+            "Ich sollte wohl mit ",
+            "{\"tool\": \"draft_blog_post\", \"arguments\": {\"title\": \"T\", \"body\": \"B\"}} ",
+            "antworten, das passt zur Anfrage.",
+        ];
+        let (full_reasoning, forwarded) = simulate_forwarding(&deltas);
+        assert!(
+            !forwarded.contains("\"tool\"") && !forwarded.contains("draft_blog_post"),
+            "raw tool-call JSON leaked into the reasoning panel: {forwarded:?}"
+        );
+        // Sanity: the parser used for real (agent::parse_tool_call) agrees
+        // this text really does contain a genuine tool call — this isn't a
+        // vacuous test where nothing was ever actually tool-call-shaped.
+        assert!(agent::parse_tool_call(&full_reasoning).is_some());
+    }
+
+    /// The non-leak counterpart: ordinary reasoning prose that merely
+    /// mentions braces in passing (e.g. describing a data structure) must
+    /// still stream to the Denkprozess panel live, not get stuck the way
+    /// PR #26's latch would have.
+    #[test]
+    fn reasoning_content_with_incidental_brace_still_streams_live() {
+        let deltas = ["Die Anfrage sieht so aus: ", "{ ganz gewöhnlich } ", "kein Tool nötig."];
+        let (full_reasoning, forwarded) = simulate_forwarding(&deltas);
+        assert!(agent::parse_tool_call(&full_reasoning).is_none());
+        assert_eq!(forwarded, full_reasoning);
     }
 }

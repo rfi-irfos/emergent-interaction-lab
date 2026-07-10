@@ -82,7 +82,7 @@ pub(crate) struct ToolCall {
     pub arguments: serde_json::Value,
 }
 
-fn try_parse_as_tool_call(candidate: &str) -> Option<ToolCall> {
+pub(crate) fn try_parse_as_tool_call(candidate: &str) -> Option<ToolCall> {
     let value: serde_json::Value = serde_json::from_str(candidate.trim()).ok()?;
     let tool = value.get("tool")?.as_str()?.to_string();
     if !KNOWN_TOOLS.contains(&tool.as_str()) {
@@ -97,7 +97,7 @@ fn try_parse_as_tool_call(candidate: &str) -> Option<ToolCall> {
 /// argument value don't throw off the count). Operating on bytes is safe
 /// here because every delimiter tracked (`{`, `}`, `"`, `\`) is single-byte
 /// ASCII — a multi-byte UTF-8 continuation byte can never match one.
-fn matching_brace_end(text: &str, start: usize) -> Option<usize> {
+pub(crate) fn matching_brace_end(text: &str, start: usize) -> Option<usize> {
     let bytes = text.as_bytes();
     let mut depth = 0i32;
     let mut in_string = false;
@@ -177,6 +177,56 @@ pub(crate) fn parse_tool_call(text: &str) -> Option<ToolCall> {
         }
     }
 
+    None
+}
+
+/// Streaming counterpart to `parse_tool_call`, used by chat.rs to decide —
+/// on every delta, not just once the round is complete — whether the reply
+/// accumulated *so far* could still turn into a tool call.
+///
+/// Returns the byte offset of the earliest `{` for which either:
+/// - no matching `}` has arrived yet (the brace is still open — it might
+///   still be forming tool-call JSON as more text streams in), or
+/// - the span it closes into already parses as a real, known tool call,
+///   exactly the shape `parse_tool_call` itself would find at round end.
+///
+/// Returns `None` once neither case applies anywhere in `text` — i.e. every
+/// byte of `text` is safe to forward to the client right now, and (short of
+/// more text arriving and opening a *new* brace) will stay safe.
+///
+/// Deliberately brace-only: no separate handling for fenced ```` ``` ````
+/// blocks. Every shape `parse_tool_call` recognizes — bare JSON, fenced, or
+/// embedded in prose — is, at the byte level, nothing more than a `{...}`
+/// span; markdown fencing around it never changes whether that span exists
+/// or what it parses as, so scanning for braces alone has identical
+/// detection power. It also means an ordinary inline-code backtick (or even
+/// a whole fenced code block with no JSON in it) never trips this check —
+/// unlike the old `text.contains('{') || text.contains('`'))` latch it
+/// replaces, which suppressed forwarding for the rest of the round the
+/// instant ANY backtick appeared, tool call or not.
+pub(crate) fn partial_tool_call_span(text: &str) -> Option<usize> {
+    let bytes = text.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'{' {
+            match matching_brace_end(text, i) {
+                Some(end) => {
+                    if try_parse_as_tool_call(&text[i..=end]).is_some() {
+                        return Some(i);
+                    }
+                    // Not a real tool call — keep scanning past it in case a
+                    // later `{` in the same text is the real one (mirrors
+                    // parse_tool_call's own shape-3 loop).
+                    i += 1;
+                }
+                // Unterminated so far — still might close into a call once
+                // more text streams in.
+                None => return Some(i),
+            }
+        } else {
+            i += 1;
+        }
+    }
     None
 }
 
@@ -664,5 +714,47 @@ mod tests {
 
         assert_eq!(parsed["ok"], false);
         assert!(parsed["error"].as_str().unwrap().contains("Websuche fehlgeschlagen"));
+    }
+
+    #[test]
+    fn partial_span_is_none_for_plain_prose_with_no_braces() {
+        assert!(partial_tool_call_span("Guten Tag! Wie kann ich helfen?").is_none());
+    }
+
+    #[test]
+    fn partial_span_is_none_once_an_incidental_brace_pair_resolves_as_non_tool_call() {
+        // Mirrors `ignores_ordinary_prose_with_incidental_braces` above: the
+        // brace closes, but the inner text isn't valid tool-call JSON, so
+        // nothing here should keep forwarding suppressed.
+        let text = "Die Konfiguration { key: val } war schon da.";
+        assert!(partial_tool_call_span(text).is_none());
+    }
+
+    #[test]
+    fn partial_span_is_pending_while_a_brace_is_still_unterminated() {
+        // The model has only streamed the opening of what *might* become
+        // tool-call JSON — the closing `}` hasn't arrived yet.
+        let text = "Klar, mache ich gleich: {\"tool\": \"draft_blog_post\", ";
+        let span = partial_tool_call_span(text).expect("an unterminated brace must be reported as pending");
+        assert_eq!(span, text.find('{').unwrap());
+    }
+
+    #[test]
+    fn partial_span_locks_onto_a_real_tool_call_once_it_closes() {
+        let text = "Klar, mache ich gleich: {\"tool\": \"draft_blog_post\", \"arguments\": {\"title\": \"T\", \"body\": \"B\"}}";
+        let span = partial_tool_call_span(text).expect("a completed real tool call must report its start offset");
+        assert_eq!(span, text.find('{').unwrap());
+        // parse_tool_call must agree that this text really is a tool call —
+        // otherwise this function and the final parser could disagree.
+        assert!(parse_tool_call(text).is_some());
+    }
+
+    #[test]
+    fn partial_span_keeps_scanning_past_a_non_tool_call_brace_to_find_a_later_real_one() {
+        let text = "Die Konfiguration { key: val } war schon da. Jetzt aber: {\"tool\": \"get_recent_analytics\", \"arguments\": {\"days\": 3}}";
+        let span = partial_tool_call_span(text).expect("the second, real tool call must still be found");
+        // Must point at the SECOND `{` (the real call), not the first
+        // (harmless, non-JSON) one.
+        assert_eq!(span, text.rfind("{\"tool\"").unwrap());
     }
 }
