@@ -411,6 +411,23 @@ struct ConversationOut {
 #[derive(Deserialize)]
 pub struct ListConversationsQuery {
     kind: Option<String>,
+    /// Sidebar search (Forschung conversation list, see ResearchChat.tsx):
+    /// matches conversation TITLES as well as message CONTENT, since many
+    /// conversations only ever get a generic auto-title (e.g. "hey" — see
+    /// stream_chat's title-from-first-message logic above) and a user often
+    /// remembers what was discussed, not what the chat happened to be named.
+    /// Trimmed and treated as absent when empty, so `?q=` and `?q=%20`
+    /// behave exactly like omitting the param entirely.
+    q: Option<String>,
+}
+
+/// Escapes the SQL LIKE wildcard characters (`%`, `_`) that might be
+/// literally present in a user's search term, plus the escape character
+/// itself, so e.g. searching for "50%" or "some_thing" only ever matches
+/// those literal characters instead of being (mis)interpreted as wildcards.
+/// Paired with `LIKE ?2 ESCAPE '\'` at the call site below.
+fn escape_like_pattern(term: &str) -> String {
+    term.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
 }
 
 pub async fn list_conversations(
@@ -422,13 +439,36 @@ pub async fn list_conversations(
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let kind = q.kind.unwrap_or_else(|| "chat".to_string());
-    let rows: Vec<(String, String, String, String)> = sqlx::query_as(
-        "SELECT id, title, created_at, updated_at FROM chat_conversations WHERE kind = ?1 ORDER BY updated_at DESC",
-    )
-    .bind(&kind)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let search = q.q.as_deref().map(str::trim).filter(|s| !s.is_empty());
+
+    let rows: Vec<(String, String, String, String)> = match search {
+        Some(term) => {
+            let pattern = format!("%{}%", escape_like_pattern(term));
+            // LEFT JOIN + DISTINCT: a conversation with N matching messages
+            // would otherwise come back N times. Matches on title OR any
+            // joined message's content — see the struct doc comment above
+            // for why both matter (generic auto-titles are common).
+            sqlx::query_as(
+                "SELECT DISTINCT c.id, c.title, c.created_at, c.updated_at
+                 FROM chat_conversations c
+                 LEFT JOIN chat_messages m ON m.conversation_id = c.id
+                 WHERE c.kind = ?1 AND (c.title LIKE ?2 ESCAPE '\\' OR m.content LIKE ?2 ESCAPE '\\')
+                 ORDER BY c.updated_at DESC",
+            )
+            .bind(&kind)
+            .bind(&pattern)
+            .fetch_all(&state.db)
+            .await
+            .unwrap_or_default()
+        }
+        None => sqlx::query_as(
+            "SELECT id, title, created_at, updated_at FROM chat_conversations WHERE kind = ?1 ORDER BY updated_at DESC",
+        )
+        .bind(&kind)
+        .fetch_all(&state.db)
+        .await
+        .unwrap_or_default(),
+    };
     let out: Vec<ConversationOut> = rows
         .into_iter()
         .map(|(id, title, created_at, updated_at)| ConversationOut { id, title, created_at, updated_at })
@@ -1133,6 +1173,176 @@ pub async fn stream_chat(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::extract::{Query as AxQuery, State as AxState};
+    use std::{
+        collections::HashMap,
+        path::PathBuf,
+        sync::{Arc, RwLock},
+    };
+
+    /// Same in-memory-sqlite fixture pattern as billing.rs/agent.rs's own
+    /// `test_state` helpers — a fresh, schema-initialized DB per test, no
+    /// network, no real NVIDIA/Stripe/DuckDuckGo credentials needed. Auth is
+    /// a no-op here (`chat_secret` empty — see `authz::require_admin`), so
+    /// tests can call `list_conversations` directly with a bare `HeaderMap`.
+    async fn test_state() -> AppState {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        init_schema(&db).await;
+        AppState {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            content_path: PathBuf::from("content.json"),
+            uploads_dir: PathBuf::from("uploads"),
+            static_dir: PathBuf::from("dist"),
+            allowed_email: String::new(),
+            google_client_id: String::new(),
+            google_client_secret: String::new(),
+            redirect_uri: String::new(),
+            dev_mode: true,
+            db,
+            http: reqwest::Client::new(),
+            nvidia_api_key: String::new(),
+            chat_secret: String::new(),
+            stripe_secret_key: String::new(),
+            stripe_api_base: "https://api.stripe.com".to_string(),
+            ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        }
+    }
+
+    /// Inserts a conversation with the given title, plus one user message
+    /// with the given content, directly via SQL — a minimal stand-in for a
+    /// real exchange (stream_chat itself has NVIDIA-dependent side effects
+    /// well beyond what these search tests need to exercise).
+    async fn seed_conversation(state: &AppState, id: &str, title: &str, message_content: &str) {
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, ?2, 'chat')")
+            .bind(id)
+            .bind(title)
+            .execute(&state.db)
+            .await
+            .unwrap();
+        if !message_content.is_empty() {
+            sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES (?1, ?2, 'user', ?3)")
+                .bind(format!("{id}-msg"))
+                .bind(id)
+                .bind(message_content)
+                .execute(&state.db)
+                .await
+                .unwrap();
+        }
+    }
+
+    async fn list_ids(state: &AppState, q: Option<&str>) -> Vec<String> {
+        let query = ListConversationsQuery { kind: None, q: q.map(str::to_string) };
+        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), AxQuery(query))
+            .await
+            .into_response();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let parsed: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
+        parsed.into_iter().map(|v| v["id"].as_str().unwrap().to_string()).collect()
+    }
+
+    /// Core case #1: a search term that only appears in a conversation's
+    /// TITLE (not any message content) still finds it — e.g. Laura
+    /// remembering how she named a chat rather than what was said in it.
+    #[tokio::test]
+    async fn search_matches_conversation_title() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-title-match", "Gedanken zu Emergenz", "irrelevanter Inhalt").await;
+        seed_conversation(&state, "conv-other", "hey", "auch nichts Passendes").await;
+
+        let ids = list_ids(&state, Some("Emergenz")).await;
+        assert_eq!(ids, vec!["conv-title-match"]);
+    }
+
+    /// Core case #2: a search term that ONLY appears in message content —
+    /// not in the title at all (the common case for a generically-titled
+    /// "hey"/"hey jarvis wie gehts" conversation) — must still surface it.
+    /// This is the whole point of joining chat_messages instead of only
+    /// searching chat_conversations.title.
+    #[tokio::test]
+    async fn search_matches_message_content_even_with_generic_title() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-content-match", "hey", "lass uns über sparseskip und TIS reden").await;
+        seed_conversation(&state, "conv-other", "hey jarvis wie gehts", "ganz anderes Thema").await;
+
+        let ids = list_ids(&state, Some("sparseskip")).await;
+        assert_eq!(ids, vec!["conv-content-match"]);
+    }
+
+    /// Core case #3: a search term matching nothing (title or content)
+    /// returns an empty list, not an error and not every conversation.
+    #[tokio::test]
+    async fn search_with_no_match_returns_empty() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-a", "hey", "irgendein Gespräch").await;
+        seed_conversation(&state, "conv-b", "noch eins", "und noch ein Inhalt").await;
+
+        let ids = list_ids(&state, Some("dieser-begriff-kommt-nirgendwo-vor")).await;
+        assert!(ids.is_empty());
+    }
+
+    /// A conversation with a matching title but ALSO multiple matching
+    /// messages must appear exactly once — regression guard for the
+    /// LEFT JOIN fan-out the DISTINCT in the query exists to collapse.
+    #[tokio::test]
+    async fn search_deduplicates_conversations_with_multiple_matching_messages() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-multi", "Emergenz-Thread", "erste Emergenz Erwähnung").await;
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES (?1, ?2, 'assistant', ?3)")
+            .bind("conv-multi-msg2")
+            .bind("conv-multi")
+            .bind("zweite Emergenz Erwähnung")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let ids = list_ids(&state, Some("Emergenz")).await;
+        assert_eq!(ids, vec!["conv-multi"]);
+    }
+
+    /// No `q` at all (the pre-existing behavior) must still return
+    /// everything, unaffected by the new search branch.
+    #[tokio::test]
+    async fn absent_search_term_returns_all_conversations_unfiltered() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-a", "erstes", "irgendwas").await;
+        seed_conversation(&state, "conv-b", "zweites", "irgendwas anderes").await;
+
+        let ids = list_ids(&state, None).await;
+        assert_eq!(ids.len(), 2);
+    }
+
+    /// A search term consisting only of whitespace must behave exactly like
+    /// no search term at all (see `list_conversations`' `.filter(|s|
+    /// !s.is_empty())` after trimming), not silently match nothing (an
+    /// empty-string LIKE '%%' pattern would actually match everything, but
+    /// relying on that would be an accident, not a design — this locks in
+    /// the trim-then-treat-as-absent behavior explicitly).
+    #[tokio::test]
+    async fn whitespace_only_search_term_behaves_like_no_search() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-a", "erstes", "irgendwas").await;
+        seed_conversation(&state, "conv-b", "zweites", "irgendwas anderes").await;
+
+        let ids = list_ids(&state, Some("   ")).await;
+        assert_eq!(ids.len(), 2);
+    }
+
+    /// Search terms containing a literal SQL LIKE wildcard character (`%`)
+    /// must be treated literally, not as a wildcard — see
+    /// `escape_like_pattern`. Without escaping, searching for "50%" would
+    /// behave like searching for "50" followed by "anything".
+    #[tokio::test]
+    async fn search_term_with_percent_sign_is_treated_literally() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-percent", "Rabatt 50% Frage", "egal").await;
+        seed_conversation(&state, "conv-other", "Rabatt 5000 Frage", "auch egal").await;
+
+        let ids = list_ids(&state, Some("50%")).await;
+        assert_eq!(ids, vec!["conv-percent"], "literal '%' must not act as a wildcard matching '5000' too");
+    }
 
     /// Drives `safe_to_forward_live` exactly the way stream_chat's inner
     /// loop does post-fix: after every delta, if the WHOLE accumulated text
@@ -1461,8 +1671,10 @@ mod tests {
     // tests drive load_model_state/persist_model_state directly against an
     // in-memory SQLite DB (the same pattern agent.rs's tests use), standing
     // in for the durable `eil_data` volume in production.
-
-    use std::{collections::HashMap, path::PathBuf, sync::Arc};
+    //
+    // (HashMap/PathBuf/Arc already brought into scope by this module's
+    // earlier `use std::{...}` — see the search-tests' test_state() fixture
+    // above — so no re-import here; would otherwise be an E0252 conflict.)
 
     /// True first boot ever: nothing has been persisted yet, so both values
     /// default to 0 — the one case where this fix's behavior matches the old
