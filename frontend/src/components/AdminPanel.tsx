@@ -200,45 +200,41 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
     <div className="builder">
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChangeAll} />
 
-      {/* ── MINIMAL TOPBAR ────────────────────────────────────────────────── */}
-      <div className="builder-topbar builder-topbar-minimal">
-        <div className="builder-brand">
-          <span className="builder-brand-dot" />
-          <strong>{draft.nav?.brand || 'My website'}</strong>
-        </div>
-        <div className="builder-topbar-right">
-          <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
-            {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
-          </button>
-          <a
-            href={window.location.origin + window.location.pathname}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="topbar-icon-btn"
-            title="Live-Seite ansehen"
-          >
-            <IconViewSite />
-          </a>
-          <button className="topbar-icon-btn topbar-icon-btn-danger" onClick={onLogout} title="Logout">
-            <IconLogout />
-          </button>
-        </div>
-      </div>
-
       {/* ── BODY: one permanent shell, no more Builder/Verwaltung mode split ── */}
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="crm-sidebar-brand">
-            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-sidebar-icon" />
+            <div className="crm-sidebar-brand-row">
+              <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-sidebar-icon" />
+              {!sidebarCollapsed && (
+                <div className="crm-sidebar-brand-text">
+                  <div className="crm-sidebar-name">{draft.nav?.brand || 'Verwaltung'}</div>
+                  <div className="crm-sidebar-sub">Verwaltung</div>
+                </div>
+              )}
+              <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
+                <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
+              </button>
+            </div>
             {!sidebarCollapsed && (
-              <div className="crm-sidebar-brand-text">
-                <div className="crm-sidebar-name">{draft.nav?.brand || 'Verwaltung'}</div>
-                <div className="crm-sidebar-sub">Verwaltung</div>
+              <div className="crm-sidebar-brand-actions">
+                <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
+                  {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
+                </button>
+                <a
+                  href={window.location.origin + window.location.pathname}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="topbar-icon-btn"
+                  title="Live-Seite ansehen"
+                >
+                  <IconViewSite />
+                </a>
+                <button className="topbar-icon-btn topbar-icon-btn-danger" onClick={onLogout} title="Logout">
+                  <IconLogout />
+                </button>
               </div>
             )}
-            <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
-              <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
-            </button>
           </div>
           <nav className="crm-nav">
             {!sidebarCollapsed && <div className="crm-nav-group-label">Verwaltung</div>}

@@ -876,16 +876,6 @@ button { cursor: pointer; font-family: inherit; }
 ══════════════════════════════════════════════════════════════════════════════ */
 .builder { display: flex; flex-direction: column; height: 100vh; height: 100dvh; background: #f0f2f5; }
 
-/* Top bar */
-.builder-topbar {
-  height: 52px; background: #0a0e1a; border-bottom: 1px solid rgba(255,255,255,.08);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; flex-shrink: 0; gap: 16px;
-}
-.builder-brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
-.builder-brand-dot { width: 7px; height: 7px; background: #C4956A; border-radius: 50%; flex-shrink: 0; }
-.builder-topbar-hint { font-size: 12px; color: #aaa; flex: 1; text-align: center; }
-.builder-topbar-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .builder-btn-ghost { background: none; border: 1.5px solid #ddd; border-radius: 6px; padding: 5px 12px; font-size: 13px; color: #555; transition: .2s; }
 .builder-btn-ghost:hover { border-color: #0099CC; color: #0099CC; }
 .builder-btn-ghost.active { background: #0099CC; border-color: #0099CC; color: #fff; }
@@ -1580,7 +1570,12 @@ button { cursor: pointer; font-family: inherit; }
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
 .crm-sidebar { width: 220px; flex-shrink: 0; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden; }
-.crm-sidebar-brand { display: flex; align-items: center; gap: 11px; padding: 16px 14px 16px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+/* Column now, not a single row: the brand/collapse row, then (when expanded)
+   a second row for the theme/view-site/logout actions that used to live in
+   their own separate top bar above the whole shell — folding them in here
+   reclaims that thin strip's height entirely. */
+.crm-sidebar-brand { display: flex; flex-direction: column; padding: 16px 14px 14px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.crm-sidebar-brand-row { display: flex; align-items: center; gap: 11px; }
 .crm-sidebar-icon {
   width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; object-fit: contain;
   background: rgba(255,255,255,.06); padding: 4px;
@@ -1594,7 +1589,10 @@ button { cursor: pointer; font-family: inherit; }
   background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
 }
 .crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
-.crm-sidebar.collapsed .crm-sidebar-brand { flex-direction: column; padding: 14px 0; gap: 8px; }
+.crm-sidebar-brand-actions { display: flex; gap: 8px; margin-top: 12px; }
+.crm-sidebar-brand-actions .topbar-icon-btn { width: 30px; height: 30px; border-radius: 8px; }
+.crm-sidebar.collapsed .crm-sidebar-brand { padding: 14px 0; gap: 8px; }
+.crm-sidebar.collapsed .crm-sidebar-brand-row { flex-direction: column; gap: 8px; }
 
 .crm-nav { padding: 12px 10px; flex: 1; }
 .crm-nav-item {
