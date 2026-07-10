@@ -1,5 +1,5 @@
-use axum::{extract::State, http::{HeaderMap, StatusCode}, response::IntoResponse, Json};
-use serde::Serialize;
+use axum::{extract::{Query, State}, http::{HeaderMap, StatusCode}, response::IntoResponse, Json};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::{authz::require_admin, AppState};
@@ -31,34 +31,69 @@ fn excerpt(text: &str, max_chars: usize) -> String {
 // Group patterns in research activity, not individual visitor surveillance:
 // research-note category mix, tool-type distribution, conversation-length
 // distribution — all real, all aggregate, none of it web-traffic data.
+//
+// `?range=7d|30d|all` (default 30d) — previously every sub-query here was a
+// live/all-time-only snapshot (category_mix and length_distribution had no
+// window at all; tool_distribution's 30 days was hardcoded), so there was no
+// way to ask "how did behavior look last week" instead of "right now."
 
-pub async fn behavior(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+/// Stand-in for "no real filter" when `range=all` — bound the same way as
+/// every other window below (`datetime('now', '-N days')`), just far enough
+/// back that it can never exclude a real row.
+const RANGE_ALL_DAYS: i64 = 36_500;
+
+/// Resolves the `?range=` query param to a `(label, days)` pair — the label
+/// is echoed back in the response so the frontend selector can confirm what
+/// an unrecognized/absent value actually fell back to. Defaults (and falls
+/// back) to "30d", matching `tool_distribution`'s pre-existing hardcoded
+/// window so the default view doesn't regress for anyone already relying on
+/// it.
+fn resolve_range(range: Option<&str>) -> (&'static str, i64) {
+    match range {
+        Some("7d") => ("7d", 7),
+        Some("all") => ("all", RANGE_ALL_DAYS),
+        _ => ("30d", 30),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BehaviorQuery {
+    pub range: Option<String>,
+}
+
+pub async fn behavior(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<BehaviorQuery>) -> impl IntoResponse {
     guard!(state, headers);
     let db = &state.db;
 
+    let (range_label, range_days) = resolve_range(q.range.as_deref());
+    let window = format!("-{range_days} days");
+
     let category_mix: Vec<(String, i64)> = sqlx::query_as(
-        "SELECT category, COUNT(*) FROM research_notes GROUP BY category ORDER BY COUNT(*) DESC"
-    ).fetch_all(db).await.unwrap_or_default();
+        "SELECT category, COUNT(*) FROM research_notes WHERE created_at > datetime('now', ?1) GROUP BY category ORDER BY COUNT(*) DESC"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
 
     let tool_distribution: Vec<(String, i64)> = sqlx::query_as(
-        "SELECT tool_name, COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now','-30 days') GROUP BY tool_name ORDER BY COUNT(*) DESC"
-    ).fetch_all(db).await.unwrap_or_default();
+        "SELECT tool_name, COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now', ?1) GROUP BY tool_name ORDER BY COUNT(*) DESC"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
 
     let length_distribution: Vec<(String, i64)> = sqlx::query_as(
         "SELECT bucket, COUNT(*) FROM (
             SELECT CASE WHEN cnt <= 4 THEN 'kurz' WHEN cnt <= 15 THEN 'mittel' ELSE 'lang' END as bucket
-            FROM (SELECT conversation_id, COUNT(*) as cnt FROM chat_messages GROUP BY conversation_id)
+            FROM (SELECT conversation_id, COUNT(*) as cnt FROM chat_messages WHERE created_at > datetime('now', ?1) GROUP BY conversation_id)
         ) GROUP BY bucket"
-    ).fetch_all(db).await.unwrap_or_default();
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
 
-    // Individual recent calls, not just the 30-day count above — every
-    // consumer of agent_tool_calls so far only ever aggregates, discarding
-    // exactly which calls happened and what they touched.
+    // Individual recent calls within the same range, not just the aggregate
+    // count above — every other consumer of agent_tool_calls so far only
+    // ever aggregates, discarding exactly which calls happened and what
+    // they touched.
     let recent_tool_calls: Vec<(String, String, Option<String>, Option<String>, String)> = sqlx::query_as(
-        "SELECT tool_name, status, conversation_id, result, created_at FROM agent_tool_calls ORDER BY created_at DESC LIMIT 10"
-    ).fetch_all(db).await.unwrap_or_default();
+        "SELECT tool_name, status, conversation_id, result, created_at FROM agent_tool_calls \
+         WHERE created_at > datetime('now', ?1) ORDER BY created_at DESC LIMIT 10"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
 
     Json(json!({
+        "range": range_label,
         "category_mix": category_mix.into_iter().map(|(c,n)| json!({"category":c,"count":n})).collect::<Vec<_>>(),
         "tool_distribution": tool_distribution.into_iter().map(|(t,n)| json!({"tool":t,"count":n})).collect::<Vec<_>>(),
         "length_distribution": length_distribution.into_iter().map(|(b,n)| json!({"bucket":b,"count":n})).collect::<Vec<_>>(),
@@ -76,9 +111,20 @@ pub async fn behavior(State(state): State<AppState>, headers: HeaderMap) -> impl
 // Real: chat_documents/chat_chunks corpus growth + chat_retrievals trend —
 // knowledge accumulation and how well it's actually getting reused.
 
-pub async fn information(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+/// `?gap_only=true` narrows `recent_retrievals` to just the queries that
+/// `is_gap` below already flags — previously `is_gap` was computed and
+/// rendered as a per-row pill but had no way to filter *to* just those rows,
+/// so a knowledge gap could easily be buried among 9 unrelated normal
+/// queries in the capped top-10 feed.
+#[derive(Debug, Deserialize)]
+pub struct InformationQuery {
+    pub gap_only: Option<bool>,
+}
+
+pub async fn information(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<InformationQuery>) -> impl IntoResponse {
     guard!(state, headers);
     let db = &state.db;
+    let gap_only = q.gap_only.unwrap_or(false);
     let (documents,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_documents").fetch_one(db).await.unwrap_or((0,));
     let (chunks,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_chunks").fetch_one(db).await.unwrap_or((0,));
     let retrieval_by_day: Vec<(String, f64, f64)> = sqlx::query_as(
@@ -92,9 +138,26 @@ pub async fn information(State(state): State<AppState>, headers: HeaderMap) -> i
     // scores away. Carries id + conversation_id too now: SystemMap's
     // "Information Dynamics" satellites point at one of these specific
     // retrieval events, not just the aggregate count.
-    let recent_retrievals: Vec<(String, String, String, f64, i64, String)> = sqlx::query_as(
-        "SELECT id, conversation_id, query_text, top_score, hit_count, created_at FROM chat_retrievals ORDER BY created_at DESC LIMIT 10"
-    ).fetch_all(db).await.unwrap_or_default();
+    //
+    // The `WHERE` predicate below (`hit_count = 0 OR top_score < ?1`) is
+    // the same test `is_gap` computes per-row further down — kept as two
+    // separate branches (rather than one query with a conditional clause)
+    // so the "show everything" path never pays for or binds the threshold
+    // at all, and so the `LIMIT 10` applies *after* filtering when
+    // `gap_only` is set (the 10 most recent gaps, not the 10 most recent
+    // rows of any kind with gaps then filtered out of that page).
+    let recent_retrievals: Vec<(String, String, String, f64, i64, String)> = if gap_only {
+        sqlx::query_as(
+            "SELECT id, conversation_id, query_text, top_score, hit_count, created_at FROM chat_retrievals \
+             WHERE hit_count = 0 OR top_score < ?1 ORDER BY created_at DESC LIMIT 10"
+        )
+        .bind(crate::chat::RETRIEVAL_MIN_SCORE as f64)
+        .fetch_all(db).await.unwrap_or_default()
+    } else {
+        sqlx::query_as(
+            "SELECT id, conversation_id, query_text, top_score, hit_count, created_at FROM chat_retrievals ORDER BY created_at DESC LIMIT 10"
+        ).fetch_all(db).await.unwrap_or_default()
+    };
 
     // Real uploaded documents, most recent first — backs SystemMap's
     // "Technology" node satellites (chunks are derived from a document, not
@@ -107,6 +170,7 @@ pub async fn information(State(state): State<AppState>, headers: HeaderMap) -> i
     Json(json!({
         "documents": documents,
         "chunks": chunks,
+        "gap_only": gap_only,
         "retrieval_by_day": retrieval_by_day.into_iter().map(|(day, avg_score, avg_hits)| json!({"day":day,"avg_top_score":avg_score,"avg_hit_count":avg_hits})).collect::<Vec<_>>(),
         "recent_retrievals": recent_retrievals.into_iter().map(|(id, conversation_id, query_text, top_score, hit_count, created_at)| json!({
             "id": id,
@@ -396,6 +460,182 @@ pub async fn diagnostics(State(state): State<AppState>, headers: HeaderMap) -> i
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::extract::{Query as AxQuery, State as AxState};
+    use std::{
+        collections::HashMap,
+        path::PathBuf,
+        sync::{atomic::AtomicU64, atomic::AtomicUsize, Arc, RwLock},
+    };
+
+    async fn test_state() -> AppState {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        crate::chat::init_schema(&db).await;
+        crate::research::init_schema(&db).await;
+        crate::agent::init_schema(&db).await;
+        AppState {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            content_path: PathBuf::from("content.json"),
+            uploads_dir: PathBuf::from("uploads"),
+            static_dir: PathBuf::from("dist"),
+            allowed_email: String::new(),
+            google_client_id: String::new(),
+            google_client_secret: String::new(),
+            redirect_uri: String::new(),
+            dev_mode: true,
+            db,
+            http: reqwest::Client::new(),
+            nvidia_api_key: String::new(),
+            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
+            nvidia_connect_timeout: crate::chat::NVIDIA_CONNECT_TIMEOUT,
+            chat_secret: String::new(),
+            stripe_secret_key: String::new(),
+            stripe_api_base: "https://api.stripe.com".to_string(),
+            ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            chat_model_idx: Arc::new(AtomicUsize::new(0)),
+            chat_request_count: Arc::new(AtomicU64::new(0)),
+            github_token: String::new(),
+            github_api_base: "https://api.github.com".to_string(),
+        }
+    }
+
+    // ── resolve_range (pure) ────────────────────────────────────────────────
+
+    #[test]
+    fn resolve_range_defaults_to_30d_for_none_and_unrecognized() {
+        assert_eq!(resolve_range(None), ("30d", 30));
+        assert_eq!(resolve_range(Some("")), ("30d", 30));
+        assert_eq!(resolve_range(Some("90d")), ("30d", 30));
+    }
+
+    #[test]
+    fn resolve_range_recognizes_7d_and_all() {
+        assert_eq!(resolve_range(Some("7d")), ("7d", 7));
+        assert_eq!(resolve_range(Some("all")), ("all", RANGE_ALL_DAYS));
+    }
+
+    // ── behavior: range actually filters, not just accepted-and-ignored ────
+
+    #[tokio::test]
+    async fn behavior_7d_range_excludes_older_research_notes_and_tool_calls() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO research_notes (id, category, title, body, created_at) VALUES ('n_new','idea','New','B', datetime('now'))")
+            .execute(&state.db).await.unwrap();
+        sqlx::query("INSERT INTO research_notes (id, category, title, body, created_at) VALUES ('n_old','idea','Old','B', datetime('now','-20 days'))")
+            .execute(&state.db).await.unwrap();
+        sqlx::query("INSERT INTO agent_tool_calls (id, tool_name, arguments, status, created_at) VALUES ('t_new','log_research_note','{}','ok', datetime('now'))")
+            .execute(&state.db).await.unwrap();
+        sqlx::query("INSERT INTO agent_tool_calls (id, tool_name, arguments, status, created_at) VALUES ('t_old','log_research_note','{}','ok', datetime('now','-20 days'))")
+            .execute(&state.db).await.unwrap();
+
+        let res = behavior(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(BehaviorQuery { range: Some("7d".to_string()) }),
+        )
+        .await
+        .into_response();
+        assert_eq!(res.status(), axum::http::StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["range"], "7d");
+        let category_total: i64 = body["category_mix"].as_array().unwrap().iter().map(|b| b["count"].as_i64().unwrap()).sum();
+        assert_eq!(category_total, 1, "the 20-day-old research note must not count under range=7d: {body}");
+        let tool_total: i64 = body["tool_distribution"].as_array().unwrap().iter().map(|b| b["count"].as_i64().unwrap()).sum();
+        assert_eq!(tool_total, 1, "the 20-day-old tool call must not count under range=7d: {body}");
+        assert_eq!(body["recent_tool_calls"].as_array().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn behavior_all_range_includes_everything() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO research_notes (id, category, title, body, created_at) VALUES ('n_old','idea','Old','B', datetime('now','-400 days'))")
+            .execute(&state.db).await.unwrap();
+
+        let res = behavior(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(BehaviorQuery { range: Some("all".to_string()) }),
+        )
+        .await
+        .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["range"], "all");
+        let category_total: i64 = body["category_mix"].as_array().unwrap().iter().map(|b| b["count"].as_i64().unwrap()).sum();
+        assert_eq!(category_total, 1, "range=all must reach even a 400-day-old note: {body}");
+    }
+
+    #[tokio::test]
+    async fn behavior_default_range_matches_the_old_hardcoded_30_day_window() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO agent_tool_calls (id, tool_name, arguments, status, created_at) VALUES ('t_29','log_research_note','{}','ok', datetime('now','-29 days'))")
+            .execute(&state.db).await.unwrap();
+        sqlx::query("INSERT INTO agent_tool_calls (id, tool_name, arguments, status, created_at) VALUES ('t_31','log_research_note','{}','ok', datetime('now','-31 days'))")
+            .execute(&state.db).await.unwrap();
+
+        let res = behavior(AxState(state.clone()), HeaderMap::new(), AxQuery(BehaviorQuery { range: None })).await.into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["range"], "30d");
+        let tool_total: i64 = body["tool_distribution"].as_array().unwrap().iter().map(|b| b["count"].as_i64().unwrap()).sum();
+        assert_eq!(tool_total, 1, "no explicit range must preserve the historical 30-day tool_distribution window: {body}");
+    }
+
+    // ── information: gap_only actually filters, not just accepted ──────────
+
+    async fn insert_retrieval(db: &sqlx::SqlitePool, id: &str, query_text: &str, top_score: f64, hit_count: i64) {
+        sqlx::query("INSERT INTO chat_retrievals (id, conversation_id, query_text, top_score, hit_count) VALUES (?1,'c1',?2,?3,?4)")
+            .bind(id).bind(query_text).bind(top_score).bind(hit_count)
+            .execute(db).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn information_gap_only_filters_to_zero_hits_or_below_threshold() {
+        let state = test_state().await;
+        // Real hit, well above RETRIEVAL_MIN_SCORE (0.15).
+        insert_retrieval(&state.db, "r_good", "gute Anfrage", 0.72, 3).await;
+        // Zero hits at all — a gap.
+        insert_retrieval(&state.db, "r_zero", "keine Treffer", 0.0, 0).await;
+        // A hit, but too weak to pass the relevance threshold — also a gap.
+        insert_retrieval(&state.db, "r_weak", "schwacher Treffer", 0.05, 1).await;
+
+        let res = information(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(InformationQuery { gap_only: Some(true) }),
+        )
+        .await
+        .into_response();
+        assert_eq!(res.status(), axum::http::StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["gap_only"], true);
+        let rows = body["recent_retrievals"].as_array().unwrap();
+        assert_eq!(rows.len(), 2, "only the zero-hit and below-threshold rows must survive gap_only=true: {body}");
+        let ids: std::collections::HashSet<&str> = rows.iter().map(|r| r["id"].as_str().unwrap()).collect();
+        assert!(ids.contains("r_zero"));
+        assert!(ids.contains("r_weak"));
+        assert!(!ids.contains("r_good"), "a real, above-threshold hit must not appear under gap_only=true: {body}");
+        assert!(rows.iter().all(|r| r["is_gap"] == true), "every returned row must itself be flagged is_gap: {body}");
+    }
+
+    #[tokio::test]
+    async fn information_without_gap_only_returns_everything() {
+        let state = test_state().await;
+        insert_retrieval(&state.db, "r_good", "gute Anfrage", 0.72, 3).await;
+        insert_retrieval(&state.db, "r_zero", "keine Treffer", 0.0, 0).await;
+
+        let res = information(AxState(state.clone()), HeaderMap::new(), AxQuery(InformationQuery { gap_only: None })).await.into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["gap_only"], false);
+        assert_eq!(body["recent_retrievals"].as_array().unwrap().len(), 2, "the default (no filter) view must still show every row: {body}");
+    }
 
     #[test]
     fn excerpt_leaves_short_text_untouched() {
