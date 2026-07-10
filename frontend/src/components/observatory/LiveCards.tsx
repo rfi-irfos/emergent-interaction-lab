@@ -56,13 +56,24 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const [humanAi, signals, information, behavior, research, runs, notes, docs] = await Promise.all([
+      const [humanAi, signals, information, behavior, research, liveStats, notes, docs] = await Promise.all([
         fetchJson('/api/observatory/human-ai'),
+        // Still the plain (now-paginated-but-default-unchanged) call — only
+        // used below for distinctScopes, which needs the actual signal rows,
+        // not just a count. Its own count is no longer used for the
+        // "emergence" tile (see liveStats below), so this staying capped at
+        // the same old default page is not a new limitation.
         fetchJson('/api/observatory/emergence/signals'),
         fetchJson('/api/observatory/information'),
         fetchJson('/api/observatory/behavior'),
         fetchJson('/api/research/items'),
-        fetchJson('/api/simulation/runs'),
+        // Bare aggregate counts (see backend/src/public.rs) — reused here
+        // instead of `signals.length`/`runs.length` because those two list
+        // endpoints are now paginated (see backend/src/emergence.rs and
+        // simulation.rs): the response body alone would only ever report
+        // the current page size, not the true total, once either table
+        // grows past its default page.
+        fetchJson('/api/public/live-stats'),
         fetchJson('/api/research/items?category=paper,hypothesis,idea,concept,framework,prototype'),
         fetchJson('/api/chat/documents'),
       ])
@@ -78,8 +89,8 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
         ? new Set(signals.map((s: any) => s.scope ?? 'Allgemein')).size
         : 0
       setValues({
-        emergence: Array.isArray(signals) ? String(signals.length) : '—',
-        simulationcenter: Array.isArray(runs) ? String(runs.length) : '—',
+        emergence: typeof liveStats?.emergence_signals === 'number' ? String(liveStats.emergence_signals) : (Array.isArray(signals) ? String(signals.length) : '—'),
+        simulationcenter: typeof liveStats?.simulation_runs === 'number' ? String(liveStats.simulation_runs) : '—',
         research: Array.isArray(research) ? String(research.length) : '—',
         knowledgegraph: (Array.isArray(notes) ? notes.length : 0) + (Array.isArray(docs) ? docs.length : 0) > 0
           ? String((Array.isArray(notes) ? notes.length : 0) + (Array.isArray(docs) ? docs.length : 0))
