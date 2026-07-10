@@ -1671,8 +1671,10 @@ mod tests {
     // tests drive load_model_state/persist_model_state directly against an
     // in-memory SQLite DB (the same pattern agent.rs's tests use), standing
     // in for the durable `eil_data` volume in production.
-
-    use std::{collections::HashMap, path::PathBuf, sync::Arc};
+    //
+    // (HashMap/PathBuf/Arc already brought into scope by this module's
+    // earlier `use std::{...}` — see the search-tests' test_state() fixture
+    // above — so no re-import here; would otherwise be an E0252 conflict.)
 
     /// True first boot ever: nothing has been persisted yet, so both values
     /// default to 0 — the one case where this fix's behavior matches the old
