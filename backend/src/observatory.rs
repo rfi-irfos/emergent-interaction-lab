@@ -1,4 +1,5 @@
 use axum::{extract::State, http::{HeaderMap, StatusCode}, response::IntoResponse, Json};
+use serde::Serialize;
 use serde_json::json;
 
 use crate::{authz::require_admin, AppState};
@@ -9,6 +10,21 @@ macro_rules! guard {
             return StatusCode::UNAUTHORIZED.into_response();
         }
     };
+}
+
+/// Truncates free text to a satellite-sized excerpt for SystemMap's
+/// drill-down, always on a char boundary — German prose routinely carries
+/// multi-byte characters (ü/ß) right at the cut point, and a byte-index
+/// slice can panic or split a codepoint. Never pads a short text; only ever
+/// shortens a long one, in keeping with SystemMap's own "no fabricated
+/// content" ethos.
+fn excerpt(text: &str, max_chars: usize) -> String {
+    let trimmed = text.trim();
+    if trimmed.chars().count() <= max_chars {
+        return trimmed.to_string();
+    }
+    let truncated: String = trimmed.chars().take(max_chars).collect();
+    format!("{}…", truncated.trim_end())
 }
 
 // ── Behavioral Landscape ─────────────────────────────────────────────────────
@@ -73,21 +89,38 @@ pub async fn information(State(state): State<AppState>, headers: HeaderMap) -> i
     // averages above wash out individual failures. Surfaces genuine
     // knowledge gaps (a query with zero hits, or a top hit too weak to pass
     // chat.rs's own relevance threshold) instead of only ever averaging
-    // scores away.
-    let recent_retrievals: Vec<(String, f64, i64, String)> = sqlx::query_as(
-        "SELECT query_text, top_score, hit_count, created_at FROM chat_retrievals ORDER BY created_at DESC LIMIT 10"
+    // scores away. Carries id + conversation_id too now: SystemMap's
+    // "Information Dynamics" satellites point at one of these specific
+    // retrieval events, not just the aggregate count.
+    let recent_retrievals: Vec<(String, String, String, f64, i64, String)> = sqlx::query_as(
+        "SELECT id, conversation_id, query_text, top_score, hit_count, created_at FROM chat_retrievals ORDER BY created_at DESC LIMIT 10"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    // Real uploaded documents, most recent first — backs SystemMap's
+    // "Technology" node satellites (chunks are derived from a document, not
+    // independently clickable items, so the document itself is the real
+    // record to surface).
+    let recent_documents: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT id, filename, created_at FROM chat_documents ORDER BY created_at DESC LIMIT 5"
     ).fetch_all(db).await.unwrap_or_default();
 
     Json(json!({
         "documents": documents,
         "chunks": chunks,
         "retrieval_by_day": retrieval_by_day.into_iter().map(|(day, avg_score, avg_hits)| json!({"day":day,"avg_top_score":avg_score,"avg_hit_count":avg_hits})).collect::<Vec<_>>(),
-        "recent_retrievals": recent_retrievals.into_iter().map(|(query_text, top_score, hit_count, created_at)| json!({
+        "recent_retrievals": recent_retrievals.into_iter().map(|(id, conversation_id, query_text, top_score, hit_count, created_at)| json!({
+            "id": id,
+            "conversation_id": conversation_id,
             "query_text": query_text,
             "top_score": top_score,
             "hit_count": hit_count,
             "created_at": created_at,
             "is_gap": hit_count == 0 || (top_score as f32) < crate::chat::RETRIEVAL_MIN_SCORE,
+        })).collect::<Vec<_>>(),
+        "recent_documents": recent_documents.into_iter().map(|(id, filename, created_at)| json!({
+            "id": id,
+            "filename": filename,
+            "created_at": created_at,
         })).collect::<Vec<_>>(),
     })).into_response()
 }
@@ -102,6 +135,12 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl
     let db = &state.db;
     let (user_msgs,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE role='user'").fetch_one(db).await.unwrap_or((0,));
     let (assistant_msgs,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE role='assistant'").fetch_one(db).await.unwrap_or((0,));
+
+    // Real individual user turns, most recent first — backs SystemMap's
+    // "Human" node satellites (Laura's own messages, not Jarvis's replies).
+    let recent_user_messages: Vec<(String, String, String, String)> = sqlx::query_as(
+        "SELECT id, content, conversation_id, created_at FROM chat_messages WHERE role='user' ORDER BY created_at DESC LIMIT 5"
+    ).fetch_all(db).await.unwrap_or_default();
 
     let messages_by_day: Vec<(String, i64)> = sqlx::query_as(
         "SELECT date(created_at) as day, COUNT(*) FROM chat_messages WHERE created_at > datetime('now','-14 days') GROUP BY day ORDER BY day"
@@ -169,6 +208,12 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl
         "latest_reply": latest_reply,
         "latest_tokens": latest_tokens,
         "latest_at": latest_at,
+        "recent_user_messages": recent_user_messages.into_iter().map(|(id, content, conversation_id, created_at)| json!({
+            "id": id,
+            "excerpt": excerpt(&content, 90),
+            "conversation_id": conversation_id,
+            "created_at": created_at,
+        })).collect::<Vec<_>>(),
     })).into_response()
 }
 
@@ -222,6 +267,111 @@ pub async fn scope_trends(State(state): State<AppState>, headers: HeaderMap) -> 
     Json(out).into_response()
 }
 
+// ── AI Activity (SystemMap "AI Systems" node drill-down) ────────────────────
+// Real individual items backing the aggregate "ai" count in SystemMap.tsx
+// (assistant messages + tool calls): two unrelated tables, merged into one
+// recency-sorted feed capped at 5, so a satellite can point at an actual
+// reply or an actual tool invocation instead of just a bigger number.
+
+#[derive(Serialize)]
+pub struct AiActivityItem {
+    id: String,
+    kind: String,
+    label: String,
+    status: Option<String>,
+    conversation_id: Option<String>,
+    created_at: String,
+}
+
+fn merge_recent_ai_activity(
+    messages: Vec<(String, String, Option<String>, String)>,
+    tool_calls: Vec<(String, String, String, Option<String>, String)>,
+) -> Vec<AiActivityItem> {
+    let mut items: Vec<AiActivityItem> = Vec::new();
+    items.extend(messages.into_iter().map(|(id, content, conversation_id, created_at)| AiActivityItem {
+        id, kind: "message".to_string(), label: excerpt(&content, 90), status: None, conversation_id, created_at,
+    }));
+    items.extend(tool_calls.into_iter().map(|(id, tool_name, status, conversation_id, created_at)| AiActivityItem {
+        id, kind: "tool_call".to_string(), label: tool_name, status: Some(status), conversation_id, created_at,
+    }));
+    items.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    items.truncate(5);
+    items
+}
+
+pub async fn ai_activity(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    guard!(state, headers);
+    let db = &state.db;
+
+    let messages: Vec<(String, String, String, String)> = sqlx::query_as(
+        "SELECT id, content, conversation_id, created_at FROM chat_messages WHERE role='assistant' ORDER BY created_at DESC LIMIT 5"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    let tool_calls: Vec<(String, String, String, Option<String>, String)> = sqlx::query_as(
+        "SELECT id, tool_name, status, conversation_id, created_at FROM agent_tool_calls ORDER BY created_at DESC LIMIT 5"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    let items = merge_recent_ai_activity(
+        messages.into_iter().map(|(id, content, conversation_id, created_at)| (id, content, Some(conversation_id), created_at)).collect(),
+        tool_calls,
+    );
+    Json(items).into_response()
+}
+
+// ── Organization (SystemMap "Organization" node drill-down) ────────────────
+// Real individual items backing the aggregate "organization" count (research
+// notes + blog drafts + simulation runs): three separate tables with no
+// shared schema, merged the same way analytics.rs's own recent_activity feed
+// already does for its own purposes — sorted by recency, capped at 5.
+
+#[derive(Serialize)]
+pub struct OrganizationItem {
+    id: String,
+    kind: String,
+    title: String,
+    conversation_id: Option<String>,
+    created_at: String,
+}
+
+fn merge_recent_organization_items(
+    notes: Vec<(String, String, Option<String>, String)>,
+    posts: Vec<(String, String, Option<String>, String)>,
+    runs: Vec<(String, String, String)>,
+) -> Vec<OrganizationItem> {
+    let mut items: Vec<OrganizationItem> = Vec::new();
+    items.extend(notes.into_iter().map(|(id, title, conversation_id, created_at)| OrganizationItem {
+        id, kind: "research_note".to_string(), title, conversation_id, created_at,
+    }));
+    items.extend(posts.into_iter().map(|(id, title, conversation_id, created_at)| OrganizationItem {
+        id, kind: "blog_post".to_string(), title, conversation_id, created_at,
+    }));
+    items.extend(runs.into_iter().map(|(id, hypothesis, created_at)| OrganizationItem {
+        id, kind: "simulation_run".to_string(), title: hypothesis, conversation_id: None, created_at,
+    }));
+    items.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    items.truncate(5);
+    items
+}
+
+pub async fn organization(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    guard!(state, headers);
+    let db = &state.db;
+
+    let notes: Vec<(String, String, Option<String>, String)> = sqlx::query_as(
+        "SELECT id, title, source_conversation_id, created_at FROM research_notes ORDER BY created_at DESC LIMIT 5"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    let posts: Vec<(String, String, Option<String>, String)> = sqlx::query_as(
+        "SELECT id, title, source_conversation_id, created_at FROM blog_posts ORDER BY created_at DESC LIMIT 5"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    let runs: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT id, hypothesis, created_at FROM simulation_runs ORDER BY created_at DESC LIMIT 5"
+    ).fetch_all(db).await.unwrap_or_default();
+
+    Json(merge_recent_organization_items(notes, posts, runs)).into_response()
+}
+
 // ── System Diagnostics (folded into the bottom of System State) ────────────
 // Real: config presence flags, agent error rate, DB reachability. No longer
 // its own nav item — this is the "Technology" side of the system under
@@ -241,4 +391,70 @@ pub async fn diagnostics(State(state): State<AppState>, headers: HeaderMap) -> i
         "agent_tool_calls_7d": agent_calls_total,
         "agent_tool_call_errors_7d": agent_calls_error,
     })).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn excerpt_leaves_short_text_untouched() {
+        assert_eq!(excerpt("Kurzer Text", 90), "Kurzer Text");
+    }
+
+    #[test]
+    fn excerpt_truncates_long_text_on_a_char_boundary_with_ellipsis() {
+        // German prose routinely carries multi-byte characters (ü/ß) right
+        // at the truncation point — this must never panic or split a
+        // codepoint, and must never silently pad a short text either.
+        let text = "Die Übertragung überschritt die üblichen Größenordnungen deutlich, mehr als erwartet";
+        let out = excerpt(text, 20);
+        assert!(out.ends_with('…'), "expected an ellipsis marker, got {out:?}");
+        assert_eq!(out.chars().count(), 21); // 20 kept chars + the ellipsis marker
+    }
+
+    #[test]
+    fn merge_recent_ai_activity_sorts_messages_and_tool_calls_by_recency() {
+        let messages = vec![
+            ("m1".to_string(), "erste Antwort".to_string(), Some("c1".to_string()), "2026-07-08 10:00:00".to_string()),
+            ("m2".to_string(), "zweite Antwort".to_string(), Some("c1".to_string()), "2026-07-10 09:00:00".to_string()),
+        ];
+        let tool_calls = vec![
+            ("t1".to_string(), "log_research_note".to_string(), "ok".to_string(), Some("c1".to_string()), "2026-07-09 12:00:00".to_string()),
+        ];
+        let items = merge_recent_ai_activity(messages, tool_calls);
+        assert_eq!(items.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), vec!["m2", "t1", "m1"]);
+    }
+
+    #[test]
+    fn merge_recent_ai_activity_caps_at_five_items_newest_first() {
+        let messages: Vec<_> = (0..6).map(|i| (
+            format!("m{i}"), format!("Antwort {i}"), Some("c1".to_string()), format!("2026-07-{:02} 10:00:00", i + 1),
+        )).collect();
+        let items = merge_recent_ai_activity(messages, vec![]);
+        assert_eq!(items.len(), 5);
+        assert_eq!(items[0].id, "m5"); // newest of the six survives the cap
+    }
+
+    #[test]
+    fn merge_recent_organization_items_sorts_across_all_three_sources() {
+        let notes = vec![("n1".to_string(), "Note".to_string(), None, "2026-07-08 08:00:00".to_string())];
+        let posts = vec![("p1".to_string(), "Post".to_string(), Some("c2".to_string()), "2026-07-10 08:00:00".to_string())];
+        let runs = vec![("r1".to_string(), "Hypothese".to_string(), "2026-07-09 08:00:00".to_string())];
+        let items = merge_recent_organization_items(notes, posts, runs);
+        assert_eq!(items.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), vec!["p1", "r1", "n1"]);
+        assert_eq!(items[0].kind, "blog_post");
+        assert_eq!(items[1].kind, "simulation_run");
+        assert_eq!(items[2].kind, "research_note");
+    }
+
+    #[test]
+    fn merge_recent_organization_items_caps_at_five_items() {
+        let notes: Vec<_> = (0..7).map(|i| (
+            format!("n{i}"), format!("Note {i}"), None, format!("2026-07-{:02} 08:00:00", i + 1),
+        )).collect();
+        let items = merge_recent_organization_items(notes, vec![], vec![]);
+        assert_eq!(items.len(), 5);
+        assert_eq!(items[0].id, "n6");
+    }
 }

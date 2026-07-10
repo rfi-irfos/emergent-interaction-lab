@@ -412,7 +412,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
 
             {/* ── OBSERVATORY MODULES ──────────────────────────────────── */}
-            {adminSection === 'systemmap' && <SystemMap />}
+            {adminSection === 'systemmap' && (
+              <SystemMap onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
             {adminSection === 'emergence' && (
               <EmergenceMonitor onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
