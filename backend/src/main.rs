@@ -42,6 +42,19 @@ pub struct AppState {
     pub db: SqlitePool,
     pub http: reqwest::Client,
     pub nvidia_api_key: String,
+    /// Overridable so tests (and this incident's local reproduction) can
+    /// point the chat/embedding calls at a local mock instead of the real
+    /// NVIDIA API — never overridden in production, where it's always
+    /// "https://integrate.api.nvidia.com".
+    pub nvidia_api_base: String,
+    /// How long to wait for a NVIDIA response's headers (not the full
+    /// streamed body — see `chat::NVIDIA_CONNECT_TIMEOUT`'s doc comment)
+    /// before treating a chat-completions/embeddings candidate as failed and
+    /// falling back, same as a network error or non-2xx status. Overridable
+    /// (same pattern as `nvidia_api_base`) so a test can prove the fix with a
+    /// short timeout against a deliberately-hanging mock instead of waiting
+    /// out the real production duration.
+    pub nvidia_connect_timeout: std::time::Duration,
     pub chat_secret: String,
     pub stripe_secret_key: String,
     /// Overridable so tests can point at a local mock instead of the real
@@ -170,6 +183,13 @@ async fn main() {
         db,
         http: reqwest::Client::new(),
         nvidia_api_key,
+        nvidia_api_base: std::env::var("NVIDIA_API_BASE")
+            .unwrap_or("https://integrate.api.nvidia.com".into()),
+        nvidia_connect_timeout: std::env::var("NVIDIA_CONNECT_TIMEOUT_SECS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .map(std::time::Duration::from_secs)
+            .unwrap_or(chat::NVIDIA_CONNECT_TIMEOUT),
         chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),

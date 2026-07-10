@@ -17,6 +17,52 @@ use crate::agent;
 use crate::authz::require_admin as is_authorized;
 use crate::AppState;
 
+/// Root cause of the 2026-07-10 "message sent, absolutely nothing comes
+/// back — not slow, not an error, just silence" production regression,
+/// reproduced locally end to end (mock NVIDIA endpoint that accepts the
+/// connection and then never responds at all, wired in via
+/// `AppState::nvidia_api_base`): `reqwest::Client::new()` in main.rs sets NO
+/// timeout anywhere, so `.send().await` against a candidate that hangs
+/// (as opposed to actively erroring with a non-2xx status, which the ladder
+/// loop below already falls back from correctly) never resolves — not
+/// Ok, not Err, forever. The whole `async_stream!` block is stuck on that
+/// one `.await`, so it never yields a single SSE event, and the client sees
+/// total silence with no way to distinguish it from network latency.
+///
+/// This was already possible before PR #31, but PR #31's durable,
+/// server-wide model-ladder cache (`AppState::chat_model_idx`, persisted
+/// to `chat_model_state`) is what turned an occasional per-request risk
+/// into a guaranteed, permanent one: once ONE candidate is cached as "the"
+/// winner, EVERY subsequent message goes straight to that same candidate
+/// (see `build_model_ladder`'s `cached_idx` shortcut) until the periodic
+/// force-top re-probe. If that specific cached candidate starts hanging
+/// instead of erroring, every single message after that hangs forever too
+/// — matching exactly why this "started right after the last deploy" and
+/// why it's total silence now instead of the "~30s but eventually
+/// responds" behavior from earlier the same night (when candidates were
+/// failing fast/loud, not hanging silently).
+///
+/// Bounds only the time to receive a response's headers (`reqwest::Client::send`
+/// resolves as soon as headers arrive, before the body/stream is read) — not
+/// the total time to stream a full reply, so a model that's genuinely slow
+/// to *generate* a long reply is unaffected; only a candidate that never
+/// answers at all is caught, and — same as a non-2xx status — treated as a
+/// failed attempt so the ladder correctly falls through to the next
+/// candidate (or the existing "Modell-Anfrage fehlgeschlagen." error event)
+/// instead of hanging.
+pub(crate) const NVIDIA_CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
+
+/// Companion guard for the OTHER half of the same failure class: a
+/// candidate that answers normally at first (headers arrive, some SSE
+/// chunks even stream) but then goes silent mid-reply and never sends the
+/// rest (no more bytes, no `[DONE]`, connection never closes) — same
+/// underlying symptom (an `.await` that never resolves) one level down, in
+/// `byte_stream.next()` instead of `.send()`. Deliberately much more
+/// generous than the connect timeout: normal token-by-token streaming can
+/// have multi-second gaps under real load, so this only trips on a stall
+/// far longer than any legitimate pause between tokens.
+const NVIDIA_STREAM_STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(45);
+
 pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // Ordered best-to-safety-net candidate ladder. Historically (through
 // 2026-07-10) tried from index 0 fresh on EVERY message, which is exactly
@@ -277,19 +323,23 @@ async fn embed(state: &AppState, text: &str, input_type: &str) -> Result<Vec<f32
         embedding: Vec<f32>,
     }
 
-    let res = state
-        .http
-        .post("https://integrate.api.nvidia.com/v1/embeddings")
-        .bearer_auth(&state.nvidia_api_key)
-        .json(&json!({
-            "model": EMBED_MODEL,
-            "input": [text],
-            "input_type": input_type,
-            "encoding_format": "float",
-        }))
-        .send()
-        .await
-        .map_err(|e| format!("embedding request failed: {e}"))?;
+    let res = tokio::time::timeout(
+        state.nvidia_connect_timeout,
+        state
+            .http
+            .post(format!("{}/v1/embeddings", state.nvidia_api_base))
+            .bearer_auth(&state.nvidia_api_key)
+            .json(&json!({
+                "model": EMBED_MODEL,
+                "input": [text],
+                "input_type": input_type,
+                "encoding_format": "float",
+            }))
+            .send(),
+    )
+    .await
+    .map_err(|_| format!("embedding request timed out after {:?} with no response", state.nvidia_connect_timeout))?
+    .map_err(|e| format!("embedding request failed: {e}"))?;
 
     if !res.status().is_success() {
         let status = res.status();
@@ -880,13 +930,35 @@ pub async fn stream_chat(
             // left to fall back to.
             let (res, used_model) = loop {
                 let model = CHAT_MODEL_CANDIDATES[ladder[ladder_pos]];
-                let attempt = state
-                    .http
-                    .post("https://integrate.api.nvidia.com/v1/chat/completions")
-                    .bearer_auth(&state.nvidia_api_key)
-                    .json(&build_body(model))
-                    .send()
-                    .await;
+                // Bounded by `NVIDIA_CONNECT_TIMEOUT` (see its doc comment):
+                // this is THE fix for the 2026-07-10 "total silence" incident
+                // — a candidate that accepts the connection and then never
+                // responds at all (as opposed to erroring, which the `ok`
+                // check below already falls back from correctly) used to hang
+                // this `.await` forever, so this loop — and the whole SSE
+                // stream — never produced a single byte for the client.
+                // Collapsing both a real `reqwest::Error` and a timeout into
+                // the same `Result<_, String>` shape here (rather than
+                // threading `Elapsed` through separately) keeps every
+                // downstream check (`ok`, the `Err(e)` arm below) unchanged.
+                let attempt: Result<reqwest::Response, String> = match tokio::time::timeout(
+                    state.nvidia_connect_timeout,
+                    state
+                        .http
+                        .post(format!("{}/v1/chat/completions", state.nvidia_api_base))
+                        .bearer_auth(&state.nvidia_api_key)
+                        .json(&build_body(model))
+                        .send(),
+                )
+                .await
+                {
+                    Ok(Ok(r)) => Ok(r),
+                    Ok(Err(e)) => Err(format!("request failed: {e}")),
+                    Err(_) => Err(format!(
+                        "timed out after {:?} with no response",
+                        state.nvidia_connect_timeout
+                    )),
+                };
                 let ok = matches!(&attempt, Ok(r) if r.status().is_success());
                 if ok || ladder_pos + 1 >= ladder.len() {
                     break (attempt, model);
@@ -971,7 +1043,24 @@ pub async fn stream_chat(
             let mut reasoning_text = String::new();
             let mut reasoning_forwarded_len = 0usize;
 
-            while let Some(chunk) = byte_stream.next().await {
+            // Companion guard to the connect-timeout above (see
+            // `NVIDIA_STREAM_STALL_TIMEOUT`'s doc comment): a candidate that
+            // answers normally at first and then goes silent mid-reply —
+            // no more bytes, no close, ever — is the exact same "hung
+            // `.await`, zero client-visible output" failure one level
+            // deeper. Whatever was already streamed before the stall stays
+            // sent (nothing already forwarded is lost), and the round is
+            // finalized the same way a clean end-of-stream is, rather than
+            // leaving the SSE response open and silent forever.
+            loop {
+                let chunk = match tokio::time::timeout(NVIDIA_STREAM_STALL_TIMEOUT, byte_stream.next()).await {
+                    Ok(Some(c)) => c,
+                    Ok(None) => break,
+                    Err(_) => {
+                        tracing::error!("NVIDIA stream stalled: no data for {NVIDIA_STREAM_STALL_TIMEOUT:?}, ending round");
+                        break;
+                    }
+                };
                 let bytes = match chunk {
                     Ok(b) => b,
                     Err(e) => {
@@ -1174,6 +1263,7 @@ pub async fn stream_chat(
 mod tests {
     use super::*;
     use axum::extract::{Query as AxQuery, State as AxState};
+    use axum::{routing::post as axpost, Json as AxJson, Router};
     use std::{
         collections::HashMap,
         path::PathBuf,
@@ -1201,6 +1291,8 @@ mod tests {
             db,
             http: reqwest::Client::new(),
             nvidia_api_key: String::new(),
+            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
+            nvidia_connect_timeout: crate::chat::NVIDIA_CONNECT_TIMEOUT,
             chat_secret: String::new(),
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
@@ -1721,6 +1813,8 @@ mod tests {
             db: db.clone(),
             http: reqwest::Client::new(),
             nvidia_api_key: String::new(),
+            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
+            nvidia_connect_timeout: crate::chat::NVIDIA_CONNECT_TIMEOUT,
             chat_secret: String::new(),
             stripe_secret_key: String::new(),
             stripe_api_base: "https://api.stripe.com".to_string(),
@@ -1823,5 +1917,173 @@ mod tests {
         assert!(!force_top2, "the request right after the periodic slot must not also force_top");
         let ladder2 = build_model_ladder(false, cached_idx, force_top2);
         assert_eq!(ladder2.first().copied(), Some(3), "must resume reusing the cached winner, not re-walk again");
+    }
+
+    // ── NVIDIA request hang guard (2026-07-10 incident fix) ─────────────
+    //
+    // Regression for the production incident: a message sent to the
+    // deployed Forschung chat got NOTHING back at all — not slow, not an
+    // error, total silence. Reproduced live against a real running server
+    // (see the investigation) with a mock NVIDIA endpoint that accepts the
+    // connection and then never responds — `.send().await` never resolved,
+    // so `stream_chat`'s `async_stream!` block never yielded a single SSE
+    // event. These tests drive the real `stream_chat` handler end to end
+    // (not just the pure `build_model_ladder` logic already covered above)
+    // against exactly that failure mode, proving `nvidia_connect_timeout`
+    // turns a hang into an ordinary failed attempt — same as a non-2xx
+    // status — instead of hanging the whole response forever.
+
+    /// Config for `start_mock_nvidia` below: which model names should never
+    /// respond at all (mimicking the real incident), which single model
+    /// name (if any) should succeed with a real SSE stream, and everything
+    /// else gets a normal 401 (mimicking an account not entitled to a
+    /// candidate) — the same three-way shape the real NVIDIA account
+    /// exhibits.
+    struct MockNvidiaConfig {
+        hang_models: Vec<&'static str>,
+        success_model: Option<&'static str>,
+    }
+
+    /// Same "local axum server on 127.0.0.1:0" pattern as billing.rs's
+    /// `start_mock_stripe` / agent.rs's `start_mock_ddg`, extended with a
+    /// branch that never responds at all: `loop { sleep().await }` with no
+    /// `break` has type `!`, so it coerces to any response type without
+    /// ever actually returning — the exact shape of a genuinely stuck
+    /// upstream, not just a slow one.
+    async fn start_mock_nvidia(config: MockNvidiaConfig) -> String {
+        let config = std::sync::Arc::new(config);
+        let completions_config = config.clone();
+        let completions = axpost(move |AxJson(body): AxJson<serde_json::Value>| {
+            let config = completions_config.clone();
+            async move {
+                let model = body["model"].as_str().unwrap_or("").to_string();
+                if config.hang_models.contains(&model.as_str()) {
+                    // Never returns: the connection is accepted, and then
+                    // nothing — no headers, no body, no close. This is what
+                    // `nvidia_connect_timeout` exists to bound.
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_secs(3600)).await;
+                    }
+                }
+                if config.success_model == Some(model.as_str()) {
+                    let sse_body = "data: {\"choices\":[{\"delta\":{\"content\":\"Hallo aus dem Mock.\"}}]}\n\ndata: [DONE]\n\n";
+                    axum::response::Response::builder()
+                        .status(StatusCode::OK)
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from(sse_body))
+                        .unwrap()
+                } else {
+                    (StatusCode::UNAUTHORIZED, AxJson(json!({"error": {"message": format!("account not entitled to {model}")}}))).into_response()
+                }
+            }
+        });
+        let embeddings = axpost(|| async {
+            let vector: Vec<f32> = vec![0.01; 8];
+            AxJson(json!({ "data": [{ "embedding": vector }] }))
+        });
+        let app = Router::new()
+            .route("/v1/chat/completions", completions)
+            .route("/v1/embeddings", embeddings);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    /// Reads the whole SSE response body, wrapped in ITS OWN generous
+    /// (but bounded) timeout — the actual assertion that the fix works:
+    /// before the fix, this would hang forever (the test would time out at
+    /// the harness level with no useful failure message); after the fix,
+    /// it must resolve well within a few seconds even though
+    /// `nvidia_connect_timeout` is deliberately set short by the caller.
+    async fn read_sse_body_bounded(resp: axum::response::Response) -> String {
+        let bytes = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            axum::body::to_bytes(resp.into_body(), usize::MAX),
+        )
+        .await
+        .expect("stream_chat response must not hang forever when a candidate never responds")
+        .unwrap();
+        String::from_utf8_lossy(&bytes).to_string()
+    }
+
+    /// The core incident regression: EVERY candidate hangs (the worst case
+    /// — mirrors "the account somehow isn't entitled to / can't reach any
+    /// candidate right now"). Before the fix this hung forever with zero
+    /// bytes ever sent to the client. After the fix, the client must still
+    /// receive the intended clean error event, bounded by
+    /// `nvidia_connect_timeout` per attempt — not silence.
+    #[tokio::test]
+    async fn all_candidates_hanging_still_yields_a_clean_error_instead_of_silence() {
+        let base = start_mock_nvidia(MockNvidiaConfig {
+            hang_models: vec![
+                "meta/llama-3.1-405b-instruct",
+                "meta/llama-3.3-70b-instruct",
+                "meta/llama-3.1-70b-instruct",
+                "meta/llama-3.1-8b-instruct",
+            ],
+            success_model: None,
+        })
+        .await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+        // Short but not instant, so the test still genuinely exercises an
+        // await that times out rather than one that resolves immediately.
+        state.nvidia_connect_timeout = std::time::Duration::from_millis(150);
+
+        let req = StreamChatReq {
+            conversation_id: "conv-all-hang".to_string(),
+            message: "hallo, testest du gerade?".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+        };
+        let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
+            .await
+            .into_response();
+        let body = read_sse_body_bounded(resp).await;
+
+        assert!(
+            body.contains("event: error") && body.contains("fehlgeschlagen"),
+            "must reach the intended error event, not hang or go silent: {body:?}"
+        );
+    }
+
+    /// The recovery case, proving the fix doesn't just fail cleanly but
+    /// actually still serves a real reply when a LATER candidate works: the
+    /// first candidate hangs exactly like the incident, and the ladder must
+    /// still fall through to a working candidate afterward instead of
+    /// getting stuck on the hung one forever.
+    #[tokio::test]
+    async fn hanging_first_candidate_still_falls_through_to_a_working_one() {
+        let base = start_mock_nvidia(MockNvidiaConfig {
+            hang_models: vec!["meta/llama-3.1-405b-instruct"],
+            success_model: Some("meta/llama-3.3-70b-instruct"),
+        })
+        .await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+        state.nvidia_connect_timeout = std::time::Duration::from_millis(150);
+
+        let req = StreamChatReq {
+            conversation_id: "conv-fallthrough".to_string(),
+            message: "hallo, testest du gerade?".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+        };
+        let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
+            .await
+            .into_response();
+        let body = read_sse_body_bounded(resp).await;
+
+        assert!(
+            body.contains("Hallo aus dem Mock") && body.contains("event: done"),
+            "must still deliver the real reply from the working candidate, not get stuck on the hung one: {body:?}"
+        );
     }
 }

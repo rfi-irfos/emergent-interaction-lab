@@ -326,6 +326,8 @@ mod tests {
             db,
             http: reqwest::Client::new(),
             nvidia_api_key: String::new(),
+            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
+            nvidia_connect_timeout: crate::chat::NVIDIA_CONNECT_TIMEOUT,
             // Empty secret == "no auth configured" (require_admin's own
             // dev-convenience rule) so these tests can call handlers
             // directly without constructing a real x-chat-secret header.
