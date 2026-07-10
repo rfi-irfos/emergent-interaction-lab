@@ -1563,6 +1563,40 @@ button { cursor: pointer; font-family: inherit; }
 .static-page-content a { color: #0e8a9c; text-decoration: underline; text-underline-offset: 2px; }
 .static-page-content a:hover { color: #0a6b79; }
 
+/* ── CERTIFICATION (public storefront page, #p/zertifizierung) ──────────────
+   Lives inside .static-page-content, same light theme as Legal/Dynamic
+   pages — real pricing cards fed by GET /api/billing/public-products, never
+   a fabricated price. */
+.cert-eyebrow { font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #0e8a9c; margin-bottom: 10px; }
+.cert-intro { max-width: 640px; }
+.cert-page-status { font-size: 15px; color: #5a7178; margin-top: 8px; }
+.cert-coming-soon {
+  background: #eef6f7; border: 1px solid #cfe4e6; border-radius: 14px;
+  padding: 28px 32px; margin-top: 16px;
+}
+.cert-coming-soon h2 { margin-top: 0; }
+.cert-coming-soon p { margin-bottom: 0; }
+.cert-pricing-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px; margin-top: 20px;
+}
+.cert-pricing-card {
+  display: flex; flex-direction: column; gap: 12px;
+  background: #fff; border: 1px solid #e2e8ec; border-radius: 16px; padding: 28px;
+}
+.cert-pricing-card h2 { margin: 0; font-size: 20px; }
+.cert-pricing-desc { font-size: 15px; color: #46606b; margin: 0; }
+.cert-pricing-price { font-size: 28px; font-weight: 900; color: #0b1720; }
+.cert-pricing-price span { font-size: 14px; font-weight: 600; color: #5a7178; }
+.cert-pricing-cta {
+  margin-top: auto; align-self: flex-start;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 22px; border-radius: 10px; background: #0e8a9c; color: #fff;
+  font-weight: 700; font-size: 15px; text-decoration: none; transition: background .15s;
+}
+.cert-pricing-cta:hover { background: #0a6b79; }
+@media (max-width: 600px) { .cert-pricing-grid { grid-template-columns: 1fr; } }
+
 /* ── ADMIN: VERWALTUNG (CRM DASHBOARD) ───────────────────────────────────────
    Second admin mode alongside the website builder — Inbox / Forschung /
    Blog / Analytics, toggled via the "Verwaltung" topbar button. */

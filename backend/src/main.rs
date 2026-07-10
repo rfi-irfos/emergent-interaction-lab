@@ -158,6 +158,8 @@ async fn main() {
         .route("/api/billing/products", get(billing::list_products).post(billing::create_product))
         .route("/api/billing/products/:id", axum::routing::delete(billing::delete_product))
         .route("/api/billing/products/:id/payment-link", post(billing::create_payment_link))
+        // Public storefront feed (no auth — read-only, only products with a real payment_link_url)
+        .route("/api/billing/public-products", get(billing::list_public_products))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))

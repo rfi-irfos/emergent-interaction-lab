@@ -79,6 +79,39 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
     .into_response()
 }
 
+/// Public, unauthenticated, read-only storefront feed for the actual
+/// visitor-facing site (not Verwaltung). Deliberately narrower than
+/// `list_products`: only rows that already have a real `payment_link_url`
+/// are sellable — a draft product with no link yet must never appear on the
+/// public site, and the Stripe product/price IDs are internal bookkeeping
+/// with no reason to be exposed to a visitor's browser.
+pub async fn list_public_products(State(state): State<AppState>) -> impl IntoResponse {
+    let rows: Vec<(String, String, i64, String, String, Option<String>, String)> = sqlx::query_as(
+        "SELECT name, description, price_cents, currency, mode, recurring_interval, payment_link_url \
+         FROM products WHERE payment_link_url IS NOT NULL ORDER BY created_at DESC",
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    Json(
+        rows.into_iter()
+            .map(|(name, description, price_cents, currency, mode, recurring_interval, payment_link_url)| {
+                json!({
+                    "name": name,
+                    "description": description,
+                    "price_cents": price_cents,
+                    "currency": currency,
+                    "mode": mode,
+                    "recurring_interval": recurring_interval,
+                    "payment_link_url": payment_link_url,
+                })
+            })
+            .collect::<Vec<_>>(),
+    )
+    .into_response()
+}
+
 pub async fn create_product(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -392,5 +425,67 @@ mod tests {
             .await
             .into_response();
         assert_eq!(link_res.status(), StatusCode::SERVICE_UNAVAILABLE);
+    }
+
+    /// The public storefront feed must show only products that are actually
+    /// sellable (have a real `payment_link_url`) and must never leak the
+    /// internal Stripe product/price IDs — this is the endpoint the public
+    /// `#p/zertifizierung` page fetches, unauthenticated, from the real site.
+    #[tokio::test]
+    async fn public_products_excludes_drafts_and_hides_stripe_ids() {
+        let stripe_base = start_mock_stripe().await;
+        let state = test_state(stripe_base).await;
+
+        // A draft: created but never turned into a payment link.
+        let draft_res = create_product(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxJson(CreateProductReq {
+                name: "Draft Product".to_string(),
+                description: "not ready yet".to_string(),
+                price_cents: 1000,
+                currency: "eur".to_string(),
+                mode: "payment".to_string(),
+                recurring_interval: None,
+            }),
+        )
+        .await
+        .into_response();
+        let draft_bytes = axum::body::to_bytes(draft_res.into_body(), usize::MAX).await.unwrap();
+        let _draft_id: serde_json::Value = serde_json::from_slice(&draft_bytes).unwrap();
+
+        // A real, sellable product: link generated.
+        let create_res = create_product(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxJson(CreateProductReq {
+                name: "Certified Emergence Interaction Analyst".to_string(),
+                description: "Individual".to_string(),
+                price_cents: 29900,
+                currency: "eur".to_string(),
+                mode: "payment".to_string(),
+                recurring_interval: None,
+            }),
+        )
+        .await
+        .into_response();
+        let body_bytes = axum::body::to_bytes(create_res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+        let id = body["id"].as_str().unwrap().to_string();
+        create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(id)).await;
+
+        let public_res = list_public_products(AxState(state.clone())).await.into_response();
+        assert_eq!(public_res.status(), StatusCode::OK);
+        let public_bytes = axum::body::to_bytes(public_res.into_body(), usize::MAX).await.unwrap();
+        let public: serde_json::Value = serde_json::from_slice(&public_bytes).unwrap();
+        let list = public.as_array().unwrap();
+
+        assert_eq!(list.len(), 1, "draft without a payment link must not appear publicly");
+        let entry = &list[0];
+        assert_eq!(entry["name"], "Certified Emergence Interaction Analyst");
+        assert_eq!(entry["price_cents"], 29900);
+        assert!(entry["payment_link_url"].as_str().unwrap().starts_with("https://buy.stripe.com/"));
+        assert!(entry.get("stripe_product_id").is_none(), "must not expose internal stripe_product_id");
+        assert!(entry.get("stripe_price_id").is_none(), "must not expose internal stripe_price_id");
     }
 }

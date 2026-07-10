@@ -34,6 +34,10 @@
       {
         "label": "Forschung",
         "href": "#p/research"
+      },
+      {
+        "label": "Zertifizierung",
+        "href": "#p/zertifizierung"
       }
     ],
     "ctaLabel": "Kontakt",

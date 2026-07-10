@@ -8,6 +8,7 @@ import { AdminPanel } from './components/AdminPanel'
 import { LoginPage } from './components/LoginPage'
 import { LegalPage } from './components/LegalPage'
 import { DynamicPage } from './components/DynamicPage'
+import { CertificationPage } from './components/CertificationPage'
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
 
@@ -82,6 +83,10 @@ export default function App() {
         address={content.contact?.address}
       />
     )
+  }
+
+  if (route.pageSlug === 'zertifizierung') {
+    return <CertificationPage content={content} />
   }
 
   if (route.pageSlug) {
