@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
+import { TOOL_LABELS } from '../../lib/toolLabels'
 
 const NODES = [
   { id: 'human', label: 'Human', accent: '#22d3ee', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
@@ -45,6 +46,90 @@ function useTypewriter(text: string, active: boolean) {
   return shown
 }
 
+// A satellite is a REAL underlying record (a message, a tool call, a research
+// note, a document, a retrieval event) — never a decorative placeholder. Each
+// node's satellite list length is however many genuine recent items the
+// backend actually found, capped at 5, same visual budget as before. If a
+// category has fewer real items than that cap, fewer satellites render —
+// that gap is honest, not a bug.
+interface SatelliteItem {
+  id: string
+  label: string
+  createdAt: string
+  conversationId: string | null
+}
+
+const ORGANIZATION_KIND_LABELS: Record<string, string> = {
+  research_note: 'Research Note',
+  blog_post: 'Blogpost-Entwurf',
+  simulation_run: 'Simulationslauf',
+}
+
+function buildHumanSatellites(humanAi: any): SatelliteItem[] {
+  const rows = Array.isArray(humanAi?.recent_user_messages) ? humanAi.recent_user_messages : []
+  return rows.map((m: any) => ({
+    id: m.id,
+    label: `Nutzer-Nachricht: „${m.excerpt}“`,
+    createdAt: m.created_at,
+    conversationId: m.conversation_id ?? null,
+  }))
+}
+
+function buildAiSatellites(aiActivity: any): SatelliteItem[] {
+  const rows = Array.isArray(aiActivity) ? aiActivity : []
+  return rows.map((item: any) => {
+    if (item.kind === 'tool_call') {
+      const toolLabel = TOOL_LABELS[item.label] ?? item.label
+      const failed = item.status && item.status !== 'ok'
+      return {
+        id: item.id,
+        label: `Werkzeugaufruf: ${toolLabel}${failed ? ' (Fehler)' : ''}`,
+        createdAt: item.created_at,
+        conversationId: item.conversation_id ?? null,
+      }
+    }
+    return {
+      id: item.id,
+      label: `Antwort von Jarvis: „${item.label}“`,
+      createdAt: item.created_at,
+      conversationId: item.conversation_id ?? null,
+    }
+  })
+}
+
+function buildOrganizationSatellites(organization: any): SatelliteItem[] {
+  const rows = Array.isArray(organization) ? organization : []
+  return rows.map((item: any) => ({
+    id: item.id,
+    label: `${ORGANIZATION_KIND_LABELS[item.kind] ?? item.kind}: „${item.title}“`,
+    createdAt: item.created_at,
+    conversationId: item.conversation_id ?? null,
+  }))
+}
+
+function buildTechnologySatellites(information: any): SatelliteItem[] {
+  const rows = Array.isArray(information?.recent_documents) ? information.recent_documents : []
+  return rows.map((d: any) => ({
+    id: d.id,
+    label: `Dokument hochgeladen: „${d.filename}“`,
+    createdAt: d.created_at,
+    conversationId: null,
+  }))
+}
+
+function buildInformationSatellites(information: any): SatelliteItem[] {
+  const rows = Array.isArray(information?.recent_retrievals) ? information.recent_retrievals : []
+  return rows.slice(0, 5).map((r: any) => {
+    const hits = r.is_gap ? 'Wissenslücke — keine ausreichenden Treffer' : `${r.hit_count} Treffer, Score ${Number(r.top_score).toFixed(2)}`
+    return {
+      id: r.id,
+      label: `Retrieval-Anfrage: „${r.query_text}“ — ${hits}`,
+      createdAt: r.created_at,
+      conversationId: r.conversation_id ?? null,
+    }
+  })
+}
+
 /// The network this lab actually studies — human/AI/organization/technology/
 /// information relationships — not this app's own internal architecture
 /// diagram. "Society" is deliberately omitted: no real data proxy for it
@@ -55,18 +140,25 @@ function useTypewriter(text: string, active: boolean) {
 /// sprouts small satellite nodes proportional to its own activity, and
 /// clicking a node — like a metatag — writes its underlying observation
 /// out in place, typewriter-style, rather than just showing a static label.
-export function SystemMap() {
+/// Each satellite is itself clickable now too: it points at one real
+/// individual record (a message, a tool call, a research note, a document,
+/// a retrieval event) instead of only ever restating the aggregate count.
+export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [counts, setCounts] = useState<Record<string, number> | null>(null)
+  const [satellites, setSatellites] = useState<Record<string, SatelliteItem[]>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [expandedSatellite, setExpandedSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const [analytics, humanAi, information, diagnostics] = await Promise.all([
+      const [analytics, humanAi, information, diagnostics, aiActivity, organization] = await Promise.all([
         fetchJson('/api/analytics'),
         fetchJson('/api/observatory/human-ai'),
         fetchJson('/api/observatory/information'),
         fetchJson('/api/observatory/diagnostics'),
+        fetchJson('/api/observatory/ai-activity'),
+        fetchJson('/api/observatory/organization'),
       ])
       if (cancelled) return
       const retrievalActivity = Array.isArray(information?.retrieval_by_day)
@@ -79,6 +171,13 @@ export function SystemMap() {
         technology: (information?.documents ?? 0) + (information?.chunks ?? 0),
         information: Math.round(retrievalActivity),
       })
+      setSatellites({
+        human: buildHumanSatellites(humanAi),
+        ai: buildAiSatellites(aiActivity),
+        organization: buildOrganizationSatellites(organization),
+        technology: buildTechnologySatellites(information),
+        information: buildInformationSatellites(information),
+      })
     })()
     return () => { cancelled = true }
   }, [])
@@ -89,7 +188,19 @@ export function SystemMap() {
   }), [])
 
   const expandedNode = expanded ? NODES.find(n => n.id === expanded) : null
-  const typed = useTypewriter(expandedNode ? expandedNode.blurb(counts?.[expandedNode.id] ?? 0) : '', !!expandedNode)
+  const activeSatelliteNode = expandedSatellite ? NODES.find(n => n.id === expandedSatellite.nodeId) : null
+  const activeSatelliteItem = expandedSatellite
+    ? (satellites[expandedSatellite.nodeId] ?? []).find(s => s.id === expandedSatellite.itemId) ?? null
+    : null
+
+  // A selected satellite always wins over the tier-level aggregate blurb —
+  // the two are mutually exclusive (see the two onClick handlers below),
+  // but this keeps the detail-panel text derivation in one place.
+  const detailNode = activeSatelliteNode ?? expandedNode
+  const detailText = activeSatelliteItem
+    ? activeSatelliteItem.label
+    : (expandedNode ? expandedNode.blurb(counts?.[expandedNode.id] ?? 0) : '')
+  const typed = useTypewriter(detailText, !!detailNode)
 
   if (!counts) return <div className="obs-panel"><div className="obs-empty">Netzwerk wächst…</div></div>
 
@@ -113,7 +224,7 @@ export function SystemMap() {
             // Organic thread: a gentle bezier bow instead of a straight line.
             const mx = (CX + p.x) / 2 + Math.sin(pi * 2.1) * 22
             const my = (CY + p.y) / 2 + Math.cos(pi * 2.1) * 22
-            const satelliteCount = Math.min(5, Math.round((weight / maxCount) * 5))
+            const items = satellites[p.id] ?? []
             return (
               <g key={`edge-${p.id}`}>
                 <path id={`obs-map-path-${p.id}`} d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w + 5} opacity={opacity * 0.2} style={{ filter: 'blur(4px)' }} />
@@ -123,17 +234,28 @@ export function SystemMap() {
                     <mpath href={`#obs-map-path-${p.id}`} />
                   </animateMotion>
                 </circle>
-                {/* Budding satellites — the "growing mycelium" itself: more
-                    activity sprouts more offshoot nodes near the parent. */}
-                {Array.from({ length: satelliteCount }, (_, si) => {
+                {/* Budding satellites — the "growing mycelium" itself: one per
+                    real recent record this node actually has, up to 5. No
+                    padding when fewer than 5 exist — an honest gap beats a
+                    fabricated one. Each is independently clickable now. */}
+                {items.map((item, si) => {
                   const a = p.angle + (hash(pi * 13 + si) - 0.5) * 1.8
                   const dist = 44 + hash(pi * 29 + si) * 26
                   const sx = p.x + Math.cos(a) * dist
                   const sy = p.y + Math.sin(a) * dist
+                  const isActive = expandedSatellite?.nodeId === p.id && expandedSatellite.itemId === item.id
                   return (
-                    <g key={si} className="mycelium-satellite" style={{ animationDelay: `${si * 0.15 + pi * 0.1}s` }}>
-                      <line x1={p.x} y1={p.y} x2={sx} y2={sy} stroke={p.accent} strokeWidth={1} opacity={0.35} />
-                      <circle cx={sx} cy={sy} r={3 + hash(si * 7) * 2} fill={p.accent} opacity={0.75} />
+                    <g
+                      key={item.id}
+                      className={`mycelium-satellite ${isActive ? 'active' : ''}`}
+                      style={{ animationDelay: `${si * 0.15 + pi * 0.1}s`, cursor: 'pointer' }}
+                      onClick={() => {
+                        setExpanded(null)
+                        setExpandedSatellite(cur => (cur && cur.itemId === item.id ? null : { nodeId: p.id, itemId: item.id }))
+                      }}
+                    >
+                      <line x1={p.x} y1={p.y} x2={sx} y2={sy} stroke={p.accent} strokeWidth={isActive ? 2 : 1} opacity={isActive ? 0.8 : 0.35} />
+                      <circle cx={sx} cy={sy} r={isActive ? 6 : 3 + hash(si * 7) * 2} fill={p.accent} opacity={isActive ? 1 : 0.75} />
                     </g>
                   )
                 })}
@@ -150,7 +272,10 @@ export function SystemMap() {
           {positions.map(p => (
             <g
               key={p.id}
-              onClick={() => setExpanded(cur => cur === p.id ? null : p.id)}
+              onClick={() => {
+                setExpandedSatellite(null)
+                setExpanded(cur => cur === p.id ? null : p.id)
+              }}
               className={`mycelium-node ${expanded === p.id ? 'active' : ''}`}
               style={{ cursor: 'pointer' }}
             >
@@ -162,15 +287,26 @@ export function SystemMap() {
           ))}
         </svg>
 
-        {expandedNode && (
-          <div className="mycelium-detail" style={{ borderLeftColor: expandedNode.accent }}>
-            <span className="mycelium-detail-tag" style={{ color: expandedNode.accent }}>#{expandedNode.label}</span>
-            <span className="mycelium-detail-text">{typed}<span className="mycelium-caret">▌</span></span>
+        {detailNode && (
+          <div className="mycelium-detail" style={{ borderLeftColor: detailNode.accent }}>
+            <span className="mycelium-detail-tag" style={{ color: detailNode.accent }}>#{detailNode.label}</span>
+            <span className="mycelium-detail-text">
+              {typed}<span className="mycelium-caret">▌</span>
+            </span>
+            {activeSatelliteItem?.conversationId && onOpenConversation && (
+              <button
+                className="chat-inspect-toggle"
+                style={{ fontSize: 11, padding: 0, alignSelf: 'flex-start' }}
+                onClick={() => onOpenConversation(activeSatelliteItem.conversationId!)}
+              >
+                aus Gespräch ↗
+              </button>
+            )}
           </div>
         )}
       </div>
       <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
-        Kantenstärke und Anzahl der Ausläufer = relative Aktivität dieses Teilsystems. Klick auf einen Knoten für Details. „Society" ist bewusst nicht dargestellt — es gibt aktuell keine echte Datenquelle dafür, eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
+        Kantenstärke und Anzahl der Ausläufer = relative Aktivität dieses Teilsystems. Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter. „Society" ist bewusst nicht dargestellt — es gibt aktuell keine echte Datenquelle dafür, eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
       </p>
     </div>
   )
