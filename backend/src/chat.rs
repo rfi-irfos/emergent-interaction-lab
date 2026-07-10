@@ -194,6 +194,75 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+
+    // Singleton row (id is CHECK'd to always be 1 — never a per-conversation
+    // or per-user table) durably backing AppState::chat_model_idx /
+    // chat_request_count. Fix for the 2026-07-10 model-ladder cache (see
+    // CHAT_MODEL_CANDIDATES above) actually doing nothing in production:
+    // this app's fly.toml sets auto_stop_machines/min_machines_running=0, so
+    // a low-traffic site like this one scales to zero between almost every
+    // message and cold-starts fresh on the next one — wiping the in-memory
+    // Arc<AtomicUsize>/Arc<AtomicU64> back to 0/0 and paying the full failed-
+    // ladder-probe cost on nearly every message, same as before the cache
+    // existed. `db` (DB_PATH, on the `eil_data` mounted volume per fly.toml)
+    // IS durable across restarts, unlike process memory — see
+    // load_model_state/persist_model_state below, and main.rs's startup
+    // seeding of AppState from this table.
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS chat_model_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            model_idx INTEGER NOT NULL DEFAULT 0,
+            request_count INTEGER NOT NULL DEFAULT 0
+        )",
+    )
+    .execute(db)
+    .await
+    .expect("create chat_model_state");
+}
+
+/// Reads the durable model-ladder state at startup, seeding
+/// `AppState::chat_model_idx`/`chat_request_count` so a cold restart resumes
+/// from whatever was last discovered/counted instead of resetting to 0/0 —
+/// see `chat_model_state`'s doc comment in `init_schema` above. Ensures the
+/// singleton row exists first (true first-boot-ever case: nothing has been
+/// persisted yet, so both default to 0, matching the pre-fix behavior for
+/// that one case only).
+pub async fn load_model_state(db: &SqlitePool) -> (usize, u64) {
+    let _ = sqlx::query(
+        "INSERT OR IGNORE INTO chat_model_state (id, model_idx, request_count) VALUES (1, 0, 0)",
+    )
+    .execute(db)
+    .await;
+
+    let row: Option<(i64, i64)> =
+        sqlx::query_as("SELECT model_idx, request_count FROM chat_model_state WHERE id = 1")
+            .fetch_optional(db)
+            .await
+            .ok()
+            .flatten();
+
+    match row {
+        Some((idx, count)) => (idx.max(0) as usize, count.max(0) as u64),
+        None => (0, 0),
+    }
+}
+
+/// Writes the current model-ladder state through to the durable `db` —
+/// called every time `stream_chat` mutates `AppState::chat_model_idx` or
+/// `chat_request_count`, right alongside the in-memory atomic update, so the
+/// two never drift apart. Best-effort like the rest of this module's writes
+/// (`let _ = ...`): a failed write here means the next cold start re-walks
+/// the ladder once more than strictly necessary, not a correctness or
+/// user-visible failure worth surfacing as an error.
+pub(crate) async fn persist_model_state(db: &SqlitePool, model_idx: usize, request_count: u64) {
+    let _ = sqlx::query(
+        "INSERT INTO chat_model_state (id, model_idx, request_count) VALUES (1, ?1, ?2)
+         ON CONFLICT(id) DO UPDATE SET model_idx = excluded.model_idx, request_count = excluded.request_count",
+    )
+    .bind(model_idx as i64)
+    .bind(request_count as i64)
+    .execute(db)
+    .await;
 }
 
 // ── embeddings + vector search (brute-force cosine over SQLite BLOBs) ────────
@@ -731,6 +800,13 @@ pub async fn stream_chat(
         let request_no = state.chat_request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let force_top = request_no % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
         let cached_idx = state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed);
+        // Write the incremented counter through to the durable DB immediately
+        // (not just the in-memory atomic) — see chat_model_state's doc
+        // comment. Without this, a cold restart (this app scales to zero
+        // between almost every message per fly.toml) would reset the count
+        // to 0 and re-land on a force_top slot on literally every restart,
+        // defeating the cache above even with the index itself persisted.
+        persist_model_state(&state.db, cached_idx, request_no + 1).await;
         let ladder = build_model_ladder(reasoning_requested, cached_idx, force_top);
         // Position into `ladder` (not directly into CHAT_MODEL_CANDIDATES).
         // Sticky across rounds within one exchange: whichever candidate
@@ -794,7 +870,13 @@ pub async fn stream_chat(
             // untried, possibly-better non-reasoning candidates the
             // steady-state cache hadn't reached yet.
             if !reasoning_requested {
-                state.chat_model_idx.store(ladder[ladder_pos], std::sync::atomic::Ordering::Relaxed);
+                let resolved_idx = ladder[ladder_pos];
+                state.chat_model_idx.store(resolved_idx, std::sync::atomic::Ordering::Relaxed);
+                // Same write-through as the counter above: the whole point of
+                // this fix is that the NEXT request — quite possibly served
+                // by a freshly cold-started machine — must see this resolved
+                // index, not the one that was true when this request started.
+                persist_model_state(&state.db, resolved_idx, request_no + 1).await;
             }
 
             let res = match res {
@@ -1366,5 +1448,168 @@ mod tests {
         )
         .unwrap();
         assert_eq!(with_field_true.reasoning_requested.unwrap_or(false), true);
+    }
+
+    // ── durable model-ladder state (2026-07-10 follow-up fix) ───────────
+    //
+    // PR #30's in-memory Arc<AtomicUsize>/Arc<AtomicU64> cache does nothing
+    // for a low-traffic site behind fly.toml's
+    // auto_stop_machines/min_machines_running=0: the app scales to zero
+    // between almost every message and cold-starts fresh on the next one,
+    // wiping the cache back to 0/0 and re-paying the full failed-ladder-probe
+    // latency on nearly every message — same as before PR #30 existed. These
+    // tests drive load_model_state/persist_model_state directly against an
+    // in-memory SQLite DB (the same pattern agent.rs's tests use), standing
+    // in for the durable `eil_data` volume in production.
+
+    use std::{collections::HashMap, path::PathBuf, sync::Arc};
+
+    /// True first boot ever: nothing has been persisted yet, so both values
+    /// default to 0 — the one case where this fix's behavior matches the old
+    /// (buggy) always-0 behavior, because there's genuinely nothing to load.
+    #[tokio::test]
+    async fn model_state_defaults_to_zero_on_true_first_boot() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        init_schema(&db).await;
+
+        let (idx, count) = load_model_state(&db).await;
+        assert_eq!(idx, 0);
+        assert_eq!(count, 0);
+    }
+
+    /// (a) The regression this fix exists for: a cold restart must load
+    /// whatever a previous process discovered and persisted, not silently
+    /// reset to index 0 the way an in-memory-only AtomicUsize does. Mirrors
+    /// exactly what `main` does at startup — call `load_model_state` against
+    /// the DB and seed a fresh `AppState`'s atomics from the result.
+    #[tokio::test]
+    async fn cold_restart_seeds_fresh_appstate_from_persisted_index_not_zero() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        init_schema(&db).await;
+
+        // A previous process's stream_chat discovered index 3 was the real
+        // winner (e.g. the 405b/70b candidates aren't entitled, but
+        // deepseek-r1's slot is skipped and llama-3.1-70b at index 3 works)
+        // and wrote it through before the machine scaled to zero.
+        persist_model_state(&db, 3, 17).await;
+
+        // "Cold restart": build a brand new AppState the same way `main`
+        // does — seeded from load_model_state, not AtomicUsize::new(0).
+        let (seeded_idx, seeded_count) = load_model_state(&db).await;
+        let state = AppState {
+            sessions: Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
+            content_path: PathBuf::from("content.json"),
+            uploads_dir: PathBuf::from("uploads"),
+            static_dir: PathBuf::from("dist"),
+            allowed_email: String::new(),
+            google_client_id: String::new(),
+            google_client_secret: String::new(),
+            redirect_uri: String::new(),
+            dev_mode: true,
+            db: db.clone(),
+            http: reqwest::Client::new(),
+            nvidia_api_key: String::new(),
+            chat_secret: String::new(),
+            stripe_secret_key: String::new(),
+            stripe_api_base: "https://api.stripe.com".to_string(),
+            ddg_api_base: "http://127.0.0.1:1".to_string(),
+            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(seeded_idx)),
+            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(seeded_count)),
+        };
+
+        assert_eq!(
+            state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed),
+            3,
+            "fresh AppState must be seeded from the DB, not default to 0 on a cold restart"
+        );
+        assert_eq!(state.chat_request_count.load(std::sync::atomic::Ordering::Relaxed), 17);
+    }
+
+    /// (b) An update actually persists to the DB — not just the in-memory
+    /// atomic — and a second update overwrites the same singleton row rather
+    /// than accumulating extra rows (the whole point of the `id INTEGER
+    /// PRIMARY KEY CHECK (id = 1)` + `ON CONFLICT` upsert).
+    #[tokio::test]
+    async fn updated_index_persists_to_the_db_and_would_survive_a_restart() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        init_schema(&db).await;
+
+        let (idx0, count0) = load_model_state(&db).await;
+        assert_eq!((idx0, count0), (0, 0));
+
+        // Mirrors stream_chat's write-through when the ladder resolves to a
+        // new index.
+        persist_model_state(&db, 2, 1).await;
+
+        // A brand new load — as a freshly restarted process would issue —
+        // must see the update, proving it actually reached the DB.
+        let (idx1, count1) = load_model_state(&db).await;
+        assert_eq!(idx1, 2, "update must have reached the DB, not only an in-memory atomic");
+        assert_eq!(count1, 1);
+
+        // A later update (e.g. the periodic retry-from-top discovering a
+        // still-better candidate) overwrites in place.
+        persist_model_state(&db, 4, 21).await;
+        let (idx2, count2) = load_model_state(&db).await;
+        assert_eq!(idx2, 4);
+        assert_eq!(count2, 21);
+
+        let row_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_model_state")
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        assert_eq!(row_count.0, 1, "must stay a singleton row, not insert a new one per update");
+    }
+
+    /// (c) The periodic-retry-from-top counter (CHAT_MODEL_RETRY_FROM_TOP_EVERY)
+    /// must keep counting across a simulated restart, continuing the SAME
+    /// server-wide count instead of restarting at 0 — otherwise (this is the
+    /// second half of the bug the DB-persistence fix closes, not just the
+    /// index) every cold start would land request_no=0 and force_top=true on
+    /// literally every single request post-restart, re-walking the whole
+    /// ladder from scratch every time regardless of how well the index cache
+    /// itself is persisted.
+    #[tokio::test]
+    async fn periodic_retry_counter_continues_across_a_simulated_restart() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        init_schema(&db).await;
+
+        // Process A: 20 requests already served since boot, cached index
+        // settled at 3 — both persisted right before the machine scales to
+        // zero. (fetch_add returns the PRE-increment value, so the Nth
+        // absolute request server-wide has request_no == N-1 — a persisted
+        // count of 20 means the next fetch_add returns old value 20, landing
+        // exactly on the request_no % 20 == 0 boundary.)
+        persist_model_state(&db, 3, 20).await;
+
+        // Process B ("cold restart"): seeds in-memory atomics from the DB,
+        // exactly like `main` does at startup.
+        let (seeded_idx, seeded_count) = load_model_state(&db).await;
+        let model_idx = std::sync::atomic::AtomicUsize::new(seeded_idx);
+        let request_count = std::sync::atomic::AtomicU64::new(seeded_count);
+
+        // Request #21 server-wide (request_no == 20) correctly lands on the
+        // periodic retry-from-top slot, continuing the count that started
+        // before the restart — not a fresh "request 0 of this process" that
+        // would force_top on every single cold start.
+        let request_no = request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let force_top = request_no % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
+        assert_eq!(request_no, 20);
+        assert!(force_top, "request #21 server-wide must still land on the periodic retry slot after a restart");
+
+        let cached_idx = model_idx.load(std::sync::atomic::Ordering::Relaxed);
+        assert_eq!(cached_idx, 3, "the previously-discovered winner must have survived the restart too");
+        let ladder = build_model_ladder(false, cached_idx, force_top);
+        assert_eq!(ladder, vec![0, 1, 3, 4], "the periodic slot re-walks from the top even though the cache says 3");
+
+        // The NEXT request (#22) is back to normal: reuses the cache
+        // directly, rather than forcing another re-walk the way a
+        // reset-to-zero-every-restart counter would on every request.
+        let request_no2 = request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let force_top2 = request_no2 % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
+        assert_eq!(request_no2, 21);
+        assert!(!force_top2, "the request right after the periodic slot must not also force_top");
+        let ladder2 = build_model_ladder(false, cached_idx, force_top2);
+        assert_eq!(ladder2.first().copied(), Some(3), "must resume reusing the cached winner, not re-walk again");
     }
 }

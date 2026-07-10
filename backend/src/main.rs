@@ -60,11 +60,26 @@ pub struct AppState {
     /// server-wide rather than per-conversation, since the ladder reflects
     /// account entitlement, not anything conversation-specific. See
     /// chat::stream_chat's model-selection loop.
+    ///
+    /// Seeded at startup from the `chat_model_state` DB table (see
+    /// `chat::load_model_state`, called in `main`) rather than always
+    /// starting at 0 — this app's fly.toml scales to zero between almost
+    /// every message, so an in-memory-only value would be wiped on nearly
+    /// every cold start. Every update also writes through to that same table
+    /// (`chat::persist_model_state`) so this atomic stays fast to read
+    /// within one process's lifetime while the DB — on the durable `eil_data`
+    /// volume — is the actual source of truth across restarts.
     pub chat_model_idx: Arc<AtomicUsize>,
     /// Counts stream_chat invocations so the ladder can periodically ignore
     /// the cache above and re-probe from the top (see
     /// chat::CHAT_MODEL_RETRY_FROM_TOP_EVERY) in case a bigger model becomes
     /// newly entitled on the account without a deploy.
+    ///
+    /// Durable the same way as `chat_model_idx` above (seeded from and
+    /// written through to `chat_model_state`) — without persisting this too,
+    /// every cold start would reset the count to 0 and re-land on a
+    /// force-top slot on literally every restart, defeating the index cache
+    /// even with the index itself persisted.
     pub chat_request_count: Arc<AtomicU64>,
 }
 
@@ -117,6 +132,17 @@ async fn main() {
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_wv_source ON web_visits(source, created_at)")
         .execute(&db).await.ok();
     chat::init_schema(&db).await;
+    // Seed the model-ladder cache from durable storage instead of always
+    // starting at 0/0 — see chat_model_state's doc comment in chat.rs. This
+    // app's fly.toml scales to zero between almost every message
+    // (auto_stop_machines/min_machines_running=0), so without this the
+    // in-memory-only cache added in PR #30 gets wiped on nearly every cold
+    // start, and every message keeps paying the full failed-ladder-probe
+    // latency the cache was supposed to eliminate.
+    let (chat_model_idx_seed, chat_request_count_seed) = chat::load_model_state(&db).await;
+    tracing::info!(
+        "model-ladder state seeded from DB at startup: model_idx={chat_model_idx_seed}, request_count={chat_request_count_seed}"
+    );
     blog::init_schema(&db).await;
     research::init_schema(&db).await;
     simulation::init_schema(&db).await;
@@ -148,8 +174,8 @@ async fn main() {
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
         ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
-        chat_model_idx: Arc::new(AtomicUsize::new(0)),
-        chat_request_count: Arc::new(AtomicU64::new(0)),
+        chat_model_idx: Arc::new(AtomicUsize::new(chat_model_idx_seed)),
+        chat_request_count: Arc::new(AtomicU64::new(chat_request_count_seed)),
     };
 
     if state.chat_secret.is_empty() {
