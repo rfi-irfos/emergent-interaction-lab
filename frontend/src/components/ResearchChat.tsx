@@ -120,6 +120,78 @@ function ToolCallBadge({ call }: { call: ToolCallEvent }) {
   )
 }
 
+interface WebSearchResultItem { title: string; url: string; snippet: string }
+interface WebSearchResult {
+  ok?: boolean
+  query?: string
+  results?: WebSearchResultItem[]
+  note?: string
+  error?: string
+}
+
+// Its own distinct badge (not the generic 🔧 one) — real live web results
+// deserve to look and read differently from an internal tool's JSON dump,
+// and the honesty framing (live results, thin coverage, no fabrication)
+// belongs right next to the results themselves, not buried in raw JSON.
+function WebSearchBadge({ call }: { call: ToolCallEvent }) {
+  const [open, setOpen] = useState(false)
+  let parsed: WebSearchResult = {}
+  try { parsed = JSON.parse(call.result) } catch { /* malformed tool result */ }
+  const results = parsed.results ?? []
+  return (
+    <div className="chat-tool-call chat-web-search">
+      <button type="button" className="chat-tool-call-toggle chat-web-search-toggle" onClick={() => setOpen(o => !o)}>
+        🔍 Web-Suche{parsed.query ? `: „${parsed.query}"` : ''}
+      </button>
+      {open && (
+        <div className="chat-web-search-detail">
+          {parsed.ok === false ? (
+            <div className="chat-web-search-empty">{parsed.error ?? 'Websuche fehlgeschlagen.'}</div>
+          ) : results.length === 0 ? (
+            <div className="chat-web-search-empty">{parsed.note ?? 'Keine Treffer gefunden.'}</div>
+          ) : (
+            <ul className="chat-web-search-results">
+              {results.map((r, i) => (
+                <li key={i}>
+                  {r.url
+                    ? <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a>
+                    : <strong>{r.title}</strong>}
+                  {r.snippet && <span className="chat-web-search-snippet">{r.snippet}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="chat-web-search-footnote">
+            Echte, live abgerufene DuckDuckGo-Ergebnisse — keine Erfindung, aber nicht zwangsläufig vollständig.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Copies the rendered markdown source (what the model actually said), not
+// the rendered HTML/DOM — matches how "Exportieren" already treats message
+// content elsewhere in this file.
+function CopyMessageButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      className={`chat-copy-btn ${copied ? 'copied' : ''}`}
+      title="In Zwischenablage kopieren"
+      onClick={() => {
+        navigator.clipboard.writeText(content).then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }).catch(() => {})
+      }}
+    >
+      {copied ? '✓' : '⧉'}
+    </button>
+  )
+}
+
 export function ResearchChat({ siteContent, onMessageComplete, openConversationId, onOpenConversationHandled, onUpdate }: {
   siteContent?: unknown
   onMessageComplete?: () => void
@@ -137,6 +209,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const [showInspector, setShowInspector] = useState<Record<string, boolean>>({})
   const [toolCalls, setToolCalls] = useState<Record<string, ToolCallEvent[]>>({})
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const baseTitleRef = useRef(document.title)
@@ -284,19 +357,37 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     refreshConversations()
   }
 
-  async function uploadFile(file: File) {
-    setUploading(true)
-    setError(null)
+  async function uploadOne(file: File): Promise<boolean> {
     const form = new FormData()
     form.append('file', file)
     try {
       const res = await fetch(`${API_BASE}/api/chat/documents`, { method: 'POST', headers: authHeaders(), body: form })
-      if (!res.ok) setError('Datei konnte nicht verarbeitet werden.')
-      refreshDocuments()
+      return res.ok
     } catch {
-      setError('Upload fehlgeschlagen.')
-    } finally {
-      setUploading(false)
+      return false
+    }
+  }
+
+  // Uploads/embeds each file in sequence against the existing one-file-per-
+  // request endpoint — simpler than teaching the backend a multi-file
+  // request shape, and it's already a clean single-file POST. Sequential
+  // (not Promise.all) so uploadProgress reflects real progress and one huge
+  // PDF doesn't starve the others sharing the connection.
+  async function uploadFiles(files: File[]) {
+    if (files.length === 0) return
+    setUploading(true)
+    setError(null)
+    const failed: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress({ current: i + 1, total: files.length })
+      const ok = await uploadOne(files[i])
+      if (!ok) failed.push(files[i].name)
+      refreshDocuments()
+    }
+    setUploadProgress(null)
+    setUploading(false)
+    if (failed.length > 0) {
+      setError(`${failed.length} von ${files.length} Dateien konnten nicht verarbeitet werden: ${failed.join(', ')}`)
     }
   }
 
@@ -341,11 +432,14 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
             ref={fileInputRef}
             type="file"
             accept=".pdf,.md,.markdown,.txt"
+            multiple
             style={{ display: 'none' }}
-            onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = '' }}
+            onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) uploadFiles(files); e.target.value = '' }}
           />
           <button className="chat-upload-btn" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-            {uploading ? 'Lädt hoch…' : '+ PDF / MD hochladen'}
+            {uploading
+              ? (uploadProgress ? `Lädt hoch… (${uploadProgress.current}/${uploadProgress.total})` : 'Lädt hoch…')
+              : '+ PDF / MD hochladen'}
           </button>
         </div>
       </aside>
@@ -379,10 +473,13 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
               <div key={m.id} className={`chat-bubble ${m.role}`}>
                 {m.role === 'assistant' && (toolCalls[m.id]?.length ?? 0) > 0 && (
                   <div className="chat-tool-calls">
-                    {toolCalls[m.id].map((c, i) => <ToolCallBadge key={i} call={c} />)}
+                    {toolCalls[m.id].map((c, i) => (
+                      c.tool === 'web_search' ? <WebSearchBadge key={i} call={c} /> : <ToolCallBadge key={i} call={c} />
+                    ))}
                   </div>
                 )}
                 <div className="chat-bubble-content">
+                  {m.role === 'assistant' && m.content !== '' && <CopyMessageButton content={m.content} />}
                   {m.role === 'assistant' ? renderMarkdown(m.content) : m.content}
                   {streaming && m.role === 'assistant' && m.content === '' ? '…' : ''}
                 </div>

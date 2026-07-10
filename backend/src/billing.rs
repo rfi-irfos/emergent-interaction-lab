@@ -332,6 +332,7 @@ mod tests {
             chat_secret: String::new(),
             stripe_secret_key: "sk_test_mock".to_string(),
             stripe_api_base,
+            ddg_api_base: "https://api.duckduckgo.com".to_string(),
         }
     }
 
