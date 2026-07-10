@@ -63,8 +63,8 @@ function StatusRow({ label, ok }: { label: string; ok: boolean }) {
 /// the technical one — not a business/CMS concern, so it stays here rather
 /// than moving to Verwaltung.
 export function SystemState() {
-  const { data: signals, loading: signalsLoading } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals')
-  const { data: diag, loading: diagLoading } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
+  const { data: signals, loading: signalsLoading, error: signalsError } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals')
+  const { data: diag, loading: diagLoading, error: diagError } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
   const { data: scopeTrends } = useAdminFetch<ScopeTrend[]>('/api/observatory/scope-trends')
   const trendByScope = new Map((scopeTrends ?? []).map(t => [t.scope, t]))
 
@@ -105,7 +105,8 @@ export function SystemState() {
 
       <div className="obs-section-label">Beobachtete Systeme</div>
       {signalsLoading && <div className="obs-empty">Lade…</div>}
-      {!signalsLoading && states.length === 0 && (
+      {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}
+      {!signalsLoading && !signalsError && states.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Noch kein Systemzustand erkannt — entsteht automatisch aus Forschungsgesprächen.</div></div>
       )}
       {states.map(([scope, s]) => {
@@ -125,6 +126,7 @@ export function SystemState() {
 
       <div className="obs-section-label" style={{ marginTop: 26 }}>Technische Systemgesundheit</div>
       {diagLoading && <div className="obs-empty">Lade…</div>}
+      {diagError && <div className="obs-empty">Fehler beim Laden.</div>}
       {diag && (
         <>
           <div className="obs-card" style={{ marginBottom: 16 }}>

@@ -78,12 +78,14 @@ const MAX_COMPARE = 6
 /// to N runs at once (see plan item 8) — slots are added/removed, not a
 /// hardcoded pair.
 export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection) => void } = {}) {
-  const { data, loading } = useAdminFetch<RunOut[]>('/api/simulation/runs')
+  const { data, loading, error } = useAdminFetch<RunOut[]>('/api/simulation/runs')
   const { data: signalsData } = useAdminFetch<SignalRef[]>('/api/observatory/emergence/signals')
   const [overrideRuns, setOverrideRuns] = useState<RunOut[] | null>(null)
   const runs = overrideRuns ?? data ?? []
   const signals = signalsData ?? []
   const [compareIds, setCompareIds] = useState<string[]>(['', ''])
+
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   const setCompareId = (idx: number, value: string) => {
     setCompareIds(ids => ids.map((v, i) => (i === idx ? value : v)))

@@ -46,7 +46,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
   // tool writes rows here autonomously mid-session, so this panel needs to
   // notice on its own instead of only ever refreshing after a manual submit.
   const [refreshKey, setRefreshKey] = useState(0)
-  const { data, loading } = useAdminFetch<NoteOut[]>(`/api/research/items${query}`, [query, refreshKey], 18000)
+  const { data, loading, error } = useAdminFetch<NoteOut[]>(`/api/research/items${query}`, [query, refreshKey], 18000)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [category, setCategory] = useState(categories[0])
@@ -88,7 +88,8 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
       </div>
 
       {loading && !data && <div className="obs-empty">Lade…</div>}
-      {list.length === 0 && !loading && <div className="obs-empty">Noch keine Einträge.</div>}
+      {error && <div className="obs-empty">Fehler beim Laden.</div>}
+      {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
       {list.map(n => {
         const tags = parseTags(n.tags)
         return (

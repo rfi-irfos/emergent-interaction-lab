@@ -16,9 +16,10 @@ interface BehaviorData {
 /// Replaces the old visitor-hour/weekday bar charts entirely — those told
 /// you about website traffic, not about the research itself.
 export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
-  const { data, loading } = useAdminFetch<BehaviorData>('/api/observatory/behavior')
+  const { data, loading, error } = useAdminFetch<BehaviorData>('/api/observatory/behavior')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
   const maxCategory = Math.max(...data.category_mix.map(b => b.count), 1)

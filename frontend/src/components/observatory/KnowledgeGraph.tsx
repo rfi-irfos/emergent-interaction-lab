@@ -32,12 +32,17 @@ function hash(n: number): number {
   return x - Math.floor(x)
 }
 
-async function fetchJson(path: string): Promise<any> {
+// Unlike useAdminFetch (see lib/adminApi.ts), this graph fans out four
+// requests in parallel and merges them, so a single {data, loading, error}
+// triple doesn't fit — each call reports its own success/failure instead of
+// silently collapsing a failure into "[]", which used to be indistinguishable
+// from a genuinely empty knowledge base.
+async function fetchJson(path: string): Promise<{ data: any; error: boolean }> {
   try {
     const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() })
-    return res.ok ? await res.json() : null
+    return res.ok ? { data: await res.json(), error: false } : { data: null, error: true }
   } catch {
-    return null
+    return { data: null, error: true }
   }
 }
 
@@ -56,6 +61,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const [notes, setNotes] = useState<NoteRow[] | null>(null)
   const [docs, setDocs] = useState<DocRow[] | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -67,14 +73,16 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
         fetchJson('/api/chat/documents'),
       ])
       if (cancelled) return
-      setSignals(s ?? [])
-      setPosts(p ?? [])
-      setNotes(n ?? [])
-      setDocs(d ?? [])
+      if (s.error || p.error || n.error || d.error) setError(true)
+      setSignals(s.data ?? [])
+      setPosts(p.data ?? [])
+      setNotes(n.data ?? [])
+      setDocs(d.data ?? [])
     })()
     return () => { cancelled = true }
   }, [])
 
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!signals || !posts || !notes || !docs) return <div className="obs-panel"><div className="obs-empty">Graph wird aufgebaut…</div></div>
 
   // Real relationship engine does not exist anywhere in this codebase —

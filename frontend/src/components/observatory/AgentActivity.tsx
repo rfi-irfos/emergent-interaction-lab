@@ -44,9 +44,10 @@ function statusColor(item: ActivityItem): string {
 /// when GITHUB_ACTIVITY_TOKEN isn't configured, same convention as
 /// SystemState's chat_secret_configured warning.
 export function AgentActivity() {
-  const { data, loading } = useAdminFetch<AgentActivityData>('/api/observatory/agent-activity')
+  const { data, loading, error } = useAdminFetch<AgentActivityData>('/api/observatory/agent-activity')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
   return (

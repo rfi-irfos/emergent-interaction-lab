@@ -79,7 +79,7 @@ function downloadJson(filename: string, data: unknown) {
 /// interpretation, never presented as validated fact.
 export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [refreshKey, setRefreshKey] = useState(0)
-  const { data, loading } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals', [refreshKey])
+  const { data, loading, error } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals', [refreshKey])
   const { data: ccet } = useAdminFetch<CcetSummary>('/api/observatory/emergence/ccet', [refreshKey])
   const [analyzing, setAnalyzing] = useState(false)
 
@@ -106,6 +106,7 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
   }
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   const signals = data ?? []
 
