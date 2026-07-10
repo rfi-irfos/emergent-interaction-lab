@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 
@@ -57,6 +57,19 @@ const LEVEL_STAT_ACCENT: Record<string, string> = {
   human: 'c-purple', ai: 'c-blue', interaction: 'c-teal', system: 'c-amber',
 }
 
+// The three fixed confidence values the analysis prompt itself is
+// constrained to (see emergence.rs's analyze_recent_interactions prompt) —
+// same closed vocabulary as STATUS_ACCENT's keys and EVOLUTION_ARROW's keys
+// above, just without its own accent map since confidence isn't rendered
+// with a color today.
+const CONFIDENCE_LEVELS = ['experimental', 'tentative', 'moderate']
+
+// Backend page size for `GET /api/observatory/emergence/signals` — matches
+// the old hardcoded `LIMIT 50` exactly, so the very first page a visitor
+// sees is unchanged; `offset` (via "Weitere laden") is what makes the rest
+// of the table reachable now (see backend/src/emergence.rs).
+const PAGE_SIZE = 50
+
 function formatPercent(v: number): string {
   return `${Math.round(v * 100)}%`
 }
@@ -79,9 +92,63 @@ function downloadJson(filename: string, data: unknown) {
 /// interpretation, never presented as validated fact.
 export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [refreshKey, setRefreshKey] = useState(0)
-  const { data, loading, error } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals', [refreshKey])
   const { data: ccet } = useAdminFetch<CcetSummary>('/api/observatory/emergence/ccet', [refreshKey])
   const [analyzing, setAnalyzing] = useState(false)
+
+  // Real pagination + filters (see backend/src/emergence.rs's list_signals):
+  // previously this always fetched a hardcoded top-50, with no way to reach
+  // anything older and no way to narrow the page at all. `signals` is the
+  // accumulated, currently-loaded set (grows via "Weitere laden"); `total`
+  // is the true count matching the active filters (from the X-Total-Count
+  // response header), not just how much has been loaded so far.
+  const [signals, setSignals] = useState<Signal[]>([])
+  const [total, setTotal] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  // Honest fetch-error state (see #41) — a manual fetch replaces
+  // useAdminFetch here (which already had its own `error` flag), so this
+  // reimplements the same signal rather than silently dropping it.
+  const [error, setError] = useState(false)
+  const [levelFilter, setLevelFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [confidenceFilter, setConfidenceFilter] = useState('')
+  const [evolutionFilter, setEvolutionFilter] = useState('')
+
+  const loadSignals = async (offset: number, append: boolean) => {
+    if (append) setLoadingMore(true); else setLoading(true)
+    setError(false)
+    try {
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) })
+      if (levelFilter) params.set('level', levelFilter)
+      if (statusFilter) params.set('status', statusFilter)
+      if (confidenceFilter) params.set('confidence', confidenceFilter)
+      if (evolutionFilter) params.set('evolution', evolutionFilter)
+      const res = await fetch(`${API_BASE}/api/observatory/emergence/signals?${params}`, { headers: authHeaders() })
+      if (!res.ok) throw new Error(String(res.status))
+      const totalHeader = res.headers.get('X-Total-Count')
+      const page: Signal[] = await res.json()
+      setSignals(prev => (append ? [...prev, ...page] : page))
+      setTotal(totalHeader !== null ? Number(totalHeader) : null)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  // Any filter change (or a forced refreshKey bump) starts over from the
+  // newest page — "load more" below is the only path that appends.
+  useEffect(() => {
+    loadSignals(0, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey, levelFilter, statusFilter, confidenceFilter, evolutionFilter])
+
+  const loadMore = () => loadSignals(signals.length, true)
+  const resetFilters = () => {
+    setLevelFilter(''); setStatusFilter(''); setConfidenceFilter(''); setEvolutionFilter('')
+  }
+  const filtersActive = Boolean(levelFilter || statusFilter || confidenceFilter || evolutionFilter)
 
   const requestAnalysis = async () => {
     // No specific conversation in context on this page — the automatic
@@ -105,10 +172,15 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
     }
   }
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
-  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
+  if (loading && signals.length === 0) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error && signals.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
-  const signals = data ?? []
+  // With a level filter active, only that one level was ever fetched from
+  // the backend at all — showing the other 3 as zero/"empty" would
+  // misleadingly read as "no signals of that level exist" rather than
+  // "filtered out", so they're hidden entirely instead, both in the
+  // "Übersicht" stat grid and in the detail sections below.
+  const visibleSections = levelFilter ? LEVEL_SECTIONS.filter(s => s.key === levelFilter) : LEVEL_SECTIONS
 
   return (
     <div className="obs-panel">
@@ -124,16 +196,51 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           ⬇ Exportieren
         </button>
       </div>
+
+      {/* Filter bar — level/status/confidence/evolution, each a closed
+          vocabulary already fixed by the analysis prompt (see LEVEL_SECTIONS,
+          STATUS_ACCENT, CONFIDENCE_LEVELS, EVOLUTION_ARROW above), so plain
+          <select>s are enough; no free-text search needed for a handful of
+          known values. Every change resets pagination to the first page. */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+        <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Ebenen</option>
+          {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Status</option>
+          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Konfidenzen</option>
+          {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Verläufe</option>
+          {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        {filtersActive && (
+          <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
+            Filter zurücksetzen
+          </button>
+        )}
+      </div>
+
       {/* Summary strip — aggregated view above the flat card feed below,
           so every signal doesn't read with equal visual weight anymore.
           Two parts: (1) per-level counts, same obs-stat/obs-grid primitives
           the rest of the Observatory already uses; (2) the three CCET
           metrics, clearly marked as this project's own operationalization
           (see the CcetSummary doc comment above) — additive only, the
-          detail cards below are unchanged. */}
-      <div className="obs-section-label">Übersicht</div>
+          detail cards below are unchanged. Counts reflect the currently
+          *loaded* signals, not necessarily the global total — see the
+          "geladen" note below, honest about that now that this list is
+          paginated instead of always holding everything up to the old cap. */}
+      <div className="obs-section-label">
+        Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
+      </div>
       <div className="obs-grid">
-        {LEVEL_SECTIONS.map(section => (
+        {visibleSections.map(section => (
           <div className={`obs-stat ${LEVEL_STAT_ACCENT[section.key]}`} key={section.key}>
             <div className="obs-stat-value">{signals.filter(s => s.level === section.key).length}</div>
             <div className="obs-stat-label">{section.label}</div>
@@ -162,10 +269,16 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
         </div>
       )}
 
-      {signals.length === 0 && (
-        <div className="obs-card"><div className="obs-empty">Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.</div></div>
+      {signals.length === 0 && !loading && (
+        <div className="obs-card">
+          <div className="obs-empty">
+            {filtersActive
+              ? 'Keine Signale für diese Filterkombination.'
+              : 'Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.'}
+          </div>
+        </div>
       )}
-      {signals.length > 0 && LEVEL_SECTIONS.map(section => {
+      {signals.length > 0 && visibleSections.map(section => {
         const levelSignals = signals.filter(s => s.level === section.key)
         return (
           <div key={section.key} style={{ marginBottom: 8 }}>
@@ -202,6 +315,19 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           </div>
         )
       })}
+
+      {/* Only reached once some signals are already showing — the full-page
+          error state above already covers a failure on the very first load. */}
+      {error && signals.length > 0 && (
+        <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Nachladen.</div>
+      )}
+      {total !== null && signals.length < total && (
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <button className="panel-add-btn" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? 'Lädt…' : `Weitere laden (${signals.length} / ${total})`}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

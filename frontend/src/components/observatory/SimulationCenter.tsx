@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useAdminFetch } from '../../lib/adminApi'
-import { SimulationLab } from './SimulationLab'
+import { useEffect, useState } from 'react'
+import { API_BASE } from '../../lib/apiBase'
+import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { SimulationLab, STATUS_ACCENT } from './SimulationLab'
 import type { AdminSection } from '../../types/admin'
 
 interface RunOut {
@@ -69,6 +70,13 @@ function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: 
 // doing all the work anyway, so a hard ceiling keeps the picker row sane.
 const MAX_COMPARE = 6
 
+// Backend page size for `GET /api/simulation/runs` — previously that query
+// had no LIMIT at all (a genuinely unbounded read against a table that only
+// grows); this is the new default page, with "Weitere laden" (offset) and
+// the status filter (see backend/src/simulation.rs's list_runs) making the
+// rest reachable without ever pulling the whole table at once.
+const PAGE_SIZE = 20
+
 /// Simulation is its own Kernbereich, not a sub-panel of Research Pulse —
 /// promoted out per the plan (see ResearchPulse.tsx, which now just links
 /// here instead of embedding <SimulationLab> directly). The compare view
@@ -78,14 +86,61 @@ const MAX_COMPARE = 6
 /// to N runs at once (see plan item 8) — slots are added/removed, not a
 /// hardcoded pair.
 export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection) => void } = {}) {
-  const { data, loading, error } = useAdminFetch<RunOut[]>('/api/simulation/runs')
+  // Owns the runs list directly (rather than useAdminFetch) because
+  // pagination/filtering need a manual fetch that can either replace the
+  // list (new filter, or after create/delete) or append to it ("Weitere
+  // laden") — useAdminFetch's effect-on-deps model only ever replaces.
+  const [runs, setRuns] = useState<RunOut[]>([])
+  const [total, setTotal] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  // Honest fetch-error state (see #41) — reimplemented here since this
+  // manual fetch replaces useAdminFetch (which already had its own `error`).
+  const [error, setError] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('')
   const { data: signalsData } = useAdminFetch<SignalRef[]>('/api/observatory/emergence/signals')
-  const [overrideRuns, setOverrideRuns] = useState<RunOut[] | null>(null)
-  const runs = overrideRuns ?? data ?? []
   const signals = signalsData ?? []
   const [compareIds, setCompareIds] = useState<string[]>(['', ''])
 
-  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
+  const loadRuns = async (offset: number, append: boolean) => {
+    if (append) setLoadingMore(true); else setLoading(true)
+    setError(false)
+    try {
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) })
+      if (statusFilter) params.set('status', statusFilter)
+      const res = await fetch(`${API_BASE}/api/simulation/runs?${params}`, { headers: authHeaders() })
+      if (!res.ok) throw new Error(String(res.status))
+      const totalHeader = res.headers.get('X-Total-Count')
+      const page: RunOut[] = await res.json()
+      setRuns(prev => (append ? [...prev, ...page] : page))
+      setTotal(totalHeader !== null ? Number(totalHeader) : null)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    loadRuns(0, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter])
+
+  const loadMoreRuns = () => loadRuns(runs.length, true)
+  // A newly created run is always the most recent, so it's always on page
+  // one — resetting there (rather than trying to preserve however many
+  // pages were loaded via "Weitere laden") keeps this simple and correct.
+  const refreshAfterMutation = () => loadRuns(0, false)
+
+  // A compare slot pointing at a run that no longer exists (deleted, or
+  // simply not on the currently loaded page after a refresh) degrades to
+  // "unselected" rather than holding a dangling id the <select> can't match.
+  useEffect(() => {
+    setCompareIds(ids => ids.map(id => (id && !runs.some(r => r.id === id) ? '' : id)))
+  }, [runs])
+
+  if (error && runs.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   const setCompareId = (idx: number, value: string) => {
     setCompareIds(ids => ids.map((v, i) => (i === idx ? value : v)))
@@ -95,8 +150,28 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
 
   return (
     <div className="obs-panel">
-      <div className="obs-section-label">Aktive Simulationen</div>
-      <SimulationLab runs={runs} loading={loading} onRunsChange={setOverrideRuns} signals={signals} onNavigate={onNavigate} />
+      <div className="obs-section-label">
+        Aktive Simulationen {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {runs.length} von {total})</span>}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
+          <option value="">Alle Status</option>
+          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+      </div>
+      <SimulationLab
+        runs={runs}
+        loading={loading}
+        loadingMore={loadingMore}
+        // Only reached once some runs are already showing — the full-page
+        // error state above already covers a failure on the very first load.
+        error={error && runs.length > 0}
+        total={total}
+        onLoadMore={loadMoreRuns}
+        onRefresh={refreshAfterMutation}
+        signals={signals}
+        onNavigate={onNavigate}
+      />
 
       <div className="obs-section-label" style={{ marginTop: 24 }}>
         Vergleich{compareIds.length > 2 ? ` (${compareIds.length} Läufe)` : ''}

@@ -14,19 +14,39 @@ interface RunOut {
   related_signal_ids: string[] | null
 }
 
+// Hoisted to module scope (was a local const before) and exported so
+// SimulationCenter's status filter dropdown lists exactly the same three
+// values this file already renders distinct pill colors for — one source of
+// truth for the closed pending/complete/error vocabulary instead of two.
+export const STATUS_ACCENT: Record<string, string> = { pending: '#f59e0b', complete: '#10b981', error: '#ef4444' }
+
 interface SimulationLabProps {
   runs: RunOut[]
   loading: boolean
-  onRunsChange: (runs: RunOut[]) => void
+  loadingMore: boolean
+  /// True only once some runs are already showing and a subsequent fetch
+  /// (filter change or "Weitere laden") failed — SimulationCenter itself
+  /// already renders the full-page error state for a first-load failure
+  /// (honest fetch-error state, see #41), so this is just the inline note
+  /// for a failure past that point.
+  error: boolean
+  total: number | null
+  onLoadMore: () => void
+  /// Called after a successful create or delete — the parent
+  /// (SimulationCenter) owns the actual runs/pagination state and refetches
+  /// page one, since a new run is always the newest and a deleted one
+  /// should just disappear from wherever it was.
+  onRefresh: () => void
   signals: SignalRef[]
   onNavigate?: (s: AdminSection) => void
 }
 
-export function SimulationLab({ runs: list, loading, onRunsChange, signals, onNavigate }: SimulationLabProps) {
+export function SimulationLab({ runs: list, loading, loadingMore, error, total, onLoadMore, onRefresh, signals, onNavigate }: SimulationLabProps) {
   const [hypothesis, setHypothesis] = useState('')
   const [parameters, setParameters] = useState('')
   const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([])
   const [running, setRunning] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const toggleSignal = (id: string) => {
     setSelectedSignalIds(ids => (ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]))
@@ -40,7 +60,7 @@ export function SimulationLab({ runs: list, loading, onRunsChange, signals, onNa
       try { paramsJson = JSON.parse(parameters) } catch { paramsJson = { note: parameters } }
     }
     try {
-      const res = await fetch(`${API_BASE}/api/simulation/runs`, {
+      await fetch(`${API_BASE}/api/simulation/runs`, {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
@@ -49,19 +69,34 @@ export function SimulationLab({ runs: list, loading, onRunsChange, signals, onNa
           related_signal_ids: selectedSignalIds.length ? selectedSignalIds : undefined,
         }),
       })
-      await res.json()
-      const refreshed = await fetch(`${API_BASE}/api/simulation/runs`, { headers: authHeaders() })
-      onRunsChange(await refreshed.json())
+      onRefresh()
       setHypothesis(''); setParameters(''); setSelectedSignalIds([])
     } finally {
       setRunning(false)
     }
   }
 
-  const STATUS_ACCENT: Record<string, string> = { pending: '#f59e0b', complete: '#10b981', error: '#ef4444' }
+  // The backend does an unconditional hard delete (no soft-delete, no
+  // status guard — see simulation::delete_run) and until now nothing in the
+  // frontend ever called it at all (confirmed dead capability, not just
+  // unused UI). A native confirm() is the same deliberately minimal pattern
+  // BlogDrafts.tsx uses for its delete button, adopted here after that
+  // incident: this codebase has no custom modal, so a second explicit step
+  // before an unrecoverable action is the whole point.
+  const remove = async (id: string, hypothesisText: string) => {
+    if (!window.confirm(`„${hypothesisText}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return
+    setDeletingId(id)
+    try {
+      await fetch(`${API_BASE}/api/simulation/runs/${id}`, { method: 'DELETE', headers: authHeaders() })
+      onRefresh()
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   // Signals already come back newest-first (list_signals ORDER BY
   // created_at DESC) — a run almost always explores something recent, not
-  // the full 50-deep backlog, so the picker only shows a short recent slice.
+  // the full backlog, so the picker only shows a short recent slice.
   const recentSignals = signals.slice(0, 10)
 
   return (
@@ -118,9 +153,29 @@ export function SimulationLab({ runs: list, loading, onRunsChange, signals, onNa
               </div>
             )}
             {r.narrative && <div className="obs-item-body">{r.narrative}</div>}
+            <div style={{ marginTop: 10 }}>
+              <button
+                type="button"
+                className="panel-delete-btn"
+                style={{ fontSize: 11, padding: '4px 10px' }}
+                disabled={deletingId === r.id}
+                onClick={() => remove(r.id, r.hypothesis)}
+              >
+                {deletingId === r.id ? 'Löscht…' : 'Löschen'}
+              </button>
+            </div>
           </div>
         )
       })}
+
+      {error && <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Nachladen.</div>}
+      {total !== null && list.length < total && (
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <button className="panel-add-btn" onClick={onLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Lädt…' : `Weitere laden (${list.length} / ${total})`}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -17,7 +17,7 @@ mod simulation;
 mod track;
 mod upload;
 
-use axum::{routing::{get, post}, Router};
+use axum::{http::HeaderName, routing::{get, post}, Router};
 use sqlx::SqlitePool;
 use std::{
     collections::HashMap,
@@ -297,7 +297,14 @@ async fn main() {
         // React SPA
         .fallback_service(spa_fallback)
         .with_state(state)
-        .layer(CorsLayer::permissive());
+        // `.permissive()` allows any origin/method/header on the *request*
+        // side, but a browser only exposes a small CORS-safelisted set of
+        // *response* headers to JS by default — a custom one like
+        // `X-Total-Count` (emergence::list_signals, simulation::list_runs —
+        // real pagination totals) needs an explicit exposure or the admin
+        // panel silently can't read it when served cross-origin (e.g. from
+        // GitHub Pages, see frontend/src/lib/apiBase.ts).
+        .layer(CorsLayer::permissive().expose_headers([HeaderName::from_static("x-total-count")]));
 
     let port = std::env::var("PORT").unwrap_or("3000".into());
     let addr = format!("0.0.0.0:{port}");

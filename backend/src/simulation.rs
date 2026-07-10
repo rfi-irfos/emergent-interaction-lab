@@ -1,6 +1,6 @@
 use axum::{
-    extract::{Path, State},
-    http::{HeaderMap, StatusCode},
+    extract::{Path, Query, State},
+    http::{HeaderMap, HeaderValue, StatusCode},
     response::IntoResponse,
     Json,
 };
@@ -118,15 +118,69 @@ fn to_out(r: RunRow) -> RunOut {
     RunOut { id: r.0, hypothesis: r.1, parameters: r.2, narrative: r.3, status: r.4, created_at: r.5, updated_at: r.6, related_signal_ids }
 }
 
-pub async fn list_runs(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+// Previously: no LIMIT at all — a genuinely unbounded query against a table
+// that only ever grows. `DEFAULT_RUNS_LIMIT` gives every existing caller
+// that never passes params (LiveCards, SimulationCenter/Lab's own list) a
+// sensible page instead of "everything ever run"; `limit`/`offset` reach the
+// rest, and `status` (pending/complete/error — the same three values
+// `STATUS_ACCENT` in SimulationLab.tsx already renders) narrows the page.
+const DEFAULT_RUNS_LIMIT: i64 = 20;
+const MAX_RUNS_LIMIT: i64 = 100;
+
+#[derive(Deserialize)]
+pub struct ListRunsQuery {
+    limit: Option<i64>,
+    offset: Option<i64>,
+    status: Option<String>,
+}
+
+/// Comma-separated multi-value filter, same convention used by
+/// research.rs's `category` param and emergence.rs's signal filters.
+fn parse_multi(raw: &Option<String>) -> Vec<String> {
+    raw.as_deref()
+        .map(|s| s.split(',').map(|v| v.trim().to_string()).filter(|v| !v.is_empty()).collect())
+        .unwrap_or_default()
+}
+
+pub async fn list_runs(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListRunsQuery>) -> impl IntoResponse {
     if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
-    let rows: Vec<RunRow> = sqlx::query_as(
-        "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids FROM simulation_runs ORDER BY created_at DESC",
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
-    Json(rows.into_iter().map(to_out).collect::<Vec<_>>()).into_response()
+    let limit = q.limit.unwrap_or(DEFAULT_RUNS_LIMIT).clamp(1, MAX_RUNS_LIMIT);
+    let offset = q.offset.unwrap_or(0).max(0);
+
+    let statuses = parse_multi(&q.status);
+    let (where_sql, binds): (String, Vec<String>) = if statuses.is_empty() {
+        (String::new(), Vec::new())
+    } else {
+        let placeholders = vec!["?"; statuses.len()].join(",");
+        (format!("WHERE status IN ({placeholders})"), statuses)
+    };
+
+    // Total matching the filter (ignoring limit/offset), surfaced via
+    // `X-Total-Count` so the frontend's "load more" / count tiles know the
+    // real total without ever fetching the full table.
+    let count_sql = format!("SELECT COUNT(*) FROM simulation_runs {where_sql}");
+    let mut count_query = sqlx::query_scalar(&count_sql);
+    for b in &binds {
+        count_query = count_query.bind(b);
+    }
+    let total: i64 = count_query.fetch_one(&state.db).await.unwrap_or(0);
+
+    let select_sql = format!(
+        "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids \
+         FROM simulation_runs {where_sql} ORDER BY created_at DESC LIMIT ? OFFSET ?"
+    );
+    let mut row_query = sqlx::query_as(&select_sql);
+    for b in &binds {
+        row_query = row_query.bind(b);
+    }
+    let rows: Vec<RunRow> = row_query.bind(limit).bind(offset).fetch_all(&state.db).await.unwrap_or_default();
+
+    let mut resp = Json(rows.into_iter().map(to_out).collect::<Vec<_>>()).into_response();
+    resp.headers_mut().insert(
+        "x-total-count",
+        HeaderValue::from_str(&total.to_string()).unwrap_or_else(|_| HeaderValue::from_static("0")),
+    );
+    resp
 }
 
 #[derive(Deserialize)]
@@ -196,8 +250,12 @@ pub async fn delete_run(State(state): State<AppState>, headers: HeaderMap, Path(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::extract::State as AxState;
+    use axum::extract::{Query as AxQuery, State as AxState};
     use std::{collections::HashMap, path::PathBuf, sync::{Arc, RwLock}};
+
+    fn empty_runs_query() -> ListRunsQuery {
+        ListRunsQuery { limit: None, offset: None, status: None }
+    }
 
     async fn test_state() -> AppState {
         let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
@@ -250,7 +308,7 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "mehr Kontext -> stabilere Interaktion", Some(vec!["sig-1".to_string(), "sig-2".to_string()])).await;
 
-        let res = list_runs(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let res = list_runs(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_runs_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let runs: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
@@ -310,5 +368,127 @@ mod tests {
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(run["related_signal_ids"], serde_json::Value::Null);
+    }
+
+    async fn runs_body(res: axum::response::Response) -> (Vec<serde_json::Value>, Option<i64>) {
+        let total = res
+            .headers()
+            .get("x-total-count")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<i64>().ok());
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
+        (body, total)
+    }
+
+    /// The core bug: `list_runs` previously had no LIMIT at all — a query
+    /// against a table that only grows. Create more runs than the new
+    /// default page size and confirm the default response is now bounded,
+    /// while `X-Total-Count` still reports the real total and a follow-up
+    /// page (via `offset`) reaches the rest.
+    #[tokio::test]
+    async fn list_runs_is_now_bounded_by_default_with_total_count_and_offset_reaching_the_rest() {
+        let state = test_state().await;
+        let n = (DEFAULT_RUNS_LIMIT + 5) as usize;
+        for i in 0..n {
+            create(&state, &format!("hypothesis-{i}"), None).await;
+        }
+
+        let (first_page, total) = runs_body(
+            list_runs(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_runs_query())).await.into_response(),
+        )
+        .await;
+        assert_eq!(first_page.len(), DEFAULT_RUNS_LIMIT as usize, "unbounded query must now default to a real page size");
+        assert_eq!(total, Some(n as i64), "X-Total-Count must reflect the true total, not just the page size");
+
+        let (second_page, _) = runs_body(
+            list_runs(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListRunsQuery { limit: Some(DEFAULT_RUNS_LIMIT), offset: Some(DEFAULT_RUNS_LIMIT), status: None }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(second_page.len(), 5, "runs beyond the default page must be reachable via offset");
+
+        let first_ids: std::collections::HashSet<_> = first_page.iter().map(|r| r["id"].clone()).collect();
+        let second_ids: std::collections::HashSet<_> = second_page.iter().map(|r| r["id"].clone()).collect();
+        assert!(first_ids.is_disjoint(&second_ids));
+    }
+
+    /// `STATUS_ACCENT` in SimulationLab.tsx distinguishes pending/complete/
+    /// error visually — this proves the backend can actually filter to just
+    /// one of those, not only display them differently once already loaded.
+    #[tokio::test]
+    async fn status_filter_actually_filters() {
+        let state = test_state().await;
+        // create_run always resolves synchronously to 'complete' or 'error'
+        // here (nvidia_api_key is empty in test_state -> run_scenario's
+        // early-return Err path -> status='error'), so both real statuses
+        // are exercised without needing a mock NVIDIA server.
+        let ok_id = create(&state, "will error since no NVIDIA key is configured", None).await;
+        let get_res = get_run(AxState(state.clone()), HeaderMap::new(), Path(ok_id.clone())).await.into_response();
+        let bytes = axum::body::to_bytes(get_res.into_body(), usize::MAX).await.unwrap();
+        let created: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(created["status"], "error", "sanity check: run_scenario's no-API-key path always lands on 'error' in tests");
+
+        // A run that's still mid-flight in real usage — inserted directly
+        // since create_run always resolves synchronously in this test setup.
+        let pending_id = uuid::Uuid::new_v4().to_string();
+        sqlx::query("INSERT INTO simulation_runs (id, hypothesis, parameters, status) VALUES (?1,'still running','{}','pending')")
+            .bind(&pending_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let (body, total) = runs_body(
+            list_runs(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListRunsQuery { limit: None, offset: None, status: Some("pending".to_string()) }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1));
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["id"], pending_id);
+    }
+
+    /// `delete_run` was fully implemented and routed but had zero frontend
+    /// callers (confirmed dead capability). This proves the endpoint itself
+    /// is correct end-to-end: the run disappears from both `get_run` and
+    /// `list_runs` after deletion — the same behavior the new
+    /// SimulationLab.tsx delete button now actually triggers.
+    #[tokio::test]
+    async fn delete_run_removes_it_from_get_and_list() {
+        let state = test_state().await;
+        let id = create(&state, "temporary hypothesis", None).await;
+
+        let del_res = delete_run(AxState(state.clone()), HeaderMap::new(), Path(id.clone())).await.into_response();
+        assert_eq!(del_res.status(), StatusCode::NO_CONTENT);
+
+        let get_res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id.clone())).await.into_response();
+        assert_eq!(get_res.status(), StatusCode::NOT_FOUND);
+
+        let (body, total) = runs_body(
+            list_runs(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_runs_query())).await.into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(0));
+        assert!(body.iter().all(|r| r["id"] != id));
+    }
+
+    #[tokio::test]
+    async fn delete_run_requires_admin_auth() {
+        let mut state = test_state().await;
+        let id = create(&state, "protect me", None).await;
+        state.chat_secret = "shh".to_string();
+
+        let res = delete_run(AxState(state), HeaderMap::new(), Path(id)).await.into_response();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 }
