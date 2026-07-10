@@ -2058,11 +2058,14 @@ button { cursor: pointer; font-family: inherit; }
 .live-cards-panel-toggle:hover { color: #63f0ff; }
 .live-cards-panel-chevron { display: inline-flex; font-size: 10px; width: 10px; }
 .live-cards-panel-hint { font-weight: 500; text-transform: none; letter-spacing: 0; color: #576270; }
-/* Three tiers, not one flat row — a research signal must not read with the
-   same visual weight as a technical figure (see plan). Prominent research
-   row, secondary system row, small muted technical chip row last. */
-.live-cards-tiered { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 4px; flex-shrink: 0; }
-.live-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+/* One clean horizontal strip, not three stacked rows — the tiers still carry
+   different visual weight (see .live-card-secondary/.live-card-technical
+   below: a research signal must not read the same as a technical figure),
+   but that hierarchy comes from each card's own size/opacity now, not from
+   forcing a fresh row per tier — on a wide screen three separate rows just
+   read as clutter. */
+.live-cards-tiered { display: flex; flex-direction: row; align-items: flex-end; gap: 10px; padding: 8px 0 4px; flex-shrink: 0; flex-wrap: wrap; }
+.live-cards { display: contents; }
 .live-card {
   --obs-accent: #3b6bf6;
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px; position: relative; overflow: hidden;
@@ -2076,8 +2079,7 @@ button { cursor: pointer; font-family: inherit; }
 .live-card-label { font-size: 9.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; white-space: nowrap; }
 .live-card-secondary { padding: 8px 13px 7px; box-shadow: none; }
 .live-card-secondary .live-card-value { font-size: 16px; }
-.live-cards-technical { opacity: .7; }
-.live-card-technical { padding: 6px 11px 5px; box-shadow: none; border-style: dashed; }
+.live-card-technical { padding: 6px 11px 5px; box-shadow: none; border-style: dashed; opacity: .7; }
 .live-card-technical .live-card-value { font-size: 13px; }
 .live-card-technical .live-card-label { font-size: 8.5px; }
 
