@@ -264,6 +264,39 @@ pub async fn init_schema(db: &SqlitePool) {
     .execute(db)
     .await
     .expect("create chat_model_state");
+
+    // CCET (Continuous Co-Evolution Tracker) instrumentation — one row per
+    // assistant turn analyzed. `embedding` is stored (not recomputed) so the
+    // NEXT turn's similarity check never has to re-embed an old turn.
+    // `stable`/`prev_stable`/`terms_reused` are pre-computed at write time
+    // (see `record_ccet_turn`) so the read path (`ccet_summary`) is a plain
+    // aggregate query with no re-derivation — see the CCET section below
+    // (before "conversations CRUD") for what these mean and, importantly,
+    // which of them are this project's own operationalization rather than
+    // anything Laura's paper itself defines.
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS ccet_turns (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            embedding BLOB NOT NULL,
+            similarity_to_prev REAL,
+            stable INTEGER NOT NULL,
+            prev_stable INTEGER,
+            terms_reused INTEGER NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+        )",
+    )
+    .execute(db)
+    .await
+    .expect("create ccet_turns");
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_ccet_conv ON ccet_turns(conversation_id, created_at)")
+        .execute(db)
+        .await
+        .ok();
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_ccet_created ON ccet_turns(created_at)")
+        .execute(db)
+        .await
+        .ok();
 }
 
 /// Reads the durable model-ladder state at startup, seeding
@@ -446,6 +479,289 @@ async fn retrieve_context(state: &AppState, query_embedding: &[f32]) -> Vec<(Str
     scored.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
     scored.truncate(RETRIEVAL_TOP_K);
     scored
+}
+
+// ── CCET: Continuous Co-Evolution Tracker ───────────────────────────────────
+//
+// Laura's paper (`EIL_LSG_Human-AI-Interaction_Co-Evolution.pdf`, §5.7.1-
+// 5.7.2) defines the CCET as a "Quantitative Monitoring Layer" with three
+// headline metrics — Co-Evolution Index (CEI), Co-Evolution Points (CEP),
+// and Resonance Frequency — but gives an actual, checkable formula for
+// exactly ONE of them:
+//
+//     CEI = stable turns / total turns, range 0-1     (the paper's own line)
+//
+// The paper never defines what a "stable turn" IS, and CEP / Resonance
+// Frequency appear only as reported OUTPUT values across its case studies
+// (e.g. "CEI stabilized at 0.82 ± 0.04", "resonance frequency ≈ 0.94") —
+// never as a computable procedure. Simeon's explicit call, when asked, was
+// to ship the full framework anyway, not just the one metric with a real
+// formula — so all three are implemented below. Per this project's own
+// no-fabrication ethos (see the frontend's `obs-badge-experimental`
+// pattern), every definition below that is NOT the paper's own is called
+// out as such in its doc comment, and the same disclosure is surfaced again
+// in the API response (`CcetSummary::definitions_note`) and in the
+// Observatory UI — never presented as verbatim from the paper except the
+// CEI ratio itself.
+//
+// Instrumentation fires from the same trigger point as
+// `emergence::analyze_recent_interactions` (see the spawn in `stream_chat`
+// below): once per completed exchange, as a background task, so the extra
+// NVIDIA embedding call never delays the visible reply — same accepted
+// cost/latency tradeoff as the emergence-signal analysis.
+
+/// THIS PROJECT'S OWN operationalization of "stable turn" — the paper gives
+/// no threshold and no method, only the bare word. Defined here as: cosine
+/// similarity (over the same NVIDIA embedding used for RAG retrieval above)
+/// between the current assistant turn and the immediately preceding
+/// ASSISTANT turn in the same conversation, at or above this threshold.
+/// Comparing assistant-to-assistant (not assistant-to-user) deliberately:
+/// the metric is meant to read the model's own turn-to-turn consistency,
+/// and a user's message is a different speaker whose vocabulary shift isn't
+/// a measure of that. 0.75 is a reasonable, tunable starting point — high
+/// enough that a genuine topic change doesn't count as "stable", low enough
+/// that ordinary paraphrase-level continuity does — chosen by engineering
+/// judgment, NOT derived from the paper. Tune here if real production data
+/// suggests a better cutoff.
+const CCET_STABILITY_THRESHOLD: f32 = 0.75;
+
+/// How many of the most recent turns (across ALL conversations — see
+/// `ccet_summary`'s doc comment for why this is a global rather than a
+/// per-conversation window) feed the live CEI/CEP/Resonance-Frequency
+/// numbers. A rolling window, not an all-time aggregate, so the numbers
+/// track recent behavior instead of being anchored forever by however the
+/// very first conversations happened to go.
+const CCET_WINDOW_TURNS: i64 = 200;
+
+/// The established vocabulary this app already uses for ITSELF — not
+/// invented for this feature. "Emergenz"/"Drift"/"Interaction Field" are
+/// the exact terms `emergence.rs`'s own signal-detection prompt and
+/// `SystemMap.tsx`'s own on-screen label already use; the tier names are
+/// the exact Forschungsebene/Systemebene/technische-Ebene split
+/// `SYSTEM_PROMPT` above already teaches the model. Matched lowercase,
+/// substring, against assistant turn text only — see `shares_framework_term`
+/// for why that measures the model carrying vocabulary forward, not merely
+/// echoing what Laura just said.
+const CCET_FRAMEWORK_TERMS: &[&str] = &[
+    "emergenz",
+    "drift",
+    "interaction field",
+    "co-evolution",
+    "resonanz",
+    "forschungsebene",
+    "systemebene",
+    "technische ebene",
+];
+
+fn framework_terms_in(text: &str) -> std::collections::HashSet<&'static str> {
+    let lower = text.to_lowercase();
+    CCET_FRAMEWORK_TERMS.iter().copied().filter(|term| lower.contains(term)).collect()
+}
+
+/// Resonance Frequency's per-turn primitive: does the CURRENT assistant
+/// turn reuse at least one of this app's own established framework terms
+/// that ALSO appeared in the immediately preceding assistant turn — i.e.
+/// vocabulary the model is carrying forward on its own ("without
+/// prompting"), rather than a term merely appearing once in isolation.
+fn shares_framework_term(current: &str, previous: &str) -> bool {
+    let current_terms = framework_terms_in(current);
+    if current_terms.is_empty() {
+        return false;
+    }
+    let previous_terms = framework_terms_in(previous);
+    current_terms.intersection(&previous_terms).next().is_some()
+}
+
+fn is_stable_turn(similarity: f32) -> bool {
+    similarity >= CCET_STABILITY_THRESHOLD
+}
+
+/// One assistant turn's contribution to the three metrics below — reduced
+/// to exactly the booleans/optionals the pure computation functions need,
+/// so they're testable with plain synthetic data and never need a DB or a
+/// network call. Mirrors one row of the `ccet_turns` table.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct CcetTurn {
+    /// This turn's own stability verdict (see `is_stable_turn`) — always
+    /// `false` for the first turn of a conversation, which has no
+    /// predecessor to be stable relative to.
+    stable: bool,
+    /// Whether the SPECIFIC previous turn this row was compared against was
+    /// itself stable — `None` only for a conversation's first turn (no
+    /// predecessor at all, not even an unstable one).
+    prev_stable: Option<bool>,
+    terms_reused: bool,
+}
+
+/// CEI = stable turns / total turns — the paper's own formula, applied here
+/// over whatever window the caller passes in (`ccet_summary` uses
+/// `CCET_WINDOW_TURNS`). Empty input reads as 0.0, not NaN.
+fn compute_cei(turns: &[CcetTurn]) -> f32 {
+    if turns.is_empty() {
+        return 0.0;
+    }
+    let stable = turns.iter().filter(|t| t.stable).count();
+    stable as f32 / turns.len() as f32
+}
+
+/// CEP — THIS PROJECT'S OWN definition; the paper never gives one (see the
+/// module doc comment above), only ever a resulting number. Defined as a
+/// cumulative count of "co-evolution points": one point per turn that is
+/// itself stable AND whose specific predecessor was also stable — i.e. it
+/// rewards a SUSTAINED run of stability (two stable turns in a row), rather
+/// than just duplicating CEI's numerator (an isolated stable turn already
+/// counts there). Chosen as the simplest defensible reading of "points"
+/// that isn't a duplicate of CEI.
+fn compute_cep(turns: &[CcetTurn]) -> u32 {
+    turns.iter().filter(|t| t.stable && t.prev_stable == Some(true)).count() as u32
+}
+
+/// Resonance Frequency — THIS PROJECT'S OWN operationalization, though with
+/// real (if qualitative) grounding in the paper: it repeatedly ties
+/// "resonance" to terminology reuse and "Framework Adherence" across turns,
+/// without ever giving those a formula either. Defined here as the rate,
+/// across turns, at which the current turn reuses one of this app's own
+/// established framework terms that also appeared in the immediately
+/// preceding turn (see `shares_framework_term`) — i.e. how often the
+/// model's own vocabulary carries forward turn-to-turn, unprompted.
+fn compute_resonance_frequency(turns: &[CcetTurn]) -> f32 {
+    if turns.is_empty() {
+        return 0.0;
+    }
+    let reused = turns.iter().filter(|t| t.terms_reused).count();
+    reused as f32 / turns.len() as f32
+}
+
+/// Fires once per completed exchange (see the spawn in `stream_chat`),
+/// exactly like `emergence::analyze_recent_interactions` — an accepted
+/// extra-NVIDIA-call-per-turn tradeoff for a background task that never
+/// delays the visible reply. Embeds the current assistant turn, compares it
+/// to the previous ASSISTANT turn in the same conversation (not whatever
+/// user turn sits in between — see `CCET_STABILITY_THRESHOLD`'s doc
+/// comment), and persists one `ccet_turns` row.
+async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text: &str) {
+    if state.nvidia_api_key.is_empty() || current_text.trim().is_empty() {
+        return;
+    }
+
+    // The specific previous turn this one is compared against: the most
+    // recently recorded ccet_turns row for this conversation (its stored
+    // embedding + whether IT was stable) plus the matching previous
+    // ASSISTANT message text (for the terminology-reuse check) — fetched
+    // from chat_messages rather than duplicated into ccet_turns, since
+    // chat_messages is already the durable copy of that text. Relies on the
+    // caller (stream_chat) having already inserted the current turn's
+    // chat_messages row before spawning this, so "the most recent assistant
+    // message" here is the CURRENT turn and OFFSET 1 is the previous one.
+    let prev_row: Option<(Vec<u8>, i64)> = sqlx::query_as(
+        "SELECT embedding, stable FROM ccet_turns WHERE conversation_id = ?1 ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(conversation_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let prev_assistant_text: Option<(String,)> = sqlx::query_as(
+        "SELECT content FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant' ORDER BY created_at DESC LIMIT 1 OFFSET 1",
+    )
+    .bind(conversation_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let current_embedding = match embed(state, current_text, "passage").await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!("CCET embed failed for conversation {conversation_id}: {e}");
+            return;
+        }
+    };
+
+    let (similarity, stable, prev_stable, terms_reused) = match (&prev_row, &prev_assistant_text) {
+        (Some((prev_blob, prev_stable_int)), Some((prev_text,))) => {
+            let prev_embedding = decode_embedding(prev_blob);
+            let similarity = cosine(&current_embedding, &prev_embedding);
+            let stable = is_stable_turn(similarity);
+            let prev_stable = *prev_stable_int != 0;
+            let terms_reused = shares_framework_term(current_text, prev_text);
+            (Some(similarity), stable, Some(prev_stable), terms_reused)
+        }
+        // No previous turn recorded yet for this conversation — honest
+        // first-turn handling: can't be "stable" or "reuse" anything
+        // relative to a predecessor that doesn't exist.
+        _ => (None, false, None, false),
+    };
+
+    let _ = sqlx::query(
+        "INSERT INTO ccet_turns (id, conversation_id, embedding, similarity_to_prev, stable, prev_stable, terms_reused) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+    )
+    .bind(Uuid::new_v4().to_string())
+    .bind(conversation_id)
+    .bind(encode_embedding(&current_embedding))
+    .bind(similarity.map(|s| s as f64))
+    .bind(stable as i64)
+    .bind(prev_stable.map(|b| b as i64))
+    .bind(terms_reused as i64)
+    .execute(&state.db)
+    .await;
+}
+
+#[derive(Serialize)]
+pub struct CcetSummary {
+    cei: f32,
+    cep: u32,
+    resonance_frequency: f32,
+    turns_considered: i64,
+    stability_threshold: f32,
+    /// Explicit, machine-readable echo of the disclosure the frontend also
+    /// renders, so no future consumer of this endpoint can present these
+    /// numbers as the paper's own verified formula either.
+    definitions_note: &'static str,
+}
+
+/// Admin-authenticated: current CEI/CEP/Resonance-Frequency, computed over
+/// the most recent `CCET_WINDOW_TURNS` assistant turns ACROSS ALL
+/// conversations (a global rolling window), not one specific conversation.
+/// This matches how the rest of the Emergence Observatory already works
+/// (`emergence::list_signals` is one global feed, not scoped to whichever
+/// conversation happens to be open) and is the simpler-to-implement-
+/// correctly option the plan explicitly allowed for: a genuinely correct
+/// PER-conversation live rollup would need the Observatory tab to know
+/// which conversation is "current" outside of Forschung's own chat view,
+/// which nothing here currently threads through.
+pub async fn ccet_summary(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+    if !is_authorized(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    let rows: Vec<(i64, Option<i64>, i64)> = sqlx::query_as(
+        "SELECT stable, prev_stable, terms_reused FROM ccet_turns ORDER BY created_at DESC LIMIT ?1",
+    )
+    .bind(CCET_WINDOW_TURNS)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let turns: Vec<CcetTurn> = rows
+        .into_iter()
+        .map(|(stable, prev_stable, terms_reused)| CcetTurn {
+            stable: stable != 0,
+            prev_stable: prev_stable.map(|v| v != 0),
+            terms_reused: terms_reused != 0,
+        })
+        .collect();
+
+    Json(CcetSummary {
+        cei: compute_cei(&turns),
+        cep: compute_cep(&turns),
+        resonance_frequency: compute_resonance_frequency(&turns),
+        turns_considered: turns.len() as i64,
+        stability_threshold: CCET_STABILITY_THRESHOLD,
+        definitions_note: "CEI folgt der Formel aus Lauras Paper (stable turns / total turns). \"Stable turn\", CEP und Resonance Frequency sind eigene Operationalisierungen dieses Projekts, nicht wörtlich aus dem Paper übernommen.",
+    })
+    .into_response()
 }
 
 // ── conversations CRUD ───────────────────────────────────────────────────────
@@ -1251,6 +1567,19 @@ pub async fn stream_chat(
         let emergence_conv_id = conversation_id.clone();
         tokio::spawn(async move {
             crate::emergence::analyze_recent_interactions(&emergence_state, &emergence_conv_id).await;
+        });
+
+        // CCET (Continuous Co-Evolution Tracker) instrumentation — same
+        // background-task pattern as the emergence-signal spawn just above
+        // (an accepted extra-NVIDIA-call-per-turn tradeoff, never on the
+        // reply's critical path). See the CCET section above the
+        // "conversations CRUD" marker for what's this project's own
+        // operationalization vs. the paper's actual formula.
+        let ccet_state = state.clone();
+        let ccet_conv_id = conversation_id.clone();
+        let ccet_text = final_full_text.clone();
+        tokio::spawn(async move {
+            record_ccet_turn(&ccet_state, &ccet_conv_id, &ccet_text).await;
         });
 
         yield Ok(Event::default().event("done").data("[DONE]"));
@@ -2088,6 +2417,196 @@ mod tests {
         assert!(
             body.contains("Hallo aus dem Mock") && body.contains("event: done"),
             "must still deliver the real reply from the working candidate, not get stuck on the hung one: {body:?}"
+        );
+    }
+
+    // ── CCET (Continuous Co-Evolution Tracker) — pure-function tests
+    // (2026-07-10) ────────────────────────────────────────────────────────
+    //
+    // Same approach as `build_model_ladder`'s tests above: plain synthetic
+    // data, no DB, no network — `compute_cei`/`compute_cep`/
+    // `compute_resonance_frequency`/`is_stable_turn`/`shares_framework_term`
+    // are all pure functions over already-decided booleans/floats.
+
+    fn turn(stable: bool, prev_stable: Option<bool>, terms_reused: bool) -> CcetTurn {
+        CcetTurn { stable, prev_stable, terms_reused }
+    }
+
+    #[test]
+    fn stability_threshold_is_inclusive_at_the_boundary() {
+        assert!(is_stable_turn(CCET_STABILITY_THRESHOLD), "the threshold itself must count as stable, not just values strictly above it");
+        assert!(is_stable_turn(0.9));
+        assert!(!is_stable_turn(CCET_STABILITY_THRESHOLD - 0.01));
+        assert!(!is_stable_turn(0.0));
+    }
+
+    /// CEI must reproduce the paper's own formula exactly: stable / total.
+    #[test]
+    fn cei_is_stable_over_total_matching_the_papers_own_formula() {
+        let turns = vec![
+            turn(true, None, false),
+            turn(true, Some(true), false),
+            turn(false, Some(true), false),
+            turn(true, Some(false), false),
+        ];
+        assert_eq!(compute_cei(&turns), 0.75, "3 of 4 turns stable");
+    }
+
+    #[test]
+    fn cei_on_empty_window_is_zero_not_nan() {
+        assert_eq!(compute_cei(&[]), 0.0);
+    }
+
+    /// CEP (this project's own definition — see `compute_cep`'s doc
+    /// comment): only a turn that is ITSELF stable AND whose specific
+    /// predecessor was also stable counts, so an isolated stable turn
+    /// (already counted by CEI) never double-counts here.
+    #[test]
+    fn cep_only_counts_a_turn_whose_specific_predecessor_was_also_stable() {
+        let turns = vec![
+            turn(true, None, false),        // first turn ever: no predecessor, not a CEP point
+            turn(true, Some(true), false),  // stable, predecessor stable -> 1 point
+            turn(true, Some(false), false), // stable, but predecessor was NOT stable -> no point
+            turn(false, Some(true), false), // not stable itself -> no point regardless of predecessor
+        ];
+        assert_eq!(compute_cep(&turns), 1);
+    }
+
+    #[test]
+    fn cep_on_empty_window_is_zero() {
+        assert_eq!(compute_cep(&[]), 0);
+    }
+
+    #[test]
+    fn resonance_frequency_is_terms_reused_over_total() {
+        let turns = vec![
+            turn(true, None, true),
+            turn(true, Some(true), false),
+            turn(false, Some(true), true),
+        ];
+        assert!((compute_resonance_frequency(&turns) - (2.0 / 3.0)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn resonance_frequency_on_empty_window_is_zero() {
+        assert_eq!(compute_resonance_frequency(&[]), 0.0);
+    }
+
+    #[test]
+    fn shares_framework_term_requires_overlap_not_just_presence_in_either_turn() {
+        assert!(
+            shares_framework_term("Das ist ein klarer Fall von Emergenz.", "Wir sehen hier echte Emergenz im System."),
+            "both turns mention the same term"
+        );
+        assert!(
+            !shares_framework_term("Das ist Drift.", "Hier war nichts Besonderes."),
+            "current turn's term never appeared in the previous turn"
+        );
+        assert!(
+            !shares_framework_term("Ganz gewöhnliche Antwort ohne Fachbegriff.", "Wir beobachten Drift im Interaction Field."),
+            "current turn doesn't reuse anything, even though the PREVIOUS turn had framework terms"
+        );
+    }
+
+    #[test]
+    fn shares_framework_term_matching_is_case_insensitive() {
+        assert!(shares_framework_term("EMERGENZ tritt auf.", "emergenz wurde erkannt."));
+    }
+
+    #[test]
+    fn framework_terms_in_finds_multiple_distinct_terms() {
+        let found = framework_terms_in("Auf der Systemebene sehen wir Drift und eine neue Emergenz.");
+        assert!(found.contains("systemebene"));
+        assert!(found.contains("drift"));
+        assert!(found.contains("emergenz"));
+    }
+
+    // ── CCET — end-to-end integration test (real DB, mocked embeddings) ──
+
+    /// A dedicated embeddings-only mock (distinct from `start_mock_nvidia`
+    /// above, whose embeddings route always returns the SAME fixed vector —
+    /// fine for the timeout tests, useless here where the whole point is to
+    /// control cosine similarity deterministically). Maps a marker word in
+    /// the input text to a 2D unit vector at a known angle, so cosine
+    /// similarity between any two calls is exactly `cos(angle difference)`,
+    /// picked so ALPHA→BETA lands above `CCET_STABILITY_THRESHOLD` and
+    /// BETA→GAMMA lands well below it.
+    async fn start_mock_embeddings() -> String {
+        let embeddings = axpost(|AxJson(body): AxJson<serde_json::Value>| async move {
+            let text = body["input"][0].as_str().unwrap_or("").to_string();
+            let angle_deg: f32 = if text.contains("ALPHA") {
+                0.0
+            } else if text.contains("BETA") {
+                10.0 // cos(10°) ≈ 0.985 vs ALPHA — stable
+            } else {
+                100.0 // cos(90°) = 0.0 vs BETA — clearly unstable
+            };
+            let radians = angle_deg.to_radians();
+            let vector = vec![radians.cos(), radians.sin()];
+            AxJson(json!({ "data": [{ "embedding": vector }] }))
+        });
+        let app = Router::new().route("/v1/embeddings", embeddings);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    /// Mirrors exactly what `stream_chat` does before spawning
+    /// `record_ccet_turn`: insert the assistant turn into `chat_messages`
+    /// FIRST (so `record_ccet_turn`'s own "previous assistant turn" lookup,
+    /// OFFSET 1 on that table, sees the right row), then run the
+    /// instrumentation.
+    async fn record_turn_like_stream_chat(state: &AppState, conversation_id: &str, text: &str) {
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES (?1,?2,'assistant',?3)")
+            .bind(Uuid::new_v4().to_string())
+            .bind(conversation_id)
+            .bind(text)
+            .execute(&state.db)
+            .await
+            .unwrap();
+        record_ccet_turn(state, conversation_id, text).await;
+    }
+
+    /// End-to-end proof that the instrumentation and the read-side endpoint
+    /// agree: three assistant turns (ALPHA, then a near-duplicate BETA that
+    /// also repeats ALPHA's "Emergenz" mention, then an unrelated GAMMA with
+    /// no framework term at all) must yield exactly one stable turn (BETA),
+    /// zero CEP (no two CONSECUTIVE stable turns — the first turn can never
+    /// be a CEP point, and GAMMA isn't stable), and one resonance hit
+    /// (BETA reusing "Emergenz" from ALPHA; GAMMA reuses nothing).
+    #[tokio::test]
+    async fn ccet_end_to_end_stability_cep_and_resonance_over_three_turns() {
+        let base = start_mock_embeddings().await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        let conv_id = "ccet-conv-1";
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, 'CCET Test', 'chat')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        record_turn_like_stream_chat(&state, conv_id, "ALPHA: Wir beobachten hier Emergenz zum ersten Mal.").await;
+        record_turn_like_stream_chat(&state, conv_id, "BETA: Wieder zeigt sich Emergenz in der Interaktion.").await;
+        record_turn_like_stream_chat(&state, conv_id, "GAMMA: Ganz anderes Thema, komplett losgelöst, keine Fachbegriffe.").await;
+
+        let resp = ccet_summary(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        let parsed: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(parsed["turns_considered"], 3);
+        assert!(
+            (parsed["cei"].as_f64().unwrap() - (1.0 / 3.0)).abs() < 0.01,
+            "only the BETA turn should be stable relative to its predecessor: {parsed}"
+        );
+        assert_eq!(parsed["cep"], 0, "no two CONSECUTIVE stable turns in this sequence: {parsed}");
+        assert!(
+            (parsed["resonance_frequency"].as_f64().unwrap() - (1.0 / 3.0)).abs() < 0.01,
+            "only BETA reuses a framework term ('Emergenz') seen in the immediately preceding turn: {parsed}"
         );
     }
 }

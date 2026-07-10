@@ -15,6 +15,23 @@ interface Signal {
   created_at: string
 }
 
+// CCET (Continuous Co-Evolution Tracker) — see backend/src/chat.rs's own
+// section doc comment (search "CCET") for the full disclosure. Laura's
+// paper only ever gives a real formula for CEI (stable turns / total
+// turns); "stable turn" itself, CEP, and Resonance Frequency are THIS
+// PROJECT'S OWN operationalizations, never Laura's own verified numbers —
+// `definitions_note` below is the backend's own words on that, rendered
+// as-is rather than re-worded here so the disclosure can't drift out of
+// sync between the two.
+interface CcetSummary {
+  cei: number
+  cep: number
+  resonance_frequency: number
+  turns_considered: number
+  stability_threshold: number
+  definitions_note: string
+}
+
 const EVOLUTION_ARROW: Record<string, string> = {
   increasing: '↑', decreasing: '↓', steady: '→', unclear: '?',
 }
@@ -31,6 +48,18 @@ const LEVEL_SECTIONS: { key: string; label: string; empty: string }[] = [
   { key: 'interaction', label: 'Interaction', empty: 'Noch keine Interaction-Signale erkannt — geteilte Muster, Co-Reasoning, rekursive Schleifen.' },
   { key: 'system', label: 'System', empty: 'Noch keine System-Signale erkannt — gesamtsystemische Veränderungen, neue Cluster, Drift.' },
 ]
+
+// Same 4 keys as LEVEL_SECTIONS, just also carrying the .obs-stat accent
+// class (obs-stat/obs-grid primitives, see App.css — the same ones
+// Analytics.tsx/SystemState.tsx/InformationDynamics.tsx already use for
+// every other Observatory stat row).
+const LEVEL_STAT_ACCENT: Record<string, string> = {
+  human: 'c-purple', ai: 'c-blue', interaction: 'c-teal', system: 'c-amber',
+}
+
+function formatPercent(v: number): string {
+  return `${Math.round(v * 100)}%`
+}
 
 function downloadJson(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -51,6 +80,7 @@ function downloadJson(filename: string, data: unknown) {
 export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [refreshKey, setRefreshKey] = useState(0)
   const { data, loading } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals', [refreshKey])
+  const { data: ccet } = useAdminFetch<CcetSummary>('/api/observatory/emergence/ccet', [refreshKey])
   const [analyzing, setAnalyzing] = useState(false)
 
   const requestAnalysis = async () => {
@@ -93,6 +123,44 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           ⬇ Exportieren
         </button>
       </div>
+      {/* Summary strip — aggregated view above the flat card feed below,
+          so every signal doesn't read with equal visual weight anymore.
+          Two parts: (1) per-level counts, same obs-stat/obs-grid primitives
+          the rest of the Observatory already uses; (2) the three CCET
+          metrics, clearly marked as this project's own operationalization
+          (see the CcetSummary doc comment above) — additive only, the
+          detail cards below are unchanged. */}
+      <div className="obs-section-label">Übersicht</div>
+      <div className="obs-grid">
+        {LEVEL_SECTIONS.map(section => (
+          <div className={`obs-stat ${LEVEL_STAT_ACCENT[section.key]}`} key={section.key}>
+            <div className="obs-stat-value">{signals.filter(s => s.level === section.key).length}</div>
+            <div className="obs-stat-label">{section.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="obs-badge-experimental">Eigene Operationalisierung — nicht wörtlich aus Lauras Paper</div>
+      <div className="obs-grid">
+        <div className="obs-stat c-green">
+          <div className="obs-stat-value">{ccet ? formatPercent(ccet.cei) : '—'}</div>
+          <div className="obs-stat-label">CEI (Co-Evolution Index)</div>
+        </div>
+        <div className="obs-stat c-purple">
+          <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
+          <div className="obs-stat-label">CEP (Co-Evolution Points)</div>
+        </div>
+        <div className="obs-stat c-teal">
+          <div className="obs-stat-value">{ccet ? formatPercent(ccet.resonance_frequency) : '—'}</div>
+          <div className="obs-stat-label">Resonance Frequency</div>
+        </div>
+      </div>
+      {ccet && (
+        <div className="obs-warning-note" style={{ marginBottom: 22 }}>
+          {ccet.definitions_note} Basis: die letzten {ccet.turns_considered} analysierten Turns, Stabilitätsschwelle (Kosinus-Ähnlichkeit) {formatPercent(ccet.stability_threshold)}.
+        </div>
+      )}
+
       {signals.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.</div></div>
       )}
