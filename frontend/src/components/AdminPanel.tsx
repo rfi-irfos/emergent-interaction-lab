@@ -228,7 +228,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="crm-sidebar-brand">
-            <img src="/favicon.svg" alt="" className="crm-sidebar-icon" />
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-sidebar-icon" />
             {!sidebarCollapsed && (
               <div className="crm-sidebar-brand-text">
                 <div className="crm-sidebar-name">{draft.nav?.brand || 'Verwaltung'}</div>
