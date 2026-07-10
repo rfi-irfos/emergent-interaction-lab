@@ -87,12 +87,27 @@ pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // through gracefully — production `fly logs` (see the tracing::info! below,
 // and the Fix 3 logging-level fix that makes it actually visible now) is
 // what proves out which one actually ends up serving real traffic.
+//
+// Same day, follow-up: 70b turned out to genuinely work, but ~15s/reply is
+// too slow for what's just tool-calling inside one conversation (not a
+// multi-agent workflow that would justify the wait) — Simeon wants a real
+// middle ground, not the 8b-vs-70b extremes. Inserted two ~12b-class
+// candidates ahead of 70b: mistral-nemo-12b (built by Mistral *with*
+// NVIDIA specifically, so unusually likely to be on this catalog/entitled)
+// and mixtral-8x7b (mixture-of-experts — only ~13b active params per token
+// despite the larger total size, well-regarded specifically for tool-use).
+// Reordering this array changes what a previously-persisted numeric
+// `chat_model_idx` points at — harmless: the ladder loop re-validates
+// whatever it's pointed at on the very next request and falls through
+// correctly if that guess is wrong, self-correcting within one exchange.
 const CHAT_MODEL_CANDIDATES: &[&str] = &[
-    "meta/llama-3.1-405b-instruct", // much bigger, same family — likely on NVIDIA's catalog
-    "meta/llama-3.3-70b-instruct",  // newer generation than the previous 70b default
-    "deepseek-ai/deepseek-r1",      // genuinely reasoning-capable — see reasoning_content handling below
-    "meta/llama-3.1-70b-instruct",  // previous "large" default — kept as a mid-tier rung, not dropped
-    CHAT_MODEL,                     // meta/llama-3.1-8b-instruct — final safety net, must always work
+    "meta/llama-3.1-405b-instruct",     // much bigger, same family — likely on NVIDIA's catalog
+    "mistralai/mistral-nemo-12b-instruct", // ~12b, NVIDIA co-developed — the actual "golden middle" target
+    "mistralai/mixtral-8x7b-instruct-v0.1", // MoE, ~13b active params, fast + strong tool-use track record
+    "meta/llama-3.3-70b-instruct",      // newer generation than the previous 70b default — confirmed working, but slow
+    "deepseek-ai/deepseek-r1",          // genuinely reasoning-capable — see reasoning_content handling below
+    "meta/llama-3.1-70b-instruct",      // previous "large" default — kept as a mid-tier rung, not dropped
+    CHAT_MODEL,                         // meta/llama-3.1-8b-instruct — final safety net, must always work
 ];
 // How often (in requests, server-wide) to ignore AppState::chat_model_idx's
 // cached position and re-probe the ladder from the top, so a bigger model
@@ -2017,7 +2032,7 @@ mod tests {
     #[test]
     fn first_ever_request_starts_at_index_zero() {
         let ladder = build_model_ladder(false, 0, false);
-        assert_eq!(ladder, vec![0, 1, 3, 4], "deepseek's slot (2) must be excluded on the default, non-reasoning path");
+        assert_eq!(ladder, vec![0, 1, 2, 3, 5, 6], "deepseek's slot (4) must be excluded on the default, non-reasoning path");
     }
 
     /// CHAT_MODEL_RETRY_FROM_TOP_EVERY's mechanism: even with a cached index
@@ -2027,8 +2042,8 @@ mod tests {
     /// undiscovered forever.
     #[test]
     fn periodic_retry_slot_ignores_the_cache_and_restarts_at_zero() {
-        let ladder = build_model_ladder(false, 4, true);
-        assert_eq!(ladder, vec![0, 1, 3, 4]);
+        let ladder = build_model_ladder(false, 5, true);
+        assert_eq!(ladder, vec![0, 1, 2, 3, 5, 6]);
     }
 
     /// Fix 2's core behavior: with the reasoning toggle ON, the
@@ -2038,7 +2053,7 @@ mod tests {
     /// periodic retry-from-top slot.
     #[test]
     fn reasoning_requested_tries_deepseek_first_ahead_of_the_cache() {
-        let ladder = build_model_ladder(true, 4, false);
+        let ladder = build_model_ladder(true, 5, false);
         assert_eq!(
             ladder.first().copied(),
             Some(deepseek_idx()),
@@ -2046,7 +2061,7 @@ mod tests {
         );
         // Falls through the rest of the ladder in its normal relative order
         // if deepseek-r1 isn't entitled, rather than stopping there.
-        assert_eq!(ladder, vec![deepseek_idx(), 0, 1, 3, 4]);
+        assert_eq!(ladder, vec![deepseek_idx(), 0, 1, 2, 3, 5, 6]);
     }
 
     /// The toggle-OFF counterpart (the default): deepseek-r1 must never
@@ -2239,7 +2254,7 @@ mod tests {
         let cached_idx = model_idx.load(std::sync::atomic::Ordering::Relaxed);
         assert_eq!(cached_idx, 3, "the previously-discovered winner must have survived the restart too");
         let ladder = build_model_ladder(false, cached_idx, force_top);
-        assert_eq!(ladder, vec![0, 1, 3, 4], "the periodic slot re-walks from the top even though the cache says 3");
+        assert_eq!(ladder, vec![0, 1, 2, 3, 5, 6], "the periodic slot re-walks from the top even though the cache says 3");
 
         // The NEXT request (#22) is back to normal: reuses the cache
         // directly, rather than forcing another re-walk the way a
