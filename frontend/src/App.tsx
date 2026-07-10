@@ -9,17 +9,27 @@ import { LoginPage } from './components/LoginPage'
 import { LegalPage } from './components/LegalPage'
 import { DynamicPage } from './components/DynamicPage'
 import { CertificationPage } from './components/CertificationPage'
+import { BlogPostPage } from './components/BlogPostPage'
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
+const BLOG_PREFIX = '#p/blog/'
 
 function getRoute(hash: string) {
-  if (hash === '#admin' || hash.startsWith('#admin/')) return { isAdmin: true, legalSlug: null, pageSlug: null }
+  if (hash === '#admin' || hash.startsWith('#admin/')) return { isAdmin: true, legalSlug: null, pageSlug: null, blogId: null }
+  // A published article's own real, shareable route — checked before the
+  // generic `#p/<slug>` branch below since `blog/<id>` would otherwise be
+  // treated as a static page slug (see BlogPostPage.tsx / PublicSite.tsx's
+  // news section, which links here instead of opening a modal).
+  if (hash.startsWith(BLOG_PREFIX)) {
+    const id = decodeURIComponent(hash.slice(BLOG_PREFIX.length))
+    return { isAdmin: false, legalSlug: null, pageSlug: null, blogId: id || null }
+  }
   if (hash.startsWith('#p/')) {
     const slug = hash.slice(3)
-    if (LEGAL_SLUGS.includes(slug)) return { isAdmin: false, legalSlug: slug, pageSlug: null }
-    return { isAdmin: false, legalSlug: null, pageSlug: slug }
+    if (LEGAL_SLUGS.includes(slug)) return { isAdmin: false, legalSlug: slug, pageSlug: null, blogId: null }
+    return { isAdmin: false, legalSlug: null, pageSlug: slug, blogId: null }
   }
-  return { isAdmin: false, legalSlug: null, pageSlug: null }
+  return { isAdmin: false, legalSlug: null, pageSlug: null, blogId: null }
 }
 
 export default function App() {
@@ -83,6 +93,15 @@ export default function App() {
         address={content.contact?.address}
       />
     )
+  }
+
+  if (route.blogId) {
+    const item = (content.news?.items ?? []).find(n => n.id === route.blogId)
+    // Found → its own dedicated page. Not found (stale/removed link, or a
+    // draft id that was never promoted to content.news.items) → fall through
+    // to the normal homepage below, same graceful-degradation the pageSlug
+    // branch already uses for an unknown static page.
+    if (item) return <BlogPostPage item={item} content={content} />
   }
 
   if (route.pageSlug === 'zertifizierung') {

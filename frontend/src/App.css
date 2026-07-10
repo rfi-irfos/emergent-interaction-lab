@@ -1564,6 +1564,24 @@ button { cursor: pointer; font-family: inherit; }
 .cert-pricing-cta:hover { background: #0a6b79; }
 @media (max-width: 600px) { .cert-pricing-grid { grid-template-columns: 1fr; } }
 
+/* ── BLOG POST PAGE (public article page, #p/blog/<id>) ──────────────────────
+   Reuses the .site-modal/.site-modal-article card look PublicSite.tsx's
+   article modal always had (BlogPostPage.tsx supplies the same --primary/
+   --text/--surface custom properties inline so those classes render
+   identically outside the .site wrapper) — this override only removes the
+   modal's viewport-height cap + inner scrollbar, which made sense for an
+   overlay but not for a real, normally-scrolling page. */
+.site-blogpost-card { max-height: none; overflow-y: visible; margin: 0 auto; }
+/* Body is now real p/ul/ol/strong elements from ../lib/markdown's
+   renderMarkdown (shared with ResearchChat.tsx) instead of a raw string —
+   same paragraph/list spacing rules as .chat-bubble-content already uses for
+   the same markdown output, to offset this app's global `margin:0` reset. */
+.site-modal-article-body p { margin: 0 0 14px; }
+.site-modal-article-body p:last-child { margin-bottom: 0; }
+.site-modal-article-body ol, .site-modal-article-body ul { margin: 0 0 14px; padding-left: 22px; }
+.site-modal-article-body ol:last-child, .site-modal-article-body ul:last-child { margin-bottom: 0; }
+.site-modal-article-body li { margin-bottom: 6px; }
+
 /* ── ADMIN: VERWALTUNG (CRM DASHBOARD) ───────────────────────────────────────
    Second admin mode alongside the website builder — Inbox / Forschung /
    Blog / Analytics, toggled via the "Verwaltung" topbar button. */

@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
-import type { SiteContent, SectionId, CanvasPos, ProductItem, NewsItem, CertificateItem } from '../types/content'
+import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
-import { API_BASE } from '../lib/apiBase'
+import { trackPageView } from '../lib/tracking'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -11,31 +11,6 @@ function safeHref(href: string): string {
 
 // nav-jump suppressor: set true during anchor-link scroll → all Reveal elements snap to p=1
 let _revealSuppressed = false
-
-// Anonymous per-browser visitor id for the tracking pixel's `v` param —
-// backend/src/analytics.rs's COUNT(DISTINCT visitor) has always existed but
-// this id was never generated anywhere client-side, so every visit recorded
-// the same empty-string default and "Unique Besucher" was always ~1
-// regardless of real traffic. localStorage (not a cookie) on purpose: this
-// site's own About copy states it stores "keine personenbezogenen Daten" —
-// a random UUID that never leaves the browser except as an opaque counter
-// token, never tied to identity, fits that. Generated once, reused on every
-// subsequent page load so repeat visits count as one unique visitor.
-const VISITOR_ID_KEY = 'rfi_visitor_id'
-function getOrCreateVisitorId(): string {
-  try {
-    const existing = localStorage.getItem(VISITOR_ID_KEY)
-    if (existing) return existing
-    const id = crypto.randomUUID()
-    localStorage.setItem(VISITOR_ID_KEY, id)
-    return id
-  } catch {
-    // localStorage unavailable (private mode, disabled storage) — fall back
-    // to a session-only id so the pixel call always carries *some* stable
-    // value for this page load, rather than silently reusing "".
-    return crypto.randomUUID()
-  }
-}
 
 export function Reveal({
   children, delay = 0, from = 'bottom', style: extra,
@@ -645,24 +620,18 @@ export function PublicSite({
   const [menuOpen, setMenuOpen] = useState(false)
   const [modalProduct, setModalProduct] = useState<ProductItem | null>(null)
   const [modalGalleryIdx, setModalGalleryIdx] = useState(0)
-  const [modalArticle, setModalArticle] = useState<NewsItem | null>(null)
   const [browseCatIdx, setBrowseCatIdx] = useState<number | null>(null)
   const [activeNewsCategory, setActiveNewsCategory] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
   const { t } = useLang()
 
-  // Tracking pixel — fires once per page load in production (skipped in edit mode).
+  // Tracking pixel — fires once per page load in production (skipped in edit
+  // mode). Published articles now navigate to their own #p/blog/<id> route
+  // (see BlogPostPage.tsx) instead of a modal here, so this component's own
+  // load only ever represents the main site, not an individual article.
   useEffect(() => {
     if (editMode) return
-    const px = new URL('/api/track/pixel.gif', API_BASE || window.location.origin)
-    px.searchParams.set('p', window.location.pathname)
-    px.searchParams.set('r', document.referrer)
-    px.searchParams.set('v', getOrCreateVisitorId())
-    const s = new URLSearchParams(window.location.search)
-    if (s.get('utm_source'))   px.searchParams.set('utm_source',   s.get('utm_source')!)
-    if (s.get('utm_medium'))   px.searchParams.set('utm_medium',   s.get('utm_medium')!)
-    if (s.get('utm_campaign')) px.searchParams.set('utm_campaign', s.get('utm_campaign')!)
-    new Image().src = px.toString()
+    trackPageView()
   }, [editMode])
 
   // Soft scroll-reveal for sections (dark theme only, see .site-reveal in App.css) —
@@ -696,12 +665,6 @@ export function PublicSite({
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [modalProduct])
-  useEffect(() => {
-    if (!modalArticle) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setModalArticle(null) }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [modalArticle])
   const [heroBgPos, setHeroBgPos] = useState({ x: hero.bgX ?? 50, y: hero.bgY ?? 50 })
   const [heroHeight, setHeroHeight] = useState(hero.minHeight ?? 680)
   const heroBgPosRef = useRef(heroBgPos)
@@ -1347,17 +1310,17 @@ export function PublicSite({
               {news.items.map((n, i) => {
                 if (activeNewsCategory && n.category !== activeNewsCategory) return null
                 const catName = news.categories?.find(c => c.id === n.category)?.name
+                // Real, shareable, bookmarkable per-article route (#p/blog/<id>,
+                // see App.tsx's getRoute()/BlogPostPage.tsx) instead of the old
+                // modal-only view — a plain <a> in view mode so it's a genuine
+                // link (crawlable, ctrl/cmd-clickable, no JS required to work),
+                // while edit mode keeps a non-navigating <div> so the canvas's
+                // contentEditable fields below stay editable in place.
+                const CardTag = (editMode ? 'div' : 'a') as TagName
+                const cardProps: Record<string, unknown> = { className: `site-news-card ${!editMode ? 'clickable' : ''}` }
+                if (!editMode) cardProps.href = `#p/blog/${n.id}`
                 return (
-                <div
-                  key={n.id}
-                  className={`site-news-card ${!editMode ? 'clickable' : ''}`}
-                  {...(!editMode ? {
-                    role: 'button',
-                    tabIndex: 0,
-                    onClick: () => setModalArticle(n),
-                    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setModalArticle(n) } },
-                  } : {})}
-                >
+                <CardTag key={n.id} {...cardProps}>
                   {n.image && <img src={n.image} alt={n.title} className="site-news-img" />}
                   <div className="site-news-body">
                     <div className="site-news-date">
@@ -1368,7 +1331,7 @@ export function PublicSite({
                     <E field={`news.items.${i}.body`} value={n.body} as="p" className="site-news-text" />
                     {!editMode && <span className="site-news-read-more">{t.readMore} →</span>}
                   </div>
-                </div>
+                </CardTag>
                 )
               })}
             </div>
@@ -1561,22 +1524,8 @@ export function PublicSite({
           </div>
         )}
 
-        {/* ── ARTICLE MODAL ────────────────────────────────────────────── */}
-        {modalArticle && !editMode && (
-          <div className="site-modal-scrim" onClick={() => setModalArticle(null)} role="dialog" aria-modal="true" aria-label={modalArticle.title}>
-            <div className="site-modal site-modal-article" onClick={e => e.stopPropagation()}>
-              <button className="site-modal-close" aria-label={t.close} onClick={() => setModalArticle(null)}><IconClose /></button>
-              {modalArticle.image && (
-                <div className="site-modal-img"><img src={modalArticle.image} alt={modalArticle.title} /></div>
-              )}
-              <div className="site-modal-body">
-                <div className="site-news-date">{new Date(modalArticle.date).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                <h3 className="site-modal-title" dangerouslySetInnerHTML={{ __html: modalArticle.title }} />
-                <div className="site-modal-article-body" dangerouslySetInnerHTML={{ __html: modalArticle.body }} />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Published articles now live at their own #p/blog/<id> route (see
+            App.tsx + BlogPostPage.tsx) instead of an in-page modal here. */}
 
         {/* ── WHATSAPP FLOAT ───────────────────────────────────────────── */}
         {whatsapp?.enabled && !editMode && (
