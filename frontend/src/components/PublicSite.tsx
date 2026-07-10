@@ -3,6 +3,7 @@ import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem } 
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
+import { LiveStatsSection, ShippingFeedSection } from './PublicLiveActivity'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -1107,6 +1108,11 @@ export function PublicSite({
             </div>
           </section>
         )}
+
+        {/* ── LIVE ACTIVITY (visitor-facing proof the hero's "live laufendes
+             Forschungsinstrument" claim is real, not just copy) ──────────── */}
+        <LiveStatsSection editMode={editMode} reveal={reveal} />
+        <ShippingFeedSection editMode={editMode} reveal={reveal} />
 
         {/* ── CATEGORIES / DRILL-DOWN BROWSER ──────────────────────────── */}
         {!hiddenSections.includes('categories') && (categories?.items?.length ?? 0) > 0 && (() => {

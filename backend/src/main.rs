@@ -11,6 +11,7 @@ mod emergence;
 mod github_activity;
 mod inspect;
 mod observatory;
+mod public;
 mod research;
 mod simulation;
 mod track;
@@ -281,6 +282,10 @@ async fn main() {
         .route("/api/billing/products/:id/payment-link", post(billing::create_payment_link))
         // Public storefront feed (no auth — read-only, only products with a real payment_link_url)
         .route("/api/billing/public-products", get(billing::list_public_products))
+        // Public homepage widgets (no auth — bare aggregate counts + curated
+        // merged-PR feed only, see public.rs for the privacy contract)
+        .route("/api/public/live-stats", get(public::live_stats))
+        .route("/api/public/shipping-feed", get(public::shipping_feed))
         // Tracking pixel (public, no auth)
         .route("/api/track/pixel.gif", get(track::pixel))
         .route("/api/track", post(track::beacon))

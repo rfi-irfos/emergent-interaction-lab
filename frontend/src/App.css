@@ -147,12 +147,15 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="dark"] .site-pricing,
 .site[data-theme="dark"] .site-certificates,
 .site[data-theme="dark"] .site-about,
+.site[data-theme="dark"] .site-livestats,
+.site[data-theme="dark"] .site-shipping,
 .site[data-theme="dark"] .site-location:has(> .site-location-info:only-child) {
   background: transparent;
 }
 .site[data-theme="dark"] .site-usp-card,
 .site[data-theme="dark"] .site-news-card,
-.site[data-theme="dark"] .site-cert-card {
+.site[data-theme="dark"] .site-cert-card,
+.site[data-theme="dark"] .site-livestats-tile {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -207,7 +210,8 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site[data-theme="hc"] .site-pcard,
 .site[data-theme="hc"] .site-news-card,
-.site[data-theme="hc"] .site-usp-card { border-width: 2px; }
+.site[data-theme="hc"] .site-usp-card,
+.site[data-theme="hc"] .site-livestats-tile { border-width: 2px; }
 .site[data-theme="hc"] a:focus-visible,
 .site[data-theme="hc"] button:focus-visible,
 .site[data-theme="hc"] input:focus-visible,
@@ -413,6 +417,65 @@ button { cursor: pointer; font-family: inherit; }
 .site-section-title {
   text-align: center; font-size: 40px; font-weight: 900;
   margin-bottom: 56px; letter-spacing: -.01em;
+}
+
+/* ── LIVE ACTIVITY (public homepage widgets — see PublicLiveActivity.tsx) ───
+   Fed by GET /api/public/live-stats and GET /api/public/shipping-feed, both
+   unauthenticated and both intentionally narrow (bare counts / merged-PR
+   title+date+link only, see backend/src/public.rs). Styled with the same
+   semantic tokens as the rest of the public site (.site-usp-card / .site-
+   news-card above) — not the admin Observatory's dark-HUD look. */
+.site-livestats { background: var(--surface-alt); }
+.site-livestats-intro {
+  max-width: 640px; margin: 0 auto 44px; text-align: center;
+  font-size: 15px; line-height: 1.7; color: var(--text-soft);
+}
+.site-livestats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px;
+  max-width: 1160px; margin: 0 auto;
+}
+.site-livestats-tile {
+  background: var(--surface); padding: 32px 20px; border-radius: 14px;
+  border: 1px solid var(--border); border-top: 3px solid var(--primary);
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.site-livestats-tile:hover { transform: translateY(-4px); box-shadow: 0 12px 32px var(--shadow); }
+.site-livestats-tile strong {
+  font-size: 34px; font-weight: 900; font-family: var(--mono); color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.site-livestats-tile span { font-size: 13px; color: var(--text-soft); font-weight: 500; line-height: 1.4; }
+.site-livestats-status, .site-shipping-status {
+  text-align: center; font-size: 14px; color: var(--text-soft); padding: 12px 0;
+}
+@media (max-width: 900px) {
+  .site-livestats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .site-livestats-grid { grid-template-columns: 1fr; }
+}
+
+.site-shipping { background: var(--surface); }
+.site-shipping-list {
+  list-style: none; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 2px;
+}
+.site-shipping-item { border-bottom: 1px solid var(--border); }
+.site-shipping-item:last-child { border-bottom: none; }
+.site-shipping-link {
+  display: flex; align-items: baseline; gap: 18px; padding: 16px 6px;
+  transition: color .15s;
+}
+.site-shipping-link:hover .site-shipping-title { color: var(--primary); }
+.site-shipping-link:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.site-shipping-date {
+  flex-shrink: 0; width: 108px; font-family: var(--mono); font-size: 12px;
+  font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--primary);
+}
+.site-shipping-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.5; transition: color .15s; }
+@media (max-width: 640px) {
+  .site-shipping-link { flex-direction: column; gap: 4px; }
+  .site-shipping-date { width: auto; }
 }
 
 /* ── CATEGORIES / DRILL-DOWN BROWSER ─────────────────────────────────────── */

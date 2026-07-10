@@ -81,14 +81,16 @@ pub async fn log_deploy(
 
 // ── GitHub API response shapes (only the fields this feed actually uses) ───
 
+// `pub(crate)` (struct + fields): read by `crate::public::filter_shipping_items`
+// too, not just this module — see `fetch_pulls` below.
 #[derive(Deserialize)]
-struct GhPull {
-    number: i64,
-    title: String,
-    state: String,
-    merged_at: Option<String>,
-    html_url: String,
-    updated_at: String,
+pub(crate) struct GhPull {
+    pub(crate) number: i64,
+    pub(crate) title: String,
+    pub(crate) state: String,
+    pub(crate) merged_at: Option<String>,
+    pub(crate) html_url: String,
+    pub(crate) updated_at: String,
 }
 
 #[derive(Deserialize)]
@@ -186,6 +188,28 @@ fn merge_activity(
     items
 }
 
+/// Shared "fetch recent pull requests (all states)" call — the exact same
+/// request `agent_activity` below has always made, extracted so
+/// `crate::public::shipping_feed` (the public, unauthenticated "what's
+/// shipping" widget) can reuse it instead of standing up a second GitHub
+/// integration with its own token/client. Same `state.http`, same
+/// `state.github_token`, same `state.github_api_base` either way — the
+/// caller decides what to do with the (possibly still-open/draft) results;
+/// this function itself filters nothing.
+pub(crate) async fn fetch_pulls(state: &AppState) -> Result<Vec<GhPull>, axum::response::Response> {
+    let res = state
+        .http
+        .get(format!(
+            "{}/repos/{}/{}/pulls?state=all&sort=updated&direction=desc&per_page=20",
+            state.github_api_base, REPO_OWNER, REPO_NAME
+        ))
+        .bearer_auth(&state.github_token)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await;
+    github_json(res, "pull requests").await
+}
+
 /// Real GitHub-level "what autonomous agent work has actually happened on
 /// this repo" transparency feed — merges recent pull requests, recent
 /// commits on `main`, recent GitHub Actions workflow runs (this is what
@@ -224,13 +248,7 @@ pub async fn agent_activity(State(state): State<AppState>, headers: HeaderMap) -
     let owner = REPO_OWNER;
     let repo = REPO_NAME;
 
-    let pulls_res = client
-        .get(format!("{base}/repos/{owner}/{repo}/pulls?state=all&sort=updated&direction=desc&per_page=20"))
-        .bearer_auth(&state.github_token)
-        .header("User-Agent", USER_AGENT)
-        .send()
-        .await;
-    let pulls: Vec<GhPull> = match github_json(pulls_res, "pull requests").await {
+    let pulls: Vec<GhPull> = match fetch_pulls(&state).await {
         Ok(v) => v,
         Err(resp) => return resp,
     };
