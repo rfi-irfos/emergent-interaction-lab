@@ -32,6 +32,16 @@ const USER_AGENT: &str = "emergent-interaction-lab-observatory";
 /// `fly deploy` in the future can append a row here, and the merged feed
 /// below can show it alongside real PRs/commits/workflow runs instead of
 /// leaving backend deploys as the one invisible gap.
+///
+/// `created_at` is stored as ISO-8601 (`strftime('%Y-%m-%dT%H:%M:%SZ',
+/// 'now')`), the same shape GitHub's own timestamps come back in
+/// (`"2026-07-10T11:00:00Z"`), NOT SQLite's `datetime('now')` default
+/// (`"2026-07-10 11:00:00"` — a space, not a `'T'`, no `'Z'`). `merge_activity`
+/// below sorts by a plain string comparison, and `' '` (0x20) sorts before
+/// `'T'` (0x54) in ASCII — so with the old default, a deploy_log row always
+/// looked older than any GitHub event on the same calendar day, no matter
+/// what time it actually happened. Bare TEXT column (not DATETIME) so
+/// SQLite's type affinity never second-guesses the string.
 pub async fn init_schema(db: &SqlitePool) {
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS deploy_log (
@@ -39,12 +49,73 @@ pub async fn init_schema(db: &SqlitePool) {
             target TEXT NOT NULL,
             version TEXT,
             commit_sha TEXT,
-            created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+            created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
         )",
     )
     .execute(db)
     .await
     .expect("create deploy_log");
+
+    migrate_legacy_created_at_format(db).await;
+}
+
+/// One-time migration for any `deploy_log` table created before the
+/// ISO-8601 fix above (the live Fly app already has one — `init_schema` has
+/// been running since this module shipped, `IF NOT EXISTS` means the old
+/// `DEFAULT (datetime('now'))` clause would otherwise stick around forever).
+/// Detected by inspecting the table's own recorded schema in
+/// `sqlite_master` rather than probing row contents, so it works whether or
+/// not any rows exist yet (as of this fix, `deploy_log` has always been
+/// empty — `log_deploy` had zero callers — but this must not assume that
+/// stays true). Rebuilds the table with the new default and rewrites any
+/// existing rows' timestamps into the same ISO-8601 shape, so old and new
+/// rows stay comparable by plain string sort.
+async fn migrate_legacy_created_at_format(db: &SqlitePool) {
+    let existing_sql: Option<(String,)> =
+        sqlx::query_as("SELECT sql FROM sqlite_master WHERE type='table' AND name='deploy_log'")
+            .fetch_optional(db)
+            .await
+            .unwrap_or(None);
+
+    let needs_migration = matches!(&existing_sql, Some((sql,)) if sql.contains("datetime('now')"));
+    if !needs_migration {
+        return;
+    }
+
+    tracing::info!("migrating deploy_log.created_at from legacy datetime('now') format to ISO-8601");
+
+    let mut tx = db.begin().await.expect("begin deploy_log migration");
+    sqlx::query("ALTER TABLE deploy_log RENAME TO deploy_log_pre_iso8601")
+        .execute(&mut *tx)
+        .await
+        .expect("rename legacy deploy_log");
+    sqlx::query(
+        "CREATE TABLE deploy_log (
+            id TEXT PRIMARY KEY,
+            target TEXT NOT NULL,
+            version TEXT,
+            commit_sha TEXT,
+            created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .expect("recreate deploy_log with ISO-8601 default");
+    sqlx::query(
+        "INSERT INTO deploy_log (id, target, version, commit_sha, created_at)
+         SELECT id, target, version, commit_sha,
+             CASE WHEN created_at LIKE '%T%' THEN created_at
+                  ELSE replace(created_at, ' ', 'T') || 'Z' END
+         FROM deploy_log_pre_iso8601",
+    )
+    .execute(&mut *tx)
+    .await
+    .expect("backfill deploy_log rows in ISO-8601 format");
+    sqlx::query("DROP TABLE deploy_log_pre_iso8601")
+        .execute(&mut *tx)
+        .await
+        .expect("drop legacy deploy_log table");
+    tx.commit().await.expect("commit deploy_log migration");
 }
 
 #[derive(Deserialize)]
@@ -54,6 +125,12 @@ pub struct DeployLogReq {
     commit_sha: Option<String>,
 }
 
+/// Called by `scripts/deploy.sh` right after a successful `fly deploy` —
+/// that script is the one and only production caller of this endpoint (it
+/// used to have zero callers anywhere; `deploy_log` stayed empty forever as
+/// a result). If you're driving a Fly deploy some other way, call this
+/// endpoint yourself afterwards or the Agent-Aktivität feed won't know it
+/// happened.
 pub async fn log_deploy(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -441,15 +518,27 @@ mod tests {
     /// token in this environment) that the handler actually calls all three
     /// GitHub endpoints and merges them with deploy_log rows into one sorted
     /// feed — not just that the pure merge function works in isolation.
+    ///
+    /// The deploy row is inserted with an EXPLICIT `created_at` (13:00,
+    /// after all three GitHub-mocked timestamps that same day: PR 12:00,
+    /// commit 11:00, workflow run 10:00) specifically to prove the
+    /// chronological-order fix: before the ISO-8601 fix, a same-day deploy
+    /// would sort as OLDEST regardless of its real time (`' '` < `'T'` in
+    /// ASCII) — this test would have failed against the old
+    /// `datetime('now')` default the moment a deploy happened later than a
+    /// GitHub event on the same calendar day. Now it correctly sorts
+    /// newest-first.
     #[tokio::test]
-    async fn agent_activity_merges_real_http_calls_with_deploy_log() {
+    async fn agent_activity_merges_real_http_calls_with_deploy_log_in_correct_chronological_order() {
         let gh_base = start_mock_github().await;
         let state = test_state(gh_base, "gh_mock_token".to_string()).await;
 
-        sqlx::query("INSERT INTO deploy_log (id, target, version, commit_sha) VALUES ('d1','fly','v99',NULL)")
-            .execute(&state.db)
-            .await
-            .unwrap();
+        sqlx::query(
+            "INSERT INTO deploy_log (id, target, version, commit_sha, created_at) VALUES ('d1','fly','v99',NULL,'2026-07-10T13:00:00Z')",
+        )
+        .execute(&state.db)
+        .await
+        .unwrap();
 
         let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new())
             .await
@@ -461,7 +550,91 @@ mod tests {
         let items = body["items"].as_array().unwrap();
         assert_eq!(items.len(), 4, "expected 1 PR + 1 commit + 1 workflow run + 1 deploy");
         let kinds: Vec<&str> = items.iter().map(|i| i["kind"].as_str().unwrap()).collect();
-        assert_eq!(kinds, vec!["pull_request", "commit", "workflow_run", "deploy"]);
+        // Newest first, by real time: deploy (13:00) > pull_request (12:00)
+        // > commit (11:00) > workflow_run (10:00). This is the CORRECT
+        // order — the pre-fix behavior would have put "deploy" last no
+        // matter what time it carried.
+        assert_eq!(kinds, vec!["deploy", "pull_request", "commit", "workflow_run"]);
+    }
+
+    /// Proves the schema fix directly: a row inserted through `log_deploy`
+    /// (which relies on the table's `created_at` DEFAULT, not an explicit
+    /// timestamp) comes back in the same ISO-8601 shape GitHub's API uses —
+    /// `"T"` separator, `"Z"` suffix, no space — so it stays correctly
+    /// sortable against real GitHub timestamps going forward.
+    #[tokio::test]
+    async fn log_deploy_writes_created_at_in_iso8601_format_not_sqlite_default_format() {
+        let state = test_state("http://127.0.0.1:1".to_string(), String::new()).await;
+
+        log_deploy(
+            axum::extract::State(state.clone()),
+            HeaderMap::new(),
+            AxJson(DeployLogReq { target: "fly".to_string(), version: Some("v1".to_string()), commit_sha: None }),
+        )
+        .await;
+
+        let (created_at,): (String,) = sqlx::query_as("SELECT created_at FROM deploy_log WHERE target='fly'")
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+        assert!(created_at.contains('T'), "expected ISO-8601 'T' separator, got {created_at:?}");
+        assert!(created_at.ends_with('Z'), "expected ISO-8601 'Z' suffix, got {created_at:?}");
+        assert!(!created_at.contains(' '), "expected no space (legacy SQLite datetime() format), got {created_at:?}");
+    }
+
+    /// Proves the migration path for a `deploy_log` table created before
+    /// this fix (the live Fly app has exactly this shape today, since
+    /// `init_schema`'s `CREATE TABLE IF NOT EXISTS` never touched an
+    /// already-existing table). Manually stands up the OLD schema with a
+    /// legacy-format row, then runs `init_schema` (which internally calls
+    /// the migration) against that same connection and confirms: (1) the
+    /// row's `created_at` is rewritten into ISO-8601, and (2) it now sorts
+    /// correctly (newest-first) against a same-day GitHub timestamp —
+    /// exactly the scenario that was silently broken before.
+    #[tokio::test]
+    async fn migrate_legacy_created_at_format_rewrites_existing_rows_and_fixes_their_sort_order() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        sqlx::query(
+            "CREATE TABLE deploy_log (
+                id TEXT PRIMARY KEY,
+                target TEXT NOT NULL,
+                version TEXT,
+                commit_sha TEXT,
+                created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+            )",
+        )
+        .execute(&db)
+        .await
+        .unwrap();
+        // Deliberately the LAST moment of the day — under the old buggy
+        // string-sort, this would still have lost to any same-day GitHub
+        // 'T'-format timestamp, no matter how early. That's the bug.
+        sqlx::query(
+            "INSERT INTO deploy_log (id, target, version, commit_sha, created_at) VALUES ('legacy1','fly','v0',NULL,'2026-07-10 23:59:59')",
+        )
+        .execute(&db)
+        .await
+        .unwrap();
+
+        init_schema(&db).await; // runs CREATE TABLE IF NOT EXISTS (no-op) + the migration
+
+        let (created_at,): (String,) = sqlx::query_as("SELECT created_at FROM deploy_log WHERE id='legacy1'")
+            .fetch_one(&db)
+            .await
+            .unwrap();
+        assert_eq!(created_at, "2026-07-10T23:59:59Z", "legacy space-format timestamp should be rewritten to ISO-8601");
+
+        // Now prove it actually sorts correctly against a same-day GitHub event.
+        let pulls = vec![pull(1, "same-day PR", None, "2026-07-10T10:00:00Z")];
+        let deploy_rows: Vec<(String, String, Option<String>, Option<String>, String)> = sqlx::query_as(
+            "SELECT id, target, version, commit_sha, created_at FROM deploy_log",
+        )
+        .fetch_all(&db)
+        .await
+        .unwrap();
+        let items = merge_activity(pulls, vec![], vec![], deploy_rows);
+        let kinds: Vec<&str> = items.iter().map(|i| i.kind.as_str()).collect();
+        assert_eq!(kinds, vec!["deploy", "pull_request"], "migrated 23:59:59 deploy must sort newer than a 10:00:00 same-day PR");
     }
 
     #[tokio::test]

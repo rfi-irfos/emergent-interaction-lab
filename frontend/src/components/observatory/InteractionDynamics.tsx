@@ -19,9 +19,10 @@ interface InteractionData {
 /// the live token-by-token breakdown of the latest reply; latency and
 /// confidence are read as pacing/adaptation signals, not performance metrics.
 export function InteractionDynamics() {
-  const { data, loading } = useAdminFetch<InteractionData>('/api/observatory/human-ai')
+  const { data, loading, error } = useAdminFetch<InteractionData>('/api/observatory/human-ai')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
   return (

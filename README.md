@@ -88,9 +88,16 @@ emergent-interaction-lab/
 ## Production Deploy
 
 ```bash
-# Backend + frontend, deployed together on Fly.io
+# Backend + frontend, deployed together on Fly.io, and logs the deploy to
+# the Observatory's Agent-Aktivität feed (POST /api/observatory/deploy-log)
+# so `fly deploy`s show up alongside real GitHub PRs/commits/workflow runs.
+scripts/deploy.sh
+
+# Equivalent to a bare `fly deploy` if you deliberately want to skip logging:
+scripts/deploy.sh --local-only
+# or just:
 fly deploy -a emergent-interaction-lab
 
 # Frontend also auto-deploys to GitHub Pages on push to main
-# (see .github/workflows/deploy.yml)
+# (see .github/workflows/deploy.yml — that workflow never touches Fly)
 ```

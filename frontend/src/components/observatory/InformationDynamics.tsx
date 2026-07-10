@@ -11,9 +11,10 @@ interface InformationData {
 }
 
 export function InformationDynamics() {
-  const { data, loading } = useAdminFetch<InformationData>('/api/observatory/information')
+  const { data, loading, error } = useAdminFetch<InformationData>('/api/observatory/information')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
   return (
