@@ -460,9 +460,27 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openConversationId])
 
+  // Fires on every `messages` update — during streaming that's every single
+  // RAF-batched flush (see send()'s scheduleFlush), not just once per
+  // finished reply. `behavior: 'smooth'` unconditionally was fine at the old
+  // ~100-200ms/token 70b pace: flushes landed far enough apart for the
+  // browser's own smooth-scroll animation to finish (or nearly finish)
+  // before the next one fired. A faster model (see CHAT_MODEL_CANDIDATES —
+  // mistral-nemo-12b/mixtral-8x7b ahead of 70b) streams fast enough that
+  // this now fires on nearly every animation frame for the whole reply —
+  // measured with Playwright against a real mock NVIDIA endpoint: ~150ms
+  // between scrollTo calls at a 150ms/token pace vs ~17ms (i.e. every frame)
+  // at a 15ms/token pace, with 63/65 of those gaps under 50ms. Restarting a
+  // 'smooth' scroll roughly every frame never lets it settle — the browser's
+  // scroll animation is perpetually interrupted mid-flight, which is exactly
+  // the newly-reported "ruckelig" streaming stutter (confirmed NOT a dropped
+  // frame/render-cost problem: rAF frame timing stayed clean in both the
+  // slow and fast measurements). Only 'auto' (instant, nothing to interrupt)
+  // during active streaming; the nicer animated scroll still applies once
+  // streaming is done — the stream just finished, or switching conversations.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages])
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: streaming ? 'auto' : 'smooth' })
+  }, [messages, streaming])
 
   async function ensureConversation(): Promise<string | null> {
     if (activeId) return activeId
