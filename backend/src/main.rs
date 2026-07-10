@@ -63,6 +63,15 @@ pub struct AppState {
     /// Stripe API — never overridden in production, where it's always
     /// "https://api.stripe.com".
     pub stripe_api_base: String,
+    /// Signing secret for `POST /api/billing/webhook` (see
+    /// `billing::stripe_webhook`), read from `STRIPE_WEBHOOK_SECRET`. Empty
+    /// means "webhook receipt not configured" — the handler logs a warning
+    /// and returns 503 for every incoming request rather than either
+    /// panicking or (worse) accepting unverified events, same
+    /// missing-secret-degrades-gracefully convention as `stripe_secret_key`
+    /// above. Never logged or echoed anywhere, including in tests — only
+    /// ever compared against, never printed.
+    pub stripe_webhook_secret: String,
     /// Overridable so tests can point the web_search tool at a local mock
     /// instead of the real DuckDuckGo Instant Answer API — never overridden
     /// in production, where it's always "https://api.duckduckgo.com".
@@ -214,6 +223,7 @@ async fn main() {
         chat_secret: std::env::var("CHAT_API_SECRET").unwrap_or_default(),
         stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_default(),
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
+        stripe_webhook_secret: std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default(),
         ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
         github_token,
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
@@ -226,6 +236,9 @@ async fn main() {
     }
     if state.stripe_secret_key.is_empty() {
         tracing::warn!("STRIPE_SECRET_KEY missing at startup — payment link creation will be unavailable");
+    }
+    if state.stripe_webhook_secret.is_empty() {
+        tracing::warn!("STRIPE_WEBHOOK_SECRET missing at startup — incoming Stripe webhooks will be rejected (503), no orders will be recorded until it's configured");
     }
 
     if dev_mode {
@@ -283,6 +296,15 @@ async fn main() {
         .route("/api/billing/products", get(billing::list_products).post(billing::create_product))
         .route("/api/billing/products/:id", axum::routing::delete(billing::delete_product))
         .route("/api/billing/products/:id/payment-link", post(billing::create_payment_link))
+        // Stripe webhook receiver (no `require_admin` — Stripe can't send our
+        // x-chat-secret header; trust here comes entirely from the
+        // Stripe-Signature HMAC check in billing::stripe_webhook instead).
+        // Real sales/orders visibility: until this existed, a completed
+        // Stripe purchase left zero trace anywhere in this system.
+        .route("/api/billing/webhook", post(billing::stripe_webhook))
+        // Admin-only sales/orders view, same limit/offset + X-Total-Count
+        // pagination convention as emergence::list_signals / simulation::list_runs.
+        .route("/api/billing/orders", get(billing::list_orders))
         // Public storefront feed (no auth — read-only, only products with a real payment_link_url)
         .route("/api/billing/public-products", get(billing::list_public_products))
         // Public homepage widgets (no auth — bare aggregate counts + curated

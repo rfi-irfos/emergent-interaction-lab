@@ -23,4 +23,11 @@ sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
 futures = "0.3"
 async-stream = "0.3"
 pdf-extract = "0.7"
+# Stripe webhook signature verification (billing::stripe_webhook) — all
+# three are already present in Cargo.lock as transitive deps of the
+# existing tree, so pinning these as direct deps at compatible versions
+# should not pull in anything new on a disk-constrained build.
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
 
