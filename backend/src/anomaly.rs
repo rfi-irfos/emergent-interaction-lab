@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-use crate::{authz::require_admin, AppState};
+use crate::{authz::require_admin, observatory::resolve_range, AppState};
 
 /// Anomaly Watchdog v1 — "a watchdog that watches the watchdog." Everything
 /// else added tonight (emergence signals, CCET, Denkfragmente, the
@@ -322,6 +322,70 @@ pub async fn list_anomalies(State(state): State<AppState>, headers: HeaderMap, Q
     resp
 }
 
+#[derive(Serialize)]
+struct KindBucket {
+    kind: String,
+    count: i64,
+}
+
+#[derive(Serialize)]
+struct DistributionOut {
+    range: String,
+    total: i64,
+    by_kind: Vec<KindBucket>,
+}
+
+#[derive(Deserialize)]
+pub struct DistributionQuery {
+    /// `?range=7d|30d|all` — reuses `observatory::resolve_range` verbatim
+    /// (same values, same "30d" default), the same convention already
+    /// established by `thinking_fragments::distribution`, rather than
+    /// inventing a second range convention for this module.
+    range: Option<String>,
+}
+
+/// Aggregate distribution — anomaly counts across ALL conversations (a
+/// global rollup, same "one global feed" shape as
+/// `thinking_fragments::distribution` / `observatory::behavior`), GROUP-BY
+/// over the closed 4-value `kind` enum this module ever writes (see
+/// `KIND_TOOL_ERROR` and its three siblings above).
+///
+/// Always returns all 4 known kinds, even ones with zero rows in the
+/// requested range — a stable 4-entry response so a frontend chart legend
+/// doesn't have entries silently appear/disappear depending on what
+/// happened to fire recently. Contrast with `thinking_fragments::distribution`,
+/// which omits empty layers; that endpoint feeds a ranked list, this one
+/// feeds a fixed-legend chart, hence the deliberate difference.
+pub async fn distribution(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<DistributionQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let (range_label, range_days) = resolve_range(q.range.as_deref());
+    let window = format!("-{range_days} days");
+
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT kind, COUNT(*) FROM agent_anomalies WHERE created_at > datetime('now', ?1) GROUP BY kind",
+    )
+    .bind(&window)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let counts: std::collections::HashMap<String, i64> = rows.into_iter().collect();
+    let by_kind: Vec<KindBucket> = [KIND_TOOL_ERROR, KIND_ITERATION_CAP, KIND_REFUSAL_TRIGGERED, KIND_HALLUCINATION_MISMATCH]
+        .into_iter()
+        .map(|k| KindBucket { kind: k.to_string(), count: *counts.get(k).unwrap_or(&0) })
+        .collect();
+    let total: i64 = by_kind.iter().map(|b| b.count).sum();
+
+    Json(DistributionOut {
+        range: range_label.to_string(),
+        total,
+        by_kind,
+    })
+    .into_response()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -534,6 +598,66 @@ mod tests {
         let res = list_anomalies(AxState(state), HeaderMap::new(), AxQuery(ListAnomaliesQuery { limit: None, offset: None, kind: None }))
             .await
             .into_response();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    // ── distribution: aggregate correctness + zero-fill + range + auth ──
+
+    #[tokio::test]
+    async fn distribution_aggregates_correctly_and_zero_fills_missing_kinds() {
+        let state = test_state().await;
+        seed_anomaly(&state.db, "a1", KIND_TOOL_ERROR, "conv-1").await;
+        seed_anomaly(&state.db, "a2", KIND_TOOL_ERROR, "conv-2").await;
+        seed_anomaly(&state.db, "a3", KIND_REFUSAL_TRIGGERED, "conv-3").await;
+
+        let res = distribution(AxState(state.clone()), HeaderMap::new(), AxQuery(DistributionQuery { range: Some("all".to_string()) }))
+            .await
+            .into_response();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["total"], 3, "3 anomaly rows were seeded");
+        let by_kind = body["by_kind"].as_array().unwrap();
+        assert_eq!(by_kind.len(), 4, "all 4 known kinds must always be present, even ones with zero incidents");
+        let tool_error = by_kind.iter().find(|b| b["kind"] == KIND_TOOL_ERROR).expect("tool_error bucket must exist");
+        assert_eq!(tool_error["count"], 2, "tool_error appears once in conv-1 and once in conv-2 — must aggregate ACROSS conversations");
+        let refusal = by_kind.iter().find(|b| b["kind"] == KIND_REFUSAL_TRIGGERED).expect("refusal_triggered bucket must exist");
+        assert_eq!(refusal["count"], 1);
+        let iteration_cap = by_kind.iter().find(|b| b["kind"] == KIND_ITERATION_CAP).expect("iteration_cap bucket must exist");
+        assert_eq!(iteration_cap["count"], 0, "a kind with zero incidents must still appear in the response with count 0, never be omitted");
+        let hallucination = by_kind.iter().find(|b| b["kind"] == KIND_HALLUCINATION_MISMATCH).expect("hallucination_mismatch bucket must exist");
+        assert_eq!(hallucination["count"], 0);
+    }
+
+    #[tokio::test]
+    async fn distribution_range_filter_excludes_rows_outside_the_window() {
+        let state = test_state().await;
+        seed_anomaly(&state.db, "a1", KIND_TOOL_ERROR, "conv-1").await;
+        seed_anomaly(&state.db, "a2", KIND_ITERATION_CAP, "conv-2").await;
+        sqlx::query("UPDATE agent_anomalies SET created_at = datetime('now', '-40 days') WHERE id = 'a2'")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let res = distribution(AxState(state.clone()), HeaderMap::new(), AxQuery(DistributionQuery { range: Some("30d".to_string()) }))
+            .await
+            .into_response();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["total"], 1, "the 40-day-old iteration_cap row must not count under range=30d");
+        let by_kind = body["by_kind"].as_array().unwrap();
+        let iteration_cap = by_kind.iter().find(|b| b["kind"] == KIND_ITERATION_CAP).expect("iteration_cap bucket must still be present");
+        assert_eq!(iteration_cap["count"], 0, "excluded by range, but the kind bucket itself must still be present at 0, not disappear entirely");
+        let tool_error = by_kind.iter().find(|b| b["kind"] == KIND_TOOL_ERROR).unwrap();
+        assert_eq!(tool_error["count"], 1);
+    }
+
+    #[tokio::test]
+    async fn distribution_requires_admin_auth() {
+        let mut state = test_state().await;
+        state.chat_secret = "shh".to_string();
+        let res = distribution(AxState(state), HeaderMap::new(), AxQuery(DistributionQuery { range: None })).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 }

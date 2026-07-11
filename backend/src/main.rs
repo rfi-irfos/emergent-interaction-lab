@@ -379,6 +379,12 @@ async fn main() {
         // directly, even though that endpoint's own doc comment anticipated
         // being reused by this exact feature.
         .route("/api/observatory/anomalies", get(anomaly::list_anomalies))
+        // Same GROUP-BY-kind rollup as thinking_fragments::distribution /
+        // observatory::behavior, just over the closed 4-value `kind` enum
+        // (see anomaly.rs's KIND_* constants) instead of the 8-layer or
+        // free-text buckets those two use — always returns all 4 kinds,
+        // zero-filled, for a stable chart-legend response shape.
+        .route("/api/observatory/anomalies/distribution", get(anomaly::distribution))
         // Hash-chained changelog (see auditlog.rs's module doc comment for
         // the full "ported from Lighthouse, right-sized for single-machine
         // SQLite" disclosure). `verify` walks the chain and recomputes every
