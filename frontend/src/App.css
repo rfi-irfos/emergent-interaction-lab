@@ -1984,16 +1984,51 @@ button { cursor: pointer; font-family: inherit; }
   font-family: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 8px;
   border: 1px solid rgba(15,23,42,.14); background: #fff; color: #1f2937; cursor: pointer;
   transition: border-color .15s, box-shadow .15s;
+  /* Explicit light scheme so a visitor's OS-level dark preference can't make
+     Chromium paint the *popup* (not just the closed control) with dark
+     native chrome against this light background — see the dark override
+     below for why this property is what actually matters here. */
+  color-scheme: light;
 }
 .crm-body select:focus { outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12); }
 .observatory-hud .crm-body select {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
   font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  /* color-scheme: dark alone is necessary but NOT sufficient here — verified
+     via real Playwright screenshots that the *opened popup* still painted
+     white-on-white in Chromium despite every computed style (color-scheme,
+     option background/color) resolving correctly. Root-caused by bisection:
+     it's a genuine Chromium rendering bug where the native <select> popup's
+     styling breaks once the page has enough other <svg> elements elsewhere
+     in the DOM (this sidebar's ~17 nav icons are exactly enough to trigger
+     it) — nothing to do with this rule's specificity or cascade.
+     `appearance: base-select` (Chrome 131+) opts into the new Customizable
+     Select API, which renders the popup as real, CSS-styled DOM (via
+     ::picker(select)/::picker-icon below) instead of the legacy native
+     widget the bug lives in — confirmed by screenshot this sidesteps it
+     entirely. It's a progressive enhancement: browsers that don't support
+     it (Firefox, Safari, older Chromium) silently ignore the property and
+     fall back to the plain native popup, still themed by color-scheme +
+     the option rule below, same as before this was added. */
+  color-scheme: dark;
+  appearance: base-select;
 }
 .observatory-hud .crm-body select:focus {
   border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2);
 }
-.observatory-hud .crm-body select option { background: #0d141f; color: #eefcff; }
+/* Belt and suspenders alongside color-scheme: dark above — some engines
+   (older WebKit/Firefox) do honor per-option background/color even without
+   reading color-scheme for the popup, so keep both. */
+.observatory-hud .crm-body select option { background-color: #0d141f; color: #eefcff; }
+/* The actual popup surface once appearance: base-select is active — plain
+   `option` background above only reaches it in engines where that's still
+   the legacy native widget; here it's real paintable DOM. No-op (falls back
+   to nothing rendered, i.e. no popup pseudo to style) in engines that don't
+   support base-select yet. */
+.observatory-hud .crm-body select::picker(select) {
+  background: #0d141f; border: 1px solid rgba(34,211,238,.35); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
 
 /* Simulation Center: side-by-side run comparison — no new schema needed,
    list_runs already returns everything a compare view needs. N-way, not
