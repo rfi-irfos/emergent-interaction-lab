@@ -16,7 +16,7 @@
     "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
   },
   "nav": {
-    "logo": "https://raw.githubusercontent.com/rfi-irfos/emergent-interaction-lab/main/frontend/public/uploads/eil-logo.png",
+    "logo": "",
     "brand": "Emergent Interaction Lab",
     "links": [
       {
