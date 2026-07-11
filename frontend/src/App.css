@@ -1952,6 +1952,25 @@ button { cursor: pointer; font-family: inherit; }
 }
 .obs-badge-mismatch::before { content: '✕'; font-size: 10px; }
 
+/* Fourth member of this badge family (see .obs-badge-experimental /
+   .obs-placeholder-tag / .obs-badge-mismatch above), same pill shape/
+   sizing — the "measured emergence" gate's own positive verdict (see
+   backend/src/emergence.rs's verify_recurrence and EmergenceMonitor.tsx):
+   a signal that has ACTUALLY recurred across ≥3 distinct conversations
+   with real CCET data behind it, per the Research page's own "When does
+   emergence count as measured?" criteria — not just this turn's LLM
+   interpretation, which every OTHER signal in this family still is. Green
+   (matching the CCET tiles' own c-green CEI accent), the only member of
+   this family that's a confirmation rather than a caveat — so it earns the
+   warmest color instead of amber/gray/red. The checkmark is part of the
+   rendered text itself (EmergenceMonitor.tsx), not a ::before icon like
+   its siblings, since the exact label string is spec'd with it inline. */
+.obs-badge-verified {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #065f46; background: linear-gradient(180deg, #ecfdf5, #d1fae5); border: 1px solid rgba(16,185,129,.4);
+  padding: 4px 10px; border-radius: 20px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(16,185,129,.1);
+}
+
 .obs-activity-row {
   display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 4px;
   border-bottom: 1px solid rgba(15,23,42,.055); font-size: 12.5px; transition: background .12s;

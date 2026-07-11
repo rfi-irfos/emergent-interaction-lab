@@ -15,6 +15,15 @@ interface Signal {
   scope: string | null
   source_conversation_id: string | null
   created_at: string
+  // The "measured emergence" gate (see backend/src/emergence.rs's
+  // verify_recurrence) — whether this signal actually cleared the Research
+  // page's own 4-criteria bar (content.json, page id `research`, "When does
+  // emergence count as measured?"), not just survived this turn's LLM
+  // interpretation. `recurrence_count` is only meaningful once
+  // `verified_emergence` is true; otherwise it's just the column's own
+  // untouched default.
+  verified_emergence: boolean
+  recurrence_count: number
 }
 
 // CCET (Continuous Co-Evolution Tracker) — see backend/src/chat.rs's own
@@ -105,6 +114,11 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
   const [statusFilter, setStatusFilter] = useState('')
   const [confidenceFilter, setConfidenceFilter] = useState('')
   const [evolutionFilter, setEvolutionFilter] = useState('')
+  // `?verified=true` — see backend/src/emergence.rs's `ListSignalsQuery.verified`.
+  // A plain '' / 'true' string (not a bool) so it slots into the same
+  // <select>-driven filter-bar pattern as the four filters above it, rather
+  // than needing its own checkbox wiring.
+  const [verifiedFilter, setVerifiedFilter] = useState('')
 
   const loadSignals = async (offset: number, append: boolean) => {
     if (append) setLoadingMore(true); else setLoading(true)
@@ -115,6 +129,7 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
       if (statusFilter) params.set('status', statusFilter)
       if (confidenceFilter) params.set('confidence', confidenceFilter)
       if (evolutionFilter) params.set('evolution', evolutionFilter)
+      if (verifiedFilter) params.set('verified', verifiedFilter)
       const res = await fetch(`${API_BASE}/api/observatory/emergence/signals?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
@@ -134,13 +149,13 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
   useEffect(() => {
     loadSignals(0, false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey, levelFilter, statusFilter, confidenceFilter, evolutionFilter])
+  }, [refreshKey, levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter])
 
   const loadMore = () => loadSignals(signals.length, true)
   const resetFilters = () => {
-    setLevelFilter(''); setStatusFilter(''); setConfidenceFilter(''); setEvolutionFilter('')
+    setLevelFilter(''); setStatusFilter(''); setConfidenceFilter(''); setEvolutionFilter(''); setVerifiedFilter('')
   }
-  const filtersActive = Boolean(levelFilter || statusFilter || confidenceFilter || evolutionFilter)
+  const filtersActive = Boolean(levelFilter || statusFilter || confidenceFilter || evolutionFilter || verifiedFilter)
 
   const requestAnalysis = async () => {
     // No specific conversation in context on this page — the automatic
@@ -217,6 +232,16 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           <option value="">Alle Verläufe</option>
           {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
         </select>
+        {/* The "measured emergence" gate's own filter — same <select>
+            convention as the four above (auto-themed via the existing
+            .crm-body select dark-mode rule in App.css, no new CSS needed
+            for the control itself). "Nur verifiziert" narrows to signals
+            that actually cleared the Research page's own bar, not just
+            this turn's LLM read — see the badge rendered per-card below. */}
+        <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Signale</option>
+          <option value="true">Nur verifiziert</option>
+        </select>
         {filtersActive && (
           <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
             Filter zurücksetzen
@@ -286,6 +311,24 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
             ) : (
               levelSignals.map(s => (
                 <div className="obs-item-card" key={s.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>
+                  {/* The "measured emergence" gate's own verdict, per-card —
+                      mirrors the Research page's own "gemessene Emergenz"
+                      vs. "Beobachtung" vocabulary exactly (content.json,
+                      page id `research`, "Wann gilt Emergenz als
+                      gemessen?"): a signal only reads as measured emergence
+                      once it has actually recurred across ≥3 distinct
+                      conversations with real CCET data behind it (see
+                      emergence.rs's verify_recurrence) — every other signal
+                      is honestly still just an observation, exactly as the
+                      site's own methodology page has always defined the
+                      line, now finally enforced instead of asserted. */}
+                  {s.verified_emergence ? (
+                    <div className="obs-badge-verified">
+                      ✓ Verifizierte Emergenz (gesehen in {s.recurrence_count} Gesprächen)
+                    </div>
+                  ) : (
+                    <div className="obs-placeholder-tag">Beobachtung — noch nicht als gemessene Emergenz bestätigt</div>
+                  )}
                   <div className="obs-item-title">{s.pattern}</div>
                   <div className="obs-item-meta">
                     <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>

@@ -48,6 +48,231 @@ pub async fn init_schema(db: &SqlitePool) {
     .execute(db)
     .await
     .ok();
+    // Additive: the "measured emergence" gate (see `verify_recurrence`'s own
+    // doc comment for the full mapping onto the Research page's own "When
+    // does emergence count as measured?" section, content.json page id
+    // `research`). `embedding` is nullable, unlike `level` above — there is
+    // no honest backfill value for a vector on pre-existing rows, and a NULL
+    // embedding just means that row was never a candidate for a recurrence
+    // match (true for every row inserted before this migration, and for any
+    // row whose own `chat::embed` call failed). `verified_emergence` and
+    // `recurrence_count` both default to the same "not yet measured" state
+    // every signal has always implicitly been in: an "observation" (the
+    // Research page's own word for it), not "measured emergence" — this
+    // migration only ever adds a path to earn the latter, never silently
+    // grants it.
+    sqlx::query("ALTER TABLE emergence_signals ADD COLUMN embedding BLOB")
+        .execute(db)
+        .await
+        .ok();
+    sqlx::query("ALTER TABLE emergence_signals ADD COLUMN verified_emergence INTEGER NOT NULL DEFAULT 0")
+        .execute(db)
+        .await
+        .ok();
+    sqlx::query("ALTER TABLE emergence_signals ADD COLUMN recurrence_count INTEGER NOT NULL DEFAULT 1")
+        .execute(db)
+        .await
+        .ok();
+}
+
+// ── the "measured emergence" gate ───────────────────────────────────────
+//
+// The Research page's own "When does emergence count as measured?" section
+// (content.json, page id `research`; German mirror in content.de.json under
+// "Wann gilt Emergenz als gemessen?") states four explicit criteria. Until
+// this section, NONE of them were enforced anywhere — every signal above
+// was accepted straight from a single LLM call over one conversation's last
+// 20 messages, logged at face value as if it already cleared that bar. The
+// site's own page draws a sharp line between the two outcomes: "If any one
+// of these four conditions is missing, the pattern is logged as an
+// observation, but not counted as measured emergence." `verify_recurrence`
+// below is what actually makes that distinction real instead of aspirational
+// copy. How its logic maps onto the page's four stated criteria:
+//
+// 1. "occurs across at least three separate sessions" — the core of this
+//    function: cosine similarity between this signal's `pattern` embedding
+//    and every prior signal's stored embedding, counting DISTINCT
+//    `source_conversation_id`s (this one, plus any sufficiently similar
+//    prior ones) that are not this same conversation.
+// 2. "is structural, not stylistic" — NOT independently re-checked here.
+//    `analyze_recent_interactions`'s own prompt already constrains every
+//    signal to exactly one of four "level" categories (human/ai/interaction/
+//    system) and never offers a "stylistic" option at all — so a signal
+//    reaching this function has already satisfied this criterion by
+//    construction. Said explicitly, rather than silently skipped.
+// 3. "reproduces without being re-specified" — evidenced by the SAME
+//    recurrence check as #1: the pattern showing up independently in
+//    separate conversations Laura never re-explained it into is itself the
+//    observable signature of the model/interaction carrying it forward on
+//    its own, not a separate check.
+// 4. "is quantifiable in the CCET" — checked via `chat::current_ccet_metrics`
+//    below; see that call site for exactly what "real" means here and one
+//    honest limitation of reusing it.
+
+/// THIS PROJECT'S OWN operationalization of "similar enough to count as the
+/// same recurring pattern" — deliberately a SEPARATE constant from
+/// `chat::CCET_STABILITY_THRESHOLD` (0.75), not a reuse of it, even though
+/// both are cosine-similarity cutoffs over the same embedding model.
+/// `CCET_STABILITY_THRESHOLD` compares full ASSISTANT TURNS (paragraph-
+/// length prose, assistant-to-assistant, same conversation) for paraphrase-
+/// level continuity. This compares short, LLM-generated PATTERN LABELS (a
+/// few words to one short phrase, e.g. "Rekursive Selbstkorrektur-Schleife")
+/// across DIFFERENT conversations, drawn from a fixed, narrow research
+/// vocabulary (Emergenz/Muster/Rückkopplung/Drift and similar terms recur
+/// constantly by DOMAIN alone, not because two patterns are the same
+/// underlying dynamic). Short, jargon-dense text pairs from one narrow
+/// domain routinely land above 0.75 on general-purpose embedding models even
+/// when describing genuinely different things — reusing 0.75 here would
+/// turn the recurrence gate into a rubber stamp instead of a real filter.
+/// 0.90 is a deliberately stricter, engineering-judgment starting point
+/// (same "not derived from the paper, tune with real production data"
+/// caveat `CCET_STABILITY_THRESHOLD`'s own doc comment states) — high enough
+/// that only genuinely close restatements of the same pattern match, not
+/// merely shared subject-matter jargon.
+const EMERGENCE_RECURRENCE_THRESHOLD: f32 = 0.90;
+
+/// Cross-session recurrence check — see the module section doc comment
+/// above for the full mapping onto the Research page's four stated
+/// criteria. Called once per newly inserted signal, from
+/// `insert_and_verify_signal` below, itself called from
+/// `analyze_recent_interactions`'s own per-signal loop — deliberately NOT a
+/// new `tokio::spawn` call site in `chat.rs`: signal lifecycle/verification
+/// is this module's own concern, already running inside the existing
+/// emergence spawn's async block.
+async fn verify_recurrence(state: &AppState, signal_id: &str, conversation_id: &str, pattern: &str) {
+    // Mirrors `record_ccet_turn`'s own early-bailout convention in chat.rs.
+    // In production this is unreachable with an empty key regardless —
+    // `analyze_recent_interactions`'s own top-level guard already returns
+    // before any signal is ever inserted — but this function is also called
+    // directly by tests below, so it carries its own guard rather than
+    // relying entirely on a caller three frames up.
+    if state.nvidia_api_key.is_empty() || pattern.trim().is_empty() {
+        return;
+    }
+
+    let embedding = match crate::chat::embed(state, pattern, "passage").await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!("emergence recurrence embed failed for signal {signal_id}: {e}");
+            return;
+        }
+    };
+    // Persisted regardless of whether this specific signal ends up verified
+    // — a FUTURE signal still needs this row's embedding to compare against.
+    let blob = crate::chat::encode_embedding(&embedding);
+    let _ = sqlx::query("UPDATE emergence_signals SET embedding = ?1 WHERE id = ?2")
+        .bind(&blob)
+        .bind(signal_id)
+        .execute(&state.db)
+        .await;
+
+    // Every prior signal (any level, any conversation) that already has a
+    // stored embedding — excludes this row itself and anything never
+    // embedded (pre-migration rows, or a row whose own `embed` call failed).
+    let rows: Vec<(String, Option<String>, Vec<u8>)> = sqlx::query_as(
+        "SELECT id, source_conversation_id, embedding FROM emergence_signals \
+         WHERE embedding IS NOT NULL AND id != ?1",
+    )
+    .bind(signal_id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let mut distinct_conversations: std::collections::HashSet<String> = std::collections::HashSet::new();
+    distinct_conversations.insert(conversation_id.to_string());
+    let mut matched_prior_ids: Vec<String> = Vec::new();
+
+    for (other_id, other_conv, other_blob) in rows {
+        // No conversation_id at all (e.g. a manually-inserted legacy row) —
+        // can't attribute a distinct session to it, so it can never count.
+        let Some(other_conv) = other_conv else { continue };
+        // "whose source_conversation_id is a DIFFERENT conversation from the
+        // current one" — same-conversation repeats don't add a new session.
+        if other_conv == conversation_id {
+            continue;
+        }
+        let other_embedding = crate::chat::decode_embedding(&other_blob);
+        let similarity = crate::chat::cosine(&embedding, &other_embedding);
+        if similarity >= EMERGENCE_RECURRENCE_THRESHOLD {
+            distinct_conversations.insert(other_conv);
+            matched_prior_ids.push(other_id);
+        }
+    }
+
+    let recurrence_count = distinct_conversations.len() as i64;
+    if recurrence_count < 3 {
+        return; // stays verified_emergence = 0, exactly as today — an "observation," not "measured emergence."
+    }
+
+    // Criterion 4: real CCET data, not the empty-window default.
+    // `current_ccet_metrics` is an explicitly GLOBAL rolling-window metric
+    // across ALL conversations, not a per-conversation query (see its own
+    // doc comment in chat.rs) — this codebase has no per-conversation CCET
+    // lookup to reuse instead. This check is therefore honestly "the system
+    // has real CCET data at all right now," not a provable guarantee that
+    // THIS SPECIFIC conversation individually produced CCET turns — stated
+    // plainly rather than silently overclaiming precision the underlying
+    // function doesn't have. `turns_considered > 0` is exactly "not the
+    // no-data/all-zero state," not merely a proxy for it: `compute_cei`/
+    // `compute_cep`/`compute_resonance_frequency` all return 0.0/0/0.0
+    // ONLY when given an empty turns window (their own doc comments: "empty
+    // input reads as 0.0, not NaN") — so an empty window and an all-zero
+    // result are the exact same state, and checking one field for it is
+    // sufficient, not an approximation.
+    let (_, _, _, turns_considered) = crate::chat::current_ccet_metrics(&state.db).await;
+    if turns_considered <= 0 {
+        return;
+    }
+
+    let mut ids_to_verify = matched_prior_ids;
+    ids_to_verify.push(signal_id.to_string());
+    for id in ids_to_verify {
+        let _ = sqlx::query("UPDATE emergence_signals SET verified_emergence = 1, recurrence_count = ?1 WHERE id = ?2")
+            .bind(recurrence_count)
+            .bind(&id)
+            .execute(&state.db)
+            .await;
+    }
+}
+
+/// One signal's insert + cross-session recurrence check — the actual body
+/// of `analyze_recent_interactions`'s per-signal loop below, factored out
+/// so tests can drive the real insert-then-verify code path directly
+/// without depending on `analyze_recent_interactions`'s own NVIDIA
+/// chat-completions call (hardcoded to the real API URL, unlike
+/// `chat::embed`'s `state.nvidia_api_base` — not mockable in a test).
+async fn insert_and_verify_signal(
+    state: &AppState,
+    conversation_id: &str,
+    pattern: &str,
+    level: &str,
+    status: &str,
+    confidence: &str,
+    evolution: &str,
+    observation: &str,
+    scope: Option<&str>,
+) -> Option<String> {
+    let id = Uuid::new_v4().to_string();
+    let result = sqlx::query(
+        "INSERT INTO emergence_signals (id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+    )
+    .bind(&id)
+    .bind(pattern)
+    .bind(level)
+    .bind(status)
+    .bind(confidence)
+    .bind(evolution)
+    .bind(observation)
+    .bind(scope)
+    .bind(conversation_id)
+    .execute(&state.db)
+    .await;
+
+    if result.is_err() {
+        return None;
+    }
+    verify_recurrence(state, &id, conversation_id, pattern).await;
+    Some(id)
 }
 
 fn extract_json_array(text: &str) -> Option<Vec<serde_json::Value>> {
@@ -159,19 +384,17 @@ Wenn wirklich nichts Bemerkenswertes zu erkennen ist, antworte mit einem leeren 
         let observation = sig.get("observation").and_then(|v| v.as_str()).unwrap_or("").to_string();
         let scope = sig.get("scope").and_then(|v| v.as_str()).map(|s| s.to_string());
 
-        let _ = sqlx::query(
-            "INSERT INTO emergence_signals (id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+        insert_and_verify_signal(
+            state,
+            conversation_id,
+            &pattern,
+            &level,
+            &status,
+            &confidence,
+            &evolution,
+            &observation,
+            scope.as_deref(),
         )
-        .bind(Uuid::new_v4().to_string())
-        .bind(&pattern)
-        .bind(&level)
-        .bind(&status)
-        .bind(&confidence)
-        .bind(&evolution)
-        .bind(&observation)
-        .bind(&scope)
-        .bind(conversation_id)
-        .execute(db)
         .await;
     }
 }
@@ -188,13 +411,26 @@ pub struct SignalOut {
     scope: Option<String>,
     source_conversation_id: Option<String>,
     created_at: String,
+    /// The "measured emergence" gate's verdict — see `verify_recurrence`'s
+    /// doc comment. `false` is the same "observation, not measured
+    /// emergence" state every signal has always implicitly been in (the
+    /// Research page's own vocabulary); `true` is only ever set by a real,
+    /// passing recurrence check, never by the original single-conversation
+    /// LLM classification above.
+    verified_emergence: bool,
+    /// How many DISTINCT conversations this pattern has been seen in —
+    /// meaningful once `verified_emergence` is true, otherwise just the
+    /// column's own default (1: this signal, not yet found recurring
+    /// anywhere else).
+    recurrence_count: i64,
 }
 
-type SignalRow = (String, String, String, String, String, String, String, Option<String>, Option<String>, String);
+type SignalRow = (String, String, String, String, String, String, String, Option<String>, Option<String>, String, i64, i64);
 fn to_out(r: SignalRow) -> SignalOut {
     SignalOut {
         id: r.0, pattern: r.1, level: r.2, status: r.3, confidence: r.4, evolution: r.5,
         observation: r.6, scope: r.7, source_conversation_id: r.8, created_at: r.9,
+        verified_emergence: r.10 != 0, recurrence_count: r.11,
     }
 }
 
@@ -236,6 +472,12 @@ pub struct ListSignalsQuery {
     /// call this endpoint with zero query params and must not be silently
     /// narrowed by a new default they never opted into.
     range: Option<String>,
+    /// `?verified=true` narrows to signals that actually cleared the
+    /// "measured emergence" gate (see `verify_recurrence`) — same
+    /// `Option<bool>` convention as `observatory::InformationQuery::gap_only`.
+    /// Absent (or any value other than `true`) applies no restriction, same
+    /// as every other filter on this endpoint when unset.
+    verified: Option<bool>,
 }
 
 /// Comma-separated multi-value filter, same convention as
@@ -281,6 +523,11 @@ pub async fn list_signals(State(state): State<AppState>, headers: HeaderMap, Que
         clauses.push("created_at > datetime('now', ?)".to_string());
         binds.push(format!("-{range_days} days"));
     }
+    // Plain boolean literal, not a bound param — nothing dynamic about it,
+    // same as every other hardcoded fragment already in `clauses`.
+    if q.verified.unwrap_or(false) {
+        clauses.push("verified_emergence = 1".to_string());
+    }
     let where_sql = if clauses.is_empty() { String::new() } else { format!("WHERE {}", clauses.join(" AND ")) };
 
     // Total matching the filters (ignoring limit/offset) — surfaced via the
@@ -295,7 +542,7 @@ pub async fn list_signals(State(state): State<AppState>, headers: HeaderMap, Que
     let total: i64 = count_query.fetch_one(&state.db).await.unwrap_or(0);
 
     let select_sql = format!(
-        "SELECT id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id, created_at \
+        "SELECT id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id, created_at, verified_emergence, recurrence_count \
          FROM emergence_signals {where_sql} ORDER BY created_at DESC LIMIT ? OFFSET ?"
     );
     let mut row_query = sqlx::query_as(&select_sql);
@@ -330,11 +577,21 @@ pub async fn analyze(State(state): State<AppState>, headers: HeaderMap, Json(bod
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::extract::{Query as AxQuery, State as AxState};
+    use axum::{
+        extract::{Query as AxQuery, State as AxState},
+        routing::post as axpost,
+        Json as AxJson, Router,
+    };
     use std::{collections::HashMap, path::PathBuf, sync::{Arc, RwLock}};
 
     async fn test_state() -> AppState {
         let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        // `chat::init_schema` first: the recurrence check's CCET criterion
+        // (`verify_recurrence`'s call to `chat::current_ccet_metrics`) reads
+        // the `ccet_turns` table, which only `chat::init_schema` creates —
+        // same ordering `thinking_fragments.rs`'s own `test_state` already
+        // uses for the same reason.
+        crate::chat::init_schema(&db).await;
         init_schema(&db).await;
         AppState {
             sessions: Arc::new(RwLock::new(HashMap::new())),
@@ -384,7 +641,7 @@ mod tests {
     }
 
     fn empty_query() -> ListSignalsQuery {
-        ListSignalsQuery { limit: None, offset: None, level: None, status: None, confidence: None, evolution: None, range: None }
+        ListSignalsQuery { limit: None, offset: None, level: None, status: None, confidence: None, evolution: None, range: None, verified: None }
     }
 
     async fn signals_body(res: axum::response::Response) -> (Vec<serde_json::Value>, Option<i64>) {
@@ -610,5 +867,275 @@ mod tests {
         state.chat_secret = "shh".to_string();
         let res = list_signals(AxState(state), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    // ── the "measured emergence" gate: verify_recurrence / insert_and_verify_signal ──
+
+    /// Deterministic embeddings-only mock — same "marker word in the input
+    /// text maps to a 2D unit vector at a known angle" technique as
+    /// `chat.rs`'s own `start_mock_embeddings` (private to that module's own
+    /// test mod, so reimplemented here rather than reused) — cosine
+    /// similarity between any two calls is exactly `cos(angle difference)`,
+    /// so a test can assert a specific match/no-match outcome instead of
+    /// hoping a real embedding call happens to land on the right side of
+    /// `EMERGENCE_RECURRENCE_THRESHOLD`. `marker_angles` maps a substring to
+    /// an angle; any text matching none of them gets `default_angle`.
+    async fn start_mock_embeddings(marker_angles: &'static [(&'static str, f32)], default_angle: f32) -> String {
+        let embeddings = axpost(move |AxJson(body): AxJson<serde_json::Value>| async move {
+            let text = body["input"][0].as_str().unwrap_or("").to_string();
+            let angle_deg = marker_angles
+                .iter()
+                .find(|(marker, _)| text.contains(marker))
+                .map(|(_, a)| *a)
+                .unwrap_or(default_angle);
+            let radians = angle_deg.to_radians();
+            let vector = vec![radians.cos(), radians.sin()];
+            AxJson(json!({ "data": [{ "embedding": vector }] }))
+        });
+        let app = Router::new().route("/v1/embeddings", embeddings);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    /// Extends `insert_signal` with what THIS feature's tests need beyond
+    /// the original signature: a real `source_conversation_id` (the
+    /// original helper hardcodes NULL — fine for the pre-existing filter
+    /// tests above, useless for testing cross-conversation recurrence) and
+    /// a pre-computed embedding, so PRIOR fixture rows can be seeded
+    /// without a network call — only the NEW signal under test needs a real
+    /// (mocked) `embed()` call, exercised through `insert_and_verify_signal`
+    /// itself.
+    async fn insert_signal_with_conv_and_embedding(db: &SqlitePool, pattern: &str, conversation_id: &str, embedding: &[f32]) -> String {
+        let id = Uuid::new_v4().to_string();
+        let blob = crate::chat::encode_embedding(embedding);
+        sqlx::query(
+            "INSERT INTO emergence_signals (id, pattern, level, status, confidence, evolution, observation, scope, source_conversation_id, embedding) \
+             VALUES (?1,?2,'interaction','emerging','moderate','steady','obs','scope',?3,?4)",
+        )
+        .bind(&id)
+        .bind(pattern)
+        .bind(conversation_id)
+        .bind(blob)
+        .execute(db)
+        .await
+        .unwrap();
+        id
+    }
+
+    /// Seeds one real `ccet_turns` row so `chat::current_ccet_metrics`
+    /// returns `turns_considered > 0` — the "real CCET value" criterion
+    /// `verify_recurrence` checks. The actual stable/prev_stable/
+    /// terms_reused values don't matter for that check (see its own doc
+    /// comment: `turns_considered > 0` alone is the precise "not empty"
+    /// test, not an approximation of it).
+    async fn seed_real_ccet_turn(db: &SqlitePool) {
+        sqlx::query(
+            "INSERT INTO ccet_turns (id, conversation_id, embedding, similarity_to_prev, stable, prev_stable, terms_reused) \
+             VALUES (?1, 'ccet-fixture-conv', ?2, NULL, 1, NULL, 0)",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .bind(crate::chat::encode_embedding(&[0.1_f32, 0.2]))
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    async fn verified_row(db: &SqlitePool, id: &str) -> (i64, i64) {
+        sqlx::query_as("SELECT verified_emergence, recurrence_count FROM emergence_signals WHERE id = ?1")
+            .bind(id)
+            .fetch_one(db)
+            .await
+            .unwrap()
+    }
+
+    /// Required proof #1: a signal recurring via GENUINE embedding
+    /// similarity across 3 distinct conversations, with real CCET data
+    /// present, gets `verified_emergence = 1` with the correct
+    /// `recurrence_count` — and, per the plan's "ideally the matched prior
+    /// rows too," the two prior signals that fed the match get updated as
+    /// well, not just the newest row.
+    #[tokio::test]
+    async fn recurrence_across_three_distinct_conversations_with_real_ccet_gets_verified() {
+        // "NEWPATTERN" embeds at 2° — cos(2°) ≈ 0.9994, well above
+        // EMERGENCE_RECURRENCE_THRESHOLD (0.90) against the priors' 0°.
+        let mock_base = start_mock_embeddings(&[("NEWPATTERN", 2.0)], 90.0).await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = mock_base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        let prior_1 = insert_signal_with_conv_and_embedding(&state.db, "Rekursive Selbstkorrektur", "conv-1", &[1.0, 0.0]).await;
+        let prior_2 = insert_signal_with_conv_and_embedding(&state.db, "Selbstkorrektur-Muster", "conv-2", &[1.0, 0.0]).await;
+        seed_real_ccet_turn(&state.db).await;
+
+        let new_id = insert_and_verify_signal(
+            &state, "conv-3", "NEWPATTERN: noch eine Selbstkorrektur-Iteration",
+            "human", "emerging", "moderate", "steady", "obs", None,
+        )
+        .await
+        .expect("insert should succeed");
+
+        let (verified, count) = verified_row(&state.db, &new_id).await;
+        assert_eq!(verified, 1, "3 distinct conversations + real CCET data must verify the new signal");
+        assert_eq!(count, 3);
+
+        for prior_id in [&prior_1, &prior_2] {
+            let (verified, count) = verified_row(&state.db, prior_id).await;
+            assert_eq!(verified, 1, "a matched prior signal should also read verified, not just the newest row");
+            assert_eq!(count, 3);
+        }
+    }
+
+    /// Required proof #2: a signal appearing in only 1-2 conversations
+    /// stays `verified_emergence = 0`, even with real CCET data present —
+    /// proves the ≥3-distinct-conversations gate is the binding constraint
+    /// here, not incidentally satisfied by the CCET check alone.
+    #[tokio::test]
+    async fn recurrence_across_only_two_distinct_conversations_stays_unverified() {
+        let mock_base = start_mock_embeddings(&[("NEWPATTERN", 2.0)], 90.0).await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = mock_base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        insert_signal_with_conv_and_embedding(&state.db, "Selbstkorrektur-Muster", "conv-1", &[1.0, 0.0]).await;
+        seed_real_ccet_turn(&state.db).await;
+
+        let new_id = insert_and_verify_signal(
+            &state, "conv-2", "NEWPATTERN: eine Selbstkorrektur",
+            "human", "emerging", "moderate", "steady", "obs", None,
+        )
+        .await
+        .unwrap();
+
+        let (verified, count) = verified_row(&state.db, &new_id).await;
+        assert_eq!(verified, 0, "only 2 distinct conversations must not clear the ≥3 bar");
+        assert_eq!(count, 1, "recurrence_count must stay at its untouched default below the bar, not the insufficient observed count");
+    }
+
+    /// Required proof #3: two GENUINELY DIFFERENT patterns (orthogonal
+    /// embeddings, similarity 0.0) must not get miscounted as recurrence of
+    /// each other, even though there are 3 conversations' worth of signals
+    /// in the table in total — distinctness of CONVERSATION is necessary
+    /// but not sufficient; the patterns themselves must actually match.
+    #[tokio::test]
+    async fn dissimilar_patterns_across_conversations_are_not_miscounted_as_recurring() {
+        // "NEWPATTERN" embeds at 0°; the two priors are seeded at 90°
+        // (orthogonal -> cosine similarity 0.0) — genuinely different
+        // dynamics, not a restatement of the same one.
+        let mock_base = start_mock_embeddings(&[("NEWPATTERN", 0.0)], 0.0).await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = mock_base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        insert_signal_with_conv_and_embedding(&state.db, "Ganz anderes Muster A", "conv-1", &[0.0, 1.0]).await;
+        insert_signal_with_conv_and_embedding(&state.db, "Ganz anderes Muster B", "conv-2", &[0.0, 1.0]).await;
+        seed_real_ccet_turn(&state.db).await;
+
+        let new_id = insert_and_verify_signal(
+            &state, "conv-3", "NEWPATTERN: eine echte, andere Beobachtung",
+            "human", "emerging", "moderate", "steady", "obs", None,
+        )
+        .await
+        .unwrap();
+
+        let (verified, count) = verified_row(&state.db, &new_id).await;
+        assert_eq!(verified, 0, "orthogonal (dissimilar) prior signals must not count as the same recurring pattern");
+        assert_eq!(count, 1);
+
+        let untouched: Vec<(i64,)> = sqlx::query_as("SELECT verified_emergence FROM emergence_signals WHERE source_conversation_id IN ('conv-1','conv-2')")
+            .fetch_all(&state.db)
+            .await
+            .unwrap();
+        assert!(untouched.iter().all(|(v,)| *v == 0), "the two dissimilar priors must stay untouched too");
+    }
+
+    /// Criterion 4 in isolation: 3 distinct, genuinely similar
+    /// conversations is not enough BY ITSELF without real CCET data behind
+    /// it — proves the CCET check is a real second gate, not dead code.
+    #[tokio::test]
+    async fn recurrence_without_real_ccet_data_stays_unverified() {
+        let mock_base = start_mock_embeddings(&[("NEWPATTERN", 2.0)], 90.0).await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = mock_base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        insert_signal_with_conv_and_embedding(&state.db, "Selbstkorrektur A", "conv-1", &[1.0, 0.0]).await;
+        insert_signal_with_conv_and_embedding(&state.db, "Selbstkorrektur B", "conv-2", &[1.0, 0.0]).await;
+        // Deliberately no seed_real_ccet_turn call — turns_considered stays 0.
+
+        let new_id = insert_and_verify_signal(
+            &state, "conv-3", "NEWPATTERN: eine dritte Selbstkorrektur",
+            "human", "emerging", "moderate", "steady", "obs", None,
+        )
+        .await
+        .unwrap();
+
+        let (verified, _) = verified_row(&state.db, &new_id).await;
+        assert_eq!(verified, 0, "3 distinct, genuinely similar conversations alone must not be enough without real CCET data");
+    }
+
+    /// Required proof #4 (regression guard): the existing single-conversation
+    /// classification path is otherwise unchanged. Drives the exact function
+    /// `analyze_recent_interactions`'s loop calls (`insert_and_verify_signal`)
+    /// with no NVIDIA key configured — so `verify_recurrence` bails
+    /// immediately, exactly as it's unreachable in production before this
+    /// change's own top-level guard — and asserts every pre-existing field
+    /// still round-trips correctly through the real public `list_signals`
+    /// endpoint, with the two new fields at their honest defaults.
+    #[tokio::test]
+    async fn signal_without_recurrence_check_keeps_default_unverified_state_and_existing_fields_intact() {
+        let state = test_state().await;
+        let id = insert_and_verify_signal(
+            &state, "conv-1", "ein Muster", "ai", "stable", "tentative", "increasing", "eine Beobachtung", Some("AI"),
+        )
+        .await
+        .unwrap();
+
+        let res = list_signals(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let (body, total) = signals_body(res).await;
+        assert_eq!(total, Some(1));
+        assert_eq!(body[0]["id"], id);
+        assert_eq!(body[0]["pattern"], "ein Muster");
+        assert_eq!(body[0]["level"], "ai");
+        assert_eq!(body[0]["status"], "stable");
+        assert_eq!(body[0]["confidence"], "tentative");
+        assert_eq!(body[0]["evolution"], "increasing");
+        assert_eq!(body[0]["observation"], "eine Beobachtung");
+        assert_eq!(body[0]["scope"], "AI");
+        assert_eq!(body[0]["source_conversation_id"], "conv-1");
+        assert_eq!(body[0]["verified_emergence"], false, "unchanged default — only a real passing recurrence check ever flips this");
+        assert_eq!(body[0]["recurrence_count"], 1, "unchanged default");
+    }
+
+    /// `?verified=true` — same filter convention as level/status/confidence/
+    /// evolution/range above, now covering the new column.
+    #[tokio::test]
+    async fn verified_filter_actually_filters() {
+        let state = test_state().await;
+        let unverified_id = insert_signal(&state.db, "obs-only", "system", "emerging", "moderate", "steady").await;
+        let verified_id = insert_signal(&state.db, "measured-1", "system", "emerging", "moderate", "steady").await;
+        // Bypasses the real recurrence pipeline on purpose — same "seed the
+        // fixture directly" pattern every other filter test in this module
+        // already uses; this test is about the SQL filter, not re-proving
+        // verify_recurrence's own logic (covered above).
+        sqlx::query("UPDATE emergence_signals SET verified_emergence = 1, recurrence_count = 4 WHERE id = ?1")
+            .bind(&verified_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let res = list_signals(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(ListSignalsQuery { verified: Some(true), ..empty_query() }),
+        )
+        .await
+        .into_response();
+        let (body, total) = signals_body(res).await;
+        assert_eq!(total, Some(1));
+        assert_eq!(body[0]["id"], verified_id);
+        assert_eq!(body[0]["recurrence_count"], 4);
+        assert_ne!(body[0]["id"], unverified_id);
     }
 }

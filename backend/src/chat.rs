@@ -418,7 +418,11 @@ pub(crate) async fn persist_model_state(db: &SqlitePool, model_idx: usize, reque
 
 // ── embeddings + vector search (brute-force cosine over SQLite BLOBs) ────────
 
-async fn embed(state: &AppState, text: &str, input_type: &str) -> Result<Vec<f32>, String> {
+/// `pub(crate)` (not just module-private) because `emergence.rs`'s
+/// cross-session recurrence check reuses this verbatim — see its own
+/// `verify_recurrence` doc comment — rather than inventing a second
+/// embedding call convention.
+pub(crate) async fn embed(state: &AppState, text: &str, input_type: &str) -> Result<Vec<f32>, String> {
     #[derive(Deserialize)]
     struct EmbedResp {
         data: Vec<EmbedItem>,
@@ -464,18 +468,26 @@ async fn embed(state: &AppState, text: &str, input_type: &str) -> Result<Vec<f32
         .ok_or_else(|| "no embedding returned".to_string())
 }
 
-fn encode_embedding(v: &[f32]) -> Vec<u8> {
+/// `pub(crate)` — reused by `emergence.rs::verify_recurrence` to store/read
+/// the same BLOB encoding for `emergence_signals.embedding`, so the two
+/// tables' embedding columns stay byte-compatible.
+pub(crate) fn encode_embedding(v: &[f32]) -> Vec<u8> {
     v.iter().flat_map(|f| f.to_le_bytes()).collect()
 }
 
-fn decode_embedding(bytes: &[u8]) -> Vec<f32> {
+/// `pub(crate)` — see `encode_embedding` above.
+pub(crate) fn decode_embedding(bytes: &[u8]) -> Vec<f32> {
     bytes
         .chunks_exact(4)
         .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
         .collect()
 }
 
-fn cosine(a: &[f32], b: &[f32]) -> f32 {
+/// `pub(crate)` — `emergence.rs::verify_recurrence` reuses this exact
+/// cosine implementation for its own recurrence-similarity check (a
+/// SEPARATE threshold, `emergence::EMERGENCE_RECURRENCE_THRESHOLD` — see
+/// that constant's own doc comment for why it isn't `CCET_STABILITY_THRESHOLD`).
+pub(crate) fn cosine(a: &[f32], b: &[f32]) -> f32 {
     let dot: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
     let na: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
     let nb: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
