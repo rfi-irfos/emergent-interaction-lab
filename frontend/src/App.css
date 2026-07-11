@@ -2553,6 +2553,71 @@ button { cursor: pointer; font-family: inherit; }
     linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
 }
 
+/* ── HUD FRAMING — public-site theme adaptation ───────────────────────────
+   The corner-frame/radar decoration above was built against --brand-cyan,
+   a color the .site block's own comment locks as "fixed... independent of
+   any theme override... the hero band always stays dark regardless of the
+   visitor's theme choice" — and it leans on a drop-shadow glow. Neither
+   survives a light background: a colored glow needs a dark backdrop to
+   read as glowing at all, and full-brightness cyan hairlines on white just
+   look like a stray smudge, not intentional framing (confirmed by direct
+   screenshot comparison — dark theme reads as HUD, light theme didn't).
+   .observatory-hud (admin) is untouched by this block, it's permanently
+   dark by design, same as the hero.
+
+   Only the public cards that actually switch theme get a per-theme
+   --corner-c: the theme's own --primary in light (already contrast-tuned
+   for body text, see .site[data-theme="light"] above, so it's proven
+   legible on --surface white) and --accent in hc (forced amber there,
+   keeping the WCAG AAA "one color, max contrast" rule the purple-pill
+   override above already follows — a stray cyan here would break that
+   same rule for a decorative element instead of just text). */
+.site[data-theme="light"] .hud-corner-frame::after,
+.site[data-theme="light"] .site-livestats-tile::after {
+  --corner-c: var(--primary);
+  filter: none;
+  opacity: .6;
+}
+.site[data-theme="light"] .hud-corner-frame:hover::after,
+.site[data-theme="light"] .site-livestats-tile:hover::after {
+  opacity: 1;
+}
+.site[data-theme="hc"] .hud-corner-frame::after,
+.site[data-theme="hc"] .site-livestats-tile::after {
+  --corner-c: var(--accent);
+  filter: none;
+  opacity: 1;
+}
+/* .site-livestats-tile::after's radar rings are literal rgba (see the base
+   rule above), not driven by --corner-c, so light/hc each need their own
+   full background redeclaration — same 8 corner layers, just the radar
+   ring color swapped to match: rgba(14,138,156,*) is light's --primary
+   (#0e8a9c), rgba(255,212,0,*) is hc's --accent (#ffd400). */
+.site[data-theme="light"] .site-livestats-tile::after {
+  background:
+    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(14,138,156,.16) 8px 9px, transparent 9px 15px, rgba(14,138,156,.1) 15px 16px, transparent 16px),
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+}
+.site[data-theme="hc"] .site-livestats-tile::after {
+  background:
+    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(255,212,0,.22) 8px 9px, transparent 9px 15px, rgba(255,212,0,.14) 15px 16px, transparent 16px),
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+}
+
 /* ── HUD LOADING SKELETON ──────────────────────────────────────────────────
    Replaces the old static "Lade…" text swap (see HudSkeleton.tsx) with a
    real shimmering placeholder shaped like the content about to arrive —
