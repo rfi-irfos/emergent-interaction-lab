@@ -77,36 +77,53 @@ pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // reasoning-toggle request (see StreamChatReq::reasoning_requested and
 // build_model_ladder) ever re-probes earlier candidates.
 //
-// Simeon 2026-07-10: responses on the plain 70b felt repetitive/"not smart"
-// — wants a genuinely bigger/smarter model tried first. Availability on
-// this NVIDIA account could NOT be verified empirically from this worktree
-// (no NVIDIA_API_KEY available locally — it's a real Fly secret in
-// production only); this account is already confirmed NOT entitled to
-// nvidia/llama-3.1-nemotron-70b-instruct, so don't assume any of these
-// succeed either. The ladder just needs to try each in order and fall
-// through gracefully — production `fly logs` (see the tracing::info! below,
-// and the Fix 3 logging-level fix that makes it actually visible now) is
-// what proves out which one actually ends up serving real traffic.
+// 2026-07-11: root-caused the "nothing works, no convo, toolcalls no"
+// incident directly against build.nvidia.com/v1/models and
+// /v1/chat/completions with the real production key (previously never
+// possible from a dev worktree). Three of the seven candidates from the
+// 2026-07-10 ladder are simply NOT on this account's catalog at all —
+// meta/llama-3.1-405b-instruct, mistralai/mistral-nemo-12b-instruct (wrong
+// org prefix; the real catalog entry is nv-mistralai/..., which is ALSO not
+// entitled on this account), and deepseek-ai/deepseek-r1 (deprecated off
+// the catalog entirely, replaced by the deepseek-v4 family below) — all
+// three 404 instantly, every single force-top retry. Worse: the fourth
+// rung, meta/llama-3.3-70b-instruct, IS a valid catalog entry but its
+// connection reliably never completes at all — confirmed hanging past
+// NVIDIA_CONNECT_TIMEOUT (20s) in direct testing — which is exactly the
+// class of failure this file's own top-of-file doc comment warns about.
+// That candidate being reachable-but-silent (not a fast 404) is what
+// produced the 45s NVIDIA_STREAM_STALL_TIMEOUT log line during the
+// incident: something in the ladder was accepted but never answered.
 //
-// Same day, follow-up: 70b turned out to genuinely work, but ~15s/reply is
-// too slow for what's just tool-calling inside one conversation (not a
-// multi-agent workflow that would justify the wait) — Simeon wants a real
-// middle ground, not the 8b-vs-70b extremes. Inserted two ~12b-class
-// candidates ahead of 70b: mistral-nemo-12b (built by Mistral *with*
-// NVIDIA specifically, so unusually likely to be on this catalog/entitled)
-// and mixtral-8x7b (mixture-of-experts — only ~13b active params per token
-// despite the larger total size, well-regarded specifically for tool-use).
+// Replaced all four with candidates individually verified (curl, real key,
+// today) to return 200 with an actual completion in under ~1.5s each, and
+// to follow a JSON tool-call instruction correctly on a smoke test:
+// nvidia/llama-3.3-nemotron-super-49b-v1 (NVIDIA's own tuned 49B — the
+// actual "golden middle" Simeon asked for on 07-10, this account IS
+// entitled to it, unlike nemotron-70b-instruct); nvidia/nemotron-nano-12b-v2-vl
+// as a second fast/light rung; deepseek-ai/deepseek-v4-pro as the
+// bigger/"smarter" option (replaces the hanging 70b-3.3 slot); and
+// deepseek-ai/deepseek-v4-flash as the reasoning-capable slot (replaces
+// dead deepseek-r1 — confirmed it actually populates reasoning_content).
+// mistralai/mixtral-8x7b-instruct-v0.1 and meta/llama-3.1-70b-instruct are
+// both still genuinely entitled and working, kept as deeper fallback rungs.
+// NOT re-verified: nvidia/llama-3.3-nemotron-super-49b-v1.5 (the .5 point
+// release) looked tempting but puts its actual answer in `reasoning` with
+// `content: null` on a plain turn in testing — would silently break the
+// non-reasoning path's `delta.content` extraction, so deliberately NOT
+// used outside the dedicated reasoning slot.
+//
 // Reordering this array changes what a previously-persisted numeric
 // `chat_model_idx` points at — harmless: the ladder loop re-validates
 // whatever it's pointed at on the very next request and falls through
 // correctly if that guess is wrong, self-correcting within one exchange.
 pub(crate) const CHAT_MODEL_CANDIDATES: &[&str] = &[
-    "meta/llama-3.1-405b-instruct",     // much bigger, same family — likely on NVIDIA's catalog
-    "mistralai/mistral-nemo-12b-instruct", // ~12b, NVIDIA co-developed — the actual "golden middle" target
-    "mistralai/mixtral-8x7b-instruct-v0.1", // MoE, ~13b active params, fast + strong tool-use track record
-    "meta/llama-3.3-70b-instruct",      // newer generation than the previous 70b default — confirmed working, but slow
-    "deepseek-ai/deepseek-r1",          // genuinely reasoning-capable — see reasoning_content handling below
-    "meta/llama-3.1-70b-instruct",      // previous "large" default — kept as a mid-tier rung, not dropped
+    "nvidia/llama-3.3-nemotron-super-49b-v1", // NVIDIA-tuned 49B, verified fast + entitled — the real "golden middle"
+    "meta/llama-3.1-70b-instruct",      // verified fast + entitled, solid non-reasoning fallback
+    "nvidia/nemotron-nano-12b-v2-vl",   // verified fast + entitled, light second rung
+    "deepseek-ai/deepseek-v4-pro",      // verified working, bigger/"smarter" option — replaces the hanging 70b-3.3 slot
+    "deepseek-ai/deepseek-v4-flash",    // genuinely reasoning-capable — see reasoning_content handling below
+    "mistralai/mixtral-8x7b-instruct-v0.1", // MoE, verified entitled — slower, kept as a deep fallback rung
     CHAT_MODEL,                         // meta/llama-3.1-8b-instruct — final safety net, must always work
 ];
 // How often (in requests, server-wide) to ignore AppState::chat_model_idx's
@@ -124,7 +141,7 @@ const CHAT_MODEL_RETRY_FROM_TOP_EVERY: u64 = 20;
 ///
 /// - `reasoning_requested` (see `StreamChatReq::reasoning_requested`, wired
 ///   from the frontend's reasoning toggle): when true, the reasoning-capable
-///   candidate (`deepseek-ai/deepseek-r1`) is tried FIRST, ahead of the
+///   candidate (`deepseek-ai/deepseek-v4-flash`) is tried FIRST, ahead of the
 ///   cached shortcut entirely — the user explicitly asked to see reasoning,
 ///   so it's worth paying the round-trip to check, even if a different
 ///   candidate is the cached steady-state winner. When false (the default),
@@ -140,8 +157,8 @@ const CHAT_MODEL_RETRY_FROM_TOP_EVERY: u64 = 20;
 pub(crate) fn build_model_ladder(reasoning_requested: bool, cached_idx: usize, force_top: bool) -> Vec<usize> {
     let deepseek_idx = CHAT_MODEL_CANDIDATES
         .iter()
-        .position(|&m| m == "deepseek-ai/deepseek-r1")
-        .expect("deepseek-ai/deepseek-r1 must be one of CHAT_MODEL_CANDIDATES");
+        .position(|&m| m == "deepseek-ai/deepseek-v4-flash")
+        .expect("deepseek-ai/deepseek-v4-flash must be one of CHAT_MODEL_CANDIDATES");
     if reasoning_requested {
         std::iter::once(deepseek_idx)
             .chain((0..CHAT_MODEL_CANDIDATES.len()).filter(|&i| i != deepseek_idx))
@@ -1421,7 +1438,7 @@ pub struct StreamChatReq {
     site_content: Option<serde_json::Value>,
     /// Wired from the frontend's reasoning toggle (see ResearchChat.tsx).
     /// `None`/`Some(false)` (default, matches the toggle's default-off
-    /// state): skip `deepseek-ai/deepseek-r1` in the candidate ladder
+    /// state): skip `deepseek-ai/deepseek-v4-flash` in the candidate ladder
     /// entirely for this request. `Some(true)`: prioritize trying it FIRST,
     /// ahead of the cached-winner shortcut — see `build_model_ladder`.
     reasoning_requested: Option<bool>,
@@ -1661,7 +1678,7 @@ pub async fn stream_chat(
             // re-discovering it from scratch — the actual fix for "inference
             // time is very long". Guarded to non-reasoning traffic only: a
             // reasoning-toggle request intentionally tries
-            // deepseek-ai/deepseek-r1 first regardless of the cache (see
+            // deepseek-ai/deepseek-v4-flash first regardless of the cache (see
             // build_model_ladder), and persisting that special-cased
             // position would wrongly make future ordinary messages skip past
             // untried, possibly-better non-reasoning candidates the
@@ -1772,7 +1789,7 @@ pub async fn stream_chat(
                         iter_text.push_str(&delta_text);
                     }
 
-                    // Reasoning models on NVIDIA's API (e.g. deepseek-ai/deepseek-r1,
+                    // Reasoning models on NVIDIA's API (e.g. deepseek-ai/deepseek-v4-flash,
                     // see CHAT_MODEL_CANDIDATES above) stream their step-by-step
                     // reasoning in a separate `reasoning_content` delta field
                     // alongside/before `content`. Forward it live as its own SSE
@@ -2520,7 +2537,7 @@ mod tests {
 
     /// Synthetic `reasoning_content` delta shape, mirroring the per-line SSE
     /// parsing in stream_chat's inner loop — the field NVIDIA's reasoning
-    /// models (e.g. deepseek-ai/deepseek-r1, see CHAT_MODEL_CANDIDATES)
+    /// models (e.g. deepseek-ai/deepseek-v4-flash, see CHAT_MODEL_CANDIDATES)
     /// stream alongside/before `content`. No live NVIDIA_API_KEY is
     /// available in this worktree to prove a real reasoning model actually
     /// emits this shape in production — this only proves the parsing logic
@@ -2597,7 +2614,7 @@ mod tests {
     // ── model-selection ladder (2026-07-10 fix) ─────────────────────────
 
     fn deepseek_idx() -> usize {
-        CHAT_MODEL_CANDIDATES.iter().position(|&m| m == "deepseek-ai/deepseek-r1").unwrap()
+        CHAT_MODEL_CANDIDATES.iter().position(|&m| m == "deepseek-ai/deepseek-v4-flash").unwrap()
     }
 
     /// The regression this fix exists for: `stream_chat` used to always
@@ -2967,9 +2984,11 @@ mod tests {
     async fn all_candidates_hanging_still_yields_a_clean_error_instead_of_silence() {
         let base = start_mock_nvidia(MockNvidiaConfig {
             hang_models: vec![
-                "meta/llama-3.1-405b-instruct",
-                "meta/llama-3.3-70b-instruct",
+                "nvidia/llama-3.3-nemotron-super-49b-v1",
                 "meta/llama-3.1-70b-instruct",
+                "nvidia/nemotron-nano-12b-v2-vl",
+                "deepseek-ai/deepseek-v4-pro",
+                "mistralai/mixtral-8x7b-instruct-v0.1",
                 "meta/llama-3.1-8b-instruct",
             ],
             success_model: None,
@@ -3009,8 +3028,8 @@ mod tests {
     #[tokio::test]
     async fn hanging_first_candidate_still_falls_through_to_a_working_one() {
         let base = start_mock_nvidia(MockNvidiaConfig {
-            hang_models: vec!["meta/llama-3.1-405b-instruct"],
-            success_model: Some("meta/llama-3.3-70b-instruct"),
+            hang_models: vec!["nvidia/llama-3.3-nemotron-super-49b-v1"],
+            success_model: Some("meta/llama-3.1-70b-instruct"),
         })
         .await;
 
