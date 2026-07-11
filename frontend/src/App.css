@@ -1677,6 +1677,10 @@ button { cursor: pointer; font-family: inherit; }
 .site-pricing-body { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 .site-pricing-body p { font-size: 17px; line-height: 1.8; color: var(--text); margin: 0; }
 
+/* ── JARVIS ──────────────────────────────────────────────────────────────── */
+.site-jarvis-body { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.site-jarvis-body p { font-size: 17px; line-height: 1.8; color: var(--text); margin: 0; }
+
 /* ── CERTIFICATES ─────────────────────────────────────────────────────────── */
 .site-certificates { background: var(--surface); }
 .site-cert-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; margin: 0 auto; }
