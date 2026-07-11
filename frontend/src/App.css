@@ -2764,6 +2764,43 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-donut-center { color: #eefcff; }
 .observatory-hud .obs-donut-legend-item { color: rgba(148,190,199,.75); }
 
+/* ── ObsRadar — hand-rolled radar/spider chart primitive ──────────────────
+   Straight-edge polygon (NOT Catmull-Rom smoothed like ObsChart/
+   ObsMultiChart — the correct spider-chart convention, since these "axes"
+   aren't sequential samples of one continuous variable), built for
+   Denkfragmente's real 8-layer distribution. Plain inline SVG, no charting
+   library, same as ObsDonut/ObsGauge above.
+
+   Unlike those two (which also render on Analytics' plain white Verwaltung
+   card and so need a light-mode fallback plus a `.observatory-hud`-gated
+   glow layered on top of it), ObsRadar's only real consumer today
+   (Denkfragmente) is a permanently-dark Observatory-tier module —
+   `denkfragmente` sits in registry.tsx's OBSERVATORY_MODULES, so
+   AdminPanel.tsx's `.observatory-hud` class is applied unconditionally
+   whenever it's open, independent of the light/dark toggle. This component
+   has no actual light-mode render path to support, so its surface colors
+   and glow are a plain, always-on treatment rather than a duplicated
+   light/dark pair for a context it will never render in. */
+.obs-radar-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
+.obs-radar-svg { display: block; overflow: visible; }
+.obs-radar-ring { fill: none; stroke: rgba(34,211,238,.14); stroke-width: 1; }
+.obs-radar-spoke { stroke: rgba(34,211,238,.14); stroke-width: 1; }
+/* The "ambient life sign" pulse — the SAME hud-pulse keyframe already used
+   elsewhere (see @keyframes hud-pulse above; mycelium-pulse's 2.6s is the
+   slowest existing use), slowed further to ~3.2s here so it reads as steady
+   instrumentation rather than an urgent blink. Glow is the same
+   drop-shadow(currentColor) technique as .obs-donut-segment/.obs-gauge-fill
+   above and .mycelium-node-core earlier in this file. */
+.obs-radar-area {
+  fill: currentColor; fill-opacity: .22; stroke: currentColor; stroke-width: 2; stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor);
+  animation: hud-pulse 3.2s ease-in-out infinite;
+}
+.obs-radar-vertex { cursor: pointer; transition: r .15s ease; }
+.obs-radar-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; justify-content: center; }
+.obs-radar-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: rgba(148,190,199,.75); font-weight: 600; }
+.obs-radar-legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
 /* ── LIVE OBSERVATORY CARDS (above Forschung chat) ───────────────────────────── */
 /* Collapsed by default and visually boxed off from the chat below it — these
    dashboard stat rows used to sit directly above ResearchChat as bare
