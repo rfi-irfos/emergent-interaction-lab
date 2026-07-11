@@ -279,9 +279,17 @@ button { cursor: pointer; font-family: inherit; }
 .site-nav-phone svg { color: var(--primary); }
 .site-nav-cta {
   background: var(--primary); color: var(--on-primary); font-weight: 700; font-size: 13px;
-  padding: 10px 22px; border-radius: 7px; transition: filter .2s;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 9px; transition: filter .2s, transform .15s;
 }
-.site-nav-cta:hover { filter: brightness(.9); }
+.site-nav-cta:hover { filter: brightness(.9); transform: translateY(-1px); }
+.site-nav-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 9px;
+  color: var(--text); border: 1px solid var(--border); background: transparent;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.site-nav-icon-btn:hover { background: var(--surface, rgba(127,127,127,.08)); border-color: var(--primary); transform: translateY(-1px); }
 
 /* Hamburger (mobile only — toggled by container query below) */
 .site-nav-burger {
