@@ -51,8 +51,14 @@ export function Inbox() {
   // ResearchNotesPanel's Jarvis-writes-mid-session poll).
   const { data, loading, error } = useAdminFetch<ContactMessage[]>('/api/contact/messages', [refreshKey], 15000)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  // Client-side, matching BlogDrafts/ResearchNotesPanel — contact.rs's
+  // list_messages takes no query params, and inbox volume is small enough
+  // that fetching everything and filtering here (before grouping by date)
+  // is simpler than adding backend support for it.
+  const [statusFilter, setStatusFilter] = useState('')
   const list = data ?? []
-  const groups = groupByDate(list, m => m.created_at)
+  const filteredList = statusFilter ? list.filter(m => m.status === statusFilter) : list
+  const groups = groupByDate(filteredList, m => m.created_at)
 
   const setStatus = async (id: string, status: string) => {
     setUpdatingId(id)
@@ -84,8 +90,18 @@ export function Inbox() {
 
   return (
     <div style={{ padding: 14 }}>
+      {list.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 180px' }}>
+            <option value="">Alle Status</option>
+            {Object.keys(STATUS_LABEL).map(v => <option key={v} value={v}>{STATUS_LABEL[v]}</option>)}
+          </select>
+        </div>
+      )}
       {list.length === 0 ? (
         <InboxPlaceholder icon="✉" text="Keine neuen Anfragen." sub="Anfragen aus dem Kontaktformular der Website erscheinen hier automatisch." />
+      ) : filteredList.length === 0 ? (
+        <InboxPlaceholder icon="⚲" text="Keine Treffer." sub="Kein Eintrag mit diesem Status." />
       ) : (
         groups.map(group => (
           <div key={group.label} style={{ marginBottom: 18 }}>

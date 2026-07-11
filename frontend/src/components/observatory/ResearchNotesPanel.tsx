@@ -59,8 +59,14 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
   const [saving, setSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // Client-side only, matching BlogDrafts' statusFilter — the list here is
+  // already fully loaded (category is a fixed prop, not user-filterable
+  // server-side) and status has exactly the two values in STATUS_ACCENT, so
+  // there's no reason to round-trip to the backend for this.
+  const [statusFilter, setStatusFilter] = useState('')
 
   const list = data ?? []
+  const filtered = statusFilter ? list.filter(n => n.status === statusFilter) : list
 
   const submit = async () => {
     if (!title.trim() || saving) return
@@ -129,7 +135,16 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
       {loading && !data && <div className="obs-empty">Lade…</div>}
       {error && <div className="obs-empty">Fehler beim Laden.</div>}
       {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
-      {list.map(n => {
+      {list.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, margin: '14px 0' }}>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+            <option value="">Alle Status</option>
+            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+      )}
+      {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
+      {filtered.map(n => {
         const tags = parseTags(n.tags)
         return (
           <div className="obs-item-card" key={n.id} style={{ ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>

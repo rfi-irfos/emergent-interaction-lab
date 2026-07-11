@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 
 interface ActivityItem {
@@ -45,10 +46,17 @@ function statusColor(item: ActivityItem): string {
 /// SystemState's chat_secret_configured warning.
 export function AgentActivity() {
   const { data, loading, error } = useAdminFetch<AgentActivityData>('/api/observatory/agent-activity')
+  // Client-side — the endpoint has no query params (it merges four already
+  // per-source-capped sources into one ≤~80-item feed, see
+  // backend/src/github_activity.rs), so everything is fetched in one shot
+  // already and there's nothing to gain from a server round-trip here.
+  const [kindFilter, setKindFilter] = useState<'' | ActivityItem['kind']>('')
 
   if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
+
+  const items = kindFilter ? data.items.filter(i => i.kind === kindFilter) : data.items
 
   return (
     <div className="obs-panel">
@@ -57,9 +65,19 @@ export function AgentActivity() {
       )}
 
       <div className="obs-section-label">Agent-Aktivität (PRs, Commits, Workflows, Deploys)</div>
+      {data.items.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, margin: '10px 0 14px' }}>
+          <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
+            <option value="">Alle Typen</option>
+            {(Object.keys(KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+          </select>
+        </div>
+      )}
       {data.items.length === 0
         ? <div className="obs-card"><div className="obs-empty">Noch keine Aktivität protokolliert.</div></div>
-        : data.items.map((item, i) => (
+        : items.length === 0
+        ? <div className="obs-card"><div className="obs-empty">Keine Treffer.</div></div>
+        : items.map((item, i) => (
             <div className="obs-item-card" key={i} style={{ ['--obs-accent' as string]: statusColor(item) }}>
               <div className="obs-item-title">
                 {item.url
