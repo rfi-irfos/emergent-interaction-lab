@@ -263,7 +263,7 @@ pub(crate) async fn execute_tool(state: &AppState, call: &ToolCall, site_content
         "draft_blog_post" => {
             let title = call.arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Unbenannt");
             let body = call.arguments.get("body").and_then(|v| v.as_str()).unwrap_or("");
-            let id = crate::blog::insert_post(state, title, body, "agent", Some(conversation_id)).await;
+            let id = crate::blog::insert_post(state, title, body, "agent", Some(conversation_id), None).await;
             json!({ "ok": true, "id": id, "status": "draft" }).to_string()
         }
         "get_blog_post" => {

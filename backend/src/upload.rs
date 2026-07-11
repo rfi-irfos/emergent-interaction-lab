@@ -1,14 +1,13 @@
 use axum::{
     extract::{Multipart, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     Json,
 };
-use axum_extra::extract::cookie::CookieJar;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::{auth::get_session, AppState};
+use crate::{authz::require_admin, AppState};
 
 #[derive(Serialize)]
 struct UploadResponse {
@@ -18,10 +17,22 @@ struct UploadResponse {
 
 pub async fn upload_file(
     State(state): State<AppState>,
-    jar: CookieJar,
+    headers: HeaderMap,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    if get_session(&jar, &state).is_none() {
+    // Was gated on get_session() (the Google-OAuth cookie session) — but
+    // nothing in the frontend ever calls /auth/google or /api/me (confirmed
+    // by grep across frontend/src), so that cookie is never established by
+    // the real admin UI. Every other admin surface (blog, research, chat,
+    // observatory) authenticates via the x-chat-secret header through
+    // authHeaders()/require_admin instead (see adminApi.ts's own doc
+    // comment: "the one auth mechanism the shipped admin UI actually
+    // round-trips through today"). Left as get_session, this endpoint was
+    // unreachable from any real logged-in admin session — a second, silent
+    // reason uploads were broken beyond the already-fixed UPLOADS_DIR volume
+    // move. Matching require_admin here is what makes it actually callable
+    // from BlogDrafts.tsx (and anything else using authHeaders()).
+    if !require_admin(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 

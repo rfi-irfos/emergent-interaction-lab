@@ -160,6 +160,21 @@ async fn main() {
     let db_path = std::env::var("DB_PATH").unwrap_or("visits.db".into());
     let db = SqlitePool::connect(&format!("sqlite://{}?mode=rwc", db_path))
         .await.expect("open visits.db");
+    // stream_chat fires many concurrent writes per exchange (message inserts,
+    // chat_retrievals, chat_model_state, chat_chunks per text chunk,
+    // ccet_turns, system_snapshots) against this single SQLite file. Default
+    // journal mode serializes writers behind an exclusive lock, so under any
+    // real concurrency that turns into "database is locked" errors — which
+    // list_conversations/get_conversation used to swallow via
+    // .unwrap_or_default() into a fake-empty 200 (see chat.rs), making
+    // conversations intermittently vanish from the Forschung sidebar. WAL
+    // lets readers and a writer proceed concurrently instead of blocking each
+    // other, and busy_timeout makes any writer-vs-writer contention that
+    // remains retry for up to 5s instead of failing immediately — fixing the
+    // lock contention at its source rather than only handling it better
+    // downstream.
+    sqlx::query("PRAGMA journal_mode=WAL;").execute(&db).await.expect("enable WAL");
+    sqlx::query("PRAGMA busy_timeout=5000;").execute(&db).await.expect("set busy_timeout");
     sqlx::query("CREATE TABLE IF NOT EXISTS web_visits (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL DEFAULT '/', source TEXT NOT NULL DEFAULT 'direct', referrer TEXT NOT NULL DEFAULT '', utm_source TEXT NOT NULL DEFAULT '', utm_medium TEXT NOT NULL DEFAULT '', utm_campaign TEXT NOT NULL DEFAULT '', visitor TEXT NOT NULL DEFAULT '', created_at DATETIME NOT NULL DEFAULT (datetime('now')))")
         .execute(&db).await.expect("create web_visits");
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_wv_created ON web_visits(created_at)")
