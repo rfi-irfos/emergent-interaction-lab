@@ -848,7 +848,7 @@ pub async fn list_conversations(
     let kind = q.kind.unwrap_or_else(|| "chat".to_string());
     let search = q.q.as_deref().map(str::trim).filter(|s| !s.is_empty());
 
-    let rows: Vec<(String, String, String, String)> = match search {
+    let result: Result<Vec<(String, String, String, String)>, sqlx::Error> = match search {
         Some(term) => {
             let pattern = format!("%{}%", escape_like_pattern(term));
             // LEFT JOIN + DISTINCT: a conversation with N matching messages
@@ -866,15 +866,26 @@ pub async fn list_conversations(
             .bind(&pattern)
             .fetch_all(&state.db)
             .await
-            .unwrap_or_default()
         }
         None => sqlx::query_as(
             "SELECT id, title, created_at, updated_at FROM chat_conversations WHERE kind = ?1 ORDER BY updated_at DESC",
         )
         .bind(&kind)
         .fetch_all(&state.db)
-        .await
-        .unwrap_or_default(),
+        .await,
+    };
+    // A transient DB failure (e.g. lock contention) must surface as a real
+    // error, not silently degrade into "[]" — an empty-but-200 response is
+    // indistinguishable from "genuinely no conversations" to the frontend,
+    // which used to just overwrite the sidebar with it (see
+    // refreshConversations() in ResearchChat.tsx, now fixed to leave the
+    // existing list alone on a non-200 instead of trusting a fake-empty 200).
+    let rows = match result {
+        Ok(rows) => rows,
+        Err(e) => {
+            tracing::error!("list_conversations: DB query failed: {e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
     };
     let out: Vec<ConversationOut> = rows
         .into_iter()
@@ -929,13 +940,23 @@ pub async fn get_conversation(
     if !is_authorized(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    let rows: Vec<(String, String, String, Option<String>, String)> = sqlx::query_as(
+    let result: Result<Vec<(String, String, String, Option<String>, String)>, sqlx::Error> = sqlx::query_as(
         "SELECT id, role, content, token_info, created_at FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC",
     )
     .bind(&id)
     .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    .await;
+    // Same fix as list_conversations above: a genuine DB failure must not be
+    // indistinguishable from "this conversation has no messages" — that's
+    // what let a real backend error silently wipe a conversation's history
+    // on screen when openConversation() trusted a fake-empty 200.
+    let rows = match result {
+        Ok(rows) => rows,
+        Err(e) => {
+            tracing::error!("get_conversation({id}): DB query failed: {e}");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
     let out: Vec<MessageOut> = rows
         .into_iter()
         .map(|(id, role, content, token_info, created_at)| MessageOut { id, role, content, token_info, created_at })
@@ -1820,6 +1841,60 @@ mod tests {
 
         let ids = list_ids(&state, Some("50%")).await;
         assert_eq!(ids, vec!["conv-percent"], "literal '%' must not act as a wildcard matching '5000' too");
+    }
+
+    /// The bug: a genuine DB failure (lock contention, corruption, etc.) used
+    /// to be swallowed by `.unwrap_or_default()` into a fake-empty `200 []`
+    /// — indistinguishable from "this user genuinely has zero conversations"
+    /// to the frontend, which is exactly what made conversations
+    /// intermittently vanish from the Forschung sidebar. Dropping the table
+    /// the query depends on forces a real `sqlx::Error` deterministically
+    /// (no need to race actual lock contention) — the fix must surface it as
+    /// a real 500, not silently degrade.
+    #[tokio::test]
+    async fn list_conversations_returns_500_on_genuine_db_error_not_fake_empty_200() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-a", "wird nie gesehen", "irgendwas").await;
+        sqlx::query("DROP TABLE chat_conversations").execute(&state.db).await.unwrap();
+
+        let query = ListConversationsQuery { kind: None, q: None };
+        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), AxQuery(query))
+            .await
+            .into_response();
+        assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR, "a genuine DB error must not come back as 200 []");
+    }
+
+    /// Same fix, same technique, for `get_conversation` — a DB failure while
+    /// loading a conversation's messages must not read as "this conversation
+    /// has no messages" (which would silently blank out an open chat).
+    #[tokio::test]
+    async fn get_conversation_returns_500_on_genuine_db_error_not_fake_empty_200() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-a", "wird nie gesehen", "irgendwas").await;
+        sqlx::query("DROP TABLE chat_messages").execute(&state.db).await.unwrap();
+
+        let res = get_conversation(AxState(state.clone()), HeaderMap::new(), Path("conv-a".to_string()))
+            .await
+            .into_response();
+        assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR, "a genuine DB error must not come back as 200 []");
+    }
+
+    /// Guards the happy path didn't regress alongside the error-handling
+    /// change above: a normal, healthy query still returns 200 with the
+    /// real data.
+    #[tokio::test]
+    async fn get_conversation_still_returns_200_with_messages_on_success() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-a", "titel", "hallo welt").await;
+
+        let res = get_conversation(AxState(state.clone()), HeaderMap::new(), Path("conv-a".to_string()))
+            .await
+            .into_response();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let messages: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0]["content"], "hallo welt");
     }
 
     /// Drives `safe_to_forward_live` exactly the way stream_chat's inner

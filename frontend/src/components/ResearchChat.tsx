@@ -339,6 +339,14 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const baseTitleRef = useRef(document.title)
   const sendingRef = useRef(false)
   const latestConvRequestRef = useRef<string | null>(null)
+  // Same out-of-order guard as latestConvRequestRef below, but for the
+  // sidebar list itself: refreshConversations() is fired from 5+
+  // independent triggers (mount, debounced search, after delete, after
+  // ensureConversation, after every send() completes) that can land close
+  // together, so a monotonically increasing token — captured at call time,
+  // compared at resolution time — makes every but-the-latest response's
+  // .then() a no-op instead of whichever happens to resolve last winning.
+  const latestListRequestRef = useRef(0)
 
   // Grouped once per conversations-list change, not on every render — cheap
   // either way at realistic list sizes, but avoids re-walking the (already
@@ -361,9 +369,18 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const refreshConversations = () => {
     const q = debouncedSearch.trim()
     const url = `${API_BASE}/api/chat/conversations${q ? `?q=${encodeURIComponent(q)}` : ''}`
+    const reqToken = ++latestListRequestRef.current
     fetch(url, { headers: authHeaders() })
-      .then(r => r.ok ? r.json() : [])
-      .then(setConversations)
+      .then(r => {
+        if (reqToken !== latestListRequestRef.current) return // superseded by a newer refresh
+        // A non-200 (e.g. a transient 500 from SQLite lock contention, see
+        // list_conversations in chat.rs) must NOT be treated as "there are
+        // no conversations" — keep showing whatever the sidebar already has
+        // instead of wiping it down to empty on a failure that has nothing
+        // to do with the actual conversation list.
+        if (!r.ok) return
+        return r.json().then(data => { if (reqToken === latestListRequestRef.current) setConversations(data) })
+      })
       .catch(() => {})
   }
   const refreshDocuments = () => {

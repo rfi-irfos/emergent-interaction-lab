@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
@@ -13,6 +13,16 @@ interface BlogPost {
   updated_at: string
   published_at: string | null
   source_conversation_id: string | null
+  images: string[] | null
+}
+
+// Upload returns a relative "/uploads/…" path — fine when frontend and
+// backend share an origin, but the admin panel is also served from GitHub
+// Pages (see apiBase.ts), where a bare relative <img src> would resolve
+// against the Pages origin instead of the Fly-hosted backend and 404.
+// Already-absolute URLs (none today, but defensive) pass through untouched.
+function imgSrc(url: string): string {
+  return /^https?:\/\//.test(url) ? url : `${API_BASE}${url}`
 }
 
 /// Surfaces the blog_posts table (drafted by Jarvis via draft_blog_post, or
@@ -34,7 +44,10 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editBody, setEditBody] = useState('')
+  const [editImages, setEditImages] = useState<string[]>([])
   const [savingEdit, setSavingEdit] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const imagesFileInputRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
@@ -78,6 +91,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
     setEditingId(post.id)
     setEditTitle(post.title)
     setEditBody(post.body)
+    setEditImages(post.images ?? [])
   }
 
   const cancelEdit = () => setEditingId(null)
@@ -89,7 +103,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
       await fetch(`${API_BASE}/api/blog/posts/${id}`, {
         method: 'PUT',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ title: editTitle, body: editBody }),
+        body: JSON.stringify({ title: editTitle, body: editBody, images: editImages }),
       })
       setEditingId(null)
       await refresh()
@@ -97,6 +111,46 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
       setSavingEdit(false)
     }
   }
+
+  // Reuses the general-purpose /api/upload endpoint (same one WebsiteKit's
+  // logo/hero/photo uploads are meant to go through) rather than building a
+  // second upload mechanism — one file per request, since that's the shape
+  // upload_file already expects. Sequential (not Promise.all), same
+  // reasoning as ResearchChat.tsx's uploadFiles: one huge image doesn't
+  // starve the others sharing the connection, and each successfully
+  // uploaded file appears as a thumbnail immediately instead of only after
+  // the whole batch finishes.
+  const uploadOneImage = async (file: File): Promise<string | null> => {
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', headers: authHeaders(), body: form })
+      if (!res.ok) return null
+      const data = await res.json()
+      return typeof data.url === 'string' ? data.url : null
+    } catch {
+      return null
+    }
+  }
+
+  const uploadImages = async (files: File[]) => {
+    if (files.length === 0) return
+    setUploadingImages(true)
+    const failed: string[] = []
+    for (const file of files) {
+      const url = await uploadOneImage(file)
+      if (url) setEditImages(prev => [...prev, url])
+      else failed.push(file.name)
+    }
+    setUploadingImages(false)
+    if (failed.length > 0) {
+      // Same minimal-modal convention as `remove()` above — this file has no
+      // custom toast/banner component to reuse.
+      window.alert(`${failed.length} von ${files.length} Bildern konnten nicht hochgeladen werden: ${failed.join(', ')}`)
+    }
+  }
+
+  const removeImage = (url: string) => setEditImages(prev => prev.filter(u => u !== url))
 
   const STATUS_ACCENT: Record<string, string> = { draft: '#f59e0b', published: '#10b981' }
 
@@ -134,6 +188,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
               updated_at: p.updated_at,
               published_at: p.published_at ?? '',
               source_conversation_id: p.source_conversation_id ?? '',
+              images: (p.images ?? []).join(', '),
             }))}
             filenameBase="blog-drafts"
             title="Blog-Entwürfe"
@@ -148,6 +203,42 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
             <div className="obs-form" style={{ marginBottom: 0 }}>
               <input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
               <textarea value={editBody} onChange={e => setEditBody(e.target.value)} style={{ minHeight: 140 }} />
+              {editImages.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  {editImages.map(url => (
+                    <div key={url} style={{ position: 'relative' }}>
+                      <img src={imgSrc(url)} alt="" className="panel-upload-thumb" />
+                      <button
+                        type="button"
+                        title="Bild entfernen"
+                        onClick={() => removeImage(url)}
+                        style={{
+                          position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%',
+                          border: 'none', background: '#ff6b6b', color: '#fff', fontSize: 12, lineHeight: '18px',
+                          padding: 0, cursor: 'pointer',
+                        }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <input
+                ref={imagesFileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) uploadImages(files); e.target.value = '' }}
+              />
+              <button
+                className="panel-upload-btn"
+                type="button"
+                disabled={uploadingImages}
+                onClick={() => imagesFileInputRef.current?.click()}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                {uploadingImages ? 'Lädt hoch…' : '+ Bilder hochladen'}
+              </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px' }} disabled={savingEdit || !editTitle.trim()} onClick={() => saveEdit(p.id)}>
                   {savingEdit ? 'Speichert…' : 'Speichern'}
@@ -175,6 +266,13 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                 )}
               </div>
               <div className="obs-item-body">{p.body}</div>
+              {p.images && p.images.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
+                  {p.images.map(url => (
+                    <img key={url} src={imgSrc(url)} alt="" className="panel-upload-thumb" />
+                  ))}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 {p.status === 'draft' && (
                   <>
