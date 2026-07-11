@@ -1917,7 +1917,31 @@ button { cursor: pointer; font-family: inherit; }
   margin-top: 26px; padding: 18px 18px 6px; border-radius: 12px;
   background: rgba(59,107,246,.035); border: 1px solid rgba(59,107,246,.12);
 }
-.obs-map-card { background: linear-gradient(180deg, #fbfcfe, #f5f7fb); padding: 24px 20px 16px; }
+.obs-map-card { background: linear-gradient(180deg, #fbfcfe, #f5f7fb); padding: 24px 20px 16px; position: relative; }
+
+/* Zoom/pan toolbar + hover metadata tooltip shared by KnowledgeGraph and
+   SystemMap (see hooks/useSvgPanZoom.ts) — same visual language as the
+   panel-add-btn / obs-chart-tooltip idioms already used elsewhere, not a
+   new button/tooltip system. */
+.obs-map-toolbar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-bottom: 10px; flex-wrap: wrap; }
+.obs-map-toolbar-zoom {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; font-variant-numeric: tabular-nums;
+  color: #9aa0a8; margin-right: auto; letter-spacing: .04em;
+}
+.obs-map-toolbar-btn {
+  display: inline-flex; align-items: center; gap: 5px; background: none; border: 1.5px solid rgba(15,23,42,.14);
+  border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600; color: #4b5563; cursor: pointer; transition: .15s;
+}
+.obs-map-toolbar-btn:hover { background: rgba(15,23,42,.04); border-color: rgba(15,23,42,.24); }
+
+.obs-map-tooltip {
+  position: absolute; transform: translate(-50%, -100%); margin-top: -12px;
+  background: #111827; color: #fff; padding: 7px 11px; border-radius: 8px; font-size: 11px;
+  max-width: 230px; pointer-events: none; box-shadow: 0 8px 20px rgba(0,0,0,.25); z-index: 6;
+}
+.obs-map-tooltip-title { font-weight: 800; font-size: 12px; }
+.obs-map-tooltip-meta { color: rgba(255,255,255,.6); font-size: 10px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.obs-map-tooltip-excerpt { color: rgba(255,255,255,.85); font-size: 10.5px; line-height: 1.4; margin-top: 3px; }
 
 .obs-badge-experimental {
   display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
@@ -2204,6 +2228,15 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-chart path[stroke], .observatory-hud .obs-chart polyline { filter: drop-shadow(0 0 4px rgba(34,211,238,.5)); }
 .observatory-hud .obs-chart-tooltip { background: #0d141f; border: 1px solid rgba(34,211,238,.3); box-shadow: 0 0 16px rgba(34,211,238,.2); }
 
+.observatory-hud .obs-map-toolbar-zoom { color: rgba(148,190,199,.6); }
+.observatory-hud .obs-map-toolbar-btn {
+  border-color: rgba(34,211,238,.28); color: rgba(226,241,245,.85); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+}
+.observatory-hud .obs-map-toolbar-btn:hover { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); box-shadow: 0 0 10px rgba(34,211,238,.2); color: #eefcff; }
+.observatory-hud .obs-map-tooltip { background: #0d141f; border: 1px solid rgba(34,211,238,.3); box-shadow: 0 0 16px rgba(34,211,238,.2); }
+.observatory-hud .obs-map-tooltip-meta { color: rgba(148,190,199,.6); }
+.observatory-hud .obs-map-tooltip-excerpt { color: rgba(212,231,235,.85); }
+
 @keyframes hud-card-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes hud-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 
@@ -2312,9 +2345,21 @@ button { cursor: pointer; font-family: inherit; }
 .mycelium-pulse { animation: hud-pulse 2.6s ease-in-out infinite; transform-origin: center; }
 .mycelium-node-ring { transition: opacity .2s ease; }
 .mycelium-node.active .mycelium-node-ring { animation: hud-pulse 1.4s ease-in-out infinite; }
+
+/* Real node/satellite glow — drop-shadow, not a flat fill — per the
+   Palantir-style reference images (glowing colored node-link graphs on dark
+   backgrounds). `color` is set inline per node/satellite to its own accent
+   hex, so `currentColor` glows each node in its own color instead of
+   forcing every node to a single hud-cyan. */
+.mycelium-node-core { filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 16px currentColor); transition: filter .2s ease; }
+.mycelium-node:hover .mycelium-node-core { filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 26px currentColor); }
+.mycelium-hub-core { filter: drop-shadow(0 0 8px rgba(34,211,238,.5)) drop-shadow(0 0 18px rgba(34,211,238,.25)); }
+
 .mycelium-satellite { animation: mycelium-sprout .5s ease both; transform-origin: center; transition: filter .15s ease; }
 .mycelium-satellite:hover { filter: brightness(1.3); }
 .mycelium-satellite.active { animation: mycelium-sprout .5s ease both, hud-pulse 1.4s ease-in-out infinite; }
+.mycelium-satellite-dot { filter: drop-shadow(0 0 4px currentColor); transition: filter .15s ease; }
+.mycelium-satellite:hover .mycelium-satellite-dot, .mycelium-satellite.active .mycelium-satellite-dot { filter: drop-shadow(0 0 8px currentColor); }
 @keyframes mycelium-sprout {
   from { opacity: 0; transform: scale(.2); }
   to { opacity: 1; transform: scale(1); }

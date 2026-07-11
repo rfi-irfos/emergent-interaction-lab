@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
+import { useSvgPanZoom } from '../../hooks/useSvgPanZoom'
+import type { ViewBox } from '../../lib/svgPanZoom'
 
 const NODES = [
   { id: 'human', label: 'Human', accent: '#22d3ee', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
@@ -12,6 +14,10 @@ const NODES = [
 ]
 
 const CX = 300, CY = 230, R = 168
+
+// Module-level constant so it's referentially stable across renders — the
+// pan/zoom hook uses it as a dependency and doesn't deep-compare.
+const BASE_VIEWBOX: ViewBox = { x: 0, y: 0, w: 600, h: 460 }
 
 // Deterministic pseudo-random in [0,1) — stable satellite placement across
 // re-renders (a real Math.random() would make the mycelium jitter every
@@ -148,6 +154,17 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   const [satellites, setSatellites] = useState<Record<string, SatelliteItem[]>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
   const [expandedSatellite, setExpandedSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+  const [hoveredSatellite, setHoveredSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
+  // Destructured (not kept as one `panZoom` object) so eslint's
+  // react-hooks/refs check can tell `viewBox` (plain state) apart from
+  // `svgRef` (an actual ref) — bundling them behind one property access
+  // makes the rule conservatively flag every `panZoom.viewBox.x` read.
+  const {
+    svgRef, viewBox, viewBoxStr, zoomLevel, isPanning, layoutKey,
+    resetView, relayout, onPointerDown, onPointerMove, onPointerUp,
+    onPointerCancel, onPointerLeave, onClickCapture,
+  } = useSvgPanZoom(BASE_VIEWBOX)
 
   useEffect(() => {
     let cancelled = false
@@ -202,6 +219,29 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     : (expandedNode ? expandedNode.blurb(counts?.[expandedNode.id] ?? 0) : '')
   const typed = useTypewriter(detailText, !!detailNode)
 
+  // Hover mirrors the click-driven derivation above, but as a lighter
+  // "glance" layer (a floating tooltip) rather than the typewriter panel —
+  // it never touches `expanded`/`expandedSatellite` state. Looked up from
+  // `positions` (not `NODES`) because the tooltip needs x/y, which only
+  // `positions` carries.
+  const hoveredMainNode = hoveredNode ? positions.find(p => p.id === hoveredNode) : null
+  const hoveredSatelliteNode = hoveredSatellite ? positions.find(p => p.id === hoveredSatellite.nodeId) : null
+  const hoveredSatelliteItem = hoveredSatellite
+    ? (satellites[hoveredSatellite.nodeId] ?? []).find(s => s.id === hoveredSatellite.itemId) ?? null
+    : null
+  // Mirrors the satellite jitter formula used when rendering the dots
+  // themselves (same pi/si-seeded hash) so the tooltip lands on the actual
+  // dot rather than back at the parent node's center.
+  const hoveredSatellitePos = (() => {
+    if (!hoveredSatellite || !hoveredSatelliteNode) return null
+    const pi = positions.findIndex(p => p.id === hoveredSatellite.nodeId)
+    const si = (satellites[hoveredSatellite.nodeId] ?? []).findIndex(s => s.id === hoveredSatellite.itemId)
+    if (pi < 0 || si < 0) return null
+    const a = hoveredSatelliteNode.angle + (hash(pi * 13 + si) - 0.5) * 1.8
+    const dist = 44 + hash(pi * 29 + si) * 26
+    return { x: hoveredSatelliteNode.x + Math.cos(a) * dist, y: hoveredSatelliteNode.y + Math.sin(a) * dist }
+  })()
+
   if (!counts) return <div className="obs-panel"><div className="obs-empty">Netzwerk wächst…</div></div>
 
   const maxCount = Math.max(...Object.values(counts), 1)
@@ -209,7 +249,29 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   return (
     <div className="obs-panel">
       <div className="obs-card obs-map-card mycelium-card">
-        <svg viewBox="0 0 600 460" style={{ width: '100%', maxWidth: 640, display: 'block', margin: '0 auto' }} aria-hidden="true">
+        <div className="obs-map-toolbar">
+          <span className="obs-map-toolbar-zoom">{Math.round(zoomLevel * 100)}%</span>
+          <button type="button" className="obs-map-toolbar-btn" onClick={resetView} title="Zoom/Pan zurücksetzen">
+            ⟲ Ansicht zurücksetzen
+          </button>
+          <button type="button" className="obs-map-toolbar-btn" onClick={relayout} title="Layout neu anordnen">
+            ⟳ Neu anordnen
+          </button>
+        </div>
+        <svg
+          ref={svgRef}
+          viewBox={viewBoxStr}
+          style={{
+            width: '100%', maxWidth: 640, display: 'block', margin: '0 auto',
+            cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none',
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
+          onPointerLeave={onPointerLeave}
+          onClickCapture={onClickCapture}
+        >
           <defs>
             <radialGradient id="hub-glow" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.9" />
@@ -217,75 +279,106 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
             </radialGradient>
           </defs>
 
-          {positions.map((p, pi) => {
-            const weight = counts[p.id] ?? 0
-            const w = 1 + (weight / maxCount) * 4
-            const opacity = 0.28 + (weight / maxCount) * 0.5
-            // Organic thread: a gentle bezier bow instead of a straight line.
-            const mx = (CX + p.x) / 2 + Math.sin(pi * 2.1) * 22
-            const my = (CY + p.y) / 2 + Math.cos(pi * 2.1) * 22
-            const items = satellites[p.id] ?? []
-            return (
-              <g key={`edge-${p.id}`}>
-                <path id={`obs-map-path-${p.id}`} d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w + 5} opacity={opacity * 0.2} style={{ filter: 'blur(4px)' }} />
-                <path d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w} opacity={opacity} strokeLinecap="round" />
-                <circle r="3.5" fill={p.accent}>
-                  <animateMotion dur={`${3 + hash(pi) * 2}s`} repeatCount="indefinite">
-                    <mpath href={`#obs-map-path-${p.id}`} />
-                  </animateMotion>
-                </circle>
-                {/* Budding satellites — the "growing mycelium" itself: one per
-                    real recent record this node actually has, up to 5. No
-                    padding when fewer than 5 exist — an honest gap beats a
-                    fabricated one. Each is independently clickable now. */}
-                {items.map((item, si) => {
-                  const a = p.angle + (hash(pi * 13 + si) - 0.5) * 1.8
-                  const dist = 44 + hash(pi * 29 + si) * 26
-                  const sx = p.x + Math.cos(a) * dist
-                  const sy = p.y + Math.sin(a) * dist
-                  const isActive = expandedSatellite?.nodeId === p.id && expandedSatellite.itemId === item.id
-                  return (
-                    <g
-                      key={item.id}
-                      className={`mycelium-satellite ${isActive ? 'active' : ''}`}
-                      style={{ animationDelay: `${si * 0.15 + pi * 0.1}s`, cursor: 'pointer' }}
-                      onClick={() => {
-                        setExpanded(null)
-                        setExpandedSatellite(cur => (cur && cur.itemId === item.id ? null : { nodeId: p.id, itemId: item.id }))
-                      }}
-                    >
-                      <line x1={p.x} y1={p.y} x2={sx} y2={sy} stroke={p.accent} strokeWidth={isActive ? 2 : 1} opacity={isActive ? 0.8 : 0.35} />
-                      <circle cx={sx} cy={sy} r={isActive ? 6 : 3 + hash(si * 7) * 2} fill={p.accent} opacity={isActive ? 1 : 0.75} />
-                    </g>
-                  )
-                })}
+          <g key={layoutKey}>
+            {positions.map((p, pi) => {
+              const weight = counts[p.id] ?? 0
+              const w = 1 + (weight / maxCount) * 4
+              const opacity = 0.28 + (weight / maxCount) * 0.5
+              // Organic thread: a gentle bezier bow instead of a straight line.
+              const mx = (CX + p.x) / 2 + Math.sin(pi * 2.1) * 22
+              const my = (CY + p.y) / 2 + Math.cos(pi * 2.1) * 22
+              const items = satellites[p.id] ?? []
+              return (
+                <g key={`edge-${p.id}`}>
+                  <path id={`obs-map-path-${p.id}`} d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w + 5} opacity={opacity * 0.2} style={{ filter: 'blur(4px)' }} />
+                  <path d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w} opacity={opacity} strokeLinecap="round" />
+                  <circle r="3.5" fill={p.accent}>
+                    <animateMotion dur={`${3 + hash(pi) * 2}s`} repeatCount="indefinite">
+                      <mpath href={`#obs-map-path-${p.id}`} />
+                    </animateMotion>
+                  </circle>
+                  {/* Budding satellites — the "growing mycelium" itself: one per
+                      real recent record this node actually has, up to 5. No
+                      padding when fewer than 5 exist — an honest gap beats a
+                      fabricated one. Each is independently clickable now. */}
+                  {items.map((item, si) => {
+                    const a = p.angle + (hash(pi * 13 + si) - 0.5) * 1.8
+                    const dist = 44 + hash(pi * 29 + si) * 26
+                    const sx = p.x + Math.cos(a) * dist
+                    const sy = p.y + Math.sin(a) * dist
+                    const isActive = expandedSatellite?.nodeId === p.id && expandedSatellite.itemId === item.id
+                    return (
+                      <g
+                        key={item.id}
+                        className={`mycelium-satellite ${isActive ? 'active' : ''}`}
+                        style={{ animationDelay: `${si * 0.15 + pi * 0.1}s`, cursor: 'pointer', color: p.accent }}
+                        onClick={() => {
+                          setExpanded(null)
+                          setExpandedSatellite(cur => (cur && cur.itemId === item.id ? null : { nodeId: p.id, itemId: item.id }))
+                        }}
+                        onMouseEnter={() => setHoveredSatellite({ nodeId: p.id, itemId: item.id })}
+                        onMouseLeave={() => setHoveredSatellite(cur => (cur?.itemId === item.id ? null : cur))}
+                      >
+                        <line x1={p.x} y1={p.y} x2={sx} y2={sy} stroke={p.accent} strokeWidth={isActive ? 2 : 1} opacity={isActive ? 0.8 : 0.35} />
+                        <circle className="mycelium-satellite-dot" cx={sx} cy={sy} r={isActive ? 6 : 3 + hash(si * 7) * 2} fill={p.accent} opacity={isActive ? 1 : 0.75} />
+                      </g>
+                    )
+                  })}
+                </g>
+              )
+            })}
+
+            <circle cx={CX} cy={CY} r={58} fill="url(#hub-glow)" opacity={0.5} className="mycelium-pulse" />
+            <circle className="mycelium-hub-core" cx={CX} cy={CY} r={36} fill="#0a0f16" />
+            <circle className="mycelium-hub-core" cx={CX} cy={CY} r={36} fill="none" stroke="#22d3ee" strokeWidth={2} opacity={0.7} />
+            <text x={CX} y={CY - 4} textAnchor="middle" fontSize={12} fontWeight={800} fill="#eefcff">Interaction Field</text>
+            <text x={CX} y={CY + 13} textAnchor="middle" fontSize={9} fill="rgba(226,241,245,.65)">Jarvis vermittelt</text>
+
+            {positions.map(p => (
+              <g
+                key={p.id}
+                onClick={() => {
+                  setExpandedSatellite(null)
+                  setExpanded(cur => cur === p.id ? null : p.id)
+                }}
+                onMouseEnter={() => setHoveredNode(p.id)}
+                onMouseLeave={() => setHoveredNode(cur => cur === p.id ? null : cur)}
+                className={`mycelium-node ${expanded === p.id ? 'active' : ''}`}
+                style={{ cursor: 'pointer', color: p.accent }}
+              >
+                <circle cx={p.x} cy={p.y} r={34} fill={p.accent} opacity={expanded === p.id ? 0.28 : 0} className="mycelium-node-ring" />
+                <circle className="mycelium-node-core" cx={p.x} cy={p.y} r={30} fill="#0d141f" stroke={p.accent} strokeWidth={2} />
+                <text x={p.x} y={p.y - 3} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="#eefcff">{p.label}</text>
+                <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={10} fontWeight={800} fill={p.accent}>{counts[p.id] ?? 0}</text>
               </g>
-            )
-          })}
-
-          <circle cx={CX} cy={CY} r={58} fill="url(#hub-glow)" opacity={0.5} className="mycelium-pulse" />
-          <circle cx={CX} cy={CY} r={36} fill="#0a0f16" />
-          <circle cx={CX} cy={CY} r={36} fill="none" stroke="#22d3ee" strokeWidth={2} opacity={0.7} />
-          <text x={CX} y={CY - 4} textAnchor="middle" fontSize={12} fontWeight={800} fill="#eefcff">Interaction Field</text>
-          <text x={CX} y={CY + 13} textAnchor="middle" fontSize={9} fill="rgba(226,241,245,.65)">Jarvis vermittelt</text>
-
-          {positions.map(p => (
-            <g
-              key={p.id}
-              onClick={() => {
-                setExpandedSatellite(null)
-                setExpanded(cur => cur === p.id ? null : p.id)
-              }}
-              className={`mycelium-node ${expanded === p.id ? 'active' : ''}`}
-              style={{ cursor: 'pointer' }}
-            >
-              <circle cx={p.x} cy={p.y} r={34} fill={p.accent} opacity={expanded === p.id ? 0.28 : 0} className="mycelium-node-ring" />
-              <circle cx={p.x} cy={p.y} r={30} fill="#0d141f" stroke={p.accent} strokeWidth={2} style={{ filter: `drop-shadow(0 0 6px ${p.accent}66)` }} />
-              <text x={p.x} y={p.y - 3} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="#eefcff">{p.label}</text>
-              <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={10} fontWeight={800} fill={p.accent}>{counts[p.id] ?? 0}</text>
-            </g>
-          ))}
+            ))}
+          </g>
         </svg>
+
+        {hoveredSatelliteNode && hoveredSatelliteItem && hoveredSatellitePos ? (
+          <div
+            className="obs-map-tooltip"
+            style={{
+              left: `${((hoveredSatellitePos.x - viewBox.x) / viewBox.w) * 100}%`,
+              top: `${((hoveredSatellitePos.y - viewBox.y) / viewBox.h) * 100}%`,
+            }}
+          >
+            <div className="obs-map-tooltip-title" style={{ color: hoveredSatelliteNode.accent }}>{hoveredSatelliteNode.label}</div>
+            <div className="obs-map-tooltip-excerpt">{hoveredSatelliteItem.label}</div>
+            <div className="obs-map-tooltip-meta">{hoveredSatelliteItem.createdAt}</div>
+          </div>
+        ) : hoveredMainNode ? (
+          <div
+            className="obs-map-tooltip"
+            style={{
+              left: `${((hoveredMainNode.x - viewBox.x) / viewBox.w) * 100}%`,
+              top: `${((hoveredMainNode.y - viewBox.y) / viewBox.h) * 100}%`,
+            }}
+          >
+            <div className="obs-map-tooltip-title" style={{ color: hoveredMainNode.accent }}>{hoveredMainNode.label}</div>
+            <div className="obs-map-tooltip-excerpt">{hoveredMainNode.blurb(counts[hoveredMainNode.id] ?? 0)}</div>
+          </div>
+        ) : null}
 
         {detailNode && (
           <div className="mycelium-detail" style={{ borderLeftColor: detailNode.accent }}>
