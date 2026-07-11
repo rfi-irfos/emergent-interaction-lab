@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
@@ -41,14 +41,32 @@ interface AnalyticsData {
 }
 
 const DAYS_OPTIONS = [7, 14, 30, 60, 90]
-const TREND_COLUMNS: { key: Exclude<keyof TrendPoint, 'bucket'>; label: string }[] = [
-  { key: 'views', label: 'Aufrufe' },
-  { key: 'chat_messages', label: 'Nachrichten' },
-  { key: 'tool_calls', label: 'Werkzeuge' },
-  { key: 'research_notes', label: 'Notizen' },
-  { key: 'blog_posts', label: 'Blog' },
-  { key: 'simulation_runs', label: 'Simulationen' },
+// Fixed order + fixed color per metric — the same 6-accent set every other
+// Observatory primitive draws from (ObsDonut's DEFAULT_DONUT_COLORS, .obs-stat's
+// c-blue/c-purple/…), assigned by entity, never re-cycled.
+const TREND_COLUMNS: { key: Exclude<keyof TrendPoint, 'bucket'>; label: string; color: string }[] = [
+  { key: 'views', label: 'Aufrufe', color: 'var(--obs-blue)' },
+  { key: 'chat_messages', label: 'Nachrichten', color: 'var(--obs-purple)' },
+  { key: 'tool_calls', label: 'Werkzeuge', color: 'var(--obs-teal)' },
+  { key: 'research_notes', label: 'Notizen', color: 'var(--obs-amber)' },
+  { key: 'blog_posts', label: 'Blog', color: 'var(--obs-green)' },
+  { key: 'simulation_runs', label: 'Simulationen', color: 'var(--obs-red)' },
 ]
+
+// ObsChart's `data` array drives its axis labels 1:1 (one <span> per point,
+// laid out via flex `space-between`) with no thinning of its own — fine for
+// its existing callers' small/fixed point counts, but this page's mini-charts
+// below can carry up to 90 points (`?days=90`) inside a card roughly a third
+// the width ObsChart's other callers render at. Blanking every label but a
+// handful (kept at genuinely evenly-spaced indices, always including the
+// last point) keeps every chart's x-position/shape intact — only the text is
+// thinned — without touching ObsChart.tsx itself and risking a regression on
+// its other, already-verified callers (Flugschreiber, InteractionDynamics, …).
+function trendAxisLabel(n: number, i: number, bucket: string): string {
+  const maxLabels = 6
+  const step = Math.max(1, Math.ceil(n / maxLabels))
+  return i % step === 0 || i === n - 1 ? bucket.slice(5) : ''
+}
 
 /// Verwaltung's business/CMS view — website traffic plus the admin-activity
 /// counts that used to live in the Observatory's "System Overview" (page
@@ -133,32 +151,35 @@ export function Analytics() {
         {data.activity_trend.length === 0
           ? <div className="obs-empty">Noch keine Aktivität in diesem Zeitraum.</div>
           : (
-            <div style={{ overflowX: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: `92px repeat(${TREND_COLUMNS.length}, 1fr)`, gap: '4px 12px', minWidth: 560 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#9aa0a8', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                  {bucket === 'week' ? 'Woche ab' : 'Datum'}
-                </div>
-                {TREND_COLUMNS.map(col => (
-                  <div key={col.key} style={{ fontSize: 10, fontWeight: 800, color: '#9aa0a8', textTransform: 'uppercase', letterSpacing: '.05em', textAlign: 'right' }}>
-                    {col.label}
-                  </div>
-                ))}
-                {[...data.activity_trend].reverse().map(point => (
-                  <Fragment key={point.bucket}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1f2937', fontVariantNumeric: 'tabular-nums', padding: '4px 0', borderTop: '1px solid rgba(15,23,42,.05)' }}>
-                      {point.bucket}
+            // Small-multiples, NOT one shared-axis overlay (see ObsMultiChart.tsx,
+            // built and available but deliberately not used here): views
+            // routinely runs 50-300x research_notes/blog_posts/simulation_runs in
+            // real seeded data, and a screenshot check of the unified-overlay
+            // version confirmed the predicted failure mode — the dominant
+            // series flattens the other five into an unreadable near-zero band,
+            // and even toggling off the single worst offender still left three
+            // series flattened (chat_messages/tool_calls still dwarf the
+            // remaining three). Six independently-scaled mini-charts, each
+            // auto-scaled to its own max, is the one that actually reads.
+            <div className="obs-multichart-grid">
+              {TREND_COLUMNS.map(col => {
+                const total = data.activity_trend.reduce((sum, p) => sum + p[col.key], 0)
+                return (
+                  <div key={col.key} className="obs-multichart-mini">
+                    <div className="obs-multichart-mini-head">
+                      <span className="obs-multichart-mini-swatch" style={{ background: col.color }} />
+                      <span className="obs-multichart-mini-label">{col.label}</span>
+                      <span className="obs-multichart-mini-total">{total}</span>
                     </div>
-                    {TREND_COLUMNS.map(col => (
-                      <div
-                        key={col.key}
-                        style={{ fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: point[col.key] > 0 ? '#3b6bf6' : '#c7cbd3', fontWeight: point[col.key] > 0 ? 700 : 400, padding: '4px 0', borderTop: '1px solid rgba(15,23,42,.05)' }}
-                      >
-                        {point[col.key]}
-                      </div>
-                    ))}
-                  </Fragment>
-                ))}
-              </div>
+                    <ObsChart
+                      data={data.activity_trend.map((p, i) => ({ label: trendAxisLabel(data.activity_trend.length, i, p.bucket), value: p[col.key] }))}
+                      color={col.color}
+                      height={72}
+                      gradientId={`analytics-activity-${col.key}`}
+                    />
+                  </div>
+                )
+              })}
             </div>
           )
         }

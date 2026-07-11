@@ -2185,6 +2185,70 @@ button { cursor: pointer; font-family: inherit; }
 .obs-chart-tooltip-value { font-weight: 800; font-size: 13px; }
 .obs-chart-tooltip-label { color: rgba(255,255,255,.65); font-size: 10px; margin-top: 1px; }
 
+/* Multi-series overlay line chart (ObsMultiChart.tsx) — built as a real,
+   working primitive (shared crosshair, per-bucket stacked tooltip, clickable
+   legend-toggle that rescales to only the visible series) for future reuse
+   (e.g. the "multiline" chart kind in the Phase 6c dashboard-widget catalog),
+   but Analytics' own activity_trend render below does NOT mount it: a
+   screenshot check against real seeded data (views regularly 50-300x
+   research_notes/blog_posts/simulation_runs) showed the single dominant
+   series flattens the other five into an unreadable near-zero band, and even
+   toggling the worst offender off still left three flattened — so this page
+   uses the small-multiples grid further below instead. Reuses
+   .obs-chart/.obs-chart-grid/.obs-chart-crosshair/.obs-chart-axis/
+   .obs-chart-tooltip verbatim (see rules above); this block only adds the
+   two pieces that are genuinely new for the multi-series case: a clickable
+   legend row, and the stacked per-series rows inside the shared tooltip. */
+.obs-multichart-wrap { position: relative; }
+.obs-multichart-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 12px; }
+.obs-multichart-legend-item {
+  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 11.5px; font-weight: 600;
+  color: #4b5563; background: none; border: none; padding: 3px 2px; margin: 0; cursor: pointer;
+  transition: opacity .15s ease;
+}
+.obs-multichart-legend-item:hover { opacity: .72; }
+/* A toggled-off series stays in the legend (never disappears — the click
+   target to bring it back must stay put) but reads as inactive: dimmed +
+   struck through, never color-alone. */
+.obs-multichart-legend-item.is-hidden { opacity: .38; text-decoration: line-through; }
+.obs-multichart-legend-item.is-hidden:hover { opacity: .58; }
+.obs-multichart-legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; transition: filter .15s ease; }
+
+.obs-multichart-tooltip { text-align: left; min-width: 128px; }
+.obs-multichart-tooltip-row { display: flex; align-items: center; gap: 6px; padding: 1.5px 0; }
+.obs-multichart-tooltip-swatch { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.obs-multichart-tooltip-name { flex: 1; color: rgba(255,255,255,.65); font-size: 10.5px; }
+.obs-multichart-tooltip-value { font-weight: 800; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.observatory-hud .obs-multichart-legend-item { color: rgba(226,241,245,.8); }
+/* Legend swatches glow on hover only, in their OWN series color (currentColor
+   set inline per swatch) — six permanently-glowing swatches would be exactly
+   the "6 simultaneous glows" noise this chart already avoids by dropping the
+   per-series area fill; hover-only keeps the affordance without the clutter. */
+.observatory-hud .obs-multichart-legend-item:hover .obs-multichart-legend-swatch {
+  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+}
+
+/* Small-multiples fallback actually used by Analytics' activity_trend (see
+   the doc comment above ObsMultiChart's own rules) — six independently-
+   scaled mini `ObsChart`s, one per metric, each auto-scaled to its own max
+   (ObsChart's existing behavior, untouched) so a sparse metric's real shape
+   is visible instead of flattened against a dominant one's scale. Same
+   responsive minmax-grid idiom `.obs-compare-grid` already established for
+   Simulation Center's run comparison, just narrower slots (a mini-chart
+   needs far less width than a full run-comparison column). */
+.obs-multichart-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;
+}
+.obs-multichart-mini { min-width: 0; }
+.obs-multichart-mini-head { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.obs-multichart-mini-swatch { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.obs-multichart-mini-label { font-size: 11.5px; font-weight: 700; color: #4b5563; flex: 1 1 auto; }
+.obs-multichart-mini-total { font-size: 12.5px; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
+
+.observatory-hud .obs-multichart-mini-label { color: rgba(226,241,245,.8); }
+.observatory-hud .obs-multichart-mini-total { color: #eefcff; text-shadow: 0 0 10px rgba(34,211,238,.2); }
+
 .obs-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
 .obs-form input, .obs-form textarea, .obs-form select {
   font-family: inherit; font-size: 13px; padding: 10px 13px; border-radius: 9px;
