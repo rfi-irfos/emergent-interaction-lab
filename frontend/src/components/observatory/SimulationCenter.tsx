@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
-import { SimulationLab, STATUS_ACCENT } from './SimulationLab'
+import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
+import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import type { AdminSection } from '../../types/admin'
 
@@ -13,6 +14,7 @@ interface RunOut {
   status: string
   created_at: string
   related_signal_ids: string[] | null
+  branches: BranchOut[] | null
 }
 
 // Minimal shape read out of /api/observatory/emergence/signals — just
@@ -28,6 +30,49 @@ export interface SignalRef {
 
 function formatParams(raw: string): string {
   try { return JSON.stringify(JSON.parse(raw), null, 2) } catch { return raw }
+}
+
+// ExportButtons/lib/export.ts need already-flat rows — callers own flattening
+// anything nested before handing rows there (see ExportButtons.tsx). A
+// branched run doesn't fit one flat row: cramming N option/rationale/
+// narrative/status sets into one cell would work but isn't actually
+// readable in a CSV/Markdown table. Instead, a branched run becomes its own
+// "run" row (unchanged shape, branch_* columns blank, narrative = the
+// top-level synthesis line) PLUS one "branch" row per option carrying that
+// branch's own status/narrative — `row_type` tells the two apart. A run
+// with no branches produces exactly the one row it always did, just with
+// the two new (blank) branch_* columns alongside it.
+function flattenForExport(runs: RunOut[]): Record<string, unknown>[] {
+  const rows: Record<string, unknown>[] = []
+  for (const r of runs) {
+    rows.push({
+      id: r.id,
+      row_type: 'run',
+      hypothesis: r.hypothesis,
+      status: r.status,
+      parameters: r.parameters,
+      narrative: r.narrative ?? '',
+      related_signal_ids: (r.related_signal_ids ?? []).join('; '),
+      branch_option: '',
+      branch_rationale: '',
+      created_at: r.created_at,
+    })
+    for (const b of r.branches ?? []) {
+      rows.push({
+        id: r.id,
+        row_type: 'branch',
+        hypothesis: r.hypothesis,
+        status: b.status,
+        parameters: '',
+        narrative: b.narrative ?? '',
+        related_signal_ids: '',
+        branch_option: b.option,
+        branch_rationale: b.rationale,
+        created_at: r.created_at,
+      })
+    }
+  }
+  return rows
 }
 
 function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: SignalRef[]; onNavigate?: (s: AdminSection) => void }) {
@@ -62,6 +107,7 @@ function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: 
           <div className="obs-item-body">{run.narrative}</div>
         </>
       )}
+      {run.branches && <BranchesList branches={run.branches} />}
     </div>
   )
 }
@@ -164,15 +210,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
             related_signal_ids (an array) is flattened to a "; "-joined
             string since CSV/Markdown cells are plain text. */}
         <ExportButtons
-          rows={runs.map(r => ({
-            id: r.id,
-            hypothesis: r.hypothesis,
-            status: r.status,
-            parameters: r.parameters,
-            narrative: r.narrative ?? '',
-            related_signal_ids: (r.related_signal_ids ?? []).join('; '),
-            created_at: r.created_at,
-          }))}
+          rows={flattenForExport(runs)}
           filenameBase="simulation-runs"
           title="Simulationsläufe"
         />
