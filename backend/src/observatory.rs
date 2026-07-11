@@ -42,7 +42,13 @@ fn excerpt(text: &str, max_chars: usize) -> String {
 /// Stand-in for "no real filter" when `range=all` — bound the same way as
 /// every other window below (`datetime('now', '-N days')`), just far enough
 /// back that it can never exclude a real row.
-const RANGE_ALL_DAYS: i64 = 36_500;
+///
+/// `pub(crate)`: also reused by `emergence::list_signals` (the query that
+/// actually backs SystemState.tsx's `states` list) so that module doesn't
+/// invent a second, subtly different range convention — same reasoning as
+/// `ListSnapshotsQuery::range`'s doc comment below, just crossing a module
+/// boundary instead of staying within this one.
+pub(crate) const RANGE_ALL_DAYS: i64 = 36_500;
 
 /// Resolves the `?range=` query param to a `(label, days)` pair — the label
 /// is echoed back in the response so the frontend selector can confirm what
@@ -50,7 +56,7 @@ const RANGE_ALL_DAYS: i64 = 36_500;
 /// back) to "30d", matching `tool_distribution`'s pre-existing hardcoded
 /// window so the default view doesn't regress for anyone already relying on
 /// it.
-fn resolve_range(range: Option<&str>) -> (&'static str, i64) {
+pub(crate) fn resolve_range(range: Option<&str>) -> (&'static str, i64) {
     match range {
         Some("7d") => ("7d", 7),
         Some("all") => ("all", RANGE_ALL_DAYS),
@@ -195,10 +201,28 @@ pub async fn information(State(state): State<AppState>, headers: HeaderMap, Quer
 // Real: the live token-by-token breakdown anchor stays; latency/confidence
 // reframed as pacing/adaptation signals, plus a conversation-length-over-time
 // trend for "development over time," not just a raw message tally.
+//
+// `?range=7d|30d|all` (reuses `resolve_range` above verbatim, same default)
+// — scoped to `messages_by_day` only, the one genuinely row-shaped list this
+// response carries (see InteractionDynamics.tsx's own export comment).
+// Previously a hardcoded `-14 days` window with no way to widen or narrow
+// it. Every other field here (user/assistant totals, latest reply, mean
+// confidence/latency, recent_user_messages) stays all-time/all-sample as
+// before and is untouched by this param — LiveCards.tsx and SystemMap.tsx
+// both call this endpoint too, with no query params, but only ever read
+// those other fields, never `messages_by_day`, so they're unaffected
+// regardless of what an absent `range` resolves to.
+#[derive(Debug, Deserialize)]
+pub struct HumanAiQuery {
+    pub range: Option<String>,
+}
 
-pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<HumanAiQuery>) -> impl IntoResponse {
     guard!(state, headers);
     let db = &state.db;
+    let (range_label, range_days) = resolve_range(q.range.as_deref());
+    let window = format!("-{range_days} days");
+
     let (user_msgs,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE role='user'").fetch_one(db).await.unwrap_or((0,));
     let (assistant_msgs,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE role='assistant'").fetch_one(db).await.unwrap_or((0,));
 
@@ -209,8 +233,8 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl
     ).fetch_all(db).await.unwrap_or_default();
 
     let messages_by_day: Vec<(String, i64)> = sqlx::query_as(
-        "SELECT date(created_at) as day, COUNT(*) FROM chat_messages WHERE created_at > datetime('now','-14 days') GROUP BY day ORDER BY day"
-    ).fetch_all(db).await.unwrap_or_default();
+        "SELECT date(created_at) as day, COUNT(*) FROM chat_messages WHERE created_at > datetime('now', ?1) GROUP BY day ORDER BY day"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
 
     // Mean token-confidence over the most recent assistant messages that
     // actually carry token_info (capped sample to bound compute).
@@ -265,6 +289,7 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap) -> impl
     };
 
     Json(json!({
+        "range": range_label,
         "user_messages": user_msgs,
         "assistant_messages": assistant_msgs,
         "messages_by_day": messages_by_day.into_iter().map(|(day,count)| json!({"day":day,"count":count})).collect::<Vec<_>>(),
@@ -891,6 +916,79 @@ mod tests {
         assert_eq!(body["range"], "30d");
         let tool_total: i64 = body["tool_distribution"].as_array().unwrap().iter().map(|b| b["count"].as_i64().unwrap()).sum();
         assert_eq!(tool_total, 1, "no explicit range must preserve the historical 30-day tool_distribution window: {body}");
+    }
+
+    // ── human_ai: range actually filters messages_by_day, not just
+    //    accepted-and-ignored (same shape as the `behavior` tests above) ────
+
+    #[tokio::test]
+    async fn human_ai_7d_range_excludes_older_messages_from_messages_by_day() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES ('m_new','c1','user','hi', datetime('now'))")
+            .execute(&state.db).await.unwrap();
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES ('m_old','c1','user','hi', datetime('now','-20 days'))")
+            .execute(&state.db).await.unwrap();
+
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), AxQuery(HumanAiQuery { range: Some("7d".to_string()) }))
+            .await
+            .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["range"], "7d");
+        let day_total: i64 = body["messages_by_day"].as_array().unwrap().iter().map(|d| d["count"].as_i64().unwrap()).sum();
+        assert_eq!(day_total, 1, "the 20-day-old message must not count under range=7d: {body}");
+        // Fields outside messages_by_day are intentionally untouched by
+        // `range` (LiveCards/SystemMap rely on this) — both messages still
+        // count toward the all-time total.
+        assert_eq!(body["user_messages"], 2);
+    }
+
+    #[tokio::test]
+    async fn human_ai_all_range_includes_everything_in_messages_by_day() {
+        let state = state_with_old_message().await;
+
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), AxQuery(HumanAiQuery { range: Some("all".to_string()) }))
+            .await
+            .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["range"], "all");
+        let day_total: i64 = body["messages_by_day"].as_array().unwrap().iter().map(|d| d["count"].as_i64().unwrap()).sum();
+        assert_eq!(day_total, 1, "range=all must reach even a 400-day-old message: {body}");
+    }
+
+    /// Deliberately NOT "matches the old hardcoded 14-day window" like
+    /// `behavior`'s equivalent test: InteractionDynamics.tsx is `human_ai`'s
+    /// only consumer that ever reads `messages_by_day` (LiveCards/SystemMap
+    /// read other fields on this same response only), and it will always
+    /// send an explicit `range` going forward — so there is no real caller
+    /// left to protect a 14-day default for. Reusing `resolve_range`'s own
+    /// "30d" default here (same as `behavior`/`list_snapshots`) keeps one
+    /// convention instead of a third bespoke fallback window.
+    #[tokio::test]
+    async fn human_ai_default_range_falls_back_to_30d_not_the_old_14_day_window() {
+        let state = state_with_old_message().await;
+
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), AxQuery(HumanAiQuery { range: None }))
+            .await
+            .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["range"], "30d");
+        let day_total: i64 = body["messages_by_day"].as_array().unwrap().iter().map(|d| d["count"].as_i64().unwrap()).sum();
+        assert_eq!(day_total, 0, "the 400-day-old message must not count under the 30d default: {body}");
+    }
+
+    /// Shared fixture for the two tests above: one message 400 days old,
+    /// well outside both "7d" and the "30d" default, but reachable by "all".
+    async fn state_with_old_message() -> AppState {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES ('m_ancient','c1','user','hi', datetime('now','-400 days'))")
+            .execute(&state.db).await.unwrap();
+        state
     }
 
     // ── information: gap_only actually filters, not just accepted ──────────
