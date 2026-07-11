@@ -72,6 +72,20 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   // signals + CCET + sims + notes + tool-calls into one longitudinal view),
   // just widened from "over time" to "across every source at once."
   { id: 'gesamtuebersicht', label: 'Gesamtübersicht', tier: 'system', icon: I(<><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>) },
+  // Anomalie-Log — Anomaly Watchdog v1 (see backend/src/anomaly.rs): four
+  // concrete, mechanical trip-wires logged after every chat turn (a tool
+  // call failing, the tool-calling loop hitting its own round cap, the new
+  // refusal instruction in chat::SYSTEM_PROMPT firing per a keyword
+  // heuristic, a hallucination-tracker 'mismatch' verdict reused as-is).
+  // Systemebene, NOT Forschungsebene or Technische Ebene: this is squarely
+  // "wie es den beobachteten Systemen geht" per SYSTEM_PROMPT's own 3-tier
+  // description in chat.rs — it watches JARVIS ITSELF (a system-health/
+  // safety signal), not Laura's research (that's the research tier) and not
+  // raw platform-mechanics figures like embedding-chunk counts (that's the
+  // technical tier). Same bucket Flugschreiber/Gesamtübersicht/Agent-
+  // Aktivität already sit in — all four are "how is the system doing,"
+  // never a research observable.
+  { id: 'anomalies', label: 'Anomalie-Log', tier: 'system', icon: I(<><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z" /><line x1="12" y1="8" x2="12" y2="13" /><circle cx="12" cy="16.3" r="0.9" fill="currentColor" stroke="none" /></>) },
   { id: 'interaction', label: 'Interaction Dynamics', tier: 'system', icon: I(<><circle cx="9" cy="9" r="3" /><circle cx="17" cy="15" r="3" /><path d="M11 10.5 15 13.5" /></>) },
   { id: 'behavior', label: 'Behavioral Landscape', tier: 'system', icon: I(<><path d="M3 3v18h18" /><path d="M7 15l4-6 4 3 5-8" /></>) },
   { id: 'information', label: 'Information Dynamics', tier: 'technical', icon: I(<><circle cx="12" cy="12" r="3" /><path d="M12 3v6M12 15v6M3 12h6M15 12h6" /></>) },
@@ -105,4 +119,5 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   flugschreiber: 'Flugschreiber',
   gesamtuebersicht: 'Gesamtübersicht',
   denkfragmente: 'Denkfragmente',
+  anomalies: 'Anomalie-Log',
 }

@@ -1,5 +1,6 @@
 mod agent;
 mod analytics;
+mod anomaly;
 mod auth;
 mod authz;
 mod billing;
@@ -207,6 +208,11 @@ async fn main() {
     github_activity::init_schema(&db).await;
     thinking_fragments::init_schema(&db).await;
     hallucination::init_schema(&db).await;
+    // Anomaly Watchdog v1 — deliberately last: it reads hallucination_checks
+    // rows at detection time (see anomaly.rs's `detect_and_record`, signal
+    // 4), so it's the natural final entry in this feature-addition order,
+    // right after the tracker it partly builds on.
+    anomaly::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -341,6 +347,20 @@ async fn main() {
         // here; a plain, UI-agnostic row shape so the Phase J anomaly
         // watchdog can reuse it directly.
         .route("/api/observatory/hallucination-checks", get(hallucination::list_checks))
+        // Anomaly Watchdog v1: "a watchdog that watches the watchdog" — the
+        // admin review list for agent_anomalies (see anomaly.rs's module doc
+        // comment for the full scope/honesty disclosure and the four
+        // concrete signals it ever writes: a real tool-call failure, the
+        // tool-calling loop hitting its own round cap, the Part-1 refusal
+        // instruction in chat::SYSTEM_PROMPT firing per a keyword heuristic,
+        // and a hallucination_checks 'mismatch' verdict reused as-is). Same
+        // limit/offset + X-Total-Count pagination convention as every other
+        // list endpoint here — a superset of hallucination-checks (which
+        // only ever shows one of these four signals), so this is a new,
+        // dedicated endpoint rather than hallucination::list_checks reused
+        // directly, even though that endpoint's own doc comment anticipated
+        // being reused by this exact feature.
+        .route("/api/observatory/anomalies", get(anomaly::list_anomalies))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

@@ -519,7 +519,12 @@ fn extract_ddg_results(body: &serde_json::Value) -> Vec<serde_json::Value> {
 /// otherwise a top-level `"error"` key means failure; otherwise — no "ok",
 /// no "error" — it's one of the two known no-"ok" success shapes, logged as
 /// `'ok'`. This mirrors execute_tool's own arms exactly; it does not guess.
-fn tool_call_status(result: &str) -> &'static str {
+///
+/// `pub(crate)` (not private) as of the Anomaly Watchdog v1 (see
+/// anomaly.rs): `chat::stream_chat`'s tool-calling round loop calls this
+/// directly to flag a real tool-call failure, reusing this exact
+/// classification rather than a second copy of it living in chat.rs.
+pub(crate) fn tool_call_status(result: &str) -> &'static str {
     match serde_json::from_str::<serde_json::Value>(result) {
         Ok(v) => match v.get("ok").and_then(|x| x.as_bool()) {
             Some(true) => "ok",
