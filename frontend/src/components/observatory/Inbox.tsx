@@ -16,6 +16,21 @@ export interface ContactMessage {
 const STATUS_LABEL: Record<string, string> = { new: 'Neu', replied: 'Beantwortet', done: 'Erledigt' }
 const STATUS_COLOR: Record<string, string> = { new: '#ef4444', replied: '#f59e0b', done: '#10b981' }
 
+function InboxPlaceholder({ icon, text, sub }: { icon: string; text: string; sub?: string }) {
+  return (
+    <div style={{ minHeight: 'calc(100vh - 220px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, textAlign: 'center', padding: '24px' }}>
+      <div style={{
+        width: 46, height: 46, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 18, border: '1px solid var(--panel-border, #e8e8e8)', background: 'var(--panel-surface, #f8f8f8)', color: 'var(--hud-cyan, #0099CC)',
+      }}>
+        {icon}
+      </div>
+      <div style={{ color: 'var(--panel-text, #444)', fontSize: 13.5, fontWeight: 600 }}>{text}</div>
+      {sub && <div style={{ color: 'var(--panel-text-dim, #aaa)', fontSize: 12, maxWidth: 280, lineHeight: 1.5 }}>{sub}</div>}
+    </div>
+  )
+}
+
 /// Real backend-persisted contact inbox (see backend/src/contact.rs) —
 /// replaces the old localStorage-only version, which was written in the
 /// VISITOR's browser on form submit and read in the ADMIN's browser: since
@@ -53,19 +68,24 @@ export function Inbox() {
     }
   }
 
+  // A tall, mostly-empty crm-body (flex: 1, spans the full viewport) left a
+  // one-line message floating near the top with a huge dead dark area below
+  // it whenever there was nothing to show — loading, error, and truly-empty
+  // all read as "did this break?" rather than "this is what Inbox looks like
+  // with nothing in it yet." All three now render the same full-height,
+  // centered placeholder shell instead, so the view is fully designed
+  // before a single message ever arrives, not just once one does.
   if (loading && !data) {
-    return <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>Lade…</div>
+    return <InboxPlaceholder icon="◌" text="Lade…" />
   }
   if (error) {
-    return <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>Konnte nicht geladen werden.</div>
+    return <InboxPlaceholder icon="!" text="Konnte nicht geladen werden." />
   }
 
   return (
     <div style={{ padding: 14 }}>
       {list.length === 0 ? (
-        <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--panel-text-dim, #aaa)', fontSize: 13 }}>
-          Keine neuen Anfragen.
-        </div>
+        <InboxPlaceholder icon="✉" text="Keine neuen Anfragen." sub="Anfragen aus dem Kontaktformular der Website erscheinen hier automatisch." />
       ) : (
         groups.map(group => (
           <div key={group.label} style={{ marginBottom: 18 }}>
