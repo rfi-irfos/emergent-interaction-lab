@@ -386,7 +386,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
             {adminSection === 'systemstate' && <SystemState />}
             {adminSection === 'agentactivity' && <AgentActivity />}
-            {adminSection === 'flugschreiber' && <Flugschreiber />}
+            {adminSection === 'flugschreiber' && (
+              <Flugschreiber onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
             {adminSection === 'behavior' && (

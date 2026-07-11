@@ -63,7 +63,7 @@ function totalSimRuns(s: Snapshot): number {
 /// rollup values, not just read them off a chart's hover tooltip. This is
 /// the concrete realization of Laura's own early "Interaction Replay flight
 /// recorder" framing for this project.
-export function Flugschreiber() {
+export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [total, setTotal] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -203,6 +203,18 @@ export function Flugschreiber() {
                   ? <> · CCET-Turn {selected.trigger_turn_id}</>
                   : ' · kein CCET-Turn verknüpft (z. B. weil zu diesem Zeitpunkt keine NVIDIA-Anbindung konfiguriert war)'}
                 .
+                {onOpenConversation && (
+                  <>
+                    {' '}
+                    <button
+                      className="chat-inspect-toggle"
+                      style={{ fontSize: 11, padding: 0 }}
+                      onClick={() => onOpenConversation(selected.conversation_id)}
+                    >
+                      aus Gespräch ↗
+                    </button>
+                  </>
+                )}
               </p>
             </>
           )}
