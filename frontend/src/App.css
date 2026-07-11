@@ -2395,6 +2395,13 @@ button { cursor: pointer; font-family: inherit; }
 .chat-conv-item:hover { background: rgba(255,255,255,.06); }
 .chat-conv-item.active { background: rgba(99,240,255,.14); color: #63f0ff; }
 .chat-conv-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Jarvis's proactive weekly digest (kind='digest', see backend/src/digest.rs)
+   — a small, quiet distinguisher so it never reads as a conversation Laura
+   started herself: a subtle left accent on the row plus the 🗞️ badge before
+   the title (see ResearchChat.tsx). Deliberately understated, not a loud
+   "NEW" pill — this is Jarvis checking in, not an alert. */
+.chat-conv-item-digest { border-left: 2px solid rgba(99,240,255,.4); padding-left: 8px; }
+.chat-conv-digest-badge { flex-shrink: 0; font-size: 12px; line-height: 1; }
 .chat-conv-delete {
   border: none; background: none; color: rgba(255,255,255,.35); cursor: pointer; font-size: 15px; line-height: 1;
   padding: 2px 4px; border-radius: 4px; flex-shrink: 0;

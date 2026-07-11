@@ -7,6 +7,7 @@ mod blog;
 mod chat;
 mod contact;
 mod content;
+mod digest;
 mod emergence;
 mod github_activity;
 mod inspect;

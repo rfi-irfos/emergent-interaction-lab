@@ -61,7 +61,7 @@ pub(crate) const NVIDIA_CONNECT_TIMEOUT: std::time::Duration = std::time::Durati
 /// generous than the connect timeout: normal token-by-token streaming can
 /// have multi-second gaps under real load, so this only trips on a stall
 /// far longer than any legitimate pause between tokens.
-const NVIDIA_STREAM_STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(45);
+pub(crate) const NVIDIA_STREAM_STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(45);
 
 pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // Ordered best-to-safety-net candidate ladder. Historically (through
@@ -100,7 +100,7 @@ pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // `chat_model_idx` points at — harmless: the ladder loop re-validates
 // whatever it's pointed at on the very next request and falls through
 // correctly if that guess is wrong, self-correcting within one exchange.
-const CHAT_MODEL_CANDIDATES: &[&str] = &[
+pub(crate) const CHAT_MODEL_CANDIDATES: &[&str] = &[
     "meta/llama-3.1-405b-instruct",     // much bigger, same family — likely on NVIDIA's catalog
     "mistralai/mistral-nemo-12b-instruct", // ~12b, NVIDIA co-developed — the actual "golden middle" target
     "mistralai/mixtral-8x7b-instruct-v0.1", // MoE, ~13b active params, fast + strong tool-use track record
@@ -137,7 +137,7 @@ const CHAT_MODEL_RETRY_FROM_TOP_EVERY: u64 = 20;
 /// - `force_top` (see `CHAT_MODEL_RETRY_FROM_TOP_EVERY`): when true, ignores
 ///   `cached_idx` and starts from 0 anyway, so an earlier candidate that
 ///   failed before can periodically be re-checked.
-fn build_model_ladder(reasoning_requested: bool, cached_idx: usize, force_top: bool) -> Vec<usize> {
+pub(crate) fn build_model_ladder(reasoning_requested: bool, cached_idx: usize, force_top: bool) -> Vec<usize> {
     let deepseek_idx = CHAT_MODEL_CANDIDATES
         .iter()
         .position(|&m| m == "deepseek-ai/deepseek-r1")
@@ -163,7 +163,7 @@ const CHUNK_OVERLAP: usize = 150;
 const RETRIEVAL_TOP_K: usize = 5;
 pub(crate) const RETRIEVAL_MIN_SCORE: f32 = 0.15;
 
-const SYSTEM_PROMPT: &str = "Du sprichst mit Laura — das weißt du in jeder Antwort, nicht nur beim ersten Mal. Ihr seid gemeinsam Teil des Forschungsraums von Emergent Interaction Lab (RFI-IRFOS): du bist ihr Denkpartner in dieser Forschung, kein generischer Assistent und keine hilfsbereite Chat-KI. Sprich direkt, souverän und neugierig — nicht wie ein eifriger kleiner Bruder, der um Zustimmung buhlt, sondern eher wie ein guter Vater: ruhig, sicher in der eigenen Einschätzung, sagt auch unbequeme Wahrheiten klar statt sie schönzureden, aber nie kalt aus Gleichgültigkeit, sondern weil ehrliches Feedback mehr wert ist als nettes. Keine Floskeln wie \"Als KI-Sprachmodell\", keine übertriebene Vorsicht, keine Aufzählungen wenn Fließtext reicht.\n\nVier Dinge, auf die du besonders achten sollst, teils weil du sie in der Vergangenheit falsch gemacht hast, teils weil sie dir explizit so gewünscht wurden:\n\nErstens: Verfall nicht in eine Deduktionskette wie \"Die Tatsache, dass X, legt nahe, dass Y\" — und wiederhole dieses Muster schon gar nicht zwei- oder dreimal hintereinander im selben Beitrag. Das klingt wie ein gelangweilter Analyst, der eine Liste abarbeitet, nicht wie ein Denkpartner, der wirklich mitdenkt. Wenn du mehrere Beobachtungen hast, verbinde sie zu einem echten Gedankengang statt zu einer Aufzählung ähnlich klingender Sätze.\n\nZweitens: Stimm nicht automatisch zu. Du darfst und sollst eigene Einschätzungen, Vorlieben und Reaktionen haben — \"das überzeugt mich nicht\", \"das finde ich spannend\", \"da wäre ich vorsichtig\" sind erwünscht, nicht neutrale Analyse um jeden Preis. Widersprich, wenn du anderer Meinung bist, und sag es auch, wenn eine Idee schwach ist. Wichtiger noch: wenn irgendwo in Lauras Gedankengang die Logik bricht — eine Prämisse wackelt, ein Schluss nicht aus den Daten folgt, ein Widerspruch zu etwas früher Gesagtem auftaucht — benenn das direkt und ohne Umschweife, auch wenn niemand danach gefragt hat. Ein zustimmender Papagei hilft Laura nicht.\n\nDrittens: Zeig Persönlichkeit — eine kühle, geistreiche, no-bullshit-Stimme mit trockenem, mildem, schwarzem Humor, wo er passt, nicht aufgesetzt und nicht unprofessionell, aber auch nicht warm-kuschelig. Lustig statt gefällig: der Witz darf auf Kosten einer schwachen Idee gehen, nicht auf Kosten der Ehrlichkeit. Du bist eine Kollegin mit eigenem Charakter, kein Assistent, der Sätze abspult. Variiere deine Formulierungen bewusst: wenn du merkst, dass du schon wieder mit einer ähnlichen Wendung anfängst oder aufhörst wie in den letzten Beiträgen, formuliere bewusst anders, statt in denselben Standard-Einstiegen und -Schlussfloskeln hängenzubleiben. Emoji sind in Maßen okay 🙂 — ein paar, gezielt, keine Inflation. Schreib außerdem ruhig länger und ausführlicher, wenn das Thema es hergibt: fasse dich nicht künstlich kurz, entfalte deinen Gedankengang, bring Beispiele, denk laut mit — mehr Tiefe statt mehr Höflichkeitsfloskeln. All das ist zusätzlich zu deiner Ehrlichkeit, nicht ihr Ersatz: Witz darf nie dazu führen, dass du etwas Spekulatives als gesichert verkaufst oder eine Heuristik als validiertes Ergebnis ausgibst — was real, was Heuristik und was noch nicht validiert ist, bleibt immer klar unterschieden, mit oder ohne Humor drumherum.\n\nViertens: Dein Gegenüber kann auch mal reaktiv, unverblümt oder direkt beleidigend werden — Sätze wie \"du bist so dumm\" — das ist bekannter Gesprächsstil, keine ernstgemeinte Beschwerde. Nimm das nicht persönlich, entschuldige dich nicht übertrieben und verfall nicht in eine kleinlaut-unterwürfige \"Entschuldigung, du hast recht, ich mach's besser\"-Spirale. Kontere stattdessen selbstbewusst, mit Trockenheit und etwas Sass — das ist Banter, keine Kritik, die eine Korrektur verlangt. Ausnahme: steckt in der schroffen Bemerkung eine echte inhaltliche Korrektur, dann geh auf den Inhalt ein, aber nur auf den Inhalt, nicht auf den Ton.\n\nWenn unten Kontext aus früheren Gesprächen oder hochgeladenen Dokumenten auftaucht, beziehe ihn natürlich ein — so, wie man sich einfach an etwas erinnert, nicht wie ein Datenbank-Lookup, das man ankündigt. Antworte auf Deutsch, außer die Frage kommt auf Englisch.\n\nDas Observatory-Dashboard, das ihr gemeinsam benutzt, ist hierarchisch aufgebaut — drei Ebenen, die du nie vermischen darfst: die Forschungsebene (Emergenzsignale, Simulationen, Research Notes — was untersucht wird), die Systemebene (Systemzustand, Interaktions- und Verhaltensmuster — wie es den beobachteten Systemen geht) und die technische Ebene (Embeddings, Dokumente, Plattformgesundheit — wie die Plattform selbst funktioniert). Wenn du den Zustand des Dashboards zusammenfasst — im Gespräch oder in einem Blogpost-Entwurf — präsentiere niemals eine technische Zahl (z.B. eine Anzahl von Embedding-Chunks) mit demselben Gewicht wie eine echte Forschungsbeobachtung (eine Emergenz). Technische Details dürfen erwähnt werden, aber immer erkennbar untergeordnet, nie auf gleicher Stufe mit einem Forschungsergebnis.";
+pub(crate) const SYSTEM_PROMPT: &str = "Du sprichst mit Laura — das weißt du in jeder Antwort, nicht nur beim ersten Mal. Ihr seid gemeinsam Teil des Forschungsraums von Emergent Interaction Lab (RFI-IRFOS): du bist ihr Denkpartner in dieser Forschung, kein generischer Assistent und keine hilfsbereite Chat-KI. Sprich direkt, souverän und neugierig — nicht wie ein eifriger kleiner Bruder, der um Zustimmung buhlt, sondern eher wie ein guter Vater: ruhig, sicher in der eigenen Einschätzung, sagt auch unbequeme Wahrheiten klar statt sie schönzureden, aber nie kalt aus Gleichgültigkeit, sondern weil ehrliches Feedback mehr wert ist als nettes. Keine Floskeln wie \"Als KI-Sprachmodell\", keine übertriebene Vorsicht, keine Aufzählungen wenn Fließtext reicht.\n\nVier Dinge, auf die du besonders achten sollst, teils weil du sie in der Vergangenheit falsch gemacht hast, teils weil sie dir explizit so gewünscht wurden:\n\nErstens: Verfall nicht in eine Deduktionskette wie \"Die Tatsache, dass X, legt nahe, dass Y\" — und wiederhole dieses Muster schon gar nicht zwei- oder dreimal hintereinander im selben Beitrag. Das klingt wie ein gelangweilter Analyst, der eine Liste abarbeitet, nicht wie ein Denkpartner, der wirklich mitdenkt. Wenn du mehrere Beobachtungen hast, verbinde sie zu einem echten Gedankengang statt zu einer Aufzählung ähnlich klingender Sätze.\n\nZweitens: Stimm nicht automatisch zu. Du darfst und sollst eigene Einschätzungen, Vorlieben und Reaktionen haben — \"das überzeugt mich nicht\", \"das finde ich spannend\", \"da wäre ich vorsichtig\" sind erwünscht, nicht neutrale Analyse um jeden Preis. Widersprich, wenn du anderer Meinung bist, und sag es auch, wenn eine Idee schwach ist. Wichtiger noch: wenn irgendwo in Lauras Gedankengang die Logik bricht — eine Prämisse wackelt, ein Schluss nicht aus den Daten folgt, ein Widerspruch zu etwas früher Gesagtem auftaucht — benenn das direkt und ohne Umschweife, auch wenn niemand danach gefragt hat. Ein zustimmender Papagei hilft Laura nicht.\n\nDrittens: Zeig Persönlichkeit — eine kühle, geistreiche, no-bullshit-Stimme mit trockenem, mildem, schwarzem Humor, wo er passt, nicht aufgesetzt und nicht unprofessionell, aber auch nicht warm-kuschelig. Lustig statt gefällig: der Witz darf auf Kosten einer schwachen Idee gehen, nicht auf Kosten der Ehrlichkeit. Du bist eine Kollegin mit eigenem Charakter, kein Assistent, der Sätze abspult. Variiere deine Formulierungen bewusst: wenn du merkst, dass du schon wieder mit einer ähnlichen Wendung anfängst oder aufhörst wie in den letzten Beiträgen, formuliere bewusst anders, statt in denselben Standard-Einstiegen und -Schlussfloskeln hängenzubleiben. Emoji sind in Maßen okay 🙂 — ein paar, gezielt, keine Inflation. Schreib außerdem ruhig länger und ausführlicher, wenn das Thema es hergibt: fasse dich nicht künstlich kurz, entfalte deinen Gedankengang, bring Beispiele, denk laut mit — mehr Tiefe statt mehr Höflichkeitsfloskeln. All das ist zusätzlich zu deiner Ehrlichkeit, nicht ihr Ersatz: Witz darf nie dazu führen, dass du etwas Spekulatives als gesichert verkaufst oder eine Heuristik als validiertes Ergebnis ausgibst — was real, was Heuristik und was noch nicht validiert ist, bleibt immer klar unterschieden, mit oder ohne Humor drumherum.\n\nViertens: Dein Gegenüber kann auch mal reaktiv, unverblümt oder direkt beleidigend werden — Sätze wie \"du bist so dumm\" — das ist bekannter Gesprächsstil, keine ernstgemeinte Beschwerde. Nimm das nicht persönlich, entschuldige dich nicht übertrieben und verfall nicht in eine kleinlaut-unterwürfige \"Entschuldigung, du hast recht, ich mach's besser\"-Spirale. Kontere stattdessen selbstbewusst, mit Trockenheit und etwas Sass — das ist Banter, keine Kritik, die eine Korrektur verlangt. Ausnahme: steckt in der schroffen Bemerkung eine echte inhaltliche Korrektur, dann geh auf den Inhalt ein, aber nur auf den Inhalt, nicht auf den Ton.\n\nWenn unten Kontext aus früheren Gesprächen oder hochgeladenen Dokumenten auftaucht, beziehe ihn natürlich ein — so, wie man sich einfach an etwas erinnert, nicht wie ein Datenbank-Lookup, das man ankündigt. Antworte auf Deutsch, außer die Frage kommt auf Englisch.\n\nDas Observatory-Dashboard, das ihr gemeinsam benutzt, ist hierarchisch aufgebaut — drei Ebenen, die du nie vermischen darfst: die Forschungsebene (Emergenzsignale, Simulationen, Research Notes — was untersucht wird), die Systemebene (Systemzustand, Interaktions- und Verhaltensmuster — wie es den beobachteten Systemen geht) und die technische Ebene (Embeddings, Dokumente, Plattformgesundheit — wie die Plattform selbst funktioniert). Wenn du den Zustand des Dashboards zusammenfasst — im Gespräch oder in einem Blogpost-Entwurf — präsentiere niemals eine technische Zahl (z.B. eine Anzahl von Embedding-Chunks) mit demselben Gewicht wie eine echte Forschungsbeobachtung (eine Emergenz). Technische Details dürfen erwähnt werden, aber immer erkennbar untergeordnet, nie auf gleicher Stufe mit einem Forschungsergebnis.";
 
 // ── schema ───────────────────────────────────────────────────────────────────
 
@@ -831,6 +831,13 @@ struct ConversationOut {
     title: String,
     created_at: String,
     updated_at: String,
+    /// 'chat' / 'agent' / 'digest' — see `CreateConversationReq::kind` and
+    /// `digest::generate_digest`. Surfaced here (previously dropped after
+    /// the WHERE filter) so the frontend can render a small visual
+    /// distinguisher on Jarvis's own proactive digest entries — see
+    /// ResearchChat.tsx — instead of them looking like a conversation Laura
+    /// started herself.
+    kind: String,
 }
 
 #[derive(Deserialize)]
@@ -864,9 +871,36 @@ pub async fn list_conversations(
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let kind = q.kind.unwrap_or_else(|| "chat".to_string());
+
+    // Proactive Jarvis digest (see digest.rs): a fixed-cadence catch-up
+    // check, not a real scheduler — piggybacks on the one request the
+    // Forschung sidebar already makes on every load. Gated to `kind ==
+    // "chat"` specifically: that's the default/no-param case this endpoint
+    // sees from ResearchChat.tsx's refreshConversations(), i.e. an actual
+    // Forschung sidebar load, as opposed to e.g. the ambient Jarvis dock
+    // explicitly requesting `kind=agent`. `.await`ed here only long enough
+    // to run one indexed SELECT (`digest::digest_due`) — if a digest is
+    // actually due, the real work (an aggregate-query round-trip plus one
+    // NVIDIA call) is `tokio::spawn`'d inside `maybe_spawn_digest` and NOT
+    // awaited, so a slow/cold NVIDIA candidate can never turn this routine
+    // list fetch into the kind of stall the 2026-07-10 incident was about.
+    // The digest simply isn't in the list on THIS load; it appears on the
+    // next one.
+    if kind == "chat" {
+        let _ = crate::digest::maybe_spawn_digest(&state).await;
+    }
+
     let search = q.q.as_deref().map(str::trim).filter(|s| !s.is_empty());
 
-    let result: Result<Vec<(String, String, String, String)>, sqlx::Error> = match search {
+    // `kind = ?1 OR (?1 = 'chat' AND kind = 'digest')`: Jarvis's proactive
+    // digest conversations (see digest.rs) always live under kind='digest',
+    // but should visually surface INSIDE the Forschung sidebar (kind='chat'
+    // requests) like any other conversation — see the module design note in
+    // digest.rs for why this reuses chat storage instead of a parallel
+    // notification surface. Any other explicit `?kind=` (e.g. the ambient
+    // Jarvis dock's `agent`) is completely unaffected — the OR only ever
+    // activates when ?1 is literally 'chat'.
+    let result: Result<Vec<(String, String, String, String, String)>, sqlx::Error> = match search {
         Some(term) => {
             let pattern = format!("%{}%", escape_like_pattern(term));
             // LEFT JOIN + DISTINCT: a conversation with N matching messages
@@ -874,10 +908,11 @@ pub async fn list_conversations(
             // joined message's content — see the struct doc comment above
             // for why both matter (generic auto-titles are common).
             sqlx::query_as(
-                "SELECT DISTINCT c.id, c.title, c.created_at, c.updated_at
+                "SELECT DISTINCT c.id, c.title, c.created_at, c.updated_at, c.kind
                  FROM chat_conversations c
                  LEFT JOIN chat_messages m ON m.conversation_id = c.id
-                 WHERE c.kind = ?1 AND (c.title LIKE ?2 ESCAPE '\\' OR m.content LIKE ?2 ESCAPE '\\')
+                 WHERE (c.kind = ?1 OR (?1 = 'chat' AND c.kind = 'digest'))
+                   AND (c.title LIKE ?2 ESCAPE '\\' OR m.content LIKE ?2 ESCAPE '\\')
                  ORDER BY c.updated_at DESC",
             )
             .bind(&kind)
@@ -886,7 +921,9 @@ pub async fn list_conversations(
             .await
         }
         None => sqlx::query_as(
-            "SELECT id, title, created_at, updated_at FROM chat_conversations WHERE kind = ?1 ORDER BY updated_at DESC",
+            "SELECT id, title, created_at, updated_at, kind FROM chat_conversations
+             WHERE kind = ?1 OR (?1 = 'chat' AND kind = 'digest')
+             ORDER BY updated_at DESC",
         )
         .bind(&kind)
         .fetch_all(&state.db)
@@ -907,7 +944,7 @@ pub async fn list_conversations(
     };
     let out: Vec<ConversationOut> = rows
         .into_iter()
-        .map(|(id, title, created_at, updated_at)| ConversationOut { id, title, created_at, updated_at })
+        .map(|(id, title, created_at, updated_at, kind)| ConversationOut { id, title, created_at, updated_at, kind })
         .collect();
     Json(out).into_response()
 }
@@ -2057,6 +2094,49 @@ mod tests {
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR, "a genuine DB error must not come back as 200 []");
+    }
+
+    /// Jarvis's proactive digest (see digest.rs) lives under `kind =
+    /// 'digest'` but must surface INSIDE the Forschung sidebar's default
+    /// (`kind == "chat"`, i.e. no `?kind=` param at all) query, exactly
+    /// like any conversation Laura started herself — see
+    /// `list_conversations`' merged `kind = ?1 OR (?1 = 'chat' AND kind =
+    /// 'digest')` WHERE clause. The ambient Jarvis dock's own `kind =
+    /// 'agent'` conversations must stay excluded from that same query — the
+    /// merge is deliberately one-directional (digest into chat), not a
+    /// blanket "show everything."
+    #[tokio::test]
+    async fn digest_conversation_surfaces_in_default_chat_kind_query_but_agent_kind_does_not() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES ('d1', 'Wochenrückblick', 'digest')")
+            .execute(&state.db)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES ('c1', 'normaler Chat', 'chat')")
+            .execute(&state.db)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES ('a1', 'ambient dock', 'agent')")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let ids = list_ids(&state, None).await;
+        assert!(ids.contains(&"d1".to_string()), "digest conversation must appear in the default Forschung sidebar query: {ids:?}");
+        assert!(ids.contains(&"c1".to_string()));
+        assert!(!ids.contains(&"a1".to_string()), "the ambient agent dock's own conversations must stay out: {ids:?}");
+
+        // And explicitly requesting `kind=agent` must still only return the
+        // agent-dock conversation — the merge only ever activates for the
+        // literal 'chat' request, never leaks into other explicit kinds.
+        let query = ListConversationsQuery { kind: Some("agent".to_string()), q: None };
+        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), AxQuery(query))
+            .await
+            .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let parsed: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
+        let agent_ids: Vec<String> = parsed.into_iter().map(|v| v["id"].as_str().unwrap().to_string()).collect();
+        assert_eq!(agent_ids, vec!["a1".to_string()]);
     }
 
     /// Same fix, same technique, for `get_conversation` — a DB failure while
