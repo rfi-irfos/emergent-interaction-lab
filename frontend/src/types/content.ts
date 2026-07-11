@@ -65,6 +65,8 @@ export interface PageItem {
 
 export interface AboutStat { value: string; label: string }
 
+export interface ProtocolNodeItem { id: string; label: string; description: string }
+
 export interface CertificateItem {
   id: string
   title: string
@@ -150,6 +152,8 @@ export interface SiteContent {
     bio: string
     photo?: string
     stats?: AboutStat[]
+    ctaLabel?: string
+    ctaHref?: string
   }
   pricing?: {
     title: string
@@ -158,6 +162,13 @@ export interface SiteContent {
   jarvis?: {
     title: string
     body: string
+  }
+  protocol?: {
+    eyebrow?: string
+    title: string
+    intro?: string
+    nodes: ProtocolNodeItem[]
+    closing?: string
   }
   certificates?: {
     title?: string

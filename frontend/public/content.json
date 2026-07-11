@@ -16,7 +16,7 @@
     "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
   },
   "nav": {
-    "logo": "",
+    "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzlmYjRiZCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iIzYzZjBmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHg9IjciIHk9IjYiIHdpZHRoPSI2IiBoZWlnaHQ9IjI4IiByeD0iMS4yIiBmaWxsPSJ1cmwoI2cpIi8+PHJlY3QgeD0iNyIgeT0iNiIgd2lkdGg9IjIzIiBoZWlnaHQ9IjYiIHJ4PSIxLjIiIGZpbGw9InVybCgjZykiLz48cmVjdCB4PSI3IiB5PSIxNyIgd2lkdGg9IjE3IiBoZWlnaHQ9IjYiIHJ4PSIxLjIiIGZpbGw9InVybCgjZykiLz48cmVjdCB4PSI3IiB5PSIyOCIgd2lkdGg9IjIzIiBoZWlnaHQ9IjYiIHJ4PSIxLjIiIGZpbGw9InVybCgjZykiLz48Y2lyY2xlIGN4PSIzMyIgY3k9IjgiIHI9IjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNnKSIgc3Ryb2tlLXdpZHRoPSIxLjMiIG9wYWNpdHk9IjAuNTUiLz48Y2lyY2xlIGN4PSIzMyIgY3k9IjgiIHI9IjIuNiIgZmlsbD0idXJsKCNnKSIvPjwvc3ZnPgo=",
     "brand": "Emergent Interaction Lab",
     "links": [
       {
@@ -69,9 +69,29 @@
     "items": []
   },
   "about": {
-    "eyebrow": "System Definition",
-    "headline": "What is the Interaction Field?",
-    "bio": "The Interaction Field is a coupled cognitive-inferential system. It does not transmit information in one direction; it continuously updates a shared configuration of meaning through interaction, and each exchange changes the conditions for the next. This is not a surveillance or visitor-profiling tool: no individual site visitor is tracked, and no personal data belonging to a third party is collected or stored. The analytics built into this platform measure the research system itself, its own signals, sessions, and interaction patterns, never the people who visit the public site. It models interaction as a structural process, instrumented in practice by a live dashboard called the Observatory, which tracks emergence scores, drift, and interaction dynamics as they happen, with an AI research partner (Jarvis) drafting notes and running simulations alongside the human researcher. The goal is to understand how intelligence-like properties emerge from repeated interaction cycles, and how semantic stability, drift, and reconfiguration develop over time in coupled human-AI systems."
+    "eyebrow": "Researcher & Systems Analyst",
+    "headline": "Laura Serna Gaviria",
+    "bio": "Laura Serna Gaviria is a systems analyst and researcher working across human-AI interaction, cognitive architecture, and emergent intelligence. Her background is interdisciplinary by design - mechatronics, user experience, and digital transformation - and it shows in how she works: a sustained conversation with a language model gets treated like an unstable system to be instrumented and measured, not just a tool to be used.<br><br>Since 2023 she has built and applied her own methodological frameworks for this - among them the User Integrity Protocol (UIP) and Emergent Interaction Analysis (EIA) that this site's Observatory runs on - drawing on complexity and emergence theory (Goldstein, Bedau, Holland, Kauffman), systemic and biological co-evolution (Maturana &amp; Varela, Luhmann), the extended-mind and technology literature (Clark, Kelly, Turkle, DeLanda), and contemporary AI research (Mitchell, Chollet, Bengio). The rule across all of it stays the same: analyze the full, unfiltered interaction first, extract only the patterns that actually repeat across sessions, and never let a framework get ahead of what the data shows.<br><br>That same interdisciplinary rigor is available outside this research project too - for system-analysis and organizational-consulting engagements.",
+    "stats": [
+      { "value": "2023", "label": "Systematic practice began" },
+      { "value": "8", "label": "Layers in the 8-Layer Model" },
+      { "value": "3", "label": "Disciplines bridged: mechatronics, UX, digital transformation" }
+    ],
+    "ctaLabel": "Get in touch",
+    "ctaHref": "#location"
+  },
+  "protocol": {
+    "eyebrow": "How It Actually Works",
+    "title": "The Co-Evolution Protocol",
+    "intro": "This isn't a black box. It's a real, five-stage working loop between a human researcher and an AI research partner - the same honest mechanics described throughout this site, made visible.",
+    "nodes": [
+      { "id": "interact", "label": "Interact", "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat." },
+      { "id": "retrieve", "label": "Retrieve", "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents via retrieval-augmented generation, not just the current exchange." },
+      { "id": "surface", "label": "Surface", "description": "Recurring patterns get drafted as research notes and logged as emergence signals in the Observatory - never assumed, only surfaced." },
+      { "id": "validate", "label": "Validate", "description": "Laura checks what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET." },
+      { "id": "feedback", "label": "Feed Back", "description": "Confirmed patterns become working structure for the next interaction, closing the loop - carried forward, not re-explained." }
+    ],
+    "closing": "This is what actually happens between the two of them: Laura brings the questions, the judgment calls, and the final say on what counts as a real pattern; Jarvis brings the retrieval, the drafting, and the tireless first pass over everything that came before."
   },
   "jarvis": {
     "title": "What is Jarvis?",
