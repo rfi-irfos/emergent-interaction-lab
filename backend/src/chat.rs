@@ -654,9 +654,17 @@ fn compute_resonance_frequency(turns: &[CcetTurn]) -> f32 {
 /// to the previous ASSISTANT turn in the same conversation (not whatever
 /// user turn sits in between — see `CCET_STABILITY_THRESHOLD`'s doc
 /// comment), and persists one `ccet_turns` row.
-async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text: &str) {
+///
+/// Returns the id of the row it inserted — `None` when it bailed out early
+/// (no NVIDIA key configured, or an empty turn) or when the insert itself
+/// failed. Consumed by the flight-recorder snapshot chained immediately
+/// after this call in `stream_chat` (see `observatory::capture_system_snapshot`)
+/// as `trigger_turn_id`: an honest, traceable link back to the specific
+/// `ccet_turns` row a snapshot corresponds to, left `None` rather than
+/// fabricated when there isn't one.
+async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text: &str) -> Option<String> {
     if state.nvidia_api_key.is_empty() || current_text.trim().is_empty() {
-        return;
+        return None;
     }
 
     // The specific previous turn this one is compared against: the most
@@ -690,7 +698,7 @@ async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text:
         Ok(v) => v,
         Err(e) => {
             tracing::warn!("CCET embed failed for conversation {conversation_id}: {e}");
-            return;
+            return None;
         }
     };
 
@@ -709,10 +717,11 @@ async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text:
         _ => (None, false, None, false),
     };
 
-    let _ = sqlx::query(
+    let id = Uuid::new_v4().to_string();
+    let result = sqlx::query(
         "INSERT INTO ccet_turns (id, conversation_id, embedding, similarity_to_prev, stable, prev_stable, terms_reused) VALUES (?1,?2,?3,?4,?5,?6,?7)",
     )
-    .bind(Uuid::new_v4().to_string())
+    .bind(&id)
     .bind(conversation_id)
     .bind(encode_embedding(&current_embedding))
     .bind(similarity.map(|s| s as f64))
@@ -721,6 +730,8 @@ async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text:
     .bind(terms_reused as i64)
     .execute(&state.db)
     .await;
+
+    result.ok().map(|_| id)
 }
 
 #[derive(Serialize)]
@@ -734,6 +745,36 @@ pub struct CcetSummary {
     /// renders, so no future consumer of this endpoint can present these
     /// numbers as the paper's own verified formula either.
     definitions_note: &'static str,
+}
+
+/// Shared by `ccet_summary` below (the Emergence Monitor's live CEI/CEP/
+/// Resonance-Frequency tiles) and `observatory::capture_system_snapshot`
+/// (the flight-recorder rollup) — the exact same window query and pure-
+/// function computation, extracted once so the snapshot can never silently
+/// drift from what the live tile shows. Never re-embeds or re-calls NVIDIA:
+/// reads only already-persisted `ccet_turns` rows, in particular whatever
+/// `record_ccet_turn` just inserted when the caller awaits that first (as
+/// `stream_chat`'s spawn does). Returns `(cei, cep, resonance_frequency,
+/// turns_considered)`.
+pub(crate) async fn current_ccet_metrics(db: &SqlitePool) -> (f32, u32, f32, i64) {
+    let rows: Vec<(i64, Option<i64>, i64)> = sqlx::query_as(
+        "SELECT stable, prev_stable, terms_reused FROM ccet_turns ORDER BY created_at DESC LIMIT ?1",
+    )
+    .bind(CCET_WINDOW_TURNS)
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+
+    let turns: Vec<CcetTurn> = rows
+        .into_iter()
+        .map(|(stable, prev_stable, terms_reused)| CcetTurn {
+            stable: stable != 0,
+            prev_stable: prev_stable.map(|v| v != 0),
+            terms_reused: terms_reused != 0,
+        })
+        .collect();
+
+    (compute_cei(&turns), compute_cep(&turns), compute_resonance_frequency(&turns), turns.len() as i64)
 }
 
 /// Admin-authenticated: current CEI/CEP/Resonance-Frequency, computed over
@@ -751,28 +792,13 @@ pub async fn ccet_summary(State(state): State<AppState>, headers: HeaderMap) -> 
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
-    let rows: Vec<(i64, Option<i64>, i64)> = sqlx::query_as(
-        "SELECT stable, prev_stable, terms_reused FROM ccet_turns ORDER BY created_at DESC LIMIT ?1",
-    )
-    .bind(CCET_WINDOW_TURNS)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
-
-    let turns: Vec<CcetTurn> = rows
-        .into_iter()
-        .map(|(stable, prev_stable, terms_reused)| CcetTurn {
-            stable: stable != 0,
-            prev_stable: prev_stable.map(|v| v != 0),
-            terms_reused: terms_reused != 0,
-        })
-        .collect();
+    let (cei, cep, resonance_frequency, turns_considered) = current_ccet_metrics(&state.db).await;
 
     Json(CcetSummary {
-        cei: compute_cei(&turns),
-        cep: compute_cep(&turns),
-        resonance_frequency: compute_resonance_frequency(&turns),
-        turns_considered: turns.len() as i64,
+        cei,
+        cep,
+        resonance_frequency,
+        turns_considered,
         stability_threshold: CCET_STABILITY_THRESHOLD,
         definitions_note: "CEI folgt der Formel aus Lauras Paper (stable turns / total turns). \"Stable turn\", CEP und Resonance Frequency sind eigene Operationalisierungen dieses Projekts, nicht wörtlich aus dem Paper übernommen.",
     })
@@ -1590,11 +1616,24 @@ pub async fn stream_chat(
         // reply's critical path). See the CCET section above the
         // "conversations CRUD" marker for what's this project's own
         // operationalization vs. the paper's actual formula.
+        //
+        // Flight recorder (`system_snapshots`): chained immediately after,
+        // INSIDE the same spawned task — not a second `tokio::spawn` — so it
+        // rides the exact same fire-and-forget guarantee record_ccet_turn
+        // already has. Both run strictly after the "done" SSE event's
+        // precursor work is queued below (`tokio::spawn` returns instantly
+        // without polling the future at all), so neither can ever add
+        // latency to, or fail, the visible reply — see
+        // `observatory::capture_system_snapshot`'s own doc comment for the
+        // best-effort contract this depends on, and the module doc comment
+        // at the top of this file for why that guarantee matters here in
+        // particular (the 2026-07-10 production outage).
         let ccet_state = state.clone();
         let ccet_conv_id = conversation_id.clone();
         let ccet_text = final_full_text.clone();
         tokio::spawn(async move {
-            record_ccet_turn(&ccet_state, &ccet_conv_id, &ccet_text).await;
+            let trigger_turn_id = record_ccet_turn(&ccet_state, &ccet_conv_id, &ccet_text).await;
+            crate::observatory::capture_system_snapshot(&ccet_state, &ccet_conv_id, trigger_turn_id).await;
         });
 
         yield Ok(Event::default().event("done").data("[DONE]"));
@@ -2435,6 +2474,107 @@ mod tests {
             body.contains("Hallo aus dem Mock") && body.contains("event: done"),
             "must still deliver the real reply from the working candidate, not get stuck on the hung one: {body:?}"
         );
+    }
+
+    // ── Flight recorder (system_snapshots) failure isolation ────────────────
+    // The single most important test in this file given the 2026-07-10
+    // outage history documented at the top: a background-task failure must
+    // NEVER surface on the visible chat response. `test_state()` above
+    // deliberately only runs `chat::init_schema` — none of
+    // `emergence_signals`/`simulation_runs`/`research_notes`/
+    // `agent_tool_calls`/`system_snapshots` exist in it — so every single
+    // query inside `observatory::capture_system_snapshot` is GUARANTEED to
+    // fail with "no such table" here. This proves the isolation is real, not
+    // just untested-and-hoped-for.
+
+    /// End-to-end: drives the real `stream_chat` handler to completion (same
+    /// mock-NVIDIA harness as the timeout-regression tests above) while the
+    /// chained `record_ccet_turn` + `capture_system_snapshot` background task
+    /// is guaranteed to fail outright. The visible SSE reply must still
+    /// arrive in full, `event: done` must still fire, and the assistant turn
+    /// must still be durably persisted to `chat_messages` — none of that may
+    /// depend on the background snapshot succeeding.
+    #[tokio::test]
+    async fn chat_response_and_persistence_unaffected_when_snapshot_capture_tables_are_missing() {
+        let base = start_mock_nvidia(MockNvidiaConfig { hang_models: vec![], success_model: Some(CHAT_MODEL) }).await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        let req = StreamChatReq {
+            conversation_id: "conv-snapshot-fail".to_string(),
+            message: "hallo, testest du gerade?".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+        };
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req))
+            .await
+            .into_response();
+        let body = read_sse_body_bounded(resp).await;
+
+        assert!(
+            body.contains("Hallo aus dem Mock") && body.contains("event: done"),
+            "the visible reply must complete normally even though the background snapshot tables don't exist: {body:?}"
+        );
+
+        // Give the fire-and-forget spawn (record_ccet_turn, then
+        // capture_system_snapshot chained after it) a real chance to run and
+        // actually fail — the assertion above is only meaningful once that's
+        // had the opportunity to happen, not just because of call ordering.
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
+        let (assistant_count,): (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant'",
+        )
+        .bind("conv-snapshot-fail")
+        .fetch_one(&state.db)
+        .await
+        .unwrap();
+        assert_eq!(
+            assistant_count, 1,
+            "the assistant turn must be durably persisted regardless of the background snapshot's fate"
+        );
+    }
+
+    /// Direct, focused proof of `capture_system_snapshot`'s own contract in
+    /// isolation (no HTTP/SSE plumbing at all): called against a completely
+    /// bare in-memory DB — not even `chat::init_schema` has run — so every
+    /// query inside it fails from the very first line. Reaching the
+    /// assertion below at all (rather than the test panicking) IS the proof:
+    /// failures degrade to a logged warning (see the function's own doc
+    /// comment), never a panic, never a propagated error.
+    #[tokio::test]
+    async fn capture_system_snapshot_never_panics_against_a_completely_bare_db() {
+        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        let state = AppState {
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            content_path: PathBuf::from("content.json"),
+            uploads_dir: PathBuf::from("uploads"),
+            static_dir: PathBuf::from("dist"),
+            allowed_email: String::new(),
+            google_client_id: String::new(),
+            google_client_secret: String::new(),
+            redirect_uri: String::new(),
+            dev_mode: true,
+            db,
+            http: reqwest::Client::new(),
+            nvidia_api_key: String::new(),
+            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
+            nvidia_connect_timeout: NVIDIA_CONNECT_TIMEOUT,
+            chat_secret: String::new(),
+            stripe_secret_key: String::new(),
+            stripe_api_base: "https://api.stripe.com".to_string(),
+            stripe_webhook_secret: String::new(),
+            ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            github_token: String::new(),
+            github_api_base: "https://api.github.com".to_string(),
+            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        };
+        crate::observatory::capture_system_snapshot(&state, "conv-bare", None).await;
+        // No panic above is the entire assertion.
     }
 
     // ── CCET (Continuous Co-Evolution Tracker) — pure-function tests
