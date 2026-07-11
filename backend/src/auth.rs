@@ -127,13 +127,23 @@ pub async fn google_callback(
     }
 
     let session_data = SessionData {
-        email,
+        email: email.clone(),
         name: userinfo["name"].as_str().unwrap_or("").to_string(),
         picture: userinfo["picture"].as_str().unwrap_or("").to_string(),
     };
 
     let token = Uuid::new_v4().to_string();
     state.sessions.write().unwrap().insert(token.clone(), session_data);
+
+    // `admin_login` — the real session-granting event on this platform (see
+    // authz::require_admin's own doc comment: the shared x-chat-secret
+    // header is "the one auth mechanism the shipped admin UI actually
+    // round-trips through," but THIS Google OAuth callback is where a
+    // session cookie with a real, identifiable admin email actually gets
+    // minted). Not logged in `google_login`'s DEV_MODE auto-login branch —
+    // that's a local-only bypass already loudly warned about at startup,
+    // not a real security event worth chaining into the audit log.
+    crate::auditlog::record(&state, &email, "admin_login", "Admin-Login via Google OAuth", None).await;
 
     (jar.add(make_cookie(token)), Redirect::to("/admin")).into_response()
 }

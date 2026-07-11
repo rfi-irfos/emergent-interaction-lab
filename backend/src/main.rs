@@ -1,6 +1,7 @@
 mod agent;
 mod analytics;
 mod anomaly;
+mod auditlog;
 mod auth;
 mod authz;
 mod billing;
@@ -120,6 +121,17 @@ pub struct AppState {
     /// force-top slot on literally every restart, defeating the index cache
     /// even with the index itself persisted.
     pub chat_request_count: Arc<AtomicU64>,
+    /// Serializes `auditlog::record`'s "read last row_hash → compute this
+    /// row's hash → insert" sequence (see auditlog.rs). SQLite itself is
+    /// single-writer, so two concurrent inserts can never actually corrupt
+    /// the table — but without this lock they could both read the same
+    /// `prev_hash` and each insert a row claiming to follow it, producing
+    /// two rows with the same `prev_hash` instead of a real linear chain.
+    /// A plain `tokio::sync::Mutex<()>` (not the advisory-lock + mpsc-channel
+    /// machinery Lighthouse's real multi-machine deployment needs) is
+    /// sufficient here: single Fly machine, single process, no multi-writer
+    /// concern beyond ordinary async task concurrency within it.
+    pub audit_lock: Arc<tokio::sync::Mutex<()>>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -185,6 +197,11 @@ async fn main() {
         .execute(&db).await.ok();
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_wv_source ON web_visits(source, created_at)")
         .execute(&db).await.ok();
+    // Deliberately early: every module below this point (blog, research,
+    // billing, chat, anomaly, hallucination) writes to audit_log from its
+    // own write paths once the state is constructed, so the table + its
+    // immutability triggers must exist before any handler can ever run.
+    auditlog::init_schema(&db).await;
     chat::init_schema(&db).await;
     // Seed the model-ladder cache from durable storage instead of always
     // starting at 0/0 — see chat_model_state's doc comment in chat.rs. This
@@ -256,6 +273,7 @@ async fn main() {
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
         chat_model_idx: Arc::new(AtomicUsize::new(chat_model_idx_seed)),
         chat_request_count: Arc::new(AtomicU64::new(chat_request_count_seed)),
+        audit_lock: Arc::new(tokio::sync::Mutex::new(())),
     };
 
     if state.chat_secret.is_empty() {
@@ -361,6 +379,14 @@ async fn main() {
         // directly, even though that endpoint's own doc comment anticipated
         // being reused by this exact feature.
         .route("/api/observatory/anomalies", get(anomaly::list_anomalies))
+        // Hash-chained changelog (see auditlog.rs's module doc comment for
+        // the full "ported from Lighthouse, right-sized for single-machine
+        // SQLite" disclosure). `verify` walks the chain and recomputes every
+        // hash; `log` is the paginated read path the sidebar's live feed
+        // polls, same limit/offset + X-Total-Count convention as every
+        // other list endpoint here.
+        .route("/api/observatory/audit/verify", get(auditlog::verify))
+        .route("/api/observatory/audit/log", get(auditlog::list_log))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

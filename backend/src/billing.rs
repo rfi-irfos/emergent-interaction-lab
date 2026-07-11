@@ -204,6 +204,8 @@ pub async fn create_product(
     .execute(&state.db)
     .await;
 
+    crate::auditlog::record(&state, "admin", "product_created", &body.name, Some(json!({"id": id, "price_cents": body.price_cents, "currency": body.currency, "mode": body.mode}))).await;
+
     Json(json!({ "ok": true, "id": id })).into_response()
 }
 
@@ -554,6 +556,7 @@ pub async fn stripe_webhook(State(state): State<AppState>, headers: HeaderMap, b
             tracing::info!(
                 "Stripe webhook: order recorded for event {event_id} (session {session_id}, {amount_cents} {currency})"
             );
+            crate::auditlog::record(&state, "stripe", "order_recorded", "Stripe-Bestellung erfasst", Some(json!({"order_id": order_id, "amount_cents": amount_cents, "currency": currency}))).await;
         }
         Err(e) => {
             tracing::error!("Stripe webhook: order insert failed for event {event_id}: {e}");
@@ -712,6 +715,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 

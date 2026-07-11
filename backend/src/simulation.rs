@@ -376,6 +376,7 @@ pub async fn get_run(State(state): State<AppState>, headers: HeaderMap, Path(id)
 pub async fn delete_run(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
     if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
     let _ = sqlx::query("DELETE FROM simulation_runs WHERE id = ?1").bind(&id).execute(&state.db).await;
+    crate::auditlog::record(&state, "admin", "simulation_run_deleted", "Simulationslauf gelöscht", Some(json!({"id": id}))).await;
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -419,6 +420,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 

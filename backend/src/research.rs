@@ -160,5 +160,6 @@ pub async fn update_item(State(state): State<AppState>, headers: HeaderMap, Path
 pub async fn delete_item(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
     if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
     let _ = sqlx::query("DELETE FROM research_notes WHERE id = ?1").bind(&id).execute(&state.db).await;
+    crate::auditlog::record(&state, "admin", "research_item_deleted", "Research-/Innovation-Eintrag gelöscht", Some(serde_json::json!({"id": id}))).await;
     StatusCode::NO_CONTENT.into_response()
 }

@@ -26,9 +26,9 @@ pub async fn update_content(
     jar: CookieJar,
     Json(body): Json<serde_json::Value>,
 ) -> impl IntoResponse {
-    if get_session(&jar, &state).is_none() {
+    let Some(session) = get_session(&jar, &state) else {
         return StatusCode::UNAUTHORIZED.into_response();
-    }
+    };
 
     let pretty = match serde_json::to_string_pretty(&body) {
         Ok(s) => s,
@@ -36,7 +36,13 @@ pub async fn update_content(
     };
 
     match tokio::fs::write(&state.content_path, pretty).await {
-        Ok(_) => StatusCode::OK.into_response(),
+        Ok(_) => {
+            // `content_updated` — real identity available here (unlike the
+            // shared-secret `require_admin` endpoints), since this route
+            // authenticates via the actual Google OAuth session cookie.
+            crate::auditlog::record(&state, &session.email, "content_updated", "Website-Inhalt (content.json) aktualisiert", None).await;
+            StatusCode::OK.into_response()
+        }
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Write failed: {e}")).into_response(),
     }
 }
