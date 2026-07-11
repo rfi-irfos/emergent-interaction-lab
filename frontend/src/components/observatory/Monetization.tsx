@@ -5,6 +5,7 @@ import { parseServerTimestamp } from '../../lib/dateGroups'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { ObsDonut } from './ObsDonut'
 
 // Same 7d/30d/all vocabulary as Behavioral Landscape/System State/
 // Interaction Dynamics' range selectors, but purely client-side — see the
@@ -212,6 +213,27 @@ export function Monetization() {
     return acc
   }, {})
 
+  // Revenue-by-product donut — client-aggregated, same as
+  // totalRevenueByCurrency above: billing.rs (list_orders) is deliberately
+  // untouched, no `GROUP BY product_name` exists there, so this is built
+  // from `filteredOrders` (the same already-loaded, currency/range-narrowed
+  // set the stat tiles above already use — keeping the donut in sync with
+  // whatever the two selectors above it currently show, rather than a
+  // second, differently-scoped aggregate). Cents are only safely additive
+  // within ONE currency (a EUR-cent isn't a USD-cent) — filtering to a
+  // single currency above makes this exact; left on "Alle Währungen" with
+  // genuinely mixed currencies present, the values are still summed (each
+  // slice is one product, not a blended grand total) but the caption below
+  // says so explicitly and drops the currency symbol rather than asserting
+  // a false single-currency total.
+  const revenueByProduct = filteredOrders.reduce<Record<string, number>>((acc, o) => {
+    const key = o.product_name ?? 'Unbekanntes Produkt'
+    acc[key] = (acc[key] ?? 0) + o.amount_cents
+    return acc
+  }, {})
+  const revenueCurrencies = Array.from(new Set(filteredOrders.map(o => o.currency)))
+  const revenueCurrency = revenueCurrencies.length === 1 ? revenueCurrencies[0] : null
+
   return (
     <div className="obs-panel">
       {/* Real sales, not just the mechanism to sell — every row here comes
@@ -261,6 +283,28 @@ export function Monetization() {
               <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
             </div>
           ))}
+        </div>
+      )}
+      {/* Trusts ObsDonut's own built-in "Keine Daten." empty state (see
+          ObsDonut.tsx) rather than adding a second empty check here — gated
+          on `ordersTotal !== null` only to match the stat grid immediately
+          above (hidden until the first orders fetch has actually resolved,
+          not just "not yet fetched"). */}
+      {ordersTotal !== null && (
+        <div className="obs-card" style={{ marginBottom: 14 }}>
+          <div className="obs-section-label">Umsatz nach Produkt</div>
+          <ObsDonut
+            data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
+            valueFormat={(v, _t, pct) =>
+              revenueCurrency ? `${formatPrice(v, revenueCurrency)} · ${Math.round(pct * 100)}%` : `${v.toLocaleString('de-AT')} Cent · ${Math.round(pct * 100)}%`
+            }
+            gradientIdPrefix="monetization-revenue-by-product"
+          />
+          <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+            Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}) — kein serverseitiges
+            Gesamt-Grouping nach Produkt, siehe „Weitere laden" oben.
+            {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
+          </p>
         </div>
       )}
       {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
