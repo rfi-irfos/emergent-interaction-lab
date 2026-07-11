@@ -73,8 +73,22 @@ async fn record(state: &AppState, kind: &str, conversation_id: &str, chat_messag
     .bind(kind)
     .bind(conversation_id)
     .bind(chat_message_id)
-    .bind(detail)
+    .bind(detail.as_str())
     .execute(&state.db)
+    .await;
+    // One insertion point covers all four signal kinds this module ever
+    // writes (see detect_and_record's four call sites below, all of which
+    // route through this same helper) — `anomaly_detected` in the
+    // hash-chained changelog, `kind` disambiguating which of the four in
+    // `meta` (excluded from the hash, see auditlog::record's own doc
+    // comment on why).
+    crate::auditlog::record(
+        state,
+        "system",
+        "anomaly_detected",
+        &detail,
+        Some(serde_json::json!({"kind": kind, "conversation_id": conversation_id, "chat_message_id": chat_message_id})),
+    )
     .await;
 }
 
@@ -352,6 +366,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(AtomicUsize::new(0)),
             chat_request_count: Arc::new(AtomicU64::new(0)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 

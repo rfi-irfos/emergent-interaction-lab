@@ -1852,6 +1852,60 @@ button { cursor: pointer; font-family: inherit; }
 .crm-sidebar.collapsed .crm-nav-item.active::before { left: 0; }
 .crm-sidebar.collapsed .crm-badge { position: absolute; top: 2px; right: 6px; margin-left: 0; }
 
+/* ── SIDEBAR: HASH-CHAINED CHANGELOG PANEL ───────────────────────────────────
+   Fixed footer pinned below .crm-nav — a separate flex sibling in
+   AdminPanel.tsx, NOT appended inside <nav className="crm-nav">, so it can
+   never scroll away with the nav list the way .crm-nav itself now does
+   (see that class's own "min-height: 0 is load-bearing" comment above —
+   this panel exists specifically so the changelog doesn't repeat the exact
+   clipping bug that fix solved for the nav items). flex-shrink defaults to
+   0 for a block-level flex child already, kept explicit here for clarity.
+   Local --hud-cyan/--hud-cyan-dim redeclaration: `.mycelium-detail` (reused
+   below for the click-to-expand meta panel, per the plan's own instruction
+   not to invent new styling) reads those custom properties, but they're
+   normally only defined under `.observatory-hud` — a class this sidebar
+   never carries. Scoping them here keeps the reuse self-contained instead
+   of leaking cyan-theme variables onto the whole sidebar. */
+.crm-audit-panel {
+  --hud-cyan: #22d3ee; --hud-cyan-dim: rgba(34,211,238,.35);
+  flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.08);
+  padding: 10px 12px 12px; max-height: 280px; display: flex; flex-direction: column; min-height: 0;
+}
+.crm-audit-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; flex-shrink: 0; }
+.crm-audit-panel-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.32); text-transform: uppercase; letter-spacing: .08em; }
+.crm-audit-chain-badge { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+.crm-audit-chain-badge.intact { color: #34d399; background: rgba(52,211,153,.12); }
+.crm-audit-chain-badge.broken { color: #f87171; background: rgba(248,113,113,.16); animation: hud-pulse 1.2s ease-in-out infinite; }
+
+.crm-audit-panel-feed { overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.crm-audit-panel-empty { font-size: 11px; color: rgba(255,255,255,.3); padding: 6px 2px; }
+.crm-audit-entry {
+  padding: 7px 9px; border-radius: 7px; background: rgba(255,255,255,.03); cursor: pointer;
+  transition: background .15s ease, border-color .15s ease; border-left: 2px solid transparent;
+}
+.crm-audit-entry:hover { background: rgba(255,255,255,.07); border-left-color: var(--hud-cyan); }
+.crm-audit-entry-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.crm-audit-entry-type {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; font-weight: 700;
+  color: #63f0ff; letter-spacing: .01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.crm-audit-entry-time { font-size: 9.5px; color: rgba(255,255,255,.32); flex-shrink: 0; }
+.crm-audit-entry-summary {
+  font-size: 11px; color: rgba(255,255,255,.72); line-height: 1.4; margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.crm-audit-entry-actor { font-size: 9.5px; color: rgba(255,255,255,.28); margin-top: 3px; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
+.crm-audit-entry .mycelium-detail { margin: 8px 0 0; padding: 8px 10px; }
+.crm-audit-entry .mycelium-detail-text { font-size: 10.5px; }
+
+/* Collapsed sidebar (60px icon rail, see "SIDEBAR COLLAPSE" above): the
+   feed itself has nowhere to render, so only a small chain-health dot
+   survives — a glance-able signal without expanding the sidebar back out. */
+.crm-audit-panel-collapsed { align-items: center; justify-content: center; padding: 10px 0; }
+.crm-audit-chain-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); display: inline-block; }
+.crm-audit-chain-dot.intact { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.6); }
+.crm-audit-chain-dot.broken { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,.7); animation: hud-pulse 1.2s ease-in-out infinite; }
+
 /* ── ADMIN: OBSERVATORY MODULES ──────────────────────────────────────────────
    A proper BI-dashboard design language (Looker/Linear-adjacent: layered
    shadows instead of flat borders, per-metric accent colors, generous

@@ -1162,6 +1162,7 @@ pub async fn delete_conversation(
         .bind(&id)
         .execute(&state.db)
         .await;
+    crate::auditlog::record(&state, "admin", "chat_conversation_deleted", "Forschung-Konversation gelöscht", Some(json!({"conversation_id": id}))).await;
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -2146,6 +2147,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
@@ -2768,6 +2770,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(seeded_idx)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(seeded_count)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         };
 
         assert_eq!(
@@ -3130,6 +3133,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         };
         crate::observatory::capture_system_snapshot(&state, "conv-bare", None).await;
         // No panic above is the entire assertion.

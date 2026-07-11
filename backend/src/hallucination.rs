@@ -278,6 +278,20 @@ pub(crate) async fn check_message(state: &AppState, chat_message_id: &str, tool_
         .bind(&detail)
         .execute(&state.db)
         .await;
+        // `hallucination_mismatch` — ONLY a genuine Mismatch verdict ever
+        // reaches the changelog, never Match/Unverifiable: this is the
+        // safety-relevant event the plan explicitly calls out, not a log of
+        // every tool-call comparison this tracker ever runs.
+        if matches!(verdict, Verdict::Mismatch) {
+            crate::auditlog::record(
+                state,
+                "system",
+                "hallucination_mismatch",
+                &detail,
+                Some(serde_json::json!({"tool_call_id": tool_call_id, "chat_message_id": chat_message_id, "tool_name": tool_name})),
+            )
+            .await;
+        }
     }
 }
 
@@ -417,6 +431,7 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             chat_model_idx: Arc::new(AtomicUsize::new(0)),
             chat_request_count: Arc::new(AtomicU64::new(0)),
+            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
 
