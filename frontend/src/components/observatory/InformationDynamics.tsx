@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { ObsChart } from './ObsChart'
+import { ExportButtons } from './ExportButtons'
 
 interface RetrievalDay { day: string; avg_top_score: number; avg_hit_count: number }
 interface RecentRetrieval { query_text: string; top_score: number; hit_count: number; created_at: string; is_gap: boolean }
@@ -63,6 +64,15 @@ export function InformationDynamics() {
           <input type="checkbox" checked={gapOnly} onChange={e => setGapOnly(e.target.checked)} />
           Nur Wissenslücken
         </label>
+        {/* Exports whatever is currently loaded/filtered (`recent_retrievals`)
+            — same honesty-about-scope principle as elsewhere: with
+            "Nur Wissenslücken" active, the export is the gap-only set, not
+            silently the unfiltered top-10. */}
+        <ExportButtons
+          rows={data.recent_retrievals.map(r => ({ ...r }))}
+          filenameBase={`information-retrievals${gapOnly ? '-gaps' : ''}`}
+          title="Information Dynamics — letzte Anfragen"
+        />
       </div>
       {data.recent_retrievals.length === 0
         ? <div className="obs-card"><div className="obs-empty">{gapOnly ? 'Keine Wissenslücken in den letzten Anfragen.' : 'Noch keine Anfragen protokolliert.'}</div></div>

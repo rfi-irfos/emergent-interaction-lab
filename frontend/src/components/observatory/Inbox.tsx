@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { groupByDate, parseServerTimestamp } from '../../lib/dateGroups'
+import { ExportButtons } from './ExportButtons'
 
 export interface ContactMessage {
   id: string
@@ -91,11 +92,18 @@ export function Inbox() {
   return (
     <div style={{ padding: 14 }}>
       {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 180px' }}>
             <option value="">Alle Status</option>
             {Object.keys(STATUS_LABEL).map(v => <option key={v} value={v}>{STATUS_LABEL[v]}</option>)}
           </select>
+          {/* Exports whatever status filter currently narrowed the inbox to
+              (`filteredList`), not silently every message. */}
+          <ExportButtons
+            rows={filteredList.map(m => ({ ...m }))}
+            filenameBase="inbox-messages"
+            title="Inbox"
+          />
         </div>
       )}
       {list.length === 0 ? (

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { downloadJson } from '../../lib/export'
+import { ExportButtons } from './ExportButtons'
 
 interface Signal {
   id: string
@@ -72,16 +74,6 @@ const PAGE_SIZE = 50
 
 function formatPercent(v: number): string {
   return `${Math.round(v * 100)}%`
-}
-
-function downloadJson(filename: string, data: unknown) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 /// The most important Observatory module: Jarvis's own qualitative read of
@@ -193,8 +185,14 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           disabled={signals.length === 0}
           onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
         >
-          ⬇ Exportieren
+          ⬇ JSON
         </button>
+        {/* Exports whatever is currently loaded/filtered (`signals`), not
+            silently the unfiltered full set — same honesty-about-scope
+            principle as the X-Total-Count pagination above: if a level/
+            status/confidence/evolution filter narrowed the page, the export
+            reflects that narrowed page. */}
+        <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
       </div>
 
       {/* Filter bar — level/status/confidence/evolution, each a closed

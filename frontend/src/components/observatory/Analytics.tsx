@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { ObsChart } from './ObsChart'
+import { ExportButtons } from './ExportButtons'
 
 interface DayCount { day: string; views: number }
 interface Bucket { label: string; count: number }
@@ -89,7 +90,7 @@ export function Analytics() {
           <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>
             Aktivität im Zeitverlauf — retrospektiv nach Tag oder Woche
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <select value={bucket} onChange={e => setBucket(e.target.value as 'day' | 'week')} style={{ fontSize: 12, padding: '5px 8px' }}>
               <option value="day">Pro Tag</option>
               <option value="week">Pro Woche</option>
@@ -97,6 +98,16 @@ export function Analytics() {
             <select value={days} onChange={e => setDays(Number(e.target.value))} style={{ fontSize: 12, padding: '5px 8px' }}>
               {DAYS_OPTIONS.map(d => <option key={d} value={d}>letzte {d} Tage</option>)}
             </select>
+            {/* Exports the retrospective trend table above — the one
+                dataset on this page actually gated by the bucket/days
+                selector, so the export honestly reflects the active
+                filter rather than some other fixed-window total shown
+                elsewhere on the page. */}
+            <ExportButtons
+              rows={data.activity_trend.map(p => ({ ...p }))}
+              filenameBase={`analytics-activity-${bucket}`}
+              title={`Analytics — Aktivität pro ${bucket === 'week' ? 'Woche' : 'Tag'} (letzte ${days} Tage)`}
+            />
           </div>
         </div>
         {data.activity_trend.length === 0

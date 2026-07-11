@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
+import { ExportButtons } from './ExportButtons'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
@@ -50,10 +51,19 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
           {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        {/* Exports the real per-event tool-call feed below, gated by the
+            same `range` selector — the granular record set on this page,
+            as opposed to category_mix/tool_distribution/length_distribution
+            (small bucketed bar-chart counts, not individual real records). */}
+        <ExportButtons
+          rows={data.recent_tool_calls.map(c => ({ ...c }))}
+          filenameBase={`behavioral-tool-calls-${range}`}
+          title={`Jarvis-Werkzeugaufrufe (${RANGE_SUFFIX[data.range] ?? data.range})`}
+        />
       </div>
       <div className="obs-section-label">Research-Aktivität nach Kategorie</div>
       <div className="obs-card">

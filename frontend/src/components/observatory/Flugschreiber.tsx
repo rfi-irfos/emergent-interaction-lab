@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import { ObsChart } from './ObsChart'
+import { ExportButtons } from './ExportButtons'
 
 // One typed rollup row, captured automatically after every chat turn — see
 // backend/src/observatory.rs's `capture_system_snapshot` (chained inside
@@ -117,10 +118,18 @@ export function Flugschreiber() {
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <select value={range} onChange={e => changeRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
           {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+        {/* Exports whatever range filter currently narrowed the page to and
+            whatever's been loaded so far via "Weitere laden" (`snapshots`) —
+            same honesty-about-scope principle as the rest of the app. */}
+        <ExportButtons
+          rows={snapshots.map(s => ({ ...s }))}
+          filenameBase={`flugschreiber-snapshots-${range}`}
+          title="Flugschreiber — Snapshots"
+        />
       </div>
 
       {snapshots.length === 0 ? (

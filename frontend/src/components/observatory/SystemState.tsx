@@ -1,4 +1,5 @@
 import { useAdminFetch } from '../../lib/adminApi'
+import { ExportButtons } from './ExportButtons'
 
 interface Signal {
   id: string
@@ -103,7 +104,30 @@ export function SystemState() {
         </>
       )}
 
-      <div className="obs-section-label">Beobachtete Systeme</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div className="obs-section-label" style={{ marginBottom: 0 }}>Beobachtete Systeme</div>
+        {/* `states` (unlike the raw signal feed EmergenceMonitor exports) is
+            this view's own real per-scope aggregation — latest signal plus
+            observation count and the linked Interaction Dynamics trend for
+            each scope — so it's a distinct, genuinely row-shaped dataset
+            worth its own export rather than a duplicate of another module's. */}
+        {states.length > 0 && (
+          <ExportButtons
+            rows={states.map(([scope, s]) => ({
+              scope,
+              status: s.status,
+              confidence: s.confidence,
+              evolution: s.evolution,
+              observation: s.observation,
+              observation_count: countByScope.get(scope) ?? 0,
+              interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
+              updated_at: s.created_at,
+            }))}
+            filenameBase="system-state"
+            title="System State — Beobachtete Systeme"
+          />
+        )}
+      </div>
       {signalsLoading && <div className="obs-empty">Lade…</div>}
       {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}
       {!signalsLoading && !signalsError && states.length === 0 && (
