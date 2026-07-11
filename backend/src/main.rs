@@ -282,6 +282,13 @@ async fn main() {
         // Research chat (RAG + streaming)
         .route("/api/chat/conversations", get(chat::list_conversations).post(chat::create_conversation))
         .route("/api/chat/conversations/:id", get(chat::get_conversation).delete(chat::delete_conversation))
+        // "LKS" kill-switch: durably saves a partial streamed reply as an
+        // interrupted assistant turn, bypassing the NVIDIA round-trip.
+        .route("/api/chat/conversations/:id/interrupted-message", post(chat::save_interrupted_message))
+        // Edit-and-resend: deletes a message and everything chronologically
+        // after it in the same conversation (see delete_message_and_after's
+        // doc comment for the exact per-message/per-conversation cleanup).
+        .route("/api/chat/conversations/:id/messages/:message_id", axum::routing::delete(chat::delete_message_and_after))
         .route("/api/chat/stream", post(chat::stream_chat))
         .route("/api/chat/documents", get(chat::list_documents).post(chat::upload_document))
         .route("/api/chat/documents/:id", axum::routing::delete(chat::delete_document))

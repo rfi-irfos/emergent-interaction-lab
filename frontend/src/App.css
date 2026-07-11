@@ -2526,6 +2526,39 @@ button { cursor: pointer; font-family: inherit; }
 .chat-copy-btn:hover { border-color: #63f0ff; color: #63f0ff; }
 .chat-copy-btn.copied { opacity: 1; border-color: #22c55e; color: #22c55e; }
 
+/* Same hover-revealed convention, mirrored onto user bubbles — edit instead
+   of copy. See CopyMessageButton/EditMessageButton in ResearchChat.tsx. */
+.chat-edit-btn {
+  position: absolute; top: 6px; right: 6px; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center; border-radius: 6px;
+  border: 1px solid rgba(148,197,214,.25); background: rgba(10,14,26,.6); color: rgba(233,251,255,.55);
+  font-size: 12px; cursor: pointer; opacity: 0; transition: opacity .15s, color .15s, border-color .15s;
+}
+.chat-bubble.user:hover .chat-edit-btn,
+.chat-edit-btn:focus-visible { opacity: 1; }
+.chat-edit-btn:hover { border-color: #63f0ff; color: #63f0ff; }
+
+/* Inline edit-and-resend form (UserMessageEditForm) that replaces a user
+   bubble's normal read-only content while it's being edited. */
+.chat-edit-form { display: flex; flex-direction: column; gap: 8px; min-width: 220px; }
+.chat-edit-textarea {
+  width: 100%; resize: vertical; min-height: 60px; border-radius: 8px; border: 1px solid rgba(99,240,255,.3);
+  background: rgba(3,5,10,.35); color: #e9fbff; padding: 8px 10px; font-size: 13.5px; font-family: inherit; line-height: 1.5;
+}
+.chat-edit-textarea:focus { outline: none; border-color: #63f0ff; }
+.chat-edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.chat-edit-confirm {
+  padding: 5px 12px; border-radius: 7px; border: none; background: #63f0ff; color: #03050a;
+  font-weight: 700; font-size: 12px; cursor: pointer;
+}
+.chat-edit-confirm:disabled { opacity: .4; cursor: default; }
+.chat-edit-confirm:not(:disabled):hover { background: #8ff5ff; }
+.chat-edit-cancel {
+  padding: 5px 12px; border-radius: 7px; border: 1px solid rgba(148,197,214,.3); background: none;
+  color: rgba(233,251,255,.7); font-size: 12px; cursor: pointer;
+}
+.chat-edit-cancel:hover { border-color: #63f0ff; color: #63f0ff; }
+
 /* Reasoning models (deepseek-ai/deepseek-r1, if it's the one actually
    serving a given request — see backend/src/chat.rs's model ladder) stream
    step-by-step reasoning ahead of the final answer. Visually distinct from
@@ -2565,3 +2598,13 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-send-btn:disabled { opacity: .4; cursor: default; }
 .chat-send-btn:not(:disabled):hover { background: #8ff5ff; }
+
+/* "LKS" kill-switch: stops the current streaming reply without ending the
+   conversation — reddish accent (matches .chat-error below) to read as a
+   stop/interrupt action, distinct from the cyan send button next to it. */
+.chat-lks-btn {
+  padding: 0 14px; border-radius: 9px; border: 1px solid rgba(255,107,107,.4); background: rgba(255,107,107,.12);
+  color: #ff9b9b; font-weight: 700; font-size: 12px; letter-spacing: .02em; cursor: pointer; flex-shrink: 0;
+}
+.chat-lks-btn:disabled { opacity: .35; cursor: default; }
+.chat-lks-btn:not(:disabled):hover { background: rgba(255,107,107,.22); border-color: #ff9b9b; }

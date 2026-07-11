@@ -198,6 +198,18 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Additive, same convention as chat_conversations.kind below: marks an
+    // assistant row that was saved via the "LKS" kill-switch (see
+    // save_interrupted_message) — a partial reply the user deliberately cut
+    // off mid-stream, not a normal completed turn. Read back by stream_chat's
+    // history load (see the interrupted-note injection below) so the model
+    // genuinely knows, on the next turn, that its previous reply was cut off
+    // rather than silently finished short.
+    sqlx::query("ALTER TABLE chat_messages ADD COLUMN interrupted INTEGER NOT NULL DEFAULT 0")
+        .execute(db)
+        .await
+        .ok();
+
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS chat_documents (
             id TEXT PRIMARY KEY,
@@ -685,8 +697,14 @@ async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text:
     .ok()
     .flatten();
 
+    // `, rowid DESC` tiebreak: created_at is second-granularity with no
+    // other ordering guarantee (see the same fix on get_conversation's and
+    // stream_chat's history-loading queries below) — without it, a
+    // same-second sequence of messages (routine with edit-and-resend, which
+    // deletes then reinserts within the same second) can make "the previous
+    // assistant turn" ambiguous.
     let prev_assistant_text: Option<(String,)> = sqlx::query_as(
-        "SELECT content FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant' ORDER BY created_at DESC LIMIT 1 OFFSET 1",
+        "SELECT content FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant' ORDER BY created_at DESC, rowid DESC LIMIT 1 OFFSET 1",
     )
     .bind(conversation_id)
     .fetch_optional(&state.db)
@@ -940,8 +958,13 @@ pub async fn get_conversation(
     if !is_authorized(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
+    // `, rowid ASC` tiebreak: created_at is second-granularity with no other
+    // ordering guarantee — a same-second delete-then-reinsert (exactly what
+    // edit-and-resend does every time it's used, see delete_message_and_after
+    // below) can otherwise produce ambiguous ordering for messages that land
+    // in the same second.
     let result: Result<Vec<(String, String, String, Option<String>, String)>, sqlx::Error> = sqlx::query_as(
-        "SELECT id, role, content, token_info, created_at FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC",
+        "SELECT id, role, content, token_info, created_at FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC, rowid ASC",
     )
     .bind(&id)
     .fetch_all(&state.db)
@@ -1003,6 +1026,111 @@ pub async fn delete_conversation(
         .bind(&id)
         .execute(&state.db)
         .await;
+    StatusCode::NO_CONTENT.into_response()
+}
+
+/// Edit-and-resend's backend half: deletes one message and every message
+/// after it (chronologically) in the same conversation — the frontend then
+/// locally truncates its own `messages` state to before the edited message
+/// and calls `send(editedText)` to continue from that point, exactly as if
+/// everything after it had never been sent.
+///
+/// "After" is decided the same tie-broken way `get_conversation` and
+/// `stream_chat`'s history load now order chat_messages (`created_at ASC,
+/// rowid ASC`) — `created_at` alone is second-granularity with no other
+/// guarantee, and edit-and-resend's own delete-then-reinsert cycle is
+/// exactly the case that can land two messages in the same second. Anchoring
+/// on the target message's own `(created_at, rowid)` pair and keeping
+/// everything with a `(created_at, rowid)` at or after it (rather than a
+/// bare `created_at >= ?`) means a same-second sibling BEFORE the target in
+/// insertion order is correctly left alone.
+///
+/// Cleanup mirrors `delete_conversation` above, scoped down to just the
+/// messages being removed instead of the whole conversation:
+/// - `chat_chunks`: genuinely keyed per message (`source_type = 'message'`,
+///   `source_id = <message id>`) — reuses `delete_conversation`'s exact
+///   per-message DELETE for each removed id, so no stale RAG memory survives
+///   for a message that no longer exists in the visible conversation.
+/// - `chat_retrievals`: NOT keyed per message (no message-id column at all —
+///   see `delete_conversation`'s own conversation-wide delete of it), but IS
+///   timestamped, and exactly one row is logged at the very start of
+///   processing the specific user message this cutoff anchors on (see
+///   `stream_chat`'s `context_block` construction). Scoping this delete by
+///   the same cutoff — rather than wiping the whole conversation's retrieval
+///   history the way `delete_conversation` does — removes only the
+///   retrievals tied to messages actually being deleted, leaving the
+///   surviving prefix's own retrieval history intact.
+/// - `agent_tool_calls`/`emergence_signals` are deliberately NOT touched
+///   here: both are conversation-scoped only (no per-message or timestamp
+///   correlation reliable enough to attribute a row to one specific
+///   message), so trimming them here on a partial, same-conversation delete
+///   would risk erasing history that still belongs to the surviving prefix —
+///   unlike `delete_conversation`, which is safe to wipe both wholesale
+///   because the entire conversation is going away anyway.
+pub async fn delete_message_and_after(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((conversation_id, message_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    if !is_authorized(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
+    let target: Option<(i64, String)> = sqlx::query_as(
+        "SELECT rowid, created_at FROM chat_messages WHERE id = ?1 AND conversation_id = ?2",
+    )
+    .bind(&message_id)
+    .bind(&conversation_id)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+
+    let Some((target_rowid, target_created_at)) = target else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    let message_ids: Vec<(String,)> = sqlx::query_as(
+        "SELECT id FROM chat_messages
+         WHERE conversation_id = ?1
+           AND (created_at > ?2 OR (created_at = ?2 AND rowid >= ?3))",
+    )
+    .bind(&conversation_id)
+    .bind(&target_created_at)
+    .bind(target_rowid)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    for (mid,) in &message_ids {
+        let _ = sqlx::query("DELETE FROM chat_chunks WHERE source_type = 'message' AND source_id = ?1")
+            .bind(mid)
+            .execute(&state.db)
+            .await;
+    }
+
+    let _ = sqlx::query("DELETE FROM chat_retrievals WHERE conversation_id = ?1 AND created_at >= ?2")
+        .bind(&conversation_id)
+        .bind(&target_created_at)
+        .execute(&state.db)
+        .await;
+
+    let _ = sqlx::query(
+        "DELETE FROM chat_messages
+         WHERE conversation_id = ?1
+           AND (created_at > ?2 OR (created_at = ?2 AND rowid >= ?3))",
+    )
+    .bind(&conversation_id)
+    .bind(&target_created_at)
+    .bind(target_rowid)
+    .execute(&state.db)
+    .await;
+
+    let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
+        .bind(&conversation_id)
+        .execute(&state.db)
+        .await;
+
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -1238,8 +1366,13 @@ pub async fn stream_chat(
             }
         };
 
-        let history: Vec<(String, String)> = sqlx::query_as(
-            "SELECT role, content FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC",
+        // `, rowid ASC` tiebreak — see get_conversation's identical fix above
+        // for why: created_at is second-granularity with no other ordering
+        // guarantee, and edit-and-resend's delete-then-reinsert cycle
+        // (delete_message_and_after) can land two messages in the same
+        // second. `interrupted` feeds the synthetic note injected below.
+        let history: Vec<(String, String, i64)> = sqlx::query_as(
+            "SELECT role, content, interrupted FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC, rowid ASC",
         )
         .bind(&conversation_id)
         .fetch_all(&state.db)
@@ -1251,7 +1384,18 @@ pub async fn stream_chat(
             "role": "system",
             "content": format!("{SYSTEM_PROMPT}{context_block}{}", agent::tool_instructions_block(module_ctx)),
         })];
-        for (role, content) in &history {
+        for (role, content, interrupted) in &history {
+            // A turn saved via the "LKS" kill-switch (see
+            // save_interrupted_message) was deliberately cut off mid-stream
+            // by the user, not a normal completed reply — surface that
+            // honestly in the model's own context instead of just storing
+            // the flag and never acting on it, so the model doesn't mistake
+            // a truncated sentence for its own finished thought.
+            let content = if *interrupted != 0 {
+                format!("{content}\n\n[Hinweis: diese Antwort wurde von Laura mitten im Streamen unterbrochen — sie ist absichtlich unvollständig, nicht fertig gedacht.]")
+            } else {
+                content.clone()
+            };
             messages.push(json!({ "role": role, "content": content }));
         }
 
@@ -1661,6 +1805,57 @@ pub async fn stream_chat(
     };
 
     Sse::new(stream).keep_alive(KeepAlive::default()).into_response()
+}
+
+#[derive(Deserialize)]
+pub struct InterruptedMessageReq {
+    content: String,
+}
+
+/// The "LKS" kill-switch's backend half: durably saves whatever text the
+/// client had already accumulated from a streaming reply at the moment the
+/// user clicked stop, as a normal `role='assistant'` row — bypassing the
+/// NVIDIA round-trip entirely, same manual-INSERT pattern `stream_chat`'s own
+/// end-of-block persist above uses — except `interrupted = 1`.
+///
+/// Deliberately a SEPARATE, explicit signal from the client (not inferred
+/// from the SSE connection merely dropping): an aborted `fetch` looks
+/// identical on the wire whether the user clicked stop or their wifi died,
+/// and only the former should durably persist a partial reply and tell the
+/// model, honestly, that it was cut off — see the `interrupted`-note
+/// injection in `stream_chat`'s history load above for the other half of
+/// that contract.
+pub async fn save_interrupted_message(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<String>,
+    Json(body): Json<InterruptedMessageReq>,
+) -> impl IntoResponse {
+    if !is_authorized(&state, &headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let content = body.content.trim().to_string();
+    if content.is_empty() {
+        // Nothing was ever streamed before the user hit stop (e.g. they
+        // clicked it the instant they sent) — nothing meaningful to persist.
+        return (StatusCode::BAD_REQUEST, "Kein Text zum Speichern vorhanden.").into_response();
+    }
+
+    let assistant_id = Uuid::new_v4().to_string();
+    let _ = sqlx::query(
+        "INSERT INTO chat_messages (id, conversation_id, role, content, interrupted) VALUES (?1,?2,'assistant',?3,1)",
+    )
+    .bind(&assistant_id)
+    .bind(&id)
+    .bind(&content)
+    .execute(&state.db)
+    .await;
+    let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
+        .bind(&id)
+        .execute(&state.db)
+        .await;
+
+    Json(json!({ "id": assistant_id })).into_response()
 }
 
 #[cfg(test)]
@@ -2650,6 +2845,293 @@ mod tests {
         };
         crate::observatory::capture_system_snapshot(&state, "conv-bare", None).await;
         // No panic above is the entire assertion.
+    }
+
+    // ── "LKS" kill-switch (save_interrupted_message) ────────────────────
+
+    /// Core case: the partial text a client had already accumulated when the
+    /// user hit stop is durably saved as a normal `role='assistant'` row,
+    /// with `interrupted = 1` distinguishing it from an ordinary completed
+    /// turn.
+    #[tokio::test]
+    async fn interrupted_message_is_saved_with_interrupted_flag_set() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES ('conv-lks', 'x', 'chat')")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let resp = save_interrupted_message(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            Path("conv-lks".to_string()),
+            AxJson(InterruptedMessageReq { content: "Das war erst die Hälf".to_string() }),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let row: (String, String, i64) = sqlx::query_as(
+            "SELECT role, content, interrupted FROM chat_messages WHERE conversation_id = 'conv-lks'",
+        )
+        .fetch_one(&state.db)
+        .await
+        .unwrap();
+        assert_eq!(row.0, "assistant");
+        assert_eq!(row.1, "Das war erst die Hälf");
+        assert_eq!(row.2, 1, "must be marked interrupted, not indistinguishable from a normal completed turn");
+    }
+
+    /// An empty/whitespace-only body (the user clicked stop before a single
+    /// byte streamed back) has nothing meaningful to persist — must reject
+    /// cleanly rather than write an empty interrupted turn into history.
+    #[tokio::test]
+    async fn interrupted_message_rejects_empty_content() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES ('conv-lks-empty', 'x', 'chat')")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let resp = save_interrupted_message(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            Path("conv-lks-empty".to_string()),
+            AxJson(InterruptedMessageReq { content: "   ".to_string() }),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE conversation_id = 'conv-lks-empty'")
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+        assert_eq!(count.0, 0, "nothing should have been written");
+    }
+
+    /// A dedicated NVIDIA mock that captures every /v1/chat/completions
+    /// request body it receives (unlike `start_mock_nvidia` above, which
+    /// only cares about response shape) — lets a test inspect exactly what
+    /// `messages` array `stream_chat` actually sent, proving the interrupted
+    /// note isn't just stored and never surfaced.
+    async fn start_capturing_mock_nvidia(captured: std::sync::Arc<std::sync::Mutex<Vec<serde_json::Value>>>) -> String {
+        let embeddings = axpost(|| async {
+            let vector: Vec<f32> = vec![0.01; 8];
+            AxJson(json!({ "data": [{ "embedding": vector }] }))
+        });
+        let completions = axpost(move |AxJson(body): AxJson<serde_json::Value>| {
+            let captured = captured.clone();
+            async move {
+                captured.lock().unwrap().push(body);
+                let sse_body = "data: {\"choices\":[{\"delta\":{\"content\":\"Klar, mach ich weiter.\"}}]}\n\ndata: [DONE]\n\n";
+                axum::response::Response::builder()
+                    .status(StatusCode::OK)
+                    .header("content-type", "text/event-stream")
+                    .body(axum::body::Body::from(sse_body))
+                    .unwrap()
+            }
+        });
+        let app = Router::new()
+            .route("/v1/chat/completions", completions)
+            .route("/v1/embeddings", embeddings);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    /// End-to-end proof of the OTHER half of the kill-switch contract: a
+    /// turn saved via `save_interrupted_message` isn't just flagged in the
+    /// DB and never surfaced again — the very next `stream_chat` history
+    /// load must inject the synthetic note into that turn's content before
+    /// it's sent to the model at all.
+    #[tokio::test]
+    async fn interrupted_turn_carries_a_synthetic_note_into_the_next_round_trip() {
+        let captured = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let base = start_capturing_mock_nvidia(captured.clone()).await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        let conv_id = "conv-lks-history";
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, 'x', 'chat')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        // Simulate the LKS flow: an earlier user message, then a reply that
+        // got cut off mid-stream and saved via save_interrupted_message —
+        // exactly the shape a real abort-and-POST leaves behind.
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES ('m-user-1', ?1, 'user', 'erzähl mir was')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+        let resp = save_interrupted_message(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            Path(conv_id.to_string()),
+            AxJson(InterruptedMessageReq { content: "Also, es war einmal ei".to_string() }),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // A fresh user message triggers a new round-trip — this is what
+        // must carry the synthetic note into the model's own context.
+        let req = StreamChatReq {
+            conversation_id: conv_id.to_string(),
+            message: "mach weiter".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+        };
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req))
+            .await
+            .into_response();
+        let _ = read_sse_body_bounded(resp).await;
+
+        let bodies = captured.lock().unwrap();
+        assert!(!bodies.is_empty(), "stream_chat must have called the mock completions endpoint");
+        let sent_messages = bodies[0]["messages"].as_array().expect("messages array must be present");
+        let interrupted_turn = sent_messages
+            .iter()
+            .find(|m| m["content"].as_str().unwrap_or("").contains("Also, es war einmal ei"))
+            .expect("the interrupted turn's own text must still be present in history");
+        assert_eq!(interrupted_turn["role"], "assistant");
+        assert!(
+            interrupted_turn["content"].as_str().unwrap().contains("unterbrochen"),
+            "the interrupted turn sent to the model must carry the synthetic note, not just the bare partial text: {interrupted_turn}"
+        );
+    }
+
+    // ── edit-and-resend (delete_message_and_after) ───────────────────────
+
+    /// Core case end to end: deletes a target message and every message
+    /// chronologically after it (including same-second siblings ordered by
+    /// rowid), leaving earlier messages — including a same-second sibling
+    /// that was inserted BEFORE the target — untouched. Also proves the
+    /// per-message `chat_chunks` RAG cleanup and the timestamp-scoped
+    /// `chat_retrievals` cleanup both actually ran, not just the
+    /// `chat_messages` rows themselves.
+    #[tokio::test]
+    async fn delete_message_and_after_removes_target_and_later_keeps_earlier_and_cleans_rag_memory() {
+        let state = test_state().await;
+        let conv_id = "conv-edit-resend";
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, 'x', 'chat')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        // m1 (t0): earlier second entirely — must survive.
+        // m2 (t1, inserted BEFORE the target): same created_at second as the
+        // target but a lower rowid (earlier insertion order) — the whole
+        // point of the rowid tiebreak is that this must survive too, not get
+        // swept up just because it shares a timestamp with the target.
+        // m3 (t1): the edit target itself.
+        // m4 (t1, inserted AFTER the target): same second, higher rowid —
+        // must be deleted.
+        // m5 (t2): a later second — must be deleted.
+        for (id, role, content, created_at) in [
+            ("m1", "user", "Frage 1", "2026-07-11 10:00:00"),
+            ("m2", "assistant", "Antwort 1", "2026-07-11 10:00:05"),
+            ("m3", "user", "Frage 2 EDIT TARGET", "2026-07-11 10:00:05"),
+            ("m4", "assistant", "Antwort 2", "2026-07-11 10:00:05"),
+            ("m5", "user", "Frage 3", "2026-07-11 10:00:10"),
+        ] {
+            sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES (?1,?2,?3,?4,?5)")
+                .bind(id)
+                .bind(conv_id)
+                .bind(role)
+                .bind(content)
+                .bind(created_at)
+                .execute(&state.db)
+                .await
+                .unwrap();
+        }
+
+        // RAG chunks keyed per message: one for the surviving m2, one each
+        // for the doomed m3/m4.
+        for (chunk_id, mid) in [("chunk-m2", "m2"), ("chunk-m3", "m3"), ("chunk-m4", "m4")] {
+            sqlx::query(
+                "INSERT INTO chat_chunks (id, source_type, source_id, label, chunk_text, embedding) VALUES (?1,'message',?2,'x','x',x'00')",
+            )
+            .bind(chunk_id)
+            .bind(mid)
+            .execute(&state.db)
+            .await
+            .unwrap();
+        }
+
+        // chat_retrievals: one logged before the cutoff (survives), one at
+        // the cutoff second (removed).
+        sqlx::query("INSERT INTO chat_retrievals (id, conversation_id, query_text, top_score, hit_count, created_at) VALUES ('r1',?1,'x',0.5,1,'2026-07-11 10:00:00')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO chat_retrievals (id, conversation_id, query_text, top_score, hit_count, created_at) VALUES ('r2',?1,'x',0.5,1,'2026-07-11 10:00:05')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let resp = delete_message_and_after(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            Path((conv_id.to_string(), "m3".to_string())),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        let remaining_ids: Vec<(String,)> = sqlx::query_as("SELECT id FROM chat_messages WHERE conversation_id = ?1 ORDER BY created_at ASC, rowid ASC")
+            .bind(conv_id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap();
+        let remaining: Vec<String> = remaining_ids.into_iter().map(|(id,)| id).collect();
+        assert_eq!(remaining, vec!["m1", "m2"], "target and everything after it (chronologically, rowid tiebreak included) must be gone; earlier messages, including a same-second sibling inserted before the target, must survive");
+
+        let remaining_chunks: Vec<(String,)> = sqlx::query_as("SELECT source_id FROM chat_chunks WHERE source_type = 'message' ORDER BY source_id")
+            .fetch_all(&state.db)
+            .await
+            .unwrap();
+        let remaining_chunk_ids: Vec<String> = remaining_chunks.into_iter().map(|(id,)| id).collect();
+        assert_eq!(remaining_chunk_ids, vec!["m2"], "chat_chunks for deleted messages m3/m4 must be gone; m2's chunk must survive");
+
+        let remaining_retrievals: Vec<(String,)> = sqlx::query_as("SELECT id FROM chat_retrievals WHERE conversation_id = ?1")
+            .bind(conv_id)
+            .fetch_all(&state.db)
+            .await
+            .unwrap();
+        let remaining_retrieval_ids: Vec<String> = remaining_retrievals.into_iter().map(|(id,)| id).collect();
+        assert_eq!(remaining_retrieval_ids, vec!["r1"], "the retrieval logged at/after the cutoff (r2) must be cleaned up too, not just chat_messages rows");
+    }
+
+    /// A message id that doesn't exist in the given conversation (typo'd id,
+    /// already-deleted message, wrong conversation) must 404 rather than
+    /// silently deleting nothing or — worse — matching across conversations.
+    #[tokio::test]
+    async fn delete_message_and_after_returns_404_for_unknown_message() {
+        let state = test_state().await;
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES ('conv-404', 'x', 'chat')")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let resp = delete_message_and_after(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            Path(("conv-404".to_string(), "does-not-exist".to_string())),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
 
     // ── CCET (Continuous Co-Evolution Tracker) — pure-function tests
