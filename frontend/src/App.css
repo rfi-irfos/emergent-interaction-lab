@@ -1775,7 +1775,15 @@ button { cursor: pointer; font-family: inherit; }
 .crm-sidebar.collapsed .crm-sidebar-brand { padding: 14px 0; gap: 8px; }
 .crm-sidebar.collapsed .crm-sidebar-brand-row { flex-direction: column; gap: 8px; }
 
-.crm-nav { padding: 12px 10px; flex: 1; }
+/* min-height: 0 is load-bearing here, not decorative: a flex child's default
+   min-height is auto (= as tall as its content demands), which silently
+   defeats overflow-y regardless of flex:1 — the classic flexbox-scroll
+   footgun. Laura flagged this directly: with tonight's new modules
+   (Flugschreiber, Gesamtübersicht, Denkfragmente, Anomalie-Log) the nav list
+   finally grew past typical viewport height and .crm-sidebar's own
+   overflow:hidden started clipping the bottom entries outright instead of
+   making them reachable. */
+.crm-nav { padding: 12px 10px; flex: 1; min-height: 0; overflow-y: auto; }
 .crm-nav-item {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 8px;
   border: none; background: none; color: rgba(255,255,255,.5); font-size: 13px; font-weight: 500;
