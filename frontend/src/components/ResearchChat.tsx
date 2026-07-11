@@ -7,7 +7,13 @@ import { groupByDate, type DateGroup } from '../lib/dateGroups'
 import { downloadText } from '../lib/export'
 import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
-interface Conversation { id: string; title: string; created_at: string; updated_at: string }
+// `kind` — 'chat' (a conversation Laura started), 'agent' (ambient Jarvis
+// dock, never listed here — see backend/src/chat.rs's list_conversations),
+// or 'digest' (Jarvis's own proactive weekly digest, see backend/src/
+// digest.rs — merged into this same default `kind=chat` sidebar query so it
+// shows up without a separate UI surface, but visually flagged below so it
+// never reads as a conversation Laura started herself).
+interface Conversation { id: string; title: string; created_at: string; updated_at: string; kind: string }
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -858,7 +864,8 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
             <div key={group.label} className="chat-conv-group">
               <div className="chat-conv-group-label">{group.label}</div>
               {group.items.map(c => (
-                <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''}`} onClick={() => openConversation(c.id)}>
+                <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''} ${c.kind === 'digest' ? 'chat-conv-item-digest' : ''}`} onClick={() => openConversation(c.id)}>
+                  {c.kind === 'digest' && <span className="chat-conv-digest-badge" title="Proaktiver Wochenrückblick von Jarvis, nicht von dir gestartet">🗞️</span>}
                   <span className="chat-conv-title">{c.title}</span>
                   <button
                     className="chat-conv-delete"
