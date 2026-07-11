@@ -17,10 +17,30 @@ const MODULE_META: { id: AdminSection; label: string; accent: string; tier: Obse
   { id: 'knowledgegraph', label: 'Knowledge Graph', accent: '#22d3ee', tier: 'research' },
   { id: 'systemmap', label: 'System Map', accent: '#3b6bf6', tier: 'system' },
   { id: 'systemstate', label: 'System State', accent: '#10b981', tier: 'system' },
+  { id: 'agentactivity', label: 'Agent-Aktivität', accent: '#ef4444', tier: 'system' },
+  { id: 'flugschreiber', label: 'Flugschreiber', accent: '#f59e0b', tier: 'system' },
   { id: 'interaction', label: 'Interaction Dynamics', accent: '#8b5cf6', tier: 'system' },
   { id: 'behavior', label: 'Behavioral Landscape', accent: '#3b6bf6', tier: 'system' },
   { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', tier: 'technical' },
 ]
+
+// Same "page-response's own X-Total-Count header, not just page length" care
+// `emergence`/`simulationcenter` below already take (see the comment above
+// the Promise.all) — both of these are freshly paginated endpoints from
+// tonight, so a plain array-length tile would silently under-report past
+// the first page exactly the way those two were fixed to avoid.
+async function fetchTotalCount(path: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() })
+    if (!res.ok) return null
+    const header = res.headers.get('X-Total-Count')
+    if (header !== null) return Number(header)
+    const body = await res.json()
+    return Array.isArray(body) ? body.length : null
+  } catch {
+    return null
+  }
+}
 
 async function fetchJson(path: string): Promise<any> {
   try {
@@ -56,7 +76,7 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const [humanAi, signals, information, behavior, research, liveStats, notes, docs] = await Promise.all([
+      const [humanAi, signals, information, behavior, research, liveStats, notes, docs, agentActivityCount, snapshotsTotal] = await Promise.all([
         fetchJson('/api/observatory/human-ai'),
         // Still the plain (now-paginated-but-default-unchanged) call — only
         // used below for distinctScopes, which needs the actual signal rows,
@@ -76,6 +96,13 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
         fetchJson('/api/public/live-stats'),
         fetchJson('/api/research/items?category=paper,hypothesis,idea,concept,framework,prototype'),
         fetchJson('/api/chat/documents'),
+        // agent-activity has no pagination (see github_activity.rs — a
+        // capped merged feed, not a table with a real total), so page
+        // length genuinely is the count here, same as research/knowledgegraph
+        // above. snapshots IS paginated (X-Total-Count), so this reads the
+        // real total rather than however many happen to be on the first page.
+        fetchTotalCount('/api/observatory/agent-activity'),
+        fetchTotalCount('/api/observatory/snapshots?limit=1'),
       ])
       if (cancelled) return
       const toolTotal = Array.isArray(behavior?.tool_distribution)
@@ -97,6 +124,8 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
           : '—',
         systemmap: humanAi ? String((humanAi.user_messages ?? 0) + (humanAi.assistant_messages ?? 0)) : '—',
         systemstate: String(distinctScopes),
+        agentactivity: typeof agentActivityCount === 'number' ? String(agentActivityCount) : '—',
+        flugschreiber: typeof snapshotsTotal === 'number' ? String(snapshotsTotal) : '—',
         interaction: typeof humanAi?.mean_token_confidence === 'number' ? `${Math.round(humanAi.mean_token_confidence * 100)}%` : '—',
         behavior: String(toolTotal),
         information: information ? String(information.chunks) : '—',
