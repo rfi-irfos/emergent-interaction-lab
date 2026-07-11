@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
+import { ObsDonut } from './ObsDonut'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -60,6 +61,33 @@ export function InformationDynamics() {
           />
         </div>
       )}
+      {/* Direct client feedback on this exact page: a raw per-item score
+          ("SCORE 0.65") with zero aggregate was "so nichtssagend [so
+          uninformative]... das muss logischer sein [that needs to be more
+          logical]." Real German-language buckets over the currently loaded
+          page's own top_score values, matching this module's existing
+          Gut/Mittel/Schwach-style honesty about scope (same idea as
+          "geladen: X von Y" elsewhere) — this is NOT a global aggregate,
+          there is no backend GROUP BY for retrieval quality, so it's
+          disclosed as exactly what it is: the loaded page, bucketed. */}
+      {data.recent_retrievals.length > 0 && (
+        <div className="obs-card" style={{ marginTop: 22 }}>
+          <div className="obs-section-label">Retrieval-Qualität — Verteilung</div>
+          <ObsDonut
+            data={[
+              { label: 'Gut (>0.6)', value: data.recent_retrievals.filter(r => r.top_score > 0.6).length, color: 'var(--obs-green)' },
+              { label: 'Mittel (0.3–0.6)', value: data.recent_retrievals.filter(r => r.top_score >= 0.3 && r.top_score <= 0.6).length, color: 'var(--obs-amber)' },
+              { label: 'Schwach (<0.3)', value: data.recent_retrievals.filter(r => r.top_score < 0.3).length, color: 'var(--obs-red)' },
+            ]}
+            gradientIdPrefix="information-retrieval-quality"
+          />
+          <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+            Basis: die {data.recent_retrievals.length} aktuell geladenen Anfragen{gapOnly ? ' (nur Wissenslücken)' : ''} — kein
+            serverseitiges Gesamt-Grouping über alle jemals gestellten Anfragen, siehe "Letzte Anfragen" unten.
+          </p>
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, marginBottom: 10 }}>
         <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>Letzte Anfragen</div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>

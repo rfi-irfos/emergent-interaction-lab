@@ -2,8 +2,11 @@ import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { hudStagger } from '../../lib/hudStagger'
+import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { ObsDonut } from './ObsDonut'
+import { ObsGauge } from './ObsGauge'
 
 // "Gesamtübersicht" — Laura's own words, verbatim-translated: "I simply live
 // my life, do my projects, and afterward I have ALL my user data spit out
@@ -62,6 +65,15 @@ const RANGE_SUFFIX: Record<string, string> = { '7d': 'letzte 7 Tage', '30d': 'le
 
 function formatPercent(v: number): string {
   return `${Math.round(v * 100)}%`
+}
+
+// Same level vocabulary/color assignment as EmergenceMonitor.tsx's own
+// LEVEL_DONUT_COLORS — `emergence_signals.by_level` here is that exact same
+// aggregation, just re-exposed at the rollup level (see this file's own doc
+// comment: "each one reused verbatim from the module that already owns that
+// table"), so its donut should read identically, not invent a new mapping.
+const LEVEL_DONUT_COLORS: Record<string, string> = {
+  human: 'var(--obs-purple)', ai: 'var(--obs-blue)', interaction: 'var(--obs-teal)', system: 'var(--obs-amber)',
 }
 
 function Bars<T extends { count: number }>({ rows, labelKey, labelMap, color }: {
@@ -173,7 +185,12 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
         </div>
         {data.emergence_signals.by_level.length === 0
           ? <div className="obs-empty">Keine Emergenzsignale in diesem Zeitraum.</div>
-          : <Bars rows={data.emergence_signals.by_level} labelKey="level" color="linear-gradient(90deg, #8b5cf6, #a78bfa)" />
+          : (
+            <ObsDonut
+              data={data.emergence_signals.by_level.map(b => ({ label: b.level, value: b.count, color: LEVEL_DONUT_COLORS[b.level] }))}
+              gradientIdPrefix="gesamtuebersicht-emergence-level"
+            />
+          )
         }
       </div>
 
@@ -186,7 +203,12 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
         </div>
         {data.research_notes.by_category.length === 0
           ? <div className="obs-empty">Keine Research Notes in diesem Zeitraum.</div>
-          : <Bars rows={data.research_notes.by_category} labelKey="category" color="linear-gradient(90deg, #3b6bf6, #6d92f9)" />
+          : (
+            <ObsDonut
+              data={foldIntoOther(data.research_notes.by_category.map(b => ({ label: b.category, value: b.count })))}
+              gradientIdPrefix="gesamtuebersicht-research-category"
+            />
+          )
         }
       </div>
 
@@ -200,11 +222,11 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
             title="Gesamtübersicht — CCET"
           />
         </div>
-        <div className="obs-grid" style={{ marginBottom: 8 }}>
-          <div className="obs-stat c-green"><div className="obs-stat-value">{formatPercent(data.ccet.cei)}</div><div className="obs-stat-label">CEI</div></div>
-          <div className="obs-stat c-purple"><div className="obs-stat-value">{data.ccet.cep}</div><div className="obs-stat-label">CEP</div></div>
-          <div className="obs-stat c-teal"><div className="obs-stat-value">{formatPercent(data.ccet.resonance_frequency)}</div><div className="obs-stat-label">Resonance Frequency</div></div>
-          <div className="obs-stat c-amber"><div className="obs-stat-value">{data.ccet.turns_in_range}</div><div className="obs-stat-label">Turns im Zeitraum</div></div>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+          <ObsGauge value={data.ccet.cei} label="CEI" color="var(--obs-green)" valueFormat={formatPercent} />
+          <ObsGauge value={data.ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" valueFormat={formatPercent} />
+          <div className="obs-stat c-purple" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.cep}</div><div className="obs-stat-label">CEP</div></div>
+          <div className="obs-stat c-amber" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.turns_in_range}</div><div className="obs-stat-label">Turns im Zeitraum</div></div>
         </div>
         <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, margin: 0 }}>{data.ccet.definitions_note}</p>
       </div>
@@ -247,7 +269,12 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
         </div>
         {data.agent_tool_calls.by_tool.length === 0
           ? <div className="obs-empty">Keine Werkzeugaufrufe in diesem Zeitraum.</div>
-          : <Bars rows={data.agent_tool_calls.by_tool} labelKey="tool" labelMap={TOOL_LABELS} color="linear-gradient(90deg, #ef4444, #f87171)" />
+          : (
+            <ObsDonut
+              data={foldIntoOther(data.agent_tool_calls.by_tool.map(b => ({ label: TOOL_LABELS[b.tool] ?? b.tool, value: b.count })))}
+              gradientIdPrefix="gesamtuebersicht-tool-calls"
+            />
+          )
         }
       </div>
 

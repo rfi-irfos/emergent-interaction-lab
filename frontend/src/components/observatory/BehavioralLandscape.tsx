@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { hudStagger } from '../../lib/hudStagger'
+import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { ObsDonut } from './ObsDonut'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
@@ -47,9 +49,16 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
-  const maxCategory = Math.max(...data.category_mix.map(b => b.count), 1)
-  const maxTool = Math.max(...data.tool_distribution.map(b => b.count), 1)
-  const maxLength = Math.max(...data.length_distribution.map(b => b.count), 1)
+  // foldIntoOther is a no-op under its 6-slice ceiling (research categories
+  // and length buckets are always a handful) — it only matters for
+  // tool_distribution, where Jarvis's real tool count can plausibly exceed
+  // it; folding the tail into "Andere" instead of generating more hues is
+  // this codebase's own dataviz skill's prescribed fix for that.
+  const categoryMixData = foldIntoOther(data.category_mix.map(b => ({ label: b.category ?? '—', value: b.count })))
+  const toolDistributionData = foldIntoOther(data.tool_distribution.map(b => ({ label: TOOL_LABELS[b.tool ?? ''] ?? (b.tool ?? '—'), value: b.count })))
+  const lengthDistributionData = foldIntoOther(
+    data.length_distribution.map(b => ({ label: (b.bucket ?? '—').replace(/^./, c => c.toUpperCase()), value: b.count })),
+  )
 
   return (
     <div className="obs-panel">
@@ -69,26 +78,18 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
       </div>
       <div className="obs-section-label">Research-Aktivität nach Kategorie</div>
       <div className="obs-card">
-        {data.category_mix.length === 0 && <div className="obs-empty">Noch keine Research Notes.</div>}
-        {data.category_mix.map(b => (
-          <div className="obs-bar-row" key={b.category}>
-            <span style={{ width: 90, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0 }}>{b.category}</span>
-            <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(b.count / maxCategory) * 100}%` }} /></div>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#3b6bf6', minWidth: 24, textAlign: 'right' }}>{b.count}</span>
-          </div>
-        ))}
+        {data.category_mix.length === 0
+          ? <div className="obs-empty">Noch keine Research Notes.</div>
+          : <ObsDonut data={categoryMixData} gradientIdPrefix="behavior-category-mix" />
+        }
       </div>
 
       <div className="obs-section-label">Jarvis-Werkzeugnutzung ({RANGE_SUFFIX[data.range] ?? data.range})</div>
       <div className="obs-card">
-        {data.tool_distribution.length === 0 && <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>}
-        {data.tool_distribution.map(b => (
-          <div className="obs-bar-row" key={b.tool}>
-            <span style={{ width: 150, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0 }}>{b.tool}</span>
-            <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(b.count / maxTool) * 100}%`, background: 'linear-gradient(90deg, #8b5cf6, #a78bfa)' }} /></div>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#8b5cf6', minWidth: 24, textAlign: 'right' }}>{b.count}</span>
-          </div>
-        ))}
+        {data.tool_distribution.length === 0
+          ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
+          : <ObsDonut data={toolDistributionData} gradientIdPrefix="behavior-tool-distribution" />
+        }
       </div>
 
       <div className="obs-section-label">Jarvis-Aktivität (letzte Aufrufe)</div>
@@ -124,14 +125,10 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
 
       <div className="obs-section-label">Gesprächslänge — Verteilung</div>
       <div className="obs-card">
-        {data.length_distribution.length === 0 && <div className="obs-empty">Noch keine Gespräche.</div>}
-        {data.length_distribution.map(b => (
-          <div className="obs-bar-row" key={b.bucket}>
-            <span style={{ width: 60, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0, textTransform: 'capitalize' }}>{b.bucket}</span>
-            <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(b.count / maxLength) * 100}%`, background: 'linear-gradient(90deg, #14b8a6, #5eead4)' }} /></div>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#14b8a6', minWidth: 24, textAlign: 'right' }}>{b.count}</span>
-          </div>
-        ))}
+        {data.length_distribution.length === 0
+          ? <div className="obs-empty">Noch keine Gespräche.</div>
+          : <ObsDonut data={lengthDistributionData} gradientIdPrefix="behavior-length-distribution" />
+        }
       </div>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
         Aggregierte Muster über alle Gespräche und Einträge — keine Einzelpersonen-Überwachung.
