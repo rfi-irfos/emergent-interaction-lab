@@ -15,6 +15,7 @@ mod observatory;
 mod public;
 mod research;
 mod simulation;
+mod thinking_fragments;
 mod track;
 mod upload;
 
@@ -203,6 +204,7 @@ async fn main() {
     observatory::init_schema(&db).await;
     billing::init_schema(&db).await;
     github_activity::init_schema(&db).await;
+    thinking_fragments::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -320,6 +322,14 @@ async fn main() {
         // Deliberately excludes billing.rs (Stripe/order data), a separate
         // business-data concern.
         .route("/api/observatory/everything", get(observatory::everything))
+        // Denkfragmente: per-conversation 8-Layer-Model timeline + the
+        // aggregate distribution across all conversations — see
+        // thinking_fragments.rs's module doc comment for the full
+        // disclosure (this project's own operationalization of Laura's own
+        // IEIA-2025 "8-Layer Model", classified per turn by an LLM call
+        // spawned after chat.rs::stream_chat's SSE "done" event).
+        .route("/api/observatory/fragments", get(thinking_fragments::list_sequence))
+        .route("/api/observatory/fragments/distribution", get(thinking_fragments::distribution))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

@@ -24,6 +24,7 @@ import { SimulationCenter } from './observatory/SimulationCenter'
 import { KnowledgeGraph } from './observatory/KnowledgeGraph'
 import { Flugschreiber } from './observatory/Flugschreiber'
 import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
+import { Denkfragmente } from './observatory/Denkfragmente'
 
 interface Props {
   content: SiteContent
@@ -407,6 +408,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'simulationcenter' && <SimulationCenter onNavigate={setAdminSection} />}
             {adminSection === 'knowledgegraph' && (
               <KnowledgeGraph onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
+            {adminSection === 'denkfragmente' && (
+              <Denkfragmente onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
           </div>
         </div>

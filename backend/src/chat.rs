@@ -1838,6 +1838,26 @@ pub async fn stream_chat(
             crate::observatory::capture_system_snapshot(&ccet_state, &ccet_conv_id, trigger_turn_id).await;
         });
 
+        // Denkfragmente (thinking-fragment classification) — same
+        // background-task pattern as the emergence-signal and CCET spawns
+        // just above: an LLM call classifying which of Laura's own
+        // IEIA-2025 "8-Layer Model" layers THIS TURN spans, never on the
+        // reply's critical path. See thinking_fragments.rs's module doc
+        // comment for the full disclosure (this project's own
+        // operationalization of the classification criteria, not an
+        // algorithm from Laura's paper itself). Deliberately classifies
+        // only the USER's own turn (`user_msg_id`/`user_message`, captured
+        // earlier in this function) — Laura's own thinking, not the
+        // assistant's reply — matching her own framing when she asked for
+        // this ("die Interaktion zeigt auch meine Denkweise").
+        let fragments_state = state.clone();
+        let fragments_conv_id = conversation_id.clone();
+        let fragments_msg_id = user_msg_id.clone();
+        let fragments_text = user_message.clone();
+        tokio::spawn(async move {
+            crate::thinking_fragments::classify_turn(&fragments_state, &fragments_conv_id, &fragments_msg_id, &fragments_text).await;
+        });
+
         yield Ok(Event::default().event("done").data("[DONE]"));
     };
 

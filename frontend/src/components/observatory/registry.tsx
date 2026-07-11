@@ -34,6 +34,19 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   { id: 'simulationcenter', label: 'Simulation Center', tier: 'research', icon: I(<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></>) },
   { id: 'research', label: 'Research Pulse', tier: 'research', icon: I(<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>) },
   { id: 'knowledgegraph', label: 'Knowledge Graph', tier: 'research', icon: I(<><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="18" r="2.5" /><circle cx="12" cy="12" r="2.5" /><line x1="8" y1="7.5" x2="10.2" y2="10.2" /><line x1="16" y1="7.5" x2="13.8" y2="10.2" /><line x1="8" y1="16.5" x2="10.2" y2="13.8" /><line x1="16" y1="16.5" x2="13.8" y2="13.8" /></>) },
+  // Denkfragmente — per-conversation 8-Layer-Model timeline + the aggregate
+  // layer distribution across all conversations (see backend/src/
+  // thinking_fragments.rs). Forschungsebene, NOT Systemebene where
+  // Flugschreiber/Gesamtübersicht landed: those two are deliberately
+  // cross-cutting system rollups (Flugschreiber = "Systemzustand über die
+  // Zeit", Gesamtübersicht = every table at once) that read as "how is the
+  // observed system doing," per SYSTEM_PROMPT's own 3-tier split in
+  // chat.rs. This module is the opposite case: it is a direct research
+  // observable about LAURA'S OWN THINKING (which of her own IEIA-2025
+  // layers a turn belongs to) — squarely the same "what is being
+  // researched" bucket Emergence Monitor/Research Pulse/Knowledge Graph
+  // already sit in, not a rollup of the platform's own operational state.
+  { id: 'denkfragmente', label: 'Denkfragmente', tier: 'research', icon: I(<><rect x="3" y="10" width="4" height="7" rx="1.2" /><rect x="9" y="6" width="4" height="11" rx="1.2" /><rect x="15" y="3" width="4" height="14" rx="1.2" /></>) },
   { id: 'systemmap', label: 'System Map', tier: 'system', icon: I(<><circle cx="6" cy="6" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="12" cy="18" r="3" /><line x1="8.5" y1="7.5" x2="15.5" y2="16" /><line x1="15.5" y1="7.5" x2="8.5" y2="16" /></>) },
   { id: 'systemstate', label: 'System State', tier: 'system', icon: I(<><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /><circle cx="12" cy="12" r="6" /></>) },
   { id: 'agentactivity', label: 'Agent-Aktivität', tier: 'system', icon: I(<><path d="M9 18l-6-6 6-6M15 6l6 6-6 6" /></>) },
@@ -91,4 +104,5 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   agentactivity: 'Agent-Aktivität',
   flugschreiber: 'Flugschreiber',
   gesamtuebersicht: 'Gesamtübersicht',
+  denkfragmente: 'Denkfragmente',
 }
