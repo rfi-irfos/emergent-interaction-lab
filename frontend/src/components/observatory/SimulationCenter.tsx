@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT } from './SimulationLab'
+import { ExportButtons } from './ExportButtons'
 import type { AdminSection } from '../../types/admin'
 
 interface RunOut {
@@ -153,11 +154,28 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
       <div className="obs-section-label">
         Aktive Simulationen {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {runs.length} von {total})</span>}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
           <option value="">Alle Status</option>
           {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
         </select>
+        {/* Exports whatever is currently loaded/filtered (`runs`), same
+            honesty-about-scope principle as EmergenceMonitor's export —
+            related_signal_ids (an array) is flattened to a "; "-joined
+            string since CSV/Markdown cells are plain text. */}
+        <ExportButtons
+          rows={runs.map(r => ({
+            id: r.id,
+            hypothesis: r.hypothesis,
+            status: r.status,
+            parameters: r.parameters,
+            narrative: r.narrative ?? '',
+            related_signal_ids: (r.related_signal_ids ?? []).join('; '),
+            created_at: r.created_at,
+          }))}
+          filenameBase="simulation-runs"
+          title="Simulationsläufe"
+        />
       </div>
       <SimulationLab
         runs={runs}

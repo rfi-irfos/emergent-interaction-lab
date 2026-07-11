@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { ExportButtons } from './ExportButtons'
 
 interface ProductOut {
   id: string
@@ -247,7 +248,21 @@ export function Monetization() {
           from a verified Stripe webhook event (checkout.session.completed),
           never a manual entry. Same "Übersicht" + accumulated-list pattern
           as EmergenceMonitor.tsx. */}
-      <div className="obs-section-label" style={{ marginTop: 28 }}>Bestellungen</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
+        <div className="obs-section-label" style={{ marginBottom: 0 }}>Bestellungen</div>
+        {/* Exports whatever pages of orders have been loaded so far via
+            "Weitere laden" (`orders`), same accumulated-set honesty as
+            EmergenceMonitor's export — this view has no narrowing filter of
+            its own, only pagination, so "currently visible" here means
+            "currently loaded". Backend (billing.rs) untouched — this reads
+            off state the frontend already fetched from GET
+            /api/billing/orders. */}
+        <ExportButtons
+          rows={orders.map(o => ({ ...o }))}
+          filenameBase="billing-orders"
+          title="Bestellungen"
+        />
+      </div>
       {ordersTotal !== null && (
         <div className="obs-grid" style={{ marginBottom: 14 }}>
           <div className="obs-stat c-green">

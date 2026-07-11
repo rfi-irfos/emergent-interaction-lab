@@ -1,6 +1,7 @@
 import { useAdminFetch } from '../../lib/adminApi'
 import { TokenBreakdown, type TokenInfo } from './TokenBreakdown'
 import { ObsChart } from './ObsChart'
+import { ExportButtons } from './ExportButtons'
 
 interface DayCount { day: string; count: number }
 interface InteractionData {
@@ -39,7 +40,19 @@ export function InteractionDynamics() {
 
       {data.messages_by_day.length > 0 && (
         <div className="obs-card">
-          <div className="obs-section-label">Gesprächsentwicklung — letzte 14 Tage</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            <div className="obs-section-label" style={{ marginBottom: 0 }}>Gesprächsentwicklung — letzte 14 Tage</div>
+            {/* The one genuinely row-shaped dataset this view owns (same
+                day+count shape as Analytics' views_by_day / Information
+                Dynamics' retrieval_by_day, both exportable) — everything
+                else on this page is either a single aggregate stat or the
+                token-by-token detail of one specific reply, not a list. */}
+            <ExportButtons
+              rows={data.messages_by_day.map(d => ({ ...d }))}
+              filenameBase="interaction-messages-by-day"
+              title="Interaction Dynamics — Gesprächsentwicklung"
+            />
+          </div>
           <ObsChart data={data.messages_by_day.map(d => ({ label: d.day.slice(5), value: d.count }))} color="#8b5cf6" gradientId="interaction-trend" />
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { ExportButtons } from './ExportButtons'
 
 interface BlogPost {
   id: string
@@ -109,7 +110,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
         den öffentlichen Blog oben — anschließend oben rechts auf „Speichern" klicken, um ihn live zu schalten.
       </p>
       {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
           <input
             placeholder="Suche in Titel oder Inhalt…"
             value={search}
@@ -120,6 +121,23 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
             <option value="">Alle Status</option>
             {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
           </select>
+          {/* Exports whatever search/status filter currently narrowed the
+              list to (`filtered`), not silently every draft. */}
+          <ExportButtons
+            rows={filtered.map(p => ({
+              id: p.id,
+              title: p.title,
+              status: p.status,
+              source: p.source,
+              body: p.body,
+              created_at: p.created_at,
+              updated_at: p.updated_at,
+              published_at: p.published_at ?? '',
+              source_conversation_id: p.source_conversation_id ?? '',
+            }))}
+            filenameBase="blog-drafts"
+            title="Blog-Entwürfe"
+          />
         </div>
       )}
       {list.length === 0 && <div className="obs-empty">Noch keine Blogpost-Entwürfe.</div>}

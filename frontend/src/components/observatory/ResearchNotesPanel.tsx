@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { ExportButtons } from './ExportButtons'
 
 interface NoteOut {
   id: string
@@ -136,11 +137,33 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
       {error && <div className="obs-empty">Fehler beim Laden.</div>}
       {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
       {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, margin: '14px 0' }}>
+        <div style={{ display: 'flex', gap: 8, margin: '14px 0', flexWrap: 'wrap' }}>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
             <option value="">Alle Status</option>
             {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
           </select>
+          {/* Exports whatever status filter currently narrowed the list to
+              (`filtered`) — this component backs two side-by-side sections
+              on Research Pulse (Papers & Hypotheses; Ideas/Concepts/
+              Frameworks/Prototypes) plus Innovation Lab, so the filename is
+              derived from `categories` to keep the two exports distinct
+              rather than both landing on one generic name. */}
+          <ExportButtons
+            rows={filtered.map(n => ({
+              id: n.id,
+              category: n.category,
+              title: n.title,
+              body: n.body,
+              tags: n.tags,
+              status: n.status,
+              source: n.source,
+              created_at: n.created_at,
+              updated_at: n.updated_at,
+              source_conversation_id: n.source_conversation_id ?? '',
+            }))}
+            filenameBase={`research-notes-${categories.join('-')}`}
+            title={`Research Notes — ${categories.join(', ')}`}
+          />
         </div>
       )}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
