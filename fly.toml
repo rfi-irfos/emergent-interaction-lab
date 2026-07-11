@@ -6,7 +6,15 @@ primary_region = "fra"
 [env]
   PORT = "3000"
   STATIC_DIR = "/app/dist"
-  UPLOADS_DIR = "/app/uploads"
+  # /app/data is the only mounted persistent volume (eil_data below) — an
+  # UPLOADS_DIR outside it lives in the container's writable layer, which
+  # resets on every deploy AND on any host-level machine replacement (this
+  # app runs auto_stop_machines/min_machines_running=0, so that's not just
+  # a deploy-time risk). Found 2026-07-11 when a just-uploaded logo 404'd
+  # on the live site: /app/uploads was completely empty on inspection,
+  # meaning any upload made before the most recent deploy/restart was
+  # already gone. Moved under the mounted volume so it actually persists.
+  UPLOADS_DIR = "/app/data/uploads"
   CONTENT_PATH = "/app/data/content.json"
   DB_PATH = "/app/data/app.db"
   REDIRECT_URI = "https://emergent-interaction-lab.fly.dev/auth/callback"
