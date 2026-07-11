@@ -25,6 +25,7 @@ import { KnowledgeGraph } from './observatory/KnowledgeGraph'
 import { Flugschreiber } from './observatory/Flugschreiber'
 import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
 import { Denkfragmente } from './observatory/Denkfragmente'
+import { AnomalyLog } from './observatory/AnomalyLog'
 
 interface Props {
   content: SiteContent
@@ -411,6 +412,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
             {adminSection === 'denkfragmente' && (
               <Denkfragmente onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
+            {adminSection === 'anomalies' && (
+              <AnomalyLog onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
           </div>
         </div>
