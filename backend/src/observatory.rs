@@ -787,6 +787,160 @@ pub async fn list_snapshots(State(state): State<AppState>, headers: HeaderMap, Q
     resp
 }
 
+// ── Everything (a single holistic rollup, by time) ──────────────────────────
+// Laura's own words, verbatim-translated: "I simply live my life, do my
+// projects, and afterward I have ALL my user data spit out for me. I think
+// that's the point that's missing the most." Every other export shipped so
+// far is per-module (one table, one CSV) — this is the one place that
+// aggregates across every table this platform has captured about her
+// research activity, in one response, filterable by the same `?range=`
+// convention as the rest of this file.
+//
+// Deliberately still SECTIONED by source table, not a flat merged blob —
+// every field states which table/module it came from (chat, emergence
+// signals, research notes, CCET, simulation runs, the flight recorder,
+// Jarvis tool calls), matching this file's own already-established
+// provenance/no-fabrication conventions (see e.g. CcetSummary's
+// `definitions_note`, or Flugschreiber's "no fabricated backfill" framing).
+// An empty table reports an honest zero/empty-list, never a placeholder.
+//
+// Deliberately EXCLUDES billing.rs (Stripe/order data) — that's a separate
+// business-data concern (see main.rs's own comment: "Monetization
+// (Verwaltung, not Observatory — business concern, not a research signal)"),
+// not part of "research interaction data."
+//
+// Every sub-query below reuses an existing aggregate-query SHAPE from the
+// module that already owns that table, just windowed the same way every
+// other range-filtered endpoint in this file already is — a rollup of what
+// already exists, not new instrumentation:
+//   - chat: user/assistant message counts (human_ai's own shape) +
+//     conversations list (chat::list_conversations' own `kind='chat'`
+//     WHERE clause)
+//   - emergence_signals: counts by level (capture_system_snapshot's own
+//     level_rows query)
+//   - research_notes: counts by category (behavior's own category_mix query)
+//   - CCET: chat::current_ccet_metrics reused verbatim — a global rolling
+//     window over the most recent turns (not date-scoped, same as
+//     ccet_summary/the flight recorder always have been), plus a real
+//     range-scoped turn count alongside it for honest context
+//   - simulation_runs: counts by status (capture_system_snapshot's own
+//     status_rows query)
+//   - system_snapshots: count + real earliest/latest timestamps in range
+//   - agent_tool_calls: counts by tool (behavior's own tool_distribution
+//     query)
+#[derive(Debug, Deserialize)]
+pub struct EverythingQuery {
+    pub range: Option<String>,
+}
+
+pub async fn everything(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<EverythingQuery>) -> impl IntoResponse {
+    guard!(state, headers);
+    let db = &state.db;
+    let (range_label, range_days) = resolve_range(q.range.as_deref());
+    let window = format!("-{range_days} days");
+
+    // ── chat_conversations / chat_messages ──────────────────────────────
+    // Same `kind = 'chat'` scoping as chat::list_conversations' default —
+    // Forschung research conversations, not the ambient Jarvis agent dock,
+    // which shares the same storage but isn't "her research activity" in
+    // the same sense.
+    let (conversations_total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM chat_conversations WHERE kind = 'chat' AND created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((0,));
+    let conversations: Vec<(String, String, String, String)> = sqlx::query_as(
+        "SELECT id, title, created_at, updated_at FROM chat_conversations \
+         WHERE kind = 'chat' AND created_at > datetime('now', ?1) ORDER BY updated_at DESC LIMIT 100"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
+    let (user_msgs,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM chat_messages WHERE role='user' AND created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((0,));
+    let (assistant_msgs,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM chat_messages WHERE role='assistant' AND created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((0,));
+
+    // ── emergence_signals ────────────────────────────────────────────────
+    let level_rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT level, COUNT(*) FROM emergence_signals WHERE created_at > datetime('now', ?1) GROUP BY level"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
+    let signals_total: i64 = level_rows.iter().map(|(_, c)| c).sum();
+
+    // ── research_notes ───────────────────────────────────────────────────
+    let category_mix: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT category, COUNT(*) FROM research_notes WHERE created_at > datetime('now', ?1) GROUP BY category ORDER BY COUNT(*) DESC"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
+    let notes_total: i64 = category_mix.iter().map(|(_, c)| c).sum();
+
+    // ── ccet_turns / CCET summary ────────────────────────────────────────
+    let (cei, cep, resonance_frequency, turns_considered) = crate::chat::current_ccet_metrics(db).await;
+    let (turns_in_range,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM ccet_turns WHERE created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((0,));
+
+    // ── simulation_runs ──────────────────────────────────────────────────
+    let status_rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT status, COUNT(*) FROM simulation_runs WHERE created_at > datetime('now', ?1) GROUP BY status"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
+    let runs_total: i64 = status_rows.iter().map(|(_, c)| c).sum();
+
+    // ── system_snapshots (Flugschreiber) ─────────────────────────────────
+    let (snapshots_total,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM system_snapshots WHERE created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((0,));
+    // MIN/MAX with no GROUP BY always returns exactly one row, even over an
+    // empty match — both columns then simply read back as NULL/None, an
+    // honest "no snapshots in this range" rather than a missing row.
+    let (snapshots_earliest, snapshots_latest): (Option<String>, Option<String>) = sqlx::query_as(
+        "SELECT MIN(created_at), MAX(created_at) FROM system_snapshots WHERE created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((None, None));
+
+    // ── agent_tool_calls ─────────────────────────────────────────────────
+    let tool_distribution: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT tool_name, COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now', ?1) GROUP BY tool_name ORDER BY COUNT(*) DESC"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
+    let tool_calls_total: i64 = tool_distribution.iter().map(|(_, c)| c).sum();
+
+    Json(json!({
+        "range": range_label,
+        "chat": {
+            "conversations_total": conversations_total,
+            "conversations": conversations.into_iter().map(|(id, title, created_at, updated_at)| json!({
+                "id": id, "title": title, "created_at": created_at, "updated_at": updated_at,
+            })).collect::<Vec<_>>(),
+            "user_messages": user_msgs,
+            "assistant_messages": assistant_msgs,
+        },
+        "emergence_signals": {
+            "total": signals_total,
+            "by_level": level_rows.into_iter().map(|(level, count)| json!({"level": level, "count": count})).collect::<Vec<_>>(),
+        },
+        "research_notes": {
+            "total": notes_total,
+            "by_category": category_mix.into_iter().map(|(category, count)| json!({"category": category, "count": count})).collect::<Vec<_>>(),
+        },
+        "ccet": {
+            "cei": cei,
+            "cep": cep,
+            "resonance_frequency": resonance_frequency,
+            "turns_considered": turns_considered,
+            "turns_in_range": turns_in_range,
+            "definitions_note": "CEI folgt der Formel aus Lauras Paper (stable turns / total turns), berechnet über die letzten 200 Turns systemweit — bewusst NICHT durch den Zeitraumfilter oben eingeschränkt (siehe turns_in_range für die reale Turn-Anzahl im gewählten Zeitraum). \"Stable turn\", CEP und Resonance Frequency sind eigene Operationalisierungen dieses Projekts, nicht wörtlich aus dem Paper übernommen.",
+        },
+        "simulation_runs": {
+            "total": runs_total,
+            "by_status": status_rows.into_iter().map(|(status, count)| json!({"status": status, "count": count})).collect::<Vec<_>>(),
+        },
+        "system_snapshots": {
+            "total": snapshots_total,
+            "earliest": snapshots_earliest,
+            "latest": snapshots_latest,
+        },
+        "agent_tool_calls": {
+            "total": tool_calls_total,
+            "by_tool": tool_distribution.into_iter().map(|(tool, count)| json!({"tool": tool, "count": count})).collect::<Vec<_>>(),
+        },
+    })).into_response()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1390,6 +1544,161 @@ mod tests {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
         let res = list_snapshots(AxState(state), HeaderMap::new(), AxQuery(empty_snapshots_query())).await.into_response();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    // ── Everything: real aggregation across multiple source tables ─────────
+
+    fn empty_everything_query() -> EverythingQuery {
+        EverythingQuery { range: None }
+    }
+
+    async fn insert_conversation(db: &sqlx::SqlitePool, id: &str, title: &str) {
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1,?2,'chat')")
+            .bind(id)
+            .bind(title)
+            .execute(db)
+            .await
+            .unwrap();
+    }
+
+    async fn insert_message(db: &sqlx::SqlitePool, conversation_id: &str, role: &str) {
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES (?1,?2,?3,'hi')")
+            .bind(Uuid::new_v4().to_string())
+            .bind(conversation_id)
+            .bind(role)
+            .execute(db)
+            .await
+            .unwrap();
+    }
+
+    /// The core correctness test: seeds real fixtures across five of the
+    /// source tables `everything` reads from (chat_conversations/
+    /// chat_messages, emergence_signals, research_notes, simulation_runs,
+    /// agent_tool_calls) with a deliberately non-uniform mix, and asserts
+    /// every corresponding section against hand-computed expected values —
+    /// right counts, right breakdowns, not just "a response came back."
+    #[tokio::test]
+    async fn everything_aggregates_real_counts_across_source_tables() {
+        let state = test_state().await;
+
+        insert_conversation(&state.db, "conv-a", "Erstes Gespräch").await;
+        insert_conversation(&state.db, "conv-b", "Zweites Gespräch").await;
+        insert_message(&state.db, "conv-a", "user").await;
+        insert_message(&state.db, "conv-a", "assistant").await;
+        insert_message(&state.db, "conv-b", "user").await;
+
+        for level in ["human", "human", "ai"] {
+            insert_signal(&state.db, level).await;
+        }
+
+        for i in 0..4 {
+            insert_research_note(&state.db, &format!("note-{i}")).await;
+        }
+
+        for status in ["pending", "complete", "complete"] {
+            insert_sim_run(&state.db, status).await;
+        }
+
+        insert_tool_call(&state.db, 0).await;
+        insert_tool_call(&state.db, 0).await;
+
+        let res = everything(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_everything_query())).await.into_response();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["chat"]["conversations_total"], 2, "chat_conversations count: {body}");
+        assert_eq!(body["chat"]["conversations"].as_array().unwrap().len(), 2);
+        assert_eq!(body["chat"]["user_messages"], 2, "chat_messages user count: {body}");
+        assert_eq!(body["chat"]["assistant_messages"], 1, "chat_messages assistant count: {body}");
+
+        assert_eq!(body["emergence_signals"]["total"], 3, "emergence_signals total: {body}");
+        let by_level: std::collections::HashMap<String, i64> = body["emergence_signals"]["by_level"]
+            .as_array().unwrap().iter()
+            .map(|r| (r["level"].as_str().unwrap().to_string(), r["count"].as_i64().unwrap()))
+            .collect();
+        assert_eq!(by_level.get("human"), Some(&2));
+        assert_eq!(by_level.get("ai"), Some(&1));
+
+        assert_eq!(body["research_notes"]["total"], 4, "research_notes total: {body}");
+
+        assert_eq!(body["simulation_runs"]["total"], 3, "simulation_runs total: {body}");
+        let by_status: std::collections::HashMap<String, i64> = body["simulation_runs"]["by_status"]
+            .as_array().unwrap().iter()
+            .map(|r| (r["status"].as_str().unwrap().to_string(), r["count"].as_i64().unwrap()))
+            .collect();
+        assert_eq!(by_status.get("pending"), Some(&1));
+        assert_eq!(by_status.get("complete"), Some(&2));
+
+        assert_eq!(body["agent_tool_calls"]["total"], 2, "agent_tool_calls total: {body}");
+
+        // Tables that are genuinely empty in this fixture must report an
+        // honest zero/empty-list, never be omitted or fabricated.
+        assert_eq!(body["system_snapshots"]["total"], 0);
+        assert_eq!(body["system_snapshots"]["earliest"], serde_json::Value::Null);
+        assert_eq!(body["ccet"]["turns_considered"], 0);
+    }
+
+    /// The date-range filter must genuinely narrow results, not just be
+    /// accepted and ignored — same shape as this file's other range tests
+    /// (`behavior_7d_range_excludes_older_research_notes_and_tool_calls`
+    /// etc.), proven here across three different sections at once so a
+    /// regression in any one of them fails this test.
+    #[tokio::test]
+    async fn everything_range_filter_narrows_results_across_sections() {
+        let state = test_state().await;
+
+        // Research notes: 1 fresh, 1 twenty days old.
+        sqlx::query("INSERT INTO research_notes (id, category, title, body, created_at) VALUES ('n_new','idea','New','B', datetime('now'))")
+            .execute(&state.db).await.unwrap();
+        sqlx::query("INSERT INTO research_notes (id, category, title, body, created_at) VALUES ('n_old','idea','Old','B', datetime('now','-20 days'))")
+            .execute(&state.db).await.unwrap();
+
+        // Tool calls: 1 fresh, 1 twenty days old.
+        insert_tool_call(&state.db, 0).await;
+        insert_tool_call(&state.db, 20).await;
+
+        // Emergence signals: 1 fresh, 1 twenty days old (seeded via direct
+        // INSERT since insert_signal always stamps "now").
+        insert_signal(&state.db, "system").await;
+        let old_signal_id = Uuid::new_v4().to_string();
+        sqlx::query("INSERT INTO emergence_signals (id, pattern, level, status, confidence, evolution, observation, created_at) VALUES (?1,'p','system','emerging','moderate','steady','o', datetime('now','-20 days'))")
+            .bind(&old_signal_id)
+            .execute(&state.db).await.unwrap();
+
+        let res_7d = everything(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(EverythingQuery { range: Some("7d".to_string()) }),
+        ).await.into_response();
+        let bytes = axum::body::to_bytes(res_7d.into_body(), usize::MAX).await.unwrap();
+        let body_7d: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body_7d["range"], "7d");
+        assert_eq!(body_7d["research_notes"]["total"], 1, "the 20-day-old note must not count under range=7d: {body_7d}");
+        assert_eq!(body_7d["agent_tool_calls"]["total"], 1, "the 20-day-old tool call must not count under range=7d: {body_7d}");
+        assert_eq!(body_7d["emergence_signals"]["total"], 1, "the 20-day-old signal must not count under range=7d: {body_7d}");
+
+        let res_all = everything(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(EverythingQuery { range: Some("all".to_string()) }),
+        ).await.into_response();
+        let bytes = axum::body::to_bytes(res_all.into_body(), usize::MAX).await.unwrap();
+        let body_all: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body_all["range"], "all");
+        assert_eq!(body_all["research_notes"]["total"], 2, "range=all must reach the 20-day-old note too: {body_all}");
+        assert_eq!(body_all["agent_tool_calls"]["total"], 2, "range=all must reach the 20-day-old tool call too: {body_all}");
+        assert_eq!(body_all["emergence_signals"]["total"], 2, "range=all must reach the 20-day-old signal too: {body_all}");
+    }
+
+    #[tokio::test]
+    async fn everything_requires_admin_auth() {
+        let mut state = test_state().await;
+        state.chat_secret = "shh".to_string();
+        let res = everything(AxState(state), HeaderMap::new(), AxQuery(empty_everything_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 }
