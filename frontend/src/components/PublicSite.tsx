@@ -1198,7 +1198,7 @@ export function PublicSite({
                   </div>
                   <div className="site-product-grid">
                     {browseSessions.map(p => (
-                      <div key={p.id} className="site-pcard clickable" role="button" tabIndex={0}
+                      <div key={p.id} className="site-pcard clickable hud-corner-frame" role="button" tabIndex={0}
                         onClick={() => setModalProduct(p)}
                         onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setModalProduct(p) } }}>
                         <div className="site-pcard-img">
@@ -1248,7 +1248,7 @@ export function PublicSite({
               {(editMode ? products.items : filteredProducts).map((p, i) => (
                 <div
                   key={p.id}
-                  className={`site-pcard ${!editMode ? 'clickable' : ''}`}
+                  className={`site-pcard hud-corner-frame ${!editMode ? 'clickable' : ''}`}
                   {...(!editMode ? {
                     role: 'button',
                     tabIndex: 0,
@@ -1304,7 +1304,7 @@ export function PublicSite({
                     )}
                     <div className="site-usp-grid">
                       {groupItems.map(({ u, i }) => (
-                        <div key={u.id} className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
+                        <div key={u.id} className={`site-usp-card hud-corner-frame ${i % 2 === 1 ? 'accent' : ''}`}>
                           {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
                           <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
                           <E field={`usp.items.${i}.description`} value={u.description} as="p" />
@@ -1355,7 +1355,7 @@ export function PublicSite({
                 // while edit mode keeps a non-navigating <div> so the canvas's
                 // contentEditable fields below stay editable in place.
                 const CardTag = (editMode ? 'div' : 'a') as TagName
-                const cardProps: Record<string, unknown> = { className: `site-news-card ${!editMode ? 'clickable' : ''}` }
+                const cardProps: Record<string, unknown> = { className: `site-news-card hud-corner-frame ${!editMode ? 'clickable' : ''}` }
                 if (!editMode) cardProps.href = `#p/blog/${n.id}`
                 return (
                 <CardTag key={n.id} {...cardProps}>
@@ -1439,7 +1439,7 @@ export function PublicSite({
             {certificates!.title && <h2 className="site-section-title">{certificates!.title}</h2>}
             <div className="site-cert-grid">
               {certificates!.items.map((cert: CertificateItem) => (
-                <div key={cert.id} className="site-cert-card">
+                <div key={cert.id} className="site-cert-card hud-corner-frame">
                   <div className="site-cert-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>

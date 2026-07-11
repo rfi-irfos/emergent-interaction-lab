@@ -3,6 +3,7 @@ import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { groupByDate, parseServerTimestamp } from '../../lib/dateGroups'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 export interface ContactMessage {
   id: string
@@ -83,7 +84,7 @@ export function Inbox() {
   // centered placeholder shell instead, so the view is fully designed
   // before a single message ever arrives, not just once one does.
   if (loading && !data) {
-    return <InboxPlaceholder icon="◌" text="Lade…" />
+    return <div style={{ padding: 14 }}><HudSkeleton variant="list" /></div>
   }
   if (error) {
     return <InboxPlaceholder icon="!" text="Konnte nicht geladen werden." />

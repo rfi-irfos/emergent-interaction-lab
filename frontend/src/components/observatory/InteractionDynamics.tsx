@@ -3,6 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { TokenBreakdown, type TokenInfo } from './TokenBreakdown'
 import { ObsChart } from './ObsChart'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 const RANGE_OPTIONS: { value: string; label: string }[] = [
   { value: '7d', label: 'Letzte 7 Tage' },
@@ -40,7 +41,7 @@ export function InteractionDynamics() {
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<InteractionData>(`/api/observatory/human-ai?range=${range}`, [range])
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 

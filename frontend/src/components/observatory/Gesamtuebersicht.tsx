@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 // "Gesamtübersicht" — Laura's own words, verbatim-translated: "I simply live
 // my life, do my projects, and afterward I have ALL my user data spit out
@@ -90,7 +92,7 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<EverythingData>(`/api/observatory/everything?range=${range}`, [range])
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
@@ -143,8 +145,8 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
         </div>
         {data.chat.conversations.length === 0
           ? <div className="obs-empty">Keine Gespräche in diesem Zeitraum.</div>
-          : data.chat.conversations.map(c => (
-              <div className="obs-item-card" key={c.id}>
+          : data.chat.conversations.map((c, i) => (
+              <div className="obs-item-card" key={c.id} style={hudStagger(i)}>
                 <div className="obs-item-title">{c.title}</div>
                 <div className="obs-item-meta">
                   {c.created_at} · zuletzt aktualisiert {c.updated_at}

@@ -1,5 +1,6 @@
 import { useAdminFetch } from '../../lib/adminApi'
 import { ResearchNotesPanel } from './ResearchNotesPanel'
+import { HudSkeleton } from './HudSkeleton'
 import type { AdminSection } from '../../types/admin'
 
 interface BlogPost { id: string; title: string; status: string; source: string; updated_at: string }
@@ -9,7 +10,7 @@ function BlogActivity() {
   // autonomously mid-session; this feed should notice without the user
   // navigating away from Research Pulse and back.
   const { data, loading, error } = useAdminFetch<BlogPost[]>('/api/blog/posts', [], 18000)
-  if (loading) return <div className="obs-empty">Lade…</div>
+  if (loading) return <HudSkeleton variant="list" rows={2} />
   if (error) return <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>
   const posts = (data ?? []).slice(0, 8)
   if (posts.length === 0) return <div className="obs-card"><div className="obs-empty">Noch keine Blogbeiträge.</div></div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 // Denkfragmente — Laura's own ask, verbatim-translated: "I mostly look at my
 // AI interaction meta-retrospectively, but the whole thing through
@@ -248,7 +249,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
         </div>
 
         {seqLoading ? (
-          <div className="obs-empty">Lade…</div>
+          <HudSkeleton variant="chart" />
         ) : seqError ? (
           <div className="obs-empty">Fehler beim Laden.</div>
         ) : !selectedConv ? (
@@ -300,7 +301,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
       </div>
       <div className="obs-card">
         {distLoading ? (
-          <div className="obs-empty">Lade…</div>
+          <HudSkeleton variant="chart" />
         ) : distError ? (
           <div className="obs-empty">Fehler beim Laden.</div>
         ) : !distribution || distribution.total === 0 ? (

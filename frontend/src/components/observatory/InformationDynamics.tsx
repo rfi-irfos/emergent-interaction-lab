@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface RetrievalDay { day: string; avg_top_score: number; avg_hit_count: number }
 interface RecentRetrieval { query_text: string; top_score: number; hit_count: number; created_at: string; is_gap: boolean }
@@ -25,7 +27,7 @@ export function InformationDynamics() {
     [gapOnly],
   )
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
@@ -77,7 +79,7 @@ export function InformationDynamics() {
       {data.recent_retrievals.length === 0
         ? <div className="obs-card"><div className="obs-empty">{gapOnly ? 'Keine Wissenslücken in den letzten Anfragen.' : 'Noch keine Anfragen protokolliert.'}</div></div>
         : data.recent_retrievals.map((r, i) => (
-            <div className="obs-item-card" key={i} style={{ ['--obs-accent' as string]: r.is_gap ? '#f59e0b' : '#14b8a6' }}>
+            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: r.is_gap ? '#f59e0b' : '#14b8a6' }}>
               <div className="obs-item-title">{r.query_text}</div>
               <div className="obs-item-meta">
                 <span
