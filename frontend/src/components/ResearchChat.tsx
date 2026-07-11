@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { authHeaders } from '../lib/adminApi'
 import { TOOL_LABELS } from '../lib/toolLabels'
@@ -46,6 +46,14 @@ async function streamChat(
   message: string,
   siteContent: unknown,
   reasoningRequested: boolean,
+  // "LKS" kill-switch: lets send() cut the connection from a stable ref
+  // (see ResearchChat's streamAbortControllerRef) without waiting for the
+  // server to notice — see the two catch blocks below for why an aborted
+  // fetch/read must NOT be treated as onError the way a real network
+  // failure is: the caller (stopStreaming) already durably persists the
+  // partial reply and resets UI state itself, so surfacing a second,
+  // misleading "Verbindung fehlgeschlagen" error here would be wrong.
+  signal: AbortSignal,
   onDelta: (delta: string, tokens: TokenInfo[]) => void,
   onReasoning: (delta: string) => void,
   onToolCall: (call: ToolCallEvent) => void,
@@ -64,8 +72,10 @@ async function streamChat(
         site_content: siteContent,
         reasoning_requested: reasoningRequested,
       }),
+      signal,
     })
   } catch {
+    if (signal.aborted) return
     onError('Verbindung zum Server fehlgeschlagen.')
     return
   }
@@ -76,39 +86,49 @@ async function streamChat(
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let buf = ''
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buf += decoder.decode(value, { stream: true })
-    let idx: number
-    while ((idx = buf.indexOf('\n\n')) !== -1) {
-      const rawEvent = buf.slice(0, idx)
-      buf = buf.slice(idx + 2)
-      let eventType = 'message'
-      let data = ''
-      for (const line of rawEvent.split('\n')) {
-        if (line.startsWith('event: ')) eventType = line.slice(7)
-        else if (line.startsWith('data: ')) data += line.slice(6)
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buf += decoder.decode(value, { stream: true })
+      let idx: number
+      while ((idx = buf.indexOf('\n\n')) !== -1) {
+        const rawEvent = buf.slice(0, idx)
+        buf = buf.slice(idx + 2)
+        let eventType = 'message'
+        let data = ''
+        for (const line of rawEvent.split('\n')) {
+          if (line.startsWith('event: ')) eventType = line.slice(7)
+          else if (line.startsWith('data: ')) data += line.slice(6)
+        }
+        if (eventType === 'error') { onError(data); return }
+        if (eventType === 'done') { onDone(); return }
+        if (eventType === 'tool_call') {
+          try { onToolCall(JSON.parse(data)) } catch { /* ignore malformed frame */ }
+          continue
+        }
+        // Reasoning models (e.g. deepseek-ai/deepseek-r1, if it's the one
+        // actually serving a given request — see backend/src/chat.rs's model
+        // ladder) stream step-by-step reasoning as its own event type, kept
+        // entirely separate from the visible reply text.
+        if (eventType === 'reasoning') {
+          try { onReasoning(JSON.parse(data).delta || '') } catch { /* ignore malformed frame */ }
+          continue
+        }
+        try {
+          const parsed = JSON.parse(data)
+          onDelta(parsed.delta || '', parsed.tokens || [])
+        } catch { /* partial frame, ignore */ }
       }
-      if (eventType === 'error') { onError(data); return }
-      if (eventType === 'done') { onDone(); return }
-      if (eventType === 'tool_call') {
-        try { onToolCall(JSON.parse(data)) } catch { /* ignore malformed frame */ }
-        continue
-      }
-      // Reasoning models (e.g. deepseek-ai/deepseek-r1, if it's the one
-      // actually serving a given request — see backend/src/chat.rs's model
-      // ladder) stream step-by-step reasoning as its own event type, kept
-      // entirely separate from the visible reply text.
-      if (eventType === 'reasoning') {
-        try { onReasoning(JSON.parse(data).delta || '') } catch { /* ignore malformed frame */ }
-        continue
-      }
-      try {
-        const parsed = JSON.parse(data)
-        onDelta(parsed.delta || '', parsed.tokens || [])
-      } catch { /* partial frame, ignore */ }
     }
+  } catch {
+    // A dropped connection can't distinguish "user clicked LKS" from "wifi
+    // died" on its own — but the abort case is already fully handled by
+    // stopStreaming (persists the accumulated text, resets `streaming`), so
+    // only a genuine mid-stream failure should reach onError here.
+    if (signal.aborted) return
+    onError('Verbindung zum Chat unterbrochen.')
+    return
   }
   onDone()
 }
@@ -237,6 +257,54 @@ function CopyMessageButton({ content }: { content: string }) {
   )
 }
 
+// Same hover-revealed convention as CopyMessageButton above, mirrored onto
+// user bubbles instead of assistant ones — an edit affordance, not a copy
+// one. Kept as its own tiny component (rather than inlined) for the same
+// reason CopyMessageButton is: a stable, obviously-named unit the memoized
+// ChatBubble below can render without pulling any edit-flow state into
+// itself.
+function EditMessageButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="chat-edit-btn" title="Nachricht bearbeiten" onClick={onClick}>
+      ✎
+    </button>
+  )
+}
+
+// Replaces a user bubble's normal read-only content while that specific
+// message is being edited. Owns its OWN local textarea state (seeded once
+// from `initialText`) rather than lifting every keystroke up into
+// ResearchChat's state — editing is a single-message, user-driven
+// interaction, so there's no reason a keystroke here should risk touching
+// ChatBubble's memoization for every OTHER bubble the way a delta does (see
+// ChatBubble's own doc comment below).
+function UserMessageEditForm({ initialText, onCancel, onConfirm }: {
+  initialText: string
+  onCancel: () => void
+  onConfirm: (text: string) => void
+}) {
+  const [text, setText] = useState(initialText)
+  const trimmed = text.trim()
+  return (
+    <div className="chat-edit-form">
+      <textarea
+        className="chat-edit-textarea"
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (trimmed) onConfirm(text) }
+          if (e.key === 'Escape') { e.preventDefault(); onCancel() }
+        }}
+        autoFocus
+      />
+      <div className="chat-edit-actions">
+        <button type="button" className="chat-edit-cancel" onClick={onCancel}>Abbrechen</button>
+        <button type="button" className="chat-edit-confirm" disabled={!trimmed} onClick={() => onConfirm(text)}>Senden</button>
+      </div>
+    </div>
+  )
+}
+
 // Memoized so a delta landing on the actively-streaming message doesn't
 // force every OTHER bubble in the conversation to re-run renderMarkdown and
 // re-parse its token_info — React bails out of re-rendering a bubble
@@ -247,6 +315,7 @@ function CopyMessageButton({ content }: { content: string }) {
 // renderMarkdown on unchanged text just because the component re-rendered.
 const ChatBubble = React.memo(function ChatBubble({
   message, toolCalls, reasoning, reasoningUnavailable, streamingEmpty,
+  isEditing, editAllowed, onStartEdit, onCancelEdit, onConfirmEdit,
 }: {
   message: ChatMessage
   toolCalls: ToolCallEvent[]
@@ -260,6 +329,23 @@ const ChatBubble = React.memo(function ChatBubble({
   // still live" since reasoning always finishes before the main answer
   // starts arriving.
   streamingEmpty: boolean
+  // True while THIS message is the one currently being edited — swaps its
+  // content for UserMessageEditForm instead of the normal read-only view.
+  isEditing: boolean
+  // False while a reply is actively streaming (editing an earlier message
+  // mid-stream would race the in-flight exchange — see editAndResend's own
+  // doc comment in ResearchChat below) — hides the edit affordance
+  // entirely rather than showing it disabled, matching how the composer's
+  // upload button etc. simply don't invite an action that can't work right now.
+  editAllowed: boolean
+  // Stable (useCallback, empty deps) across every render — see
+  // ResearchChat's own comment above these three for why that matters: a
+  // fresh closure identity here on every render would defeat this
+  // component's React.memo on every single streaming flush, not just when
+  // an edit is actually happening.
+  onStartEdit: (id: string) => void
+  onCancelEdit: () => void
+  onConfirmEdit: (id: string, text: string) => void
 }) {
   const [showInspector, setShowInspector] = useState(false)
   const tokens = useMemo<TokenInfo[]>(
@@ -284,8 +370,21 @@ const ChatBubble = React.memo(function ChatBubble({
       )}
       <div className="chat-bubble-content">
         {message.role === 'assistant' && message.content !== '' && <CopyMessageButton content={message.content} />}
-        {rendered}
-        {streamingEmpty ? '…' : ''}
+        {message.role === 'user' && editAllowed && !isEditing && (
+          <EditMessageButton onClick={() => onStartEdit(message.id)} />
+        )}
+        {message.role === 'user' && isEditing ? (
+          <UserMessageEditForm
+            initialText={message.content}
+            onCancel={onCancelEdit}
+            onConfirm={text => onConfirmEdit(message.id, text)}
+          />
+        ) : (
+          <>
+            {rendered}
+            {streamingEmpty ? '…' : ''}
+          </>
+        )}
       </div>
       {message.role === 'assistant' && tokens.length > 0 && (
         <div className="chat-bubble-tools">
@@ -339,6 +438,16 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const baseTitleRef = useRef(document.title)
   const sendingRef = useRef(false)
   const latestConvRequestRef = useRef<string | null>(null)
+  // "LKS" kill-switch: the AbortController for whichever streamChat() call
+  // is currently in flight (null when nothing is streaming), plus a live
+  // snapshot of what's been accumulated so far — both read synchronously by
+  // stopStreaming() below, entirely outside React state so clicking LKS
+  // never has to wait on a render to know what to POST.
+  const streamAbortControllerRef = useRef<AbortController | null>(null)
+  const streamingSnapshotRef = useRef<{ conversationId: string; text: string } | null>(null)
+  // Edit-and-resend: which user message (if any) is currently showing its
+  // inline edit form in place of normal read-only content.
+  const [editingId, setEditingId] = useState<string | null>(null)
   // Same out-of-order guard as latestConvRequestRef below, but for the
   // sidebar list itself: refreshConversations() is fired from 5+
   // independent triggers (mount, debounced search, after delete, after
@@ -507,6 +616,13 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       let reasoningText = ''
       const allTokens: TokenInfo[] = []
 
+      // "LKS" kill-switch setup: a fresh controller for THIS exchange, plus
+      // a live snapshot stopStreaming() can read synchronously — see the
+      // two refs' own doc comments above.
+      const abortController = new AbortController()
+      streamAbortControllerRef.current = abortController
+      streamingSnapshotRef.current = { conversationId: convId, text: '' }
+
       // Deltas can arrive far faster than a screen repaints (the exact
       // complaint behind "the typewriter effect is buffering differently
       // than the actual model output speed"): without batching, every
@@ -544,8 +660,10 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
         text,
         siteContent,
         reasoningWasRequested,
+        abortController.signal,
         (delta, tokens) => {
           fullText += delta
+          if (streamingSnapshotRef.current) streamingSnapshotRef.current.text = fullText
           if (tokens.length) allTokens.push(...tokens)
           scheduleFlush()
         },
@@ -592,8 +710,86 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       )
     } finally {
       sendingRef.current = false
+      streamAbortControllerRef.current = null
+      streamingSnapshotRef.current = null
     }
   }
+
+  // "LKS" kill-switch: stops the model's current streaming response without
+  // ending/deleting the conversation — the partial response stays. Aborting
+  // the fetch alone can't be trusted as the durable signal (a dropped
+  // connection can't distinguish "user clicked stop" from "wifi died"), so
+  // this ALSO explicitly POSTs whatever's been accumulated so far to a
+  // dedicated backend endpoint that inserts it as a normal assistant turn
+  // marked `interrupted = 1` — see save_interrupted_message in
+  // backend/src/chat.rs, and the synthetic note stream_chat's own history
+  // load injects for it on the NEXT turn.
+  async function stopStreaming() {
+    const controller = streamAbortControllerRef.current
+    const snapshot = streamingSnapshotRef.current
+    if (!controller || !snapshot) return
+    controller.abort()
+    const text = snapshot.text.trim()
+    if (text) {
+      try {
+        await fetch(`${API_BASE}/api/chat/conversations/${snapshot.conversationId}/interrupted-message`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ content: text }),
+        })
+      } catch { /* best effort — the abort itself already stopped the stream either way */ }
+    }
+    // Neither onDone nor onError fires for an aborted stream (see
+    // streamChat's `if (signal.aborted) return` guards) — this is the one
+    // place that resets UI state for the LKS path specifically.
+    setStreaming(false)
+    refreshConversations()
+  }
+
+  // Edit-and-resend: deletes the edited message and everything
+  // chronologically after it (server-side, via delete_message_and_after —
+  // reuses delete_conversation's per-message chat_chunks/RAG cleanup so no
+  // stale memory survives for the removed turns), truncates the local
+  // `messages` state to match, then continues the conversation from the
+  // edited text via the already-existing send(override) path — same
+  // mechanism the "Diesen Talk zum Blogpost machen" button already uses to
+  // send a message that isn't literally the composer's current input.
+  // Deliberately not offered while `streaming` (see ChatBubble's
+  // `editAllowed` prop): send() below would silently no-op via its own
+  // `sendingRef`/`streaming` guard if fired mid-exchange, which would leave
+  // the conversation truncated with nothing sent to replace it.
+  async function editAndResend(id: string, newText: string) {
+    const text = newText.trim()
+    if (!text || !activeId) return
+    const convId = activeId
+    setMessages(m => {
+      const idx = m.findIndex(msg => msg.id === id)
+      return idx === -1 ? m : m.slice(0, idx)
+    })
+    try {
+      await fetch(`${API_BASE}/api/chat/conversations/${convId}/messages/${id}`, { method: 'DELETE', headers: authHeaders() })
+    } catch { /* best effort — send() below still continues the conversation even if the server-side cleanup failed */ }
+    refreshConversations()
+    send(text)
+  }
+
+  // Stable across every render (empty dep arrays) so passing them into the
+  // memoized ChatBubble never defeats its React.memo — see ChatBubble's own
+  // doc comments on these three props. `editAndResendRef` is the escape
+  // hatch: it's updated on every render (cheap, doesn't trigger anything)
+  // so confirmEdit always calls the CURRENT editAndResend (closing over
+  // this render's activeId etc.) without confirmEdit itself needing to
+  // change identity — same "ref holds the latest, stable wrapper reads it
+  // at call time" pattern as sendingRef/latestConvRequestRef above.
+  const editAndResendRef = useRef(editAndResend)
+  editAndResendRef.current = editAndResend
+
+  const startEdit = useCallback((id: string) => setEditingId(id), [])
+  const cancelEdit = useCallback(() => setEditingId(null), [])
+  const confirmEdit = useCallback((id: string, text: string) => {
+    setEditingId(null)
+    editAndResendRef.current(id, text)
+  }, [])
 
   async function deleteConversation(id: string) {
     await fetch(`${API_BASE}/api/chat/conversations/${id}`, { method: 'DELETE', headers: authHeaders() })
@@ -747,6 +943,11 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
               reasoning={reasoningById[m.id]}
               reasoningUnavailable={reasoningUnavailableById[m.id]}
               streamingEmpty={streaming && m.role === 'assistant' && m.content === ''}
+              isEditing={editingId === m.id}
+              editAllowed={!streaming}
+              onStartEdit={startEdit}
+              onCancelEdit={cancelEdit}
+              onConfirmEdit={confirmEdit}
             />
           ))}
         </div>
@@ -763,6 +964,15 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
           />
           <button className="chat-send-btn" onClick={() => send()} disabled={streaming || !input.trim()}>
             {streaming ? '…' : 'Senden'}
+          </button>
+          <button
+            type="button"
+            className="chat-lks-btn"
+            onClick={() => stopStreaming()}
+            disabled={!streaming}
+            title="Antwort sofort stoppen — der bisherige Text bleibt erhalten"
+          >
+            LKS
           </button>
         </div>
       </div>
