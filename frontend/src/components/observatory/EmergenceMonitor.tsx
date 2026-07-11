@@ -90,6 +90,77 @@ function formatPercent(v: number): string {
   return `${Math.round(v * 100)}%`
 }
 
+// A signal's observation text used to render in full, inline, on every card
+// at once — the single biggest source of "hardly anything makes sense, too
+// much data" on this page (Laura's own words). Truncating the inline card to
+// a preview and pushing the full text + full meta behind a click both
+// declutters the list AND gives individual signals somewhere to actually
+// "pop" into, rather than sitting flat and static on the page.
+const PREVIEW_CHARS = 130
+function previewText(text: string): string {
+  if (text.length <= PREVIEW_CHARS) return text
+  return `${text.slice(0, PREVIEW_CHARS).trimEnd()}…`
+}
+
+/// Click-to-expand detail view for one signal — reuses the existing
+/// `.pem-overlay`/`.pem` modal shell (AdminPanel.tsx's blog-edit modal) for
+/// free: same scrim/close/click-outside-to-close behavior, and its already-
+/// dark-HUD-themed CSS (`.observatory-hud .pem*`) applies automatically here
+/// via ancestor cascade, since this component only ever mounts inside an
+/// Observatory tab (see AdminPanel.tsx's OBSERVATORY_MODULES check on
+/// `.crm-main`) — no new theme wiring needed. Also gets `.pem`'s existing
+/// `site-modal-pop` entrance animation for free, which is exactly the
+/// "signals need to pop" behavior asked for, not a new animation invented
+/// from scratch.
+function SignalDetailModal({ signal, onClose, onOpenConversation }: {
+  signal: Signal
+  onClose: () => void
+  onOpenConversation?: (conversationId: string) => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="pem-overlay" onClick={onClose}>
+      <div className="pem obs-signal-modal" onClick={e => e.stopPropagation()} style={{ ['--obs-accent' as string]: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>
+        <div className="pem-header">
+          <span className="pem-title">{signal.pattern}</span>
+          <button className="pem-close" onClick={onClose} title="Schließen (Esc)">✕</button>
+        </div>
+        <div className="pem-body obs-signal-modal-body">
+          {signal.verified_emergence ? (
+            <div className="obs-badge-verified">
+              ✓ Verifizierte Emergenz (gesehen in {signal.recurrence_count} Gesprächen)
+            </div>
+          ) : (
+            <div className="obs-placeholder-tag">Beobachtung — noch nicht als gemessene Emergenz bestätigt</div>
+          )}
+          <div className="obs-item-meta" style={{ margin: '10px 0' }}>
+            <span className="obs-pill" style={{ background: `${STATUS_ACCENT[signal.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>{signal.status}</span>
+            {' · '}Ebene: {LEVEL_SECTIONS.find(l => l.key === signal.level)?.label ?? signal.level}
+            {' · '}Konfidenz: {signal.confidence}
+            {' · '}Verlauf: {EVOLUTION_ARROW[signal.evolution] ?? '?'} {signal.evolution}
+            {signal.scope && <> · {signal.scope}</>}
+            {' · '}{signal.created_at}
+          </div>
+          <div className="obs-signal-modal-observation">{signal.observation}</div>
+          {signal.source_conversation_id && onOpenConversation && (
+            <button
+              className="panel-add-btn"
+              style={{ marginTop: 16 }}
+              onClick={() => { onOpenConversation(signal.source_conversation_id!); onClose() }}
+            >
+              Aus Gespräch öffnen ↗
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /// The most important Observatory module: Jarvis's own qualitative read of
 /// what's emerging in the research dialogue, not a stats pipeline. A new
 /// signal set is generated automatically after every Forschung exchange
@@ -97,6 +168,12 @@ function formatPercent(v: number): string {
 /// Every card carries the experimental badge deliberately: this is model
 /// interpretation, never presented as validated fact.
 export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
+  // Which signal (if any) is currently expanded in the detail modal — see
+  // SignalDetailModal above. Laura: "emergence signals need to pop and be
+  // dynamic" — this is that interaction; the flat static card list itself
+  // couldn't get more "alive" without either fabricating motion that means
+  // nothing, or, as done here, actually giving each signal somewhere to go.
+  const [expandedSignal, setExpandedSignal] = useState<Signal | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const { data: ccet } = useAdminFetch<CcetSummary>('/api/observatory/emergence/ccet', [refreshKey])
   const [analyzing, setAnalyzing] = useState(false)
@@ -353,7 +430,15 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
               <div className="obs-empty" style={{ padding: '12px 0', textAlign: 'left' }}>{section.empty}</div>
             ) : (
               levelSignals.map((s, i) => (
-                <div className="obs-item-card" key={s.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>
+                <div
+                  className="obs-item-card obs-item-card-clickable"
+                  key={s.id}
+                  style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}
+                  onClick={() => setExpandedSignal(s)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedSignal(s) } }}
+                >
                   {/* The "measured emergence" gate's own verdict, per-card —
                       mirrors the Research page's own "gemessene Emergenz"
                       vs. "Beobachtung" vocabulary exactly (content.json,
@@ -385,14 +470,17 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
                         <button
                           className="chat-inspect-toggle"
                           style={{ fontSize: 11, padding: 0 }}
-                          onClick={() => onOpenConversation(s.source_conversation_id!)}
+                          onClick={e => { e.stopPropagation(); onOpenConversation(s.source_conversation_id!) }}
                         >
                           aus Gespräch ↗
                         </button>
                       </>
                     )}
                   </div>
-                  <div className="obs-item-body">{s.observation}</div>
+                  <div className="obs-item-body">
+                    {previewText(s.observation)}
+                    {s.observation.length > PREVIEW_CHARS && <span className="obs-item-more"> Details ansehen →</span>}
+                  </div>
                 </div>
               ))
             )}
@@ -411,6 +499,14 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
             {loadingMore ? 'Lädt…' : `Weitere laden (${signals.length} / ${total})`}
           </button>
         </div>
+      )}
+
+      {expandedSignal && (
+        <SignalDetailModal
+          signal={expandedSignal}
+          onClose={() => setExpandedSignal(null)}
+          onOpenConversation={onOpenConversation}
+        />
       )}
     </div>
   )

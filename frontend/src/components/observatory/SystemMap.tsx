@@ -5,12 +5,18 @@ import { TOOL_LABELS } from '../../lib/toolLabels'
 import { useSvgPanZoom } from '../../hooks/useSvgPanZoom'
 import type { ViewBox } from '../../lib/svgPanZoom'
 
+// `legend` is the short, count-independent plain-language line shown in the
+// always-visible legend strip below — previously the ONLY explanation of
+// what each node even means was `blurb`, which only ever appeared after
+// hovering or clicking that specific node first. Laura: "hardly anything
+// makes sense" — you shouldn't have to click all 5 nodes once each just to
+// find out what the diagram is even a diagram OF.
 const NODES = [
-  { id: 'human', label: 'Human', accent: '#22d3ee', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
-  { id: 'ai', label: 'AI Systems', accent: '#8b5cf6', blurb: (n: number) => `${n} Beobachtungen — Antworten und Werkzeugaufrufe von Jarvis.` },
-  { id: 'organization', label: 'Organization', accent: '#f59e0b', blurb: (n: number) => `${n} Beobachtungen — Research Notes, Blogpost-Entwürfe und Simulationsläufe.` },
-  { id: 'technology', label: 'Technology', accent: '#10b981', blurb: (n: number) => `${n} Beobachtungen — hochgeladene Dokumente und daraus erzeugte Chunks.` },
-  { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
+  { id: 'human', label: 'Human', accent: '#22d3ee', legend: 'Deine Nachrichten in Forschungsgesprächen', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
+  { id: 'ai', label: 'AI Systems', accent: '#8b5cf6', legend: 'Jarvis\' Antworten und Werkzeugaufrufe', blurb: (n: number) => `${n} Beobachtungen — Antworten und Werkzeugaufrufe von Jarvis.` },
+  { id: 'organization', label: 'Organization', accent: '#f59e0b', legend: 'Research Notes, Blogpost-Entwürfe, Simulationen', blurb: (n: number) => `${n} Beobachtungen — Research Notes, Blogpost-Entwürfe und Simulationsläufe.` },
+  { id: 'technology', label: 'Technology', accent: '#10b981', legend: 'Hochgeladene Dokumente (RAG)', blurb: (n: number) => `${n} Beobachtungen — hochgeladene Dokumente und daraus erzeugte Chunks.` },
+  { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
 ]
 
 const CX = 300, CY = 230, R = 168
@@ -249,6 +255,22 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   return (
     <div className="obs-panel">
       <div className="obs-card obs-map-card mycelium-card">
+        {/* Always-visible legend — what the diagram below actually shows,
+            before any hovering/clicking. One line per node, same accent
+            color as its dot/thread, so the mapping between "this colored
+            thing" and "this is what it means" doesn't require guessing. */}
+        <div className="mycelium-legend">
+          <span className="mycelium-legend-title">Was zeigt dieses Netzwerk?</span>
+          <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem; Kantenstärke = relative Aktivität. Klicken für Details.</span>
+          <div className="mycelium-legend-items">
+            {NODES.map(n => (
+              <span key={n.id} className="mycelium-legend-item">
+                <span className="mycelium-legend-dot" style={{ background: n.accent }} />
+                <strong>{n.label}</strong>: {n.legend}
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="obs-map-toolbar">
           <span className="obs-map-toolbar-zoom">{Math.round(zoomLevel * 100)}%</span>
           <button type="button" className="obs-map-toolbar-btn" onClick={resetView} title="Zoom/Pan zurücksetzen">
@@ -399,7 +421,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
         )}
       </div>
       <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
-        Kantenstärke und Anzahl der Ausläufer = relative Aktivität dieses Teilsystems. Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter. „Society" ist bewusst nicht dargestellt — es gibt aktuell keine echte Datenquelle dafür, eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
+        Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter. „Society" ist bewusst nicht dargestellt — es gibt aktuell keine echte Datenquelle dafür, eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
       </p>
     </div>
   )

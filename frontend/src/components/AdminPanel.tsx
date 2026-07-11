@@ -36,7 +36,19 @@ interface Props {
   onLogout: () => void
 }
 
-function loadSidebarCollapsed(): boolean { try { return localStorage.getItem('rfi_sidebar_collapsed') === '1' } catch { return false } }
+// Same "default collapsed on a narrow first visit" treatment as
+// ResearchChat.tsx's loadChatSidebarCollapsed — a stored preference (once
+// the user has ever touched the toggle) always wins; only a brand-new
+// session with no stored value yet falls back to a width check, so the two
+// sidebars (this one + .chat-sidebar) don't eat width on top of each other
+// on a small screen before either has been manually collapsed.
+function loadSidebarCollapsed(): boolean {
+  try {
+    const stored = localStorage.getItem('rfi_sidebar_collapsed')
+    if (stored !== null) return stored === '1'
+  } catch { /* localStorage unavailable */ }
+  return typeof window !== 'undefined' && window.innerWidth < 900
+}
 
 // Defaults to dark: the Observatory HUD look is the direction the whole
 // shell is meant to read in, not an opt-in for one section only.
@@ -423,7 +435,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
           </div>
         </div>
-        <AgentDock onJumpToForschung={() => setAdminSection('forschung')} />
+        {/* Redundant AND actively harmful on the Forschung tab itself: this
+            fixed bottom-right FAB physically overlapped the chat composer's
+            LKS stop button (see ResearchChat.tsx) — found visually testing
+            the composer at every viewport width, not from a code read. A
+            "jump to Jarvis" shortcut has nothing to jump to once you're
+            already there. */}
+        {adminSection !== 'forschung' && <AgentDock onJumpToForschung={() => setAdminSection('forschung')} />}
       </div>
 
       {/* ── BLOG EDIT MODAL ────────────────────────────────────────────── */}

@@ -2048,7 +2048,22 @@ button { cursor: pointer; font-family: inherit; }
   display: flex; align-items: center; gap: 8px;
 }
 .obs-section-label::after { content: ''; flex: 1; height: 1px; background: rgba(15,23,42,.07); }
+/* Plain-language one-liner under a section label — normal case, no letter
+   spacing (unlike the shouty label above it), for the "what am I actually
+   looking at" sentence a non-technical reader needs before the data itself. */
+.obs-section-sub { font-size: 11.5px; color: #6b7280; margin: 0 0 10px; }
+.observatory-hud .obs-section-sub { color: rgba(148,190,199,.6); }
 .obs-section { margin-bottom: 24px; }
+/* Visually demoted technical block (SystemState.tsx's "Technische
+   Systemgesundheit") — deliberately quieter than a normal .obs-section-label
+   + .obs-card: smaller/lighter label, no divider rule, slight indent and a
+   top border instead of a full section break, so it reads as "an aside
+   about the platform" rather than one more system in the same list as the
+   actual research content above it. */
+.obs-tech-section { margin-top: 22px; padding-top: 14px; border-top: 1px dashed rgba(15,23,42,.1); opacity: .88; }
+.obs-tech-label { font-size: 10px; font-weight: 700; color: #9aa0a8; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+.observatory-hud .obs-tech-section { border-top-color: rgba(148,190,199,.16); }
+.observatory-hud .obs-tech-label { color: rgba(148,190,199,.5); }
 .obs-empty { text-align: center; color: #9aa0a8; padding: 40px 0; font-size: 13px; }
 
 .obs-card {
@@ -2066,6 +2081,23 @@ button { cursor: pointer; font-family: inherit; }
   background: rgba(59,107,246,.035); border: 1px solid rgba(59,107,246,.12);
 }
 .obs-map-card { background: linear-gradient(180deg, #fbfcfe, #f5f7fb); padding: 24px 20px 16px; position: relative; }
+
+/* Always-visible legend above the mycelium diagram (SystemMap.tsx) — Laura:
+   "hardly anything makes sense." Previously the only explanation of what
+   each node means was locked behind hovering/clicking it first; this is
+   plain-language and needs no interaction at all to read. */
+.mycelium-legend { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(15,23,42,.08); }
+.mycelium-legend-title { display: block; font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+.mycelium-legend-sub { display: block; font-size: 11.5px; color: #6b7280; margin-bottom: 8px; }
+.mycelium-legend-items { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.mycelium-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #4b5563; }
+.mycelium-legend-item strong { color: #111827; font-weight: 700; }
+.mycelium-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.observatory-hud .mycelium-legend { border-bottom-color: rgba(34,211,238,.14); }
+.observatory-hud .mycelium-legend-title { color: #eefcff; }
+.observatory-hud .mycelium-legend-sub { color: rgba(148,190,199,.6); }
+.observatory-hud .mycelium-legend-item { color: rgba(226,241,245,.75); }
+.observatory-hud .mycelium-legend-item strong { color: #eefcff; }
 
 /* Zoom/pan toolbar + hover metadata tooltip shared by KnowledgeGraph and
    SystemMap (see hooks/useSvgPanZoom.ts) — same visual language as the
@@ -2345,6 +2377,26 @@ button { cursor: pointer; font-family: inherit; }
 .obs-item-title { font-size: 13.5px; font-weight: 700; color: #111827; margin-bottom: 5px; }
 .obs-item-meta { font-size: 10px; color: #9aa0a8; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; margin-bottom: 7px; }
 .obs-item-body { font-size: 12.5px; color: #4b5563; line-height: 1.65; white-space: pre-wrap; }
+/* Emergence signals click-to-expand (EmergenceMonitor.tsx's SignalDetailModal)
+   — "signals need to pop and be dynamic." A slightly stronger hover lift
+   than the plain .obs-item-card:hover above, plus a real pointer cursor, so
+   the card visibly invites the click instead of looking identically static
+   to a card with no interaction at all. */
+.obs-item-card-clickable { cursor: pointer; }
+.obs-item-card-clickable:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08), 0 10px 26px rgba(15,23,42,.06); transform: translateY(-2px); border-left-width: 4px; }
+.obs-item-card-clickable:focus-visible { outline: 2px solid var(--obs-accent, var(--obs-blue)); outline-offset: 2px; }
+.obs-item-more { color: var(--obs-accent, var(--obs-blue)); font-weight: 700; white-space: nowrap; }
+.observatory-hud .obs-item-more { color: var(--hud-cyan); }
+/* The modal itself reuses .pem/.pem-overlay wholesale (see
+   SignalDetailModal's own doc comment) — these three rules are only the
+   signal-specific additions layered on top: a thicker accent-colored left
+   edge so the modal visibly carries the same status color as the card it
+   came from, and larger, more readable type for the full (untruncated)
+   observation text than the compact .obs-item-body it replaces here. */
+.obs-signal-modal { border-left: 4px solid var(--obs-accent, var(--obs-blue)); }
+.obs-signal-modal-body { display: block; }
+.obs-signal-modal-observation { font-size: 14.5px; line-height: 1.75; white-space: pre-wrap; }
+.observatory-hud .obs-signal-modal-observation { color: rgba(226,241,245,.85); }
 .obs-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
 
 /* ── OBSERVATORY HUD THEME ────────────────────────────────────────────────
@@ -2938,7 +2990,25 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid rgba(148,197,214,.16); color: #e9fbff;
 }
 
-.chat-sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid rgba(148,197,214,.14); overflow: hidden; }
+.chat-sidebar {
+  width: 240px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid rgba(148,197,214,.14);
+  overflow: hidden; transition: width .18s ease;
+}
+/* Collapsed: a slim rail (just the reopen toggle + a "new conversation" icon)
+   instead of the full 240px conversation list — see ResearchChat.tsx's
+   loadChatSidebarCollapsed/toggleChatSidebar. This is what actually gives
+   Laura's hours-long chats room to breathe on anything narrower than a wide
+   desktop window; previously .chat-sidebar had no collapse option at all,
+   unlike its sibling .crm-sidebar. */
+.chat-sidebar.collapsed { width: 44px; }
+.chat-sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 0; flex-shrink: 0; }
+.chat-sidebar.collapsed .chat-sidebar-header { justify-content: center; padding: 10px 0 0; }
+.chat-sidebar-collapse-btn {
+  border: 1px solid rgba(148,197,214,.22); background: rgba(255,255,255,.03); color: rgba(233,251,255,.55);
+  width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1; flex-shrink: 0;
+}
+.chat-sidebar-collapse-btn:hover { border-color: #63f0ff; color: #63f0ff; }
+.chat-new-btn-collapsed { width: 30px; height: 30px; margin: 10px auto; padding: 0; font-size: 17px; display: flex; align-items: center; justify-content: center; }
 .chat-new-btn {
   margin: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(99,240,255,.35);
   background: rgba(99,240,255,.12); color: #63f0ff; font-weight: 600; font-size: 13px; cursor: pointer;
@@ -3000,9 +3070,17 @@ button { cursor: pointer; font-family: inherit; }
 
 .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .chat-topbar {
-  display: flex; align-items: center; justify-content: space-between; padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; padding: 12px 20px;
   border-bottom: 1px solid rgba(148,197,214,.14); font-size: 14px; font-weight: 700; flex-shrink: 0;
 }
+/* Title + action-button row used to be two flex children with nowhere to
+   wrap to (see .chat-topbar's own flex-wrap above) — on a narrow window a
+   long conversation title plus 3 buttons had nothing to do but crowd or
+   overflow. min-width: 0 lets the title actually ellipsis instead of forcing
+   the row wider than the panel; flex-wrap on the actions row is the second
+   half of the fix once the title has its own line. */
+.chat-topbar-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+.chat-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .chat-export-btn {
   padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(148,197,214,.25); background: none;
   color: rgba(233,251,255,.7); font-size: 11.5px; cursor: pointer; font-weight: 500;
@@ -3193,3 +3271,18 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-lks-btn:disabled { opacity: .35; cursor: default; }
 .chat-lks-btn:not(:disabled):hover { background: rgba(255,107,107,.22); border-color: #ff9b9b; }
+
+/* Narrow-viewport pass — this whole shell (.crm-*, .chat-*) had ZERO
+   responsive rules before, unlike the public site. Laura: "way too much on
+   smaller screens, hardly any space for chatting." The sidebar itself
+   collapsing (see .chat-sidebar.collapsed / loadChatSidebarCollapsed above)
+   does most of the real work; this just reclaims the smaller, still-real
+   chrome around it so the actual message column gets the width. */
+@media (max-width: 900px) {
+  .crm-body { padding: 12px 14px 14px; }
+  .chat-sidebar:not(.collapsed) { width: 200px; }
+  .chat-messages { padding: 14px; }
+  .chat-bubble { max-width: 92%; }
+  .chat-topbar { padding: 10px 14px; }
+  .chat-composer { padding: 12px 14px; }
+}

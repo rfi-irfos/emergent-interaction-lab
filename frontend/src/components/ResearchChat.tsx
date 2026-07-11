@@ -434,6 +434,22 @@ const ChatBubble = React.memo(function ChatBubble({
   )
 })
 
+// This is Laura's primary hours-long-conversation surface — on anything
+// narrower than a normal desktop the 240px conversation list ate most of the
+// room actually meant for chatting, with no way to get it back (unlike
+// .crm-sidebar, which has had a collapse toggle all along). Same
+// localStorage-persisted pattern as AdminPanel's loadSidebarCollapsed, but
+// defaulting to collapsed on a narrow viewport's very first visit (no stored
+// preference yet) instead of always starting expanded — a first-time visit
+// on a small screen shouldn't have to discover the toggle before it can chat.
+function loadChatSidebarCollapsed(): boolean {
+  try {
+    const stored = localStorage.getItem('rfi_chat_sidebar_collapsed')
+    if (stored !== null) return stored === '1'
+  } catch { /* localStorage unavailable */ }
+  return typeof window !== 'undefined' && window.innerWidth < 900
+}
+
 export function ResearchChat({ siteContent, onMessageComplete, openConversationId, onOpenConversationHandled, onUpdate }: {
   siteContent?: unknown
   onMessageComplete?: () => void
@@ -442,6 +458,14 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   onUpdate?: (field: string, value: unknown) => void
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [chatSidebarCollapsed, setChatSidebarCollapsed] = useState(loadChatSidebarCollapsed)
+  const toggleChatSidebar = () => {
+    setChatSidebarCollapsed(c => {
+      const next = !c
+      try { localStorage.setItem('rfi_chat_sidebar_collapsed', next ? '1' : '0') } catch { /* localStorage unavailable */ }
+      return next
+    })
+  }
   // Raw input value (updates on every keystroke, for a responsive-feeling
   // textbox) vs. the debounced value that actually drives the backend query
   // — see the debounce effect below. Kept separate so the input never feels
@@ -880,67 +904,83 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
 
   return (
     <div className="chat-panel">
-      <aside className="chat-sidebar">
-        <button className="chat-new-btn" onClick={startNewConversation}>+ Neue Unterhaltung</button>
-        <input
-          type="text"
-          className="chat-conv-search"
-          placeholder="Unterhaltungen durchsuchen…"
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-        />
-        <div className="chat-conv-list">
-          {conversationGroups.map(group => (
-            <div key={group.label} className="chat-conv-group">
-              <div className="chat-conv-group-label">{group.label}</div>
-              {group.items.map(c => (
-                <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''} ${c.kind === 'digest' ? 'chat-conv-item-digest' : ''}`} onClick={() => openConversation(c.id)}>
-                  {c.kind === 'digest' && <span className="chat-conv-digest-badge" title="Proaktiver Wochenrückblick von Jarvis, nicht von dir gestartet">🗞️</span>}
-                  <span className="chat-conv-title">{c.title}</span>
-                  <button
-                    className="chat-conv-delete"
-                    title="Löschen"
-                    onClick={e => { e.stopPropagation(); deleteConversation(c.id) }}
-                  >×</button>
-                </div>
-              ))}
-            </div>
-          ))}
-          {conversations.length === 0 && (
-            <div className="chat-conv-empty">
-              {debouncedSearch.trim() ? 'Keine Treffer.' : 'Noch keine Unterhaltungen.'}
-            </div>
-          )}
-        </div>
-
-        <div className="chat-docs">
-          <div className="chat-docs-title">Dokumente (RAG)</div>
-          {documents.map(d => (
-            <div key={d.id} className="chat-doc-item">
-              <span className="chat-doc-name" title={d.filename}>{d.filename}</span>
-              <button className="chat-conv-delete" title="Löschen" onClick={() => deleteDocument(d.id)}>×</button>
-            </div>
-          ))}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.md,.markdown,.txt"
-            multiple
-            style={{ display: 'none' }}
-            onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) uploadFiles(files); e.target.value = '' }}
-          />
-          <button className="chat-upload-btn" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-            {uploading
-              ? (uploadProgress ? `Lädt hoch… (${uploadProgress.current}/${uploadProgress.total})` : 'Lädt hoch…')
-              : '+ PDF / MD hochladen'}
+      <aside className={`chat-sidebar ${chatSidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="chat-sidebar-header">
+          {!chatSidebarCollapsed && <button className="chat-new-btn" onClick={startNewConversation}>+ Neue Unterhaltung</button>}
+          <button
+            type="button"
+            className="chat-sidebar-collapse-btn"
+            onClick={toggleChatSidebar}
+            title={chatSidebarCollapsed ? 'Unterhaltungen einblenden' : 'Unterhaltungen ausblenden — mehr Platz zum Chatten'}
+          >
+            {chatSidebarCollapsed ? '»' : '«'}
           </button>
         </div>
+        {chatSidebarCollapsed ? (
+          <button className="chat-new-btn chat-new-btn-collapsed" onClick={startNewConversation} title="Neue Unterhaltung">+</button>
+        ) : (
+          <>
+            <input
+              type="text"
+              className="chat-conv-search"
+              placeholder="Unterhaltungen durchsuchen…"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+            />
+            <div className="chat-conv-list">
+              {conversationGroups.map(group => (
+                <div key={group.label} className="chat-conv-group">
+                  <div className="chat-conv-group-label">{group.label}</div>
+                  {group.items.map(c => (
+                    <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''} ${c.kind === 'digest' ? 'chat-conv-item-digest' : ''}`} onClick={() => openConversation(c.id)}>
+                      {c.kind === 'digest' && <span className="chat-conv-digest-badge" title="Proaktiver Wochenrückblick von Jarvis, nicht von dir gestartet">🗞️</span>}
+                      <span className="chat-conv-title">{c.title}</span>
+                      <button
+                        className="chat-conv-delete"
+                        title="Löschen"
+                        onClick={e => { e.stopPropagation(); deleteConversation(c.id) }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              {conversations.length === 0 && (
+                <div className="chat-conv-empty">
+                  {debouncedSearch.trim() ? 'Keine Treffer.' : 'Noch keine Unterhaltungen.'}
+                </div>
+              )}
+            </div>
+
+            <div className="chat-docs">
+              <div className="chat-docs-title">Dokumente (RAG)</div>
+              {documents.map(d => (
+                <div key={d.id} className="chat-doc-item">
+                  <span className="chat-doc-name" title={d.filename}>{d.filename}</span>
+                  <button className="chat-conv-delete" title="Löschen" onClick={() => deleteDocument(d.id)}>×</button>
+                </div>
+              ))}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.md,.markdown,.txt"
+                multiple
+                style={{ display: 'none' }}
+                onChange={e => { const files = Array.from(e.target.files ?? []); if (files.length) uploadFiles(files); e.target.value = '' }}
+              />
+              <button className="chat-upload-btn" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+                {uploading
+                  ? (uploadProgress ? `Lädt hoch… (${uploadProgress.current}/${uploadProgress.total})` : 'Lädt hoch…')
+                  : '+ PDF / MD hochladen'}
+              </button>
+            </div>
+          </>
+        )}
       </aside>
 
       <div className="chat-main">
         <div className="chat-topbar">
-          <span>{conversations.find(c => c.id === activeId)?.title ?? 'Neue Unterhaltung'}</span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <span className="chat-topbar-title">{conversations.find(c => c.id === activeId)?.title ?? 'Neue Unterhaltung'}</span>
+          <div className="chat-topbar-actions">
             <button
               type="button"
               className={`chat-export-btn chat-reasoning-toggle-btn ${reasoningEnabled ? 'active' : ''}`}

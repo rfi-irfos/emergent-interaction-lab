@@ -124,7 +124,15 @@ export function SystemState() {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <div className="obs-section-label" style={{ marginBottom: 0 }}>Beobachtete Systeme</div>
+        <div>
+          <div className="obs-section-label" style={{ marginBottom: 2 }}>Beobachtete Systeme</div>
+          {/* Plain-language framing, always visible — Laura: "hardly
+              anything makes sense." A "Scope" here is just whatever thematic
+              area Jarvis's own analysis tagged a signal with (e.g.
+              "Denkfragmente", "Allgemein") — one card per area, showing its
+              most recent read. */}
+          <p className="obs-section-sub">Ein Kartenstapel pro Themenbereich deiner Forschung, mit dem jeweils aktuellsten Stand.</p>
+        </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
             {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -175,27 +183,40 @@ export function SystemState() {
         )
       })}
 
-      <div className="obs-section-label" style={{ marginTop: 26 }}>Technische Systemgesundheit</div>
-      {diagLoading && <HudSkeleton variant="stats" rows={2} />}
-      {diagError && <div className="obs-empty">Fehler beim Laden.</div>}
-      {diag && (
-        <>
-          <div className="obs-card" style={{ marginBottom: 16 }}>
-            <StatusRow label="Datenbank erreichbar" ok={diag.db_reachable} />
-            <StatusRow label="NVIDIA_API_KEY konfiguriert" ok={diag.nvidia_api_key_configured} />
-            <StatusRow label="CHAT_API_SECRET konfiguriert" ok={diag.chat_secret_configured} />
-          </div>
-          <div className="obs-grid">
-            <div className="obs-stat c-purple"><div className="obs-stat-value">{diag.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aufrufe (7 T.)</div></div>
-            <div className={`obs-stat ${diag.agent_tool_call_errors_7d > 0 ? 'c-red' : 'c-green'}`}><div className="obs-stat-value">{diag.agent_tool_call_errors_7d}</div><div className="obs-stat-label">Fehler (7 T.)</div></div>
-          </div>
-          {!diag.chat_secret_configured && (
-            <div className="obs-warning-note">
-              ⚠ Kein CHAT_API_SECRET gesetzt — alle Admin-Endpunkte sind aktuell ohne Zugriffsschutz erreichbar (dev-Komfort, siehe backend/src/authz.rs).
+      {/* Deliberately visually demoted from here down — same principle
+          chat::SYSTEM_PROMPT itself is instructed to follow ("präsentiere
+          niemals eine technische Zahl mit demselben Gewicht wie eine echte
+          Forschungsbeobachtung"), now applied to this page's own layout, not
+          just Jarvis's prose. Previously this technical block sat at equal
+          visual weight (same .obs-section-label, same .obs-card) directly
+          below the research narrative above — reads as one continuous list
+          of "systems," server health and research findings undistinguished.
+          `.obs-tech-section` (see App.css) mutes it: smaller label, no
+          divider rule, a plain sentence instead of an obs-card wrapper. */}
+      <div className="obs-tech-section">
+        <div className="obs-tech-label">Technische Systemgesundheit</div>
+        <p className="obs-section-sub">Das betrifft die Plattform selbst — Server, Datenbank, API-Zugänge — nicht deine Forschung.</p>
+        {diagLoading && <HudSkeleton variant="stats" rows={2} />}
+        {diagError && <div className="obs-empty">Fehler beim Laden.</div>}
+        {diag && (
+          <>
+            <div className="obs-card" style={{ marginBottom: 16 }}>
+              <StatusRow label="Datenbank erreichbar" ok={diag.db_reachable} />
+              <StatusRow label="NVIDIA_API_KEY konfiguriert" ok={diag.nvidia_api_key_configured} />
+              <StatusRow label="CHAT_API_SECRET konfiguriert" ok={diag.chat_secret_configured} />
             </div>
-          )}
-        </>
-      )}
+            <div className="obs-grid">
+              <div className="obs-stat c-purple"><div className="obs-stat-value">{diag.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aufrufe (7 T.)</div></div>
+              <div className={`obs-stat ${diag.agent_tool_call_errors_7d > 0 ? 'c-red' : 'c-green'}`}><div className="obs-stat-value">{diag.agent_tool_call_errors_7d}</div><div className="obs-stat-label">Fehler (7 T.)</div></div>
+            </div>
+            {!diag.chat_secret_configured && (
+              <div className="obs-warning-note">
+                ⚠ Kein CHAT_API_SECRET gesetzt — alle Admin-Endpunkte sind aktuell ohne Zugriffsschutz erreichbar (dev-Komfort, siehe backend/src/authz.rs).
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
