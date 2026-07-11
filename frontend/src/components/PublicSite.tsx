@@ -1137,6 +1137,18 @@ export function PublicSite({
           </section>
         )}
 
+        {/* ── JARVIS ───────────────────────────────────────────────────── */}
+        {content.jarvis?.body && (
+          <section className={reveal("site-section site-section-alt site-jarvis")} id="jarvis" data-cid="jarvis.title">
+            <h2 className="site-section-title">{content.jarvis.title}</h2>
+            <div className="site-jarvis-body">
+              {content.jarvis.body.split('\n\n').map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ── LIVE ACTIVITY (visitor-facing proof the hero's "live laufendes
              Forschungsinstrument" claim is real, not just copy) ──────────── */}
         <CurrentFocusBadge editMode={editMode} reveal={reveal} />

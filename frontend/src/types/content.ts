@@ -155,6 +155,10 @@ export interface SiteContent {
     title: string
     body: string
   }
+  jarvis?: {
+    title: string
+    body: string
+  }
   certificates?: {
     title?: string
     items: CertificateItem[]
