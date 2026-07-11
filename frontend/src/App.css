@@ -1928,6 +1928,30 @@ button { cursor: pointer; font-family: inherit; }
 }
 .observatory-hud .obs-placeholder-tag { color: rgba(148,190,199,.55); }
 
+/* Third member of this badge family (see .obs-badge-experimental /
+   .obs-placeholder-tag above), same pill shape/sizing — a distinct color,
+   not a new visual language. .obs-badge-experimental flags "this is an
+   LLM's interpretation, take it with a grain of salt" (soft amber);
+   .obs-placeholder-tag flags "this heuristic will disappear once something
+   real replaces it" (quiet gray). .obs-badge-mismatch is neither — it's
+   this project's own hallucination-tracker (see backend/src/hallucination.rs)
+   reporting a CONCRETE, checkable contradiction it is SURE about between a
+   tool call's real result and what Jarvis told Laura it did — so it earns
+   the hardest color in the family (red/rose), and unlike the other two it
+   is deliberately NOT shown unconditionally: see ResearchChat.tsx, where it
+   renders only when a real 'mismatch' verdict exists for a message, quiet
+   otherwise — matching this codebase's existing "don't clutter with
+   confirmations, only flag real problems" convention (ToolCallBadge /
+   ReasoningBlock's `unavailable` case), not the always-on epistemic-
+   disclosure convention the other two badges use. */
+.obs-badge-mismatch {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #991b1b; background: linear-gradient(180deg, #fef2f2, #fee2e2); border: 1px solid rgba(220,38,38,.4);
+  padding: 4px 10px; border-radius: 20px; margin: 6px 0; box-shadow: 0 1px 2px rgba(220,38,38,.1);
+  cursor: help;
+}
+.obs-badge-mismatch::before { content: '✕'; font-size: 10px; }
+
 .obs-activity-row {
   display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 4px;
   border-bottom: 1px solid rgba(15,23,42,.055); font-size: 12.5px; transition: background .12s;

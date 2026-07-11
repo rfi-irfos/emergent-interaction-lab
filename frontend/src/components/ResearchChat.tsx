@@ -26,6 +26,15 @@ interface ChatMessage {
   // way `token_info` (mirroring the server's stored TEXT column) would need.
   // Cleared/superseded by `token_info` once streaming finishes.
   liveTokens?: TokenInfo[]
+  // Hallucination Tracker v1 (see backend/src/hallucination.rs): the detail
+  // text of a real, CERTAIN 'mismatch' between one of this message's own
+  // linked tool calls and what this text claims about it — null/absent for
+  // all three of "no tool call this turn," "every check came back
+  // match/unverifiable," and "the background check hasn't run yet." Only
+  // ever set on a message freshly loaded via GET .../conversations/:id (the
+  // check runs after the SSE stream already finished) — a message still
+  // streaming in this session never has it yet.
+  hallucination_mismatch?: string | null
 }
 interface DocumentItem { id: string; filename: string; created_at: string }
 
@@ -206,6 +215,24 @@ function WebSearchBadge({ call }: { call: ToolCallEvent }) {
   )
 }
 
+// Hallucination Tracker v1 badge (see backend/src/hallucination.rs and the
+// .obs-badge-mismatch doc comment in App.css for the full family/color
+// reasoning). Deliberately the mirror image of ToolCallBadge/WebSearchBadge
+// above and ReasoningBlock below: those render whenever there's something
+// TO show; this renders ONLY on a genuine problem (a 'mismatch' verdict)
+// and stays entirely absent on 'match'/'unverifiable'/not-yet-checked —
+// matching this codebase's "don't clutter with confirmations, only flag
+// real problems" convention. `detail` is the comparison's own plain-language
+// explanation (see hallucination.rs::compare), shown as the tooltip so
+// Laura can see exactly what was compared, not just that something's off.
+function HallucinationMismatchBadge({ detail }: { detail: string }) {
+  return (
+    <div className="obs-badge-mismatch" title={detail}>
+      Unstimmige Angabe zum Werkzeug-Ergebnis
+    </div>
+  )
+}
+
 // Shown BEFORE the final answer, streamed live the same way the main reply
 // is — only ever populated for a request an actual reasoning-capable model
 // (e.g. deepseek-ai/deepseek-r1) served; for every other model this simply
@@ -370,6 +397,9 @@ const ChatBubble = React.memo(function ChatBubble({
             c.tool === 'web_search' ? <WebSearchBadge key={i} call={c} /> : <ToolCallBadge key={i} call={c} />
           ))}
         </div>
+      )}
+      {message.role === 'assistant' && message.hallucination_mismatch && (
+        <HallucinationMismatchBadge detail={message.hallucination_mismatch} />
       )}
       {message.role === 'assistant' && (!!reasoning || reasoningUnavailable) && (
         <ReasoningBlock text={reasoning ?? ''} streaming={streamingEmpty} unavailable={!reasoning && !!reasoningUnavailable} />

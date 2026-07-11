@@ -10,6 +10,7 @@ mod content;
 mod digest;
 mod emergence;
 mod github_activity;
+mod hallucination;
 mod inspect;
 mod observatory;
 mod public;
@@ -205,6 +206,7 @@ async fn main() {
     billing::init_schema(&db).await;
     github_activity::init_schema(&db).await;
     thinking_fragments::init_schema(&db).await;
+    hallucination::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -330,6 +332,15 @@ async fn main() {
         // spawned after chat.rs::stream_chat's SSE "done" event).
         .route("/api/observatory/fragments", get(thinking_fragments::list_sequence))
         .route("/api/observatory/fragments/distribution", get(thinking_fragments::distribution))
+        // Hallucination Tracker v1: admin review list of every tool-call ↔
+        // assistant-message comparison this platform has run — see
+        // hallucination.rs's module doc comment for the bounded scope (only
+        // checks a message's OWN linked tool-call results, never a general
+        // fact-checker) and no-fabrication discipline. Same limit/offset +
+        // X-Total-Count pagination convention as every other list endpoint
+        // here; a plain, UI-agnostic row shape so the Phase J anomaly
+        // watchdog can reuse it directly.
+        .route("/api/observatory/hallucination-checks", get(hallucination::list_checks))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))
