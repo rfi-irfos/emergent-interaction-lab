@@ -4,6 +4,19 @@ import { authHeaders } from '../../lib/adminApi'
 import type { AdminSection } from '../../types/admin'
 import type { SignalRef } from './SimulationCenter'
 
+// One option within a branching decision run ("either the team does A
+// because ..., or B because ..."). Mirrors backend/src/simulation.rs's
+// `Branch` exactly: server-assigned `id`, client-supplied `option`/
+// `rationale`, and its own `narrative`/`status` — a branch resolving to
+// 'error' doesn't take the run or its sibling branches down with it.
+export interface BranchOut {
+  id: string
+  option: string
+  rationale: string
+  narrative: string | null
+  status: string
+}
+
 interface RunOut {
   id: string
   hypothesis: string
@@ -12,13 +25,51 @@ interface RunOut {
   status: string
   created_at: string
   related_signal_ids: string[] | null
+  branches: BranchOut[] | null
 }
 
 // Hoisted to module scope (was a local const before) and exported so
 // SimulationCenter's status filter dropdown lists exactly the same three
 // values this file already renders distinct pill colors for — one source of
 // truth for the closed pending/complete/error vocabulary instead of two.
+// Branches use the exact same pending/complete/error vocabulary (see
+// `Branch` in simulation.rs), so `BranchesList` below reuses this map too
+// instead of inventing a second color scheme for the same three states.
 export const STATUS_ACCENT: Record<string, string> = { pending: '#f59e0b', complete: '#10b981', error: '#ef4444' }
+
+// Shared by this file's own run list and SimulationCenter's compare/detail
+// view (RunColumn) — one rendering for "a run's branches", not two copies
+// that could drift. Deliberately reuses obs-item-card/obs-pill (the exact
+// primitives the top-level run card above already renders its own status
+// with) rather than introducing new styling: a branch is "one option within
+// the decision", not a new visual language.
+export function BranchesList({ branches }: { branches: BranchOut[] }) {
+  if (branches.length === 0) return null
+  return (
+    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="obs-compare-label">Zweige</div>
+      {branches.map(b => (
+        <div
+          className="obs-item-card"
+          key={b.id}
+          style={{ ['--obs-accent' as string]: STATUS_ACCENT[b.status] ?? '#3b6bf6', padding: '10px 12px' }}
+        >
+          <div className="obs-item-title" style={{ fontSize: 12.5 }}>{b.option}</div>
+          <div className="obs-item-meta">
+            <span
+              className="obs-pill"
+              style={{ background: `${STATUS_ACCENT[b.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[b.status] ?? '#3b6bf6' }}
+            >
+              {b.status}
+            </span>
+          </div>
+          {b.rationale && <div className="obs-item-body" style={{ fontStyle: 'italic' }}>{b.rationale}</div>}
+          {b.narrative && <div className="obs-item-body" style={{ marginTop: 6 }}>{b.narrative}</div>}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 interface SimulationLabProps {
   runs: RunOut[]
@@ -47,13 +98,30 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
   const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([])
   const [running, setRunning] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // Optional branching decision on the run being authored — e.g. Laura's own
+  // example, "either the team does A because ..., or B because ...". Empty
+  // means the default flat hypothesis+narrative case (v1 is a single level
+  // of branching: a 2-3-way decision point, not deep nesting).
+  const [branchRows, setBranchRows] = useState<{ option: string; rationale: string }[]>([])
 
   const toggleSignal = (id: string) => {
     setSelectedSignalIds(ids => (ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]))
   }
 
+  const addBranching = () => setBranchRows([{ option: '', rationale: '' }, { option: '', rationale: '' }])
+  const addBranchRow = () => setBranchRows(rows => [...rows, { option: '', rationale: '' }])
+  // A decision needs at least two options — removing down to one isn't a
+  // decision anymore, so dropping below 2 clears the section entirely
+  // (back to "+ Verzweigung hinzufügen") rather than leaving a lone option.
+  const removeBranchRow = (idx: number) => setBranchRows(rows => (rows.length <= 2 ? [] : rows.filter((_, i) => i !== idx)))
+  const updateBranchRow = (idx: number, field: 'option' | 'rationale', value: string) =>
+    setBranchRows(rows => rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r)))
+  // Either no branching at all, or a real 2+-way decision with every option
+  // actually labeled — an unlabeled option isn't a real branch to send.
+  const branchesValid = branchRows.length === 0 || (branchRows.length >= 2 && branchRows.every(r => r.option.trim()))
+
   const submit = async () => {
-    if (!hypothesis.trim() || running) return
+    if (!hypothesis.trim() || running || !branchesValid) return
     setRunning(true)
     let paramsJson: unknown = {}
     if (parameters.trim()) {
@@ -67,10 +135,13 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
           hypothesis,
           parameters: paramsJson,
           related_signal_ids: selectedSignalIds.length ? selectedSignalIds : undefined,
+          branches: branchRows.length >= 2
+            ? branchRows.map(r => ({ option: r.option.trim(), rationale: r.rationale.trim() }))
+            : undefined,
         }),
       })
       onRefresh()
-      setHypothesis(''); setParameters(''); setSelectedSignalIds([])
+      setHypothesis(''); setParameters(''); setSelectedSignalIds([]); setBranchRows([])
     } finally {
       setRunning(false)
     }
@@ -105,6 +176,45 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
         <div className="obs-form" style={{ marginBottom: 0 }}>
           <input placeholder="Hypothese, z.B. „Mehr Kontext führt zu stabileren Mensch-KI-Interaktionen“" value={hypothesis} onChange={e => setHypothesis(e.target.value)} />
           <textarea placeholder="Parameter (optional, freier Text oder JSON)" value={parameters} onChange={e => setParameters(e.target.value)} />
+          <div>
+            <div className="obs-compare-label" style={{ margin: '2px 0 6px' }}>Verzweigte Entscheidung (optional)</div>
+            {branchRows.length === 0 ? (
+              <button type="button" className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={addBranching}>
+                + Verzweigung hinzufügen
+              </button>
+            ) : (
+              <>
+                {branchRows.map((b, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
+                    <input
+                      placeholder={`Option ${String.fromCharCode(65 + idx)}, z.B. „Team macht A“`}
+                      value={b.option}
+                      onChange={e => updateBranchRow(idx, 'option', e.target.value)}
+                      style={{ flex: '1 1 40%' }}
+                    />
+                    <input
+                      placeholder="Begründung, z.B. „weil A schneller skaliert“"
+                      value={b.rationale}
+                      onChange={e => updateBranchRow(idx, 'rationale', e.target.value)}
+                      style={{ flex: '1 1 50%' }}
+                    />
+                    <button
+                      type="button"
+                      className="chat-inspect-toggle"
+                      style={{ fontSize: 14 }}
+                      onClick={() => removeBranchRow(idx)}
+                      title="Option entfernen"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={addBranchRow}>
+                  + weitere Option
+                </button>
+              </>
+            )}
+          </div>
           {recentSignals.length > 0 && (
             <div>
               <div className="obs-compare-label" style={{ margin: '2px 0 6px' }}>Verknüpfte Signale (optional)</div>
@@ -117,7 +227,7 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
               ))}
             </div>
           )}
-          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={submit} disabled={running || !hypothesis.trim()}>
+          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={submit} disabled={running || !hypothesis.trim() || !branchesValid}>
             {running ? 'Denkt nach…' : 'Simulation starten'}
           </button>
         </div>
@@ -153,6 +263,7 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
               </div>
             )}
             {r.narrative && <div className="obs-item-body">{r.narrative}</div>}
+            {r.branches && <BranchesList branches={r.branches} />}
             <div style={{ marginTop: 10 }}>
               <button
                 type="button"

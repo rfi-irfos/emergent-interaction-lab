@@ -38,6 +38,55 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+    // Additive, same pattern again: a nullable TEXT column storing a JSON
+    // array of `Branch` objects for runs that model a decision point (e.g.
+    // "either the team does A because ..., or B because ...") instead of a
+    // single flat hypothesis. NULL for the (still default, still fully
+    // supported) flat case — never `"[]"`, same "empty normalizes to NULL"
+    // contract as `related_signal_ids`.
+    sqlx::query("ALTER TABLE simulation_runs ADD COLUMN branches TEXT")
+        .execute(db)
+        .await
+        .ok();
+}
+
+/// One option in a branching decision ("either A because ..., or B because
+/// ..."). Each branch gets its own `narrative`/`status` (pending/complete/
+/// error) so one branch's model call failing doesn't have to fail the whole
+/// run or block the other branches from completing.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Branch {
+    id: String,
+    option: String,
+    rationale: String,
+    narrative: Option<String>,
+    status: String,
+}
+
+/// What the client actually sends to describe a branch — the server owns
+/// `id`/`narrative`/`status` (assigned/resolved server-side), same division
+/// of labor as `CreateRunReq` vs. the stored row for the flat case.
+#[derive(Deserialize)]
+pub struct BranchReq {
+    option: String,
+    rationale: String,
+}
+
+/// Same contract as `encode_related_signal_ids`: `None` for "no branches"
+/// (the default, flat-hypothesis case), `Some(json)` for a non-empty list.
+/// An empty list is normalized to `None` on the way in.
+fn encode_branches(branches: &Option<Vec<Branch>>) -> Option<String> {
+    branches
+        .as_ref()
+        .filter(|v| !v.is_empty())
+        .map(|v| serde_json::to_string(v).unwrap_or_default())
+}
+
+/// Same defensive contract as `decode_related_signal_ids`: a malformed or
+/// hand-edited value degrades to "no branches" rather than panicking
+/// list/get.
+fn decode_branches(raw: &Option<String>) -> Option<Vec<Branch>> {
+    raw.as_deref().and_then(|s| serde_json::from_str::<Vec<Branch>>(s).ok()).filter(|v| !v.is_empty())
 }
 
 /// `None` for "no related signals" (not every run explores one), `Some(ids)`
@@ -69,9 +118,14 @@ pub async fn run_scenario(state: &AppState, hypothesis: &str, parameters: &str) 
     let user_prompt = format!(
         "Hypothese: {hypothesis}\nParameter: {parameters}\n\nDenke systematisch durch, was unter diesen Parametern passieren könnte."
     );
+    // `state.nvidia_api_base` (not a hardcoded literal) — same convention
+    // chat.rs's chat-completion call already uses, and defaults to the exact
+    // same production URL this used to hardcode, so it's a no-op for real
+    // traffic while making run_scenario mockable in tests the same way
+    // chat.rs's is.
     let res = state
         .http
-        .post("https://integrate.api.nvidia.com/v1/chat/completions")
+        .post(format!("{}/v1/chat/completions", state.nvidia_api_base))
         .bearer_auth(&state.nvidia_api_key)
         .json(&json!({
             "model": CHAT_MODEL,
@@ -110,12 +164,14 @@ pub struct RunOut {
     created_at: String,
     updated_at: String,
     related_signal_ids: Option<Vec<String>>,
+    branches: Option<Vec<Branch>>,
 }
 
-type RunRow = (String, String, String, Option<String>, String, String, String, Option<String>);
+type RunRow = (String, String, String, Option<String>, String, String, String, Option<String>, Option<String>);
 fn to_out(r: RunRow) -> RunOut {
     let related_signal_ids = decode_related_signal_ids(&r.7);
-    RunOut { id: r.0, hypothesis: r.1, parameters: r.2, narrative: r.3, status: r.4, created_at: r.5, updated_at: r.6, related_signal_ids }
+    let branches = decode_branches(&r.8);
+    RunOut { id: r.0, hypothesis: r.1, parameters: r.2, narrative: r.3, status: r.4, created_at: r.5, updated_at: r.6, related_signal_ids, branches }
 }
 
 // Previously: no LIMIT at all — a genuinely unbounded query against a table
@@ -166,7 +222,7 @@ pub async fn list_runs(State(state): State<AppState>, headers: HeaderMap, Query(
     let total: i64 = count_query.fetch_one(&state.db).await.unwrap_or(0);
 
     let select_sql = format!(
-        "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids \
+        "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids, branches \
          FROM simulation_runs {where_sql} ORDER BY created_at DESC LIMIT ? OFFSET ?"
     );
     let mut row_query = sqlx::query_as(&select_sql);
@@ -191,6 +247,11 @@ pub struct CreateRunReq {
     /// e.g. picked from the recent signals surfaced for the conversation
     /// this hypothesis grew out of. Not every run relates to one.
     related_signal_ids: Option<Vec<String>>,
+    /// Optional: a run can model a decision point instead of a single flat
+    /// hypothesis — e.g. "either the team does A because ..., or B because
+    /// ...". Absent/empty is the default flat case, handled identically to
+    /// before this field existed (additive capability, not a replacement).
+    branches: Option<Vec<BranchReq>>,
 }
 
 pub async fn create_run(State(state): State<AppState>, headers: HeaderMap, Json(req): Json<CreateRunReq>) -> impl IntoResponse {
@@ -198,38 +259,109 @@ pub async fn create_run(State(state): State<AppState>, headers: HeaderMap, Json(
     let id = Uuid::new_v4().to_string();
     let parameters = req.parameters.unwrap_or(json!({})).to_string();
     let related_signal_ids = encode_related_signal_ids(&req.related_signal_ids);
-    let _ = sqlx::query("INSERT INTO simulation_runs (id, hypothesis, parameters, related_signal_ids, status) VALUES (?1,?2,?3,?4,'pending')")
+    let branch_reqs: Vec<BranchReq> = req.branches.unwrap_or_default();
+
+    // The default, still-fully-supported flat case — byte-for-byte the same
+    // code path (same INSERT, same single run_scenario call, same response
+    // shape) as before `branches` existed.
+    if branch_reqs.is_empty() {
+        let _ = sqlx::query("INSERT INTO simulation_runs (id, hypothesis, parameters, related_signal_ids, status) VALUES (?1,?2,?3,?4,'pending')")
+            .bind(&id)
+            .bind(&req.hypothesis)
+            .bind(&parameters)
+            .bind(&related_signal_ids)
+            .execute(&state.db)
+            .await;
+
+        return match run_scenario(&state, &req.hypothesis, &parameters).await {
+            Ok(narrative) => {
+                let _ = sqlx::query("UPDATE simulation_runs SET narrative = ?1, status = 'complete', updated_at = datetime('now') WHERE id = ?2")
+                    .bind(&narrative)
+                    .bind(&id)
+                    .execute(&state.db)
+                    .await;
+                Json(json!({ "id": id, "status": "complete", "narrative": narrative })).into_response()
+            }
+            Err(e) => {
+                let _ = sqlx::query("UPDATE simulation_runs SET status = 'error', narrative = ?1, updated_at = datetime('now') WHERE id = ?2")
+                    .bind(&e)
+                    .bind(&id)
+                    .execute(&state.db)
+                    .await;
+                Json(json!({ "id": id, "status": "error", "error": e })).into_response()
+            }
+        };
+    }
+
+    // Branching case: one run_scenario call per branch, each combining the
+    // base hypothesis with that branch's own option+rationale so the
+    // narrative it gets back is genuinely about that path, not a generic
+    // rehash of the base hypothesis repeated N times.
+    let mut branches: Vec<Branch> = branch_reqs
+        .into_iter()
+        .map(|b| Branch { id: Uuid::new_v4().to_string(), option: b.option, rationale: b.rationale, narrative: None, status: "pending".to_string() })
+        .collect();
+
+    let _ = sqlx::query("INSERT INTO simulation_runs (id, hypothesis, parameters, related_signal_ids, branches, status) VALUES (?1,?2,?3,?4,?5,'pending')")
         .bind(&id)
         .bind(&req.hypothesis)
         .bind(&parameters)
         .bind(&related_signal_ids)
+        .bind(encode_branches(&Some(branches.clone())))
         .execute(&state.db)
         .await;
 
-    match run_scenario(&state, &req.hypothesis, &parameters).await {
-        Ok(narrative) => {
-            let _ = sqlx::query("UPDATE simulation_runs SET narrative = ?1, status = 'complete', updated_at = datetime('now') WHERE id = ?2")
-                .bind(&narrative)
-                .bind(&id)
-                .execute(&state.db)
-                .await;
-            Json(json!({ "id": id, "status": "complete", "narrative": narrative })).into_response()
-        }
-        Err(e) => {
-            let _ = sqlx::query("UPDATE simulation_runs SET status = 'error', narrative = ?1, updated_at = datetime('now') WHERE id = ?2")
-                .bind(&e)
-                .bind(&id)
-                .execute(&state.db)
-                .await;
-            Json(json!({ "id": id, "status": "error", "error": e })).into_response()
+    for branch in branches.iter_mut() {
+        let branch_hypothesis = format!(
+            "{}\n\nBetrachte insbesondere diesen Zweig: Option '{}', Begründung: '{}'",
+            req.hypothesis, branch.option, branch.rationale
+        );
+        match run_scenario(&state, &branch_hypothesis, &parameters).await {
+            Ok(narrative) => {
+                branch.narrative = Some(narrative);
+                branch.status = "complete".to_string();
+            }
+            Err(e) => {
+                branch.narrative = Some(e);
+                branch.status = "error".to_string();
+            }
         }
     }
+
+    // Top-level status: 'complete' once every branch has resolved (complete
+    // OR error) — a branch erroring is a per-branch outcome, not a run-level
+    // one, so it must not flip the whole run to 'error' (that would make a
+    // partial failure indistinguishable from every branch failing, and would
+    // contradict the per-branch status this schema exists to carry). The
+    // synthesis line below is what keeps a partial failure from silently
+    // *reading* as full success even though the top-level status says
+    // 'complete' — it's not left blank, and it's not an LLM call (a second
+    // model round-trip synthesizing "how it went" would itself need the same
+    // "not an oracle" framing as SIMULATION_SYSTEM_PROMPT for very little
+    // real value over a factual count).
+    let total = branches.len();
+    let ok_count = branches.iter().filter(|b| b.status == "complete").count();
+    let err_count = total - ok_count;
+    let narrative = if err_count == 0 {
+        format!("{ok_count} von {total} Zweigen erfolgreich durchdacht.")
+    } else {
+        format!("{ok_count} von {total} Zweigen erfolgreich durchdacht, {err_count} mit Fehler — Details je Zweig unten.")
+    };
+
+    let _ = sqlx::query("UPDATE simulation_runs SET narrative = ?1, status = 'complete', branches = ?2, updated_at = datetime('now') WHERE id = ?3")
+        .bind(&narrative)
+        .bind(encode_branches(&Some(branches.clone())))
+        .bind(&id)
+        .execute(&state.db)
+        .await;
+
+    Json(json!({ "id": id, "status": "complete", "narrative": narrative, "branches": branches })).into_response()
 }
 
 pub async fn get_run(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
     if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
     let row: Option<RunRow> = sqlx::query_as(
-        "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids FROM simulation_runs WHERE id = ?1",
+        "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids, branches FROM simulation_runs WHERE id = ?1",
     )
     .bind(&id)
     .fetch_optional(&state.db)
@@ -291,17 +423,55 @@ mod tests {
     }
 
     async fn create(state: &AppState, hypothesis: &str, related_signal_ids: Option<Vec<String>>) -> String {
+        create_full(state, hypothesis, related_signal_ids, None).await.0
+    }
+
+    /// Full-fidelity variant of `create` that also accepts `branches` and
+    /// hands back the whole response body (not just the id) — the branch
+    /// tests need to inspect `branches`/`narrative`/`status` on the create
+    /// response itself, not only after a follow-up `get_run`.
+    async fn create_full(
+        state: &AppState,
+        hypothesis: &str,
+        related_signal_ids: Option<Vec<String>>,
+        branches: Option<Vec<BranchReq>>,
+    ) -> (String, serde_json::Value) {
         let res = create_run(
             AxState(state.clone()),
             HeaderMap::new(),
-            Json(CreateRunReq { hypothesis: hypothesis.to_string(), parameters: None, related_signal_ids }),
+            Json(CreateRunReq { hypothesis: hypothesis.to_string(), parameters: None, related_signal_ids, branches }),
         )
         .await
         .into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
-        body["id"].as_str().unwrap().to_string()
+        let id = body["id"].as_str().unwrap().to_string();
+        (id, body)
+    }
+
+    /// Minimal local mock of the NVIDIA chat-completions endpoint, spun up
+    /// on `127.0.0.1:0` (OS-assigned free port) exactly like chat.rs's own
+    /// `start_mock_nvidia` — but branch-aware: it inspects the user message
+    /// it was sent and fails (500) only when that message contains
+    /// `fail_needle`, succeeding for everything else. That's what lets a
+    /// single test drive one branch to a real success and a sibling branch
+    /// to a real error deterministically, without a live network call.
+    async fn start_branch_aware_mock(fail_needle: &'static str) -> String {
+        use axum::{routing::post, Router};
+        let completions = post(move |Json(body): Json<serde_json::Value>| async move {
+            let content = body["messages"][1]["content"].as_str().unwrap_or("");
+            if content.contains(fail_needle) {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "mock branch failure" }))).into_response()
+            } else {
+                Json(json!({ "choices": [{ "message": { "content": format!("Mock-Antwort für: {content}") } }] })).into_response()
+            }
+        });
+        let app = Router::new().route("/v1/chat/completions", completions);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
     }
 
     #[tokio::test]
@@ -491,5 +661,118 @@ mod tests {
 
         let res = delete_run(AxState(state), HeaderMap::new(), Path(id)).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    // ── Branching decision-scenarios ─────────────────────────────────────
+
+    /// New capability: branches round-trip through both `create_run`'s own
+    /// response and a follow-up `get_run`. `nvidia_api_key` is empty here
+    /// (same trick every other test in this file already relies on) so
+    /// every branch resolves via `run_scenario`'s early-return `Err` path —
+    /// deterministic, no network — which doubles as proof that a branch
+    /// failing lands on that branch's own `status`/`narrative` rather than
+    /// vanishing the run or getting silently dropped.
+    #[tokio::test]
+    async fn branches_round_trip_through_create_and_get() {
+        let state = test_state().await;
+        let branches = vec![
+            BranchReq { option: "Option A".to_string(), rationale: "weil A skaliert".to_string() },
+            BranchReq { option: "Option B".to_string(), rationale: "weil B günstiger ist".to_string() },
+        ];
+        let (id, created) = create_full(&state, "Team muss zwischen A und B entscheiden", None, Some(branches)).await;
+
+        // Top-level: 'complete' even though every branch below individually
+        // errored (no NVIDIA key configured) — a per-branch failure must not
+        // read as a run-level failure.
+        assert_eq!(created["status"], "complete");
+        let created_branches = created["branches"].as_array().expect("branches present on create response");
+        assert_eq!(created_branches.len(), 2);
+
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(run["status"], "complete", "top-level status must be 'complete' once all branches resolved");
+        let branches_out = run["branches"].as_array().expect("branches persisted and returned by get_run");
+        assert_eq!(branches_out.len(), 2);
+        for (b, expect_option, expect_rationale) in [
+            (&branches_out[0], "Option A", "weil A skaliert"),
+            (&branches_out[1], "Option B", "weil B günstiger ist"),
+        ] {
+            assert!(b["id"].as_str().is_some_and(|s| !s.is_empty()), "each branch gets its own id");
+            assert_eq!(b["option"], expect_option);
+            assert_eq!(b["rationale"], expect_rationale);
+            assert_eq!(b["status"], "error", "no NVIDIA key configured in test_state -> every branch call errors");
+            assert!(b["narrative"].as_str().is_some_and(|s| s.contains("NVIDIA_API_KEY")), "branch narrative carries its own error, not a blank");
+        }
+
+        // The top-level narrative is a real synthesis line, not silently
+        // left blank — it must reflect that both branches errored.
+        assert!(run["narrative"].as_str().unwrap().contains("0 von 2"), "synthesis line must reflect that both branches errored");
+    }
+
+    /// The core partial-failure guarantee: one branch's model call fails,
+    /// the sibling branch succeeds, and neither poisons the other — the run
+    /// itself still resolves to 'complete' with each branch carrying its own
+    /// true outcome. Needs genuinely differing HTTP responses per branch
+    /// (unlike the round-trip test above, where every call errors the same
+    /// way), hence the branch-aware mock server.
+    #[tokio::test]
+    async fn one_branch_erroring_does_not_fail_the_whole_run_or_the_other_branch() {
+        let base = start_branch_aware_mock("Option B").await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        let branches = vec![
+            BranchReq { option: "Option A".to_string(), rationale: "weil A skaliert".to_string() },
+            BranchReq { option: "Option B".to_string(), rationale: "weil B günstiger ist".to_string() },
+        ];
+        let (id, created) = create_full(&state, "Team muss zwischen A und B entscheiden", None, Some(branches)).await;
+
+        assert_eq!(created["status"], "complete", "one branch erroring must not flip the whole run to 'error'");
+        let branches_out = created["branches"].as_array().unwrap();
+        let a = branches_out.iter().find(|b| b["option"] == "Option A").expect("branch A present");
+        let b = branches_out.iter().find(|b| b["option"] == "Option B").expect("branch B present");
+
+        assert_eq!(a["status"], "complete", "branch A's own call succeeded and must be reported as such");
+        assert!(a["narrative"].as_str().unwrap().contains("Mock-Antwort"), "branch A keeps its own real narrative");
+
+        assert_eq!(b["status"], "error", "branch B's own call failed and must be reported as such");
+        assert!(b["narrative"].as_str().unwrap().contains("mock branch failure"), "branch B carries its own error, not A's success bleeding over");
+
+        // Persisted state agrees with the synchronous create response, not
+        // just an in-memory value that never made it to the row.
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(run["status"], "complete");
+        let persisted = run["branches"].as_array().unwrap();
+        assert!(persisted.iter().any(|x| x["option"] == "Option A" && x["status"] == "complete"));
+        assert!(persisted.iter().any(|x| x["option"] == "Option B" && x["status"] == "error"));
+    }
+
+    /// Backward compatibility: a request that omits `branches` entirely (the
+    /// shape of every request the frontend and the `run_simulation_scenario`
+    /// agent tool sent before this feature existed) must behave exactly as
+    /// before — one `run_scenario` call for the flat hypothesis, the
+    /// original `{id, status, narrative}` / `{id, status, error}` response
+    /// shape with no `branches` key at all, and a persisted row whose
+    /// `branches` column is NULL, never `"[]"` or a populated list.
+    #[tokio::test]
+    async fn no_branches_field_leaves_response_and_row_byte_for_byte_unchanged() {
+        let state = test_state().await;
+        let (id, created) = create_full(&state, "Hypothese ohne Branching", None, None).await;
+
+        assert!(created.get("branches").is_none(), "flat case must not gain a branches key in the response");
+        assert_eq!(created["status"], "error", "sanity check: no NVIDIA key configured -> same early-return path as before");
+        assert!(created.get("error").is_some(), "flat error path still uses the original 'error' key, not a branches synthesis");
+        assert!(created.get("narrative").is_none(), "flat error path never had a 'narrative' key, and still doesn't");
+
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(run["branches"], serde_json::Value::Null, "flat case's persisted row must have NULL branches, never '[]' or a populated list");
     }
 }
