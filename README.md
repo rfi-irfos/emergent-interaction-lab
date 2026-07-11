@@ -1,5 +1,16 @@
 # Emergent Interaction Lab
 
+[![Release](https://img.shields.io/github/v/release/rfi-irfos/emergent-interaction-lab?color=3b6bf6&label=release)](../../releases)
+[![Deploy](https://github.com/rfi-irfos/emergent-interaction-lab/actions/workflows/deploy.yml/badge.svg)](../../actions/workflows/deploy.yml)
+[![Last commit](https://img.shields.io/github/last-commit/rfi-irfos/emergent-interaction-lab?color=10b981)](../../commits/main)
+[![Stars](https://img.shields.io/github/stars/rfi-irfos/emergent-interaction-lab?color=f59e0b)](../../stargazers)
+[![Backend](https://img.shields.io/badge/backend-Rust%20%2F%20Axum-CE422B)](backend)
+[![Frontend](https://img.shields.io/badge/frontend-React%20%2F%20TypeScript-3178C6)](frontend)
+[![Database](https://img.shields.io/badge/database-SQLite-003B57)](backend/src)
+[![Hosting](https://img.shields.io/badge/hosted%20on-Fly.io-8B5CF6)](https://fly.io)
+[![Status](https://img.shields.io/badge/status-live%20research%20instrument-10b981)](https://rfi-irfos.github.io/emergent-interaction-lab/)
+[![License](https://img.shields.io/badge/license-proprietary-lightgrey)](#)
+
 A live research instrument for studying how meaning, structure, and behavior emerge from sustained human–AI interaction — not a static site, not a generic analytics dashboard. Every research conversation, blog entry, and note feeds the **Observatory**: a running instrument that measures emergence signals, drift, and interaction dynamics as they happen, organized into a strict three-tier hierarchy (*Forschungsebene / Systemebene / Technische Ebene*) so a real research signal is never presented with the same visual weight as a raw technical figure.
 
 Built for Laura Serna Gaviria's Emergent Interaction Lab research (RFI-IRFOS). See the [`v1.0.0` release](../../releases/tag/v1.0.0) for the full feature history.
