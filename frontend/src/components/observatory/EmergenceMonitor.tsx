@@ -248,8 +248,13 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
         ))}
       </div>
 
-      <div className="obs-badge-experimental">Eigene Operationalisierung — nicht wörtlich aus Lauras Paper</div>
-      <div className="obs-grid">
+      <div
+        className="obs-badge-experimental"
+        title={ccet ? `${ccet.definitions_note} Basis: die letzten ${ccet.turns_considered} analysierten Turns, Stabilitätsschwelle (Kosinus-Ähnlichkeit) ${formatPercent(ccet.stability_threshold)}.` : undefined}
+      >
+        Eigene Operationalisierung — nicht wörtlich aus Lauras Paper
+      </div>
+      <div className="obs-grid" style={{ marginBottom: 22 }}>
         <div className="obs-stat c-green">
           <div className="obs-stat-value">{ccet ? formatPercent(ccet.cei) : '—'}</div>
           <div className="obs-stat-label">CEI (Co-Evolution Index)</div>
@@ -263,11 +268,6 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           <div className="obs-stat-label">Resonance Frequency</div>
         </div>
       </div>
-      {ccet && (
-        <div className="obs-warning-note" style={{ marginBottom: 22 }}>
-          {ccet.definitions_note} Basis: die letzten {ccet.turns_considered} analysierten Turns, Stabilitätsschwelle (Kosinus-Ähnlichkeit) {formatPercent(ccet.stability_threshold)}.
-        </div>
-      )}
 
       {signals.length === 0 && !loading && (
         <div className="obs-card">
