@@ -95,6 +95,24 @@ export function foldIntoOther<T extends NamedValue>(items: T[], maxSlices = 6, o
   return [...kept, { label: otherLabel, value: otherValue }]
 }
 
+/// Maps one radar/spider-chart axis to its vertex position. `count` axes are
+/// spaced evenly around the full circle (360/count degrees apart), starting
+/// at `index = 0` on the SAME "top, clockwise" convention polarToCartesian
+/// already establishes (-90deg = 12 o'clock) — so a 4-axis radar's first
+/// vertex lands straight up, not off to one side. `value/max` (clamped to
+/// [0, 1], same defensive treatment as gaugeSweepAngle: non-finite or
+/// out-of-range input falls back rather than propagating NaN/overshoot)
+/// scales how far out along that axis the vertex sits, from dead center
+/// (value <= 0) to the outer ring (value >= max). A zero/negative `max`
+/// (nothing to plot this axis against) is treated as "always empty" — the
+/// vertex sits at the center rather than dividing by zero.
+export function radarPoint(cx: number, cy: number, r: number, index: number, count: number, value: number, max: number): CartesianPoint {
+  const angle = -90 + (360 / count) * index
+  const safeValue = Number.isFinite(value) ? value : 0
+  const fraction = max > 0 ? Math.min(1, Math.max(0, safeValue / max)) : 0
+  return polarToCartesian(cx, cy, r * fraction, angle)
+}
+
 /// Catmull-Rom → cubic Bézier smoothing — the difference between a business
 /// dashboard and a spreadsheet screenshot. Originally private to ObsChart.tsx;
 /// moved here so other line-based charts can share it instead of duplicating it.

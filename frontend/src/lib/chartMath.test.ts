@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeArc, donutSegments, foldIntoOther, gaugeSweepAngle, polarToCartesian, smoothPath } from './chartMath'
+import { describeArc, donutSegments, foldIntoOther, gaugeSweepAngle, polarToCartesian, radarPoint, smoothPath } from './chartMath'
 
 describe('polarToCartesian', () => {
   it('places 0deg at 3 o\'clock (directly right of center)', () => {
@@ -112,6 +112,62 @@ describe('gaugeSweepAngle', () => {
   it('uses the default 270deg sweep when sweepDeg is omitted', () => {
     expect(gaugeSweepAngle(1)).toBe(270)
     expect(gaugeSweepAngle(0)).toBe(0)
+  })
+})
+
+describe('radarPoint', () => {
+  it('places 4 axes at max value exactly on the outer ring, 90deg apart', () => {
+    const count = 4
+    const pts = [0, 1, 2, 3].map(i => radarPoint(50, 50, 20, i, count, 10, 10))
+    // index 0 = top (12 o'clock, same "-90deg" convention as polarToCartesian).
+    expect(pts[0].x).toBeCloseTo(50, 5)
+    expect(pts[0].y).toBeCloseTo(30, 5)
+    // index 1 = right (3 o'clock, 90deg clockwise from top).
+    expect(pts[1].x).toBeCloseTo(70, 5)
+    expect(pts[1].y).toBeCloseTo(50, 5)
+    // index 2 = bottom (6 o'clock).
+    expect(pts[2].x).toBeCloseTo(50, 5)
+    expect(pts[2].y).toBeCloseTo(70, 5)
+    // index 3 = left (9 o'clock).
+    expect(pts[3].x).toBeCloseTo(30, 5)
+    expect(pts[3].y).toBeCloseTo(50, 5)
+    // Every vertex sits exactly `r` away from center — all on the outer ring.
+    for (const p of pts) {
+      expect(Math.hypot(p.x - 50, p.y - 50)).toBeCloseTo(20, 5)
+    }
+  })
+
+  it('places a 0 value exactly at the center, regardless of axis angle', () => {
+    for (let i = 0; i < 5; i++) {
+      const p = radarPoint(50, 50, 20, i, 5, 0, 10)
+      expect(p.x).toBeCloseTo(50, 5)
+      expect(p.y).toBeCloseTo(50, 5)
+    }
+  })
+
+  it('places a half-max value at half the radius, along the same angle as full value', () => {
+    const full = radarPoint(0, 0, 40, 1, 4, 10, 10)
+    const half = radarPoint(0, 0, 40, 1, 4, 5, 10)
+    expect(half.x).toBeCloseTo(full.x / 2, 5)
+    expect(half.y).toBeCloseTo(full.y / 2, 5)
+  })
+
+  it('clamps a value above max to the outer ring instead of overshooting', () => {
+    const atMax = radarPoint(0, 0, 40, 0, 4, 10, 10)
+    const overMax = radarPoint(0, 0, 40, 0, 4, 999, 10)
+    expect(overMax).toEqual(atMax)
+  })
+
+  it('clamps a negative value to the center instead of an inverted position', () => {
+    const p = radarPoint(0, 0, 40, 0, 4, -5, 10)
+    expect(p.x).toBeCloseTo(0, 5)
+    expect(p.y).toBeCloseTo(0, 5)
+  })
+
+  it('falls back to the center for non-finite value or a zero/negative max, rather than dividing by zero', () => {
+    expect(radarPoint(0, 0, 40, 0, 4, NaN, 10)).toEqual({ x: 0, y: 0 })
+    expect(radarPoint(0, 0, 40, 0, 4, 5, 0)).toEqual({ x: 0, y: 0 })
+    expect(radarPoint(0, 0, 40, 0, 4, 5, -10)).toEqual({ x: 0, y: 0 })
   })
 })
 

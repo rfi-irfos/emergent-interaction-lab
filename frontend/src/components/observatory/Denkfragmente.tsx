@@ -3,6 +3,7 @@ import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { ObsRadar } from './ObsRadar'
 
 // Denkfragmente — Laura's own ask, verbatim-translated: "I mostly look at my
 // AI interaction meta-retrospectively, but the whole thing through
@@ -307,15 +308,27 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
         ) : !distribution || distribution.total === 0 ? (
           <div className="obs-empty">Noch keine Denkfragmente über alle Gespräche hinweg — sie entstehen automatisch nach jedem Forschungsgespräch.</div>
         ) : (
-          distribution.by_layer.map(b => (
-            <div className="obs-bar-row" key={b.layer}>
-              <span style={{ width: 130, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0 }}>{LAYER_LABELS[b.layer] ?? b.layer}</span>
-              <div className="obs-bar-track">
-                <div className="obs-bar-fill" style={{ width: `${(b.count / maxLayerCount) * 100}%`, background: LAYER_COLORS[b.layer] ?? '#3b6bf6' }} />
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 800, color: LAYER_COLORS[b.layer] ?? '#3b6bf6', minWidth: 24, textAlign: 'right' }}>{b.count}</span>
-            </div>
-          ))
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* Radar/spider chart, one axis per layer of Laura's own 8-Layer
+                Model, fixed LAYER_ORDER so the axis sequence never shifts
+                between reloads — replaces the old flat bar-row breakdown
+                (same real by_layer counts, same LAYER_COLORS/LAYER_LABELS,
+                just an actual chart instead of CSS bars). Every axis shares
+                the SAME max (the largest single layer count) rather than
+                each axis normalizing against its own value — the latter
+                would push every vertex to the outer ring regardless of the
+                real distribution, which is exactly the shape a radar chart
+                exists to show. */}
+            <ObsRadar
+              axes={LAYER_ORDER.map(layer => ({
+                key: layer,
+                label: LAYER_LABELS[layer],
+                value: distribution.by_layer.find(b => b.layer === layer)?.count ?? 0,
+                max: maxLayerCount,
+                color: LAYER_COLORS[layer],
+              }))}
+            />
+          </div>
         )}
       </div>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
