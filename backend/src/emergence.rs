@@ -4,7 +4,7 @@ use serde_json::json;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-use crate::{authz::require_admin, chat::CHAT_MODEL, AppState};
+use crate::{authz::require_admin, chat::CHAT_MODEL, observatory::resolve_range, AppState};
 
 /// Emergence signal detection — the Observatory's actual reason to exist.
 /// Deliberately an LLM interpretation of what's happening in a research
@@ -220,6 +220,22 @@ pub struct ListSignalsQuery {
     status: Option<String>,
     confidence: Option<String>,
     evolution: Option<String>,
+    /// `?range=7d|30d|all` — reuses `observatory::resolve_range` verbatim
+    /// (same values, same "30d" fallback for an unrecognized value, same
+    /// `RANGE_ALL_DAYS` stand-in for "no filter") rather than inventing a
+    /// second range convention. Backs SystemState.tsx's `states` list — the
+    /// per-scope aggregation built client-side from this endpoint's rows —
+    /// so a real date-range filter here is what actually narrows what
+    /// System State shows, not a cosmetic param.
+    ///
+    /// Unlike `resolve_range`'s own default, an *absent* `range` here does
+    /// NOT fall back to "30d": `DEFAULT_SIGNALS_LIMIT`'s backward-compat
+    /// contract above requires a truly-param-free call to stay identical to
+    /// the pre-`range` behavior (no date restriction at all), because
+    /// KnowledgeGraph.tsx and LiveCards.tsx' distinctScopes calc both still
+    /// call this endpoint with zero query params and must not be silently
+    /// narrowed by a new default they never opted into.
+    range: Option<String>,
 }
 
 /// Comma-separated multi-value filter, same convention as
@@ -257,6 +273,14 @@ pub async fn list_signals(State(state): State<AppState>, headers: HeaderMap, Que
     in_clause("status", &parse_multi(&q.status), &mut clauses, &mut binds);
     in_clause("confidence", &parse_multi(&q.confidence), &mut clauses, &mut binds);
     in_clause("evolution", &parse_multi(&q.evolution), &mut clauses, &mut binds);
+    // Only applies a date restriction when `range` was actually sent — see
+    // the field's own doc comment for why an absent `range` must stay a
+    // true no-op instead of adopting `resolve_range`'s "30d" default.
+    if let Some(range) = q.range.as_deref() {
+        let (_, range_days) = resolve_range(Some(range));
+        clauses.push("created_at > datetime('now', ?)".to_string());
+        binds.push(format!("-{range_days} days"));
+    }
     let where_sql = if clauses.is_empty() { String::new() } else { format!("WHERE {}", clauses.join(" AND ")) };
 
     // Total matching the filters (ignoring limit/offset) — surfaced via the
@@ -360,7 +384,7 @@ mod tests {
     }
 
     fn empty_query() -> ListSignalsQuery {
-        ListSignalsQuery { limit: None, offset: None, level: None, status: None, confidence: None, evolution: None }
+        ListSignalsQuery { limit: None, offset: None, level: None, status: None, confidence: None, evolution: None, range: None }
     }
 
     async fn signals_body(res: axum::response::Response) -> (Vec<serde_json::Value>, Option<i64>) {
@@ -505,6 +529,79 @@ mod tests {
         assert_eq!(total, Some(2));
         let patterns: std::collections::HashSet<_> = body.iter().map(|s| s["pattern"].as_str().unwrap().to_string()).collect();
         assert_eq!(patterns, std::collections::HashSet::from(["human-1".to_string(), "ai-1".to_string()]));
+    }
+
+    // ── range filter: real narrowing, and a true no-op when absent ─────────
+    // (same shape as observatory.rs's own `behavior`/`human_ai`/
+    // `list_snapshots` range tests, which this reuses `resolve_range` from)
+
+    #[tokio::test]
+    async fn range_7d_excludes_older_signals() {
+        let state = test_state().await;
+        insert_signal(&state.db, "new-1", "system", "emerging", "moderate", "steady").await;
+        let old_id = insert_signal(&state.db, "old-1", "system", "emerging", "moderate", "steady").await;
+        sqlx::query("UPDATE emergence_signals SET created_at = datetime('now','-20 days') WHERE id = ?1")
+            .bind(&old_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let res = list_signals(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(ListSignalsQuery { range: Some("7d".to_string()), ..empty_query() }),
+        )
+        .await
+        .into_response();
+        let (body, total) = signals_body(res).await;
+        assert_eq!(total, Some(1), "the 20-day-old signal must not count under range=7d");
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["pattern"], "new-1");
+    }
+
+    #[tokio::test]
+    async fn range_all_includes_everything() {
+        let state = test_state().await;
+        let old_id = insert_signal(&state.db, "ancient-1", "system", "emerging", "moderate", "steady").await;
+        sqlx::query("UPDATE emergence_signals SET created_at = datetime('now','-500 days') WHERE id = ?1")
+            .bind(&old_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let res = list_signals(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(ListSignalsQuery { range: Some("all".to_string()), ..empty_query() }),
+        )
+        .await
+        .into_response();
+        let (_, total) = signals_body(res).await;
+        assert_eq!(total, Some(1), "range=all must reach even a 500-day-old signal");
+    }
+
+    /// The critical backward-compat case, distinct from `behavior`'s
+    /// "default falls back to 30d" test: a *completely absent* `range` param
+    /// must apply NO date restriction at all, not `resolve_range`'s own
+    /// "30d" default — SystemState.tsx is about to start sending `range`
+    /// explicitly, but KnowledgeGraph.tsx and LiveCards.tsx' distinctScopes
+    /// calc still call this endpoint with zero query params (per
+    /// `DEFAULT_SIGNALS_LIMIT`'s doc comment above) and must see byte-for-
+    /// byte the same result set as before this field existed.
+    #[tokio::test]
+    async fn range_absent_applies_no_date_restriction_at_all() {
+        let state = test_state().await;
+        let old_id = insert_signal(&state.db, "ancient-1", "system", "emerging", "moderate", "steady").await;
+        sqlx::query("UPDATE emergence_signals SET created_at = datetime('now','-500 days') WHERE id = ?1")
+            .bind(&old_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let res = list_signals(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let (body, total) = signals_body(res).await;
+        assert_eq!(total, Some(1), "no range param at all must still reach a 500-day-old signal, matching pre-range behavior");
+        assert_eq!(body.len(), 1);
     }
 
     #[tokio::test]

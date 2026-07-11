@@ -1,5 +1,12 @@
+import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
+
+const RANGE_OPTIONS: { value: string; label: string }[] = [
+  { value: '7d', label: 'Letzte 7 Tage' },
+  { value: '30d', label: 'Letzte 30 Tage' },
+  { value: 'all', label: 'Alle' },
+]
 
 interface Signal {
   id: string
@@ -63,8 +70,18 @@ function StatusRow({ label, ok }: { label: string; ok: boolean }) {
 /// lives at the bottom: it's genuinely a system under observation too, just
 /// the technical one — not a business/CMS concern, so it stays here rather
 /// than moving to Verwaltung.
+///
+/// `?range=7d|30d|all` narrows the underlying `/emergence/signals` fetch
+/// that `states` below is built from (see backend/src/emergence.rs's
+/// `list_signals` — reuses observatory.rs's `resolve_range` verbatim, same
+/// convention as Behavioral Landscape's own range selector). Defaults to
+/// "all" rather than Behavioral Landscape's "30d": unlike that view, this
+/// fetch previously had no date restriction at all (just the newest-50
+/// cap), so "all" is the default that doesn't regress the view for anyone
+/// already relying on it.
 export function SystemState() {
-  const { data: signals, loading: signalsLoading, error: signalsError } = useAdminFetch<Signal[]>('/api/observatory/emergence/signals')
+  const [range, setRange] = useState('all')
+  const { data: signals, loading: signalsLoading, error: signalsError } = useAdminFetch<Signal[]>(`/api/observatory/emergence/signals?range=${range}`, [range])
   const { data: diag, loading: diagLoading, error: diagError } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
   const { data: scopeTrends } = useAdminFetch<ScopeTrend[]>('/api/observatory/scope-trends')
   const trendByScope = new Map((scopeTrends ?? []).map(t => [t.scope, t]))
@@ -106,27 +123,34 @@ export function SystemState() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Beobachtete Systeme</div>
-        {/* `states` (unlike the raw signal feed EmergenceMonitor exports) is
-            this view's own real per-scope aggregation — latest signal plus
-            observation count and the linked Interaction Dynamics trend for
-            each scope — so it's a distinct, genuinely row-shaped dataset
-            worth its own export rather than a duplicate of another module's. */}
-        {states.length > 0 && (
-          <ExportButtons
-            rows={states.map(([scope, s]) => ({
-              scope,
-              status: s.status,
-              confidence: s.confidence,
-              evolution: s.evolution,
-              observation: s.observation,
-              observation_count: countByScope.get(scope) ?? 0,
-              interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
-              updated_at: s.created_at,
-            }))}
-            filenameBase="system-state"
-            title="System State — Beobachtete Systeme"
-          />
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          {/* `states` (unlike the raw signal feed EmergenceMonitor exports) is
+              this view's own real per-scope aggregation — latest signal plus
+              observation count and the linked Interaction Dynamics trend for
+              each scope — so it's a distinct, genuinely row-shaped dataset
+              worth its own export rather than a duplicate of another module's.
+              Exports whatever the range selector above currently narrowed
+              the underlying signals to. */}
+          {states.length > 0 && (
+            <ExportButtons
+              rows={states.map(([scope, s]) => ({
+                scope,
+                status: s.status,
+                confidence: s.confidence,
+                evolution: s.evolution,
+                observation: s.observation,
+                observation_count: countByScope.get(scope) ?? 0,
+                interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
+                updated_at: s.created_at,
+              }))}
+              filenameBase={`system-state-${range}`}
+              title="System State — Beobachtete Systeme"
+            />
+          )}
+        </div>
       </div>
       {signalsLoading && <div className="obs-empty">Lade…</div>}
       {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}

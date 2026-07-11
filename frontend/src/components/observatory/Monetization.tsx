@@ -1,7 +1,25 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { parseServerTimestamp } from '../../lib/dateGroups'
 import { ExportButtons } from './ExportButtons'
+
+// Same 7d/30d/all vocabulary as Behavioral Landscape/System State/
+// Interaction Dynamics' range selectors, but purely client-side — see the
+// filter comment below the orders list for why this one can't be a real
+// backend `?range=` param the way those are.
+const ORDER_RANGE_OPTIONS: { value: string; label: string }[] = [
+  { value: '7d', label: 'Letzte 7 Tage' },
+  { value: '30d', label: 'Letzte 30 Tage' },
+  { value: 'all', label: 'Alle' },
+]
+
+function withinOrderRange(createdAt: string, range: string): boolean {
+  if (range === 'all') return true
+  const days = range === '7d' ? 7 : 30
+  const cutoffMs = Date.now() - days * 24 * 60 * 60 * 1000
+  return parseServerTimestamp(createdAt).getTime() >= cutoffMs
+}
 
 interface ProductOut {
   id: string
@@ -171,7 +189,23 @@ export function Monetization() {
 
   const loadMoreOrders = () => loadOrders(orders.length, true)
 
-  const totalRevenueByCurrency = orders.reduce<Record<string, number>>((acc, o) => {
+  // Client-side, matching BlogDrafts/Inbox's own filter pattern: billing.rs
+  // (backend/src/billing.rs::list_orders) is deliberately untouched by this
+  // change — no `?currency=`/`?range=` query param exists there — so this
+  // narrows whatever page(s) of `orders` "Weitere laden" has already
+  // accumulated, the same "currently loaded, not currently existing" scope
+  // BlogDrafts/Inbox's own client-side filters have. `OrderOut` has no
+  // status field (every row is already a completed, verified Stripe
+  // webhook event — see the interface comment above), so currency + date
+  // range are the two meaningful narrowing axes here, not status.
+  const [orderCurrencyFilter, setOrderCurrencyFilter] = useState('')
+  const [orderRange, setOrderRange] = useState('all')
+  const orderCurrencies = Array.from(new Set(orders.map(o => o.currency))).sort()
+  const filteredOrders = orders.filter(o =>
+    (!orderCurrencyFilter || o.currency === orderCurrencyFilter) && withinOrderRange(o.created_at, orderRange)
+  )
+
+  const totalRevenueByCurrency = filteredOrders.reduce<Record<string, number>>((acc, o) => {
     acc[o.currency] = (acc[o.currency] ?? 0) + o.amount_cents
     return acc
   }, {})
@@ -250,18 +284,28 @@ export function Monetization() {
           as EmergenceMonitor.tsx. */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Bestellungen</div>
-        {/* Exports whatever pages of orders have been loaded so far via
-            "Weitere laden" (`orders`), same accumulated-set honesty as
-            EmergenceMonitor's export — this view has no narrowing filter of
-            its own, only pagination, so "currently visible" here means
-            "currently loaded". Backend (billing.rs) untouched — this reads
-            off state the frontend already fetched from GET
-            /api/billing/orders. */}
-        <ExportButtons
-          rows={orders.map(o => ({ ...o }))}
-          filenameBase="billing-orders"
-          title="Bestellungen"
-        />
+        {orders.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              <option value="">Alle Währungen</option>
+              {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+            </select>
+            <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {/* Exports whatever currency/range filter currently narrowed
+                the already-loaded pages of orders to (`filteredOrders`),
+                same "export what's currently visible, not silently
+                everything" convention as BlogDrafts/Inbox's own filtered
+                exports. Still bounded by "Weitere laden" pagination, same
+                accumulated-set honesty as EmergenceMonitor's export. */}
+            <ExportButtons
+              rows={filteredOrders.map(o => ({ ...o }))}
+              filenameBase={`billing-orders-${orderRange}`}
+              title="Bestellungen"
+            />
+          </div>
+        )}
       </div>
       {ordersTotal !== null && (
         <div className="obs-grid" style={{ marginBottom: 14 }}>
@@ -269,10 +313,14 @@ export function Monetization() {
             <div className="obs-stat-value">{ordersTotal}</div>
             <div className="obs-stat-label">Bestellungen gesamt</div>
           </div>
+          <div className="obs-stat c-purple">
+            <div className="obs-stat-value">{filteredOrders.length} / {orders.length}</div>
+            <div className="obs-stat-label">sichtbar von geladen (Filter)</div>
+          </div>
           {Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
             <div className="obs-stat c-blue" key={cur}>
               <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
-              <div className="obs-stat-label">Umsatz, geladen ({cur.toUpperCase()})</div>
+              <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
             </div>
           ))}
         </div>
@@ -284,7 +332,10 @@ export function Monetization() {
           <div className="obs-empty">Noch keine Bestellungen — Verkäufe erscheinen hier automatisch, sobald Stripe eine abgeschlossene Zahlung meldet.</div>
         </div>
       )}
-      {orders.map(o => (
+      {orders.length > 0 && filteredOrders.length === 0 && (
+        <div className="obs-card"><div className="obs-empty">Keine Treffer für diesen Filter unter den geladenen Bestellungen.</div></div>
+      )}
+      {filteredOrders.map(o => (
         <div className="obs-item-card" key={o.id}>
           <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
           <div className="obs-item-meta">
