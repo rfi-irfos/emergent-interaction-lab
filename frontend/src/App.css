@@ -233,7 +233,8 @@ button { cursor: pointer; font-family: inherit; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .site-nav-inner { width: 100%; display: flex; align-items: center; justify-content: space-between; }
-.site-logo-img { height: 50px; }
+.site-logo-lockup { display: flex; align-items: center; gap: 10px; }
+.site-logo-img { height: 36px; width: auto; }
 .site-logo-text { font-size: 20px; font-weight: 900; color: var(--primary); }
 .site-main-nav { display: flex; gap: 26px; }
 .site-main-nav a { position: relative; font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
@@ -303,6 +304,13 @@ button { cursor: pointer; font-family: inherit; }
   padding-top: 70px;
   min-height: 750px;
   position: relative;
+  /* HeroFieldGraphic's SVG uses preserveAspectRatio="xMidYMid slice" against
+     a fixed 720x640 viewBox — at real-world hero aspect ratios (much wider
+     than tall) that scales the graphic up until it covers the box, which
+     routinely pushes the "Earth's limb" glow line past the box's own
+     bottom edge. Without a clip here that overflow just renders into
+     whatever section comes after the hero in normal flow. */
+  overflow: hidden;
   display: flex; align-items: flex-end;
   /* fixed dark regardless of the visitor's light/dark/hc choice — this is the
      one true look of the site (Laura's original design was dark-only), the

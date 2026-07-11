@@ -801,7 +801,10 @@ export function PublicSite({
         {/* NAV */}
         <header className="site-nav" style={{ position: 'sticky', top: 0, zIndex: 200 }}>
           <div className="site-nav-inner">
-            {nav.logo ? <img src={nav.logo} alt={nav.brand} className="site-logo-img" /> : <span className="site-logo-text">{nav.brand}</span>}
+            <span className="site-logo-lockup">
+              {nav.logo && <img src={nav.logo} alt="" className="site-logo-img" />}
+              <span className="site-logo-text">{nav.brand}</span>
+            </span>
             <nav className="site-main-nav">{nav.links.map((l, i) => <a key={i} href={l.href}>{l.label}</a>)}</nav>
             <div className="site-nav-right">
               {nav.phone && <span className="site-nav-phone">{nav.phone}</span>}
