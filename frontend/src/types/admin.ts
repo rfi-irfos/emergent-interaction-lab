@@ -8,4 +8,4 @@
 export type AdminSection =
   | 'inbox' | 'forschung' | 'blog' | 'analytics' | 'website-kit' | 'monetization'
   | 'systemmap' | 'emergence' | 'systemstate' | 'interaction' | 'information' | 'behavior' | 'research'
-  | 'simulationcenter' | 'knowledgegraph' | 'agentactivity' | 'flugschreiber'
+  | 'simulationcenter' | 'knowledgegraph' | 'agentactivity' | 'flugschreiber' | 'gesamtuebersicht'

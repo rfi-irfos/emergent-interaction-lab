@@ -310,6 +310,15 @@ async fn main() {
         // the paginated read path, same limit/offset + X-Total-Count
         // convention as emergence::list_signals / simulation::list_runs.
         .route("/api/observatory/snapshots", get(observatory::list_snapshots))
+        // "Everything about me": one holistic rollup across every table this
+        // platform has captured about her research activity (chat,
+        // emergence signals, research notes, CCET, simulation runs, the
+        // flight recorder, Jarvis tool calls), sectioned by source table
+        // and filterable by the same `?range=7d|30d|all` convention as the
+        // rest of this file — Laura's own ask, not a per-module export.
+        // Deliberately excludes billing.rs (Stripe/order data), a separate
+        // business-data concern.
+        .route("/api/observatory/everything", get(observatory::everything))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

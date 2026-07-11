@@ -47,6 +47,18 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   // 3-tier description in chat.rs) — a longitudinal view of overall system
   // state, not a research observable or a technical/platform-health figure.
   { id: 'flugschreiber', label: 'Flugschreiber', tier: 'system', icon: I(<><rect x="4" y="8" width="16" height="10" rx="2" /><circle cx="9" cy="13" r="1.4" /><circle cx="15" cy="13" r="1.4" /><path d="M12 8V4M9 4h6" /></>) },
+  // "Everything about me" — one holistic rollup across every table this
+  // platform has captured about Laura's research activity (chat, emergence
+  // signals, research notes, CCET, simulation runs, the flight recorder,
+  // Jarvis tool calls), see backend/src/observatory.rs's `everything`
+  // handler. Systemebene, not Forschungsebene or Technische Ebene: this
+  // deliberately spans all three tiers at once (it includes real research
+  // observables AND technical figures), so it doesn't natively belong to
+  // either — the same reasoning Flugschreiber's own placement above already
+  // uses for the closest existing case (also a cross-cutting rollup of
+  // signals + CCET + sims + notes + tool-calls into one longitudinal view),
+  // just widened from "over time" to "across every source at once."
+  { id: 'gesamtuebersicht', label: 'Gesamtübersicht', tier: 'system', icon: I(<><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>) },
   { id: 'interaction', label: 'Interaction Dynamics', tier: 'system', icon: I(<><circle cx="9" cy="9" r="3" /><circle cx="17" cy="15" r="3" /><path d="M11 10.5 15 13.5" /></>) },
   { id: 'behavior', label: 'Behavioral Landscape', tier: 'system', icon: I(<><path d="M3 3v18h18" /><path d="M7 15l4-6 4 3 5-8" /></>) },
   { id: 'information', label: 'Information Dynamics', tier: 'technical', icon: I(<><circle cx="12" cy="12" r="3" /><path d="M12 3v6M12 15v6M3 12h6M15 12h6" /></>) },
@@ -78,4 +90,5 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   knowledgegraph: 'Knowledge Graph',
   agentactivity: 'Agent-Aktivität',
   flugschreiber: 'Flugschreiber',
+  gesamtuebersicht: 'Gesamtübersicht',
 }

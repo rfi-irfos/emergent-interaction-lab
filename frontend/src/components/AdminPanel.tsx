@@ -23,6 +23,7 @@ import { ResearchPulse } from './observatory/ResearchPulse'
 import { SimulationCenter } from './observatory/SimulationCenter'
 import { KnowledgeGraph } from './observatory/KnowledgeGraph'
 import { Flugschreiber } from './observatory/Flugschreiber'
+import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
 
 interface Props {
   content: SiteContent
@@ -388,6 +389,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'agentactivity' && <AgentActivity />}
             {adminSection === 'flugschreiber' && (
               <Flugschreiber onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
+            {adminSection === 'gesamtuebersicht' && (
+              <Gesamtuebersicht onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
