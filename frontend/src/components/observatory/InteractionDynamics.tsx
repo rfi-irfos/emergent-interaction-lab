@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TokenBreakdown, type TokenInfo } from './TokenBreakdown'
 import { ObsChart } from './ObsChart'
+import { ObsDonut } from './ObsDonut'
+import { ObsGauge } from './ObsGauge'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -83,16 +85,32 @@ export function InteractionDynamics() {
         </div>
       )}
 
-      <div className="obs-grid">
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.user_messages}</div><div className="obs-stat-label">Beiträge (Mensch)</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.assistant_messages}</div><div className="obs-stat-label">Beiträge (KI)</div></div>
-        <div className="obs-stat c-blue">
-          <div className="obs-stat-value">{data.mean_token_confidence !== null ? `${Math.round(data.mean_token_confidence * 100)}%` : '—'}</div>
-          <div className="obs-stat-label">Ø Modell-Konfidenz</div>
-        </div>
-        <div className="obs-stat c-teal">
-          <div className="obs-stat-value">{data.mean_latency_seconds !== null ? `${data.mean_latency_seconds.toFixed(1)}s` : '—'}</div>
-          <div className="obs-stat-label">Ø Antwort-Tempo ({data.latency_sample_size} Proben)</div>
+      {/* mean_token_confidence is a real 0-1 fraction — a gauge. user_messages
+          vs assistant_messages becomes a thin 2-slice donut (smaller
+          thickness/size than the default — this is a simple ratio, not a
+          multi-category breakdown). mean_latency_seconds is a duration, not
+          a fraction, so it stays a plain .obs-stat tile — kept rather than
+          dropped, it's real information a gauge can't honestly represent. */}
+      <div className="obs-card">
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+          <ObsDonut
+            data={[
+              { label: 'Mensch', value: data.user_messages, color: 'var(--obs-purple)' },
+              { label: 'KI', value: data.assistant_messages, color: 'var(--obs-blue)' },
+            ]}
+            size={120}
+            thickness={13}
+            gradientIdPrefix="interaction-message-ratio"
+          />
+          {data.mean_token_confidence !== null ? (
+            <ObsGauge value={data.mean_token_confidence} label="Ø Modell-Konfidenz" color="var(--obs-blue)" />
+          ) : (
+            <div className="obs-stat c-blue"><div className="obs-stat-value">—</div><div className="obs-stat-label">Ø Modell-Konfidenz</div></div>
+          )}
+          <div className="obs-stat c-teal" style={{ flex: '0 1 190px' }}>
+            <div className="obs-stat-value">{data.mean_latency_seconds !== null ? `${data.mean_latency_seconds.toFixed(1)}s` : '—'}</div>
+            <div className="obs-stat-label">Ø Antwort-Tempo ({data.latency_sample_size} Proben)</div>
+          </div>
         </div>
       </div>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>

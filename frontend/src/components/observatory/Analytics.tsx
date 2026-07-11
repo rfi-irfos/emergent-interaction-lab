@@ -1,6 +1,8 @@
 import { Fragment, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
+import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
+import { ObsDonut } from './ObsDonut'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -68,9 +70,13 @@ export function Analytics() {
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>
 
-  const maxSrc = Math.max(...data.top_sources.map(s => s.count), 1)
-  const maxTool = Math.max(...data.tool_call_counts.map(t => t.count), 1)
-  const toolCallCounts = [...data.tool_call_counts].sort((a, b) => b.count - a.count)
+  // foldIntoOther is a no-op under its 6-slice ceiling — only matters here
+  // if a real deployment ever accumulates more distinct sources/tools than
+  // that (see chartMath.ts's doc comment: fold the tail into "Andere"
+  // rather than generating more hues, this codebase's own dataviz skill's
+  // prescribed fix for a categorical series past the token ceiling).
+  const topSourcesData = foldIntoOther(data.top_sources.map(s => ({ label: s.label || '(direkt)', value: s.count })))
+  const toolCallCountsData = foldIntoOther(data.tool_call_counts.map(t => ({ label: t.tool, value: t.count })))
 
   return (
     <div className="obs-panel">
@@ -79,11 +85,24 @@ export function Analytics() {
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher (30 T.)</div></div>
         <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat_conversations}</div><div className="obs-stat-label">Gespräche</div></div>
         <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat_messages}</div><div className="obs-stat-label">Nachrichten</div></div>
-        <div className="obs-stat c-amber"><div className="obs-stat-value">{data.blog_posts_draft}</div><div className="obs-stat-label">Blog-Entwürfe</div></div>
-        <div className="obs-stat c-green"><div className="obs-stat-value">{data.blog_posts_published}</div><div className="obs-stat-label">Veröffentlicht</div></div>
         <div className="obs-stat c-teal"><div className="obs-stat-value">{data.research_notes}</div><div className="obs-stat-label">Research Notes</div></div>
         <div className="obs-stat c-teal"><div className="obs-stat-value">{data.simulation_runs}</div><div className="obs-stat-label">Simulationen</div></div>
         <div className="obs-stat c-purple"><div className="obs-stat-value">{data.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aktionen (7 T.)</div></div>
+      </div>
+
+      {/* blog_posts_draft/blog_posts_published used to be two separate stat
+          numbers in the grid above — a 2-slice donut carries the exact same
+          two counts plus the actual draft-vs-published split they never
+          showed, so it replaces rather than duplicates them. */}
+      <div className="obs-card">
+        <div className="obs-section-label">Blog — Entwürfe vs. Veröffentlicht</div>
+        <ObsDonut
+          data={[
+            { label: 'Entwürfe', value: data.blog_posts_draft, color: 'var(--obs-amber)' },
+            { label: 'Veröffentlicht', value: data.blog_posts_published, color: 'var(--obs-green)' },
+          ]}
+          gradientIdPrefix="analytics-blog-status"
+        />
       </div>
 
       <div className="obs-card">
@@ -155,13 +174,7 @@ export function Analytics() {
       {data.top_sources.length > 0 && (
         <div className="obs-card">
           <div className="obs-section-label">Quellen (30 T.)</div>
-          {data.top_sources.map(s => (
-            <div className="obs-bar-row" key={s.label}>
-              <span style={{ width: 68, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0 }}>{s.label}</span>
-              <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(s.count / maxSrc) * 100}%` }} /></div>
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#3b6bf6', minWidth: 24, textAlign: 'right' }}>{s.count}</span>
-            </div>
-          ))}
+          <ObsDonut data={topSourcesData} gradientIdPrefix="analytics-top-sources" />
         </div>
       )}
 
@@ -178,16 +191,10 @@ export function Analytics() {
         </div>
       )}
 
-      {toolCallCounts.length > 0 && (
+      {data.tool_call_counts.length > 0 && (
         <div className="obs-card">
           <div className="obs-section-label">Jarvis-Werkzeugaufrufe (30 T.)</div>
-          {toolCallCounts.map(t => (
-            <div className="obs-bar-row" key={t.tool}>
-              <span style={{ width: 120, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0, fontFamily: 'monospace' }}>{t.tool}</span>
-              <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${(t.count / maxTool) * 100}%` }} /></div>
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#3b6bf6', minWidth: 24, textAlign: 'right' }}>{t.count}</span>
-            </div>
-          ))}
+          <ObsDonut data={toolCallCountsData} gradientIdPrefix="analytics-tool-calls" />
         </div>
       )}
 

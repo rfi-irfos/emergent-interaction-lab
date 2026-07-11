@@ -5,6 +5,8 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { ObsDonut } from './ObsDonut'
+import { ObsGauge } from './ObsGauge'
 
 interface Signal {
   id: string
@@ -62,12 +64,13 @@ const LEVEL_SECTIONS: { key: string; label: string; empty: string }[] = [
   { key: 'system', label: 'System', empty: 'Noch keine System-Signale erkannt — gesamtsystemische Veränderungen, neue Cluster, Drift.' },
 ]
 
-// Same 4 keys as LEVEL_SECTIONS, just also carrying the .obs-stat accent
-// class (obs-stat/obs-grid primitives, see App.css — the same ones
-// Analytics.tsx/SystemState.tsx/InformationDynamics.tsx already use for
-// every other Observatory stat row).
-const LEVEL_STAT_ACCENT: Record<string, string> = {
-  human: 'c-purple', ai: 'c-blue', interaction: 'c-teal', system: 'c-amber',
+// Same 4 keys as LEVEL_SECTIONS — the color each level's donut slice takes,
+// literal --obs-* CSS values rather than obs-stat class names (ObsDonut's
+// `color` needs a real CSS color, not a class to attach); same assignment
+// (human=purple, ai=blue, interaction=teal, system=amber) the old per-level
+// obs-stat tiles used before this donut replaced them.
+const LEVEL_DONUT_COLORS: Record<string, string> = {
+  human: 'var(--obs-purple)', ai: 'var(--obs-blue)', interaction: 'var(--obs-teal)', system: 'var(--obs-amber)',
 }
 
 // The three fixed confidence values the analysis prompt itself is
@@ -191,6 +194,13 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
   // "Übersicht" stat grid and in the detail sections below.
   const visibleSections = levelFilter ? LEVEL_SECTIONS.filter(s => s.key === levelFilter) : LEVEL_SECTIONS
 
+  // Same honesty-about-scope reasoning as visibleSections above — with a
+  // status filter active, only that ONE status was ever fetched from the
+  // backend at all (see loadSignals' `params.set('status', ...)`), so a
+  // status_mix donut showing the other 3 as literal zero would misleadingly
+  // read as "no signals of that status exist" rather than "filtered out".
+  const visibleStatuses = statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)
+
   return (
     <div className="obs-panel">
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
@@ -264,13 +274,34 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
       <div className="obs-section-label">
         Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
       </div>
-      <div className="obs-grid">
-        {visibleSections.map((section, i) => (
-          <div className={`obs-stat ${LEVEL_STAT_ACCENT[section.key]}`} key={section.key} style={hudStagger(i)}>
-            <div className="obs-stat-value">{signals.filter(s => s.level === section.key).length}</div>
-            <div className="obs-stat-label">{section.label}</div>
-          </div>
-        ))}
+      {/* Two donuts replace the old flat per-level stat-tile row — the
+          legend + hover tooltip on each still carry every raw count the
+          tiles did, plus the actual share each level/status makes up, which
+          the tiles never showed. Kept inside .obs-card so both inherit the
+          corner-bracket framing every other Observatory primitive gets. */}
+      <div className="obs-card">
+        <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <ObsDonut
+            data={visibleSections.map(section => ({
+              label: section.label,
+              value: signals.filter(s => s.level === section.key).length,
+              color: LEVEL_DONUT_COLORS[section.key],
+            }))}
+            centerLabel={`${signals.length}\nSignale`}
+            gradientIdPrefix="emergence-level-mix"
+          />
+          <ObsDonut
+            data={visibleStatuses.map(status => ({
+              label: status,
+              value: signals.filter(s => s.status === status).length,
+              color: STATUS_ACCENT[status] ?? '#3b6bf6',
+            }))}
+            gradientIdPrefix="emergence-status-mix"
+          />
+        </div>
+        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+          Ebenen- und Status-Verteilung der aktuell geladenen Signale (siehe "geladen" oben) — kein serverseitiges Gesamt-Grouping.
+        </p>
       </div>
 
       <div
@@ -279,18 +310,28 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
       >
         Eigene Operationalisierung — nicht wörtlich aus Lauras Paper
       </div>
-      <div className="obs-grid" style={{ marginBottom: 22 }}>
-        <div className="obs-stat c-green">
-          <div className="obs-stat-value">{ccet ? formatPercent(ccet.cei) : '—'}</div>
-          <div className="obs-stat-label">CEI (Co-Evolution Index)</div>
-        </div>
-        <div className="obs-stat c-purple">
-          <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
-          <div className="obs-stat-label">CEP (Co-Evolution Points)</div>
-        </div>
-        <div className="obs-stat c-teal">
-          <div className="obs-stat-value">{ccet ? formatPercent(ccet.resonance_frequency) : '—'}</div>
-          <div className="obs-stat-label">Resonance Frequency</div>
+      {/* CEI and Resonance Frequency are real 0-1 fractions — gauges. CEP is
+          a plain point count, not a fraction, so it stays a plain .obs-stat
+          tile rather than being forced into a gauge it doesn't fit; sitting
+          right beside the two gauges is also the literal demonstration that
+          ObsGauge slots in next to plain stat tiles without looking like a
+          different component family. */}
+      <div className="obs-card" style={{ marginBottom: 22 }}>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+          {ccet ? (
+            <ObsGauge value={ccet.cei} label="CEI (Co-Evolution Index)" color="var(--obs-green)" />
+          ) : (
+            <div className="obs-stat c-green"><div className="obs-stat-value">—</div><div className="obs-stat-label">CEI (Co-Evolution Index)</div></div>
+          )}
+          {ccet ? (
+            <ObsGauge value={ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" />
+          ) : (
+            <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Resonance Frequency</div></div>
+          )}
+          <div className="obs-stat c-purple" style={{ flex: '0 1 160px' }}>
+            <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
+            <div className="obs-stat-label">CEP (Co-Evolution Points)</div>
+          </div>
         </div>
       </div>
 

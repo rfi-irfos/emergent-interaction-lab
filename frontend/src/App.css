@@ -2645,6 +2645,63 @@ button { cursor: pointer; font-family: inherit; }
   .hud-skeleton-bar { animation: none; background-position: 0 0; }
 }
 
+/* ── ObsDonut / ObsGauge — hand-rolled donut & gauge chart primitives ──────
+   The actual fix for "all it looks like is corners on cards, no charts
+   whatsoever" (client's own words) — donuts/gauges replace flat bar-row
+   breakdowns across Emergence Monitor, Behavioral Landscape, Analytics,
+   Interaction Dynamics, Gesamtübersicht and Information Dynamics. Both
+   components are plain inline SVG (see lib/chartMath.ts), no charting
+   library, and both are always rendered inside the existing `.obs-card`
+   shell by their callers — so they inherit the corner-bracket decoration
+   above for free, same as every other Observatory primitive.
+
+   Glow (`drop-shadow(currentColor)`, identical technique to
+   `.mycelium-node-core` above — `color` set inline per element to its own
+   hue, `currentColor` picked up by the filter) is deliberately gated to
+   `.observatory-hud` only, same discipline PR #65 had to retrofit onto the
+   corner-frame/radar accent after the fact: a colored glow needs a dark
+   backdrop to read as glowing at all, and on Verwaltung's plain white
+   `.obs-card` (reachable today via Analytics.tsx, the one consumer of
+   these two components that isn't a forced-dark Observatory-tier module —
+   see AdminPanel.tsx's `crmTheme==='dark' || OBSERVATORY_MODULES.some(...)`
+   toggle) it would just read as a stray smudge instead of instrumentation.
+   The un-gated (light-mode) rule below is a plain, fully-opaque colored
+   ring/arc on its own — a complete, intentional look, not a stripped-down
+   HUD leftover. */
+.obs-donut-wrap, .obs-gauge-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
+.obs-donut, .obs-gauge { display: block; overflow: visible; }
+.obs-donut-segment { cursor: pointer; transition: opacity .15s ease, stroke-width .15s ease; }
+.obs-gauge-track { opacity: .16; }
+.obs-gauge-fill { transition: stroke-dashoffset .9s cubic-bezier(.16, 1, .3, 1); }
+/* Targeting-reticle threshold tick — a fixed, theme-independent red reads as
+   "limit/reference line" on both the plain-light and HUD-dark card surface,
+   so it deliberately doesn't need its own light/dark override. */
+.obs-gauge-threshold { stroke: #ef4444; stroke-width: 2; vector-effect: non-scaling-stroke; }
+
+.obs-donut-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center; white-space: pre-line; pointer-events: none; max-width: 78%;
+  font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -.01em; line-height: 1.15;
+}
+/* ObsGauge's center text reuses .obs-stat-value/.obs-stat-label VERBATIM
+   (see App.css above) rather than its own sizing — the explicit ask is that
+   a gauge slots into an .obs-grid next to plain .obs-stat tiles without
+   reading as a different component family, so no local font-size/color
+   override is introduced here at all. */
+.obs-gauge-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center; pointer-events: none; max-width: 82%;
+}
+
+.obs-donut-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; justify-content: center; }
+.obs-donut-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #6b7280; font-weight: 600; }
+.obs-donut-legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+.observatory-hud .obs-donut-segment { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor); }
+.observatory-hud .obs-gauge-fill { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor); }
+.observatory-hud .obs-donut-center { color: #eefcff; }
+.observatory-hud .obs-donut-legend-item { color: rgba(148,190,199,.75); }
+
 /* ── LIVE OBSERVATORY CARDS (above Forschung chat) ───────────────────────────── */
 /* Collapsed by default and visually boxed off from the chat below it — these
    dashboard stat rows used to sit directly above ResearchChat as bare
