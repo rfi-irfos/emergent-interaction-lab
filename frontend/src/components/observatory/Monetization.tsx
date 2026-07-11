@@ -212,77 +212,13 @@ export function Monetization() {
 
   return (
     <div className="obs-panel">
-      <div className="obs-section-label">Neues Produkt</div>
-      <div className="obs-card">
-        <div className="obs-form" style={{ marginBottom: 0 }}>
-          <input placeholder="Name, z.B. „State of Emergent Interaction - Q1“" value={name} onChange={e => setName(e.target.value)} />
-          <textarea placeholder="Beschreibung" value={description} onChange={e => setDescription(e.target.value)} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input placeholder="Preis, z.B. 49.00" value={price} onChange={e => setPrice(e.target.value)} style={{ flex: 1 }} />
-            <select value={currency} onChange={e => setCurrency(e.target.value)}>
-              <option value="eur">EUR</option>
-              <option value="usd">USD</option>
-            </select>
-            <select value={mode} onChange={e => setMode(e.target.value as 'payment' | 'subscription')}>
-              <option value="payment">Einmalig</option>
-              <option value="subscription">Abo</option>
-            </select>
-            {mode === 'subscription' && (
-              <select value={interval} onChange={e => setInterval(e.target.value as 'month' | 'year')}>
-                <option value="month">monatlich</option>
-                <option value="year">jährlich</option>
-              </select>
-            )}
-          </div>
-          {formError && <div className="obs-warning-note">{formError}</div>}
-          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
-            {creating ? 'Legt an…' : 'Produkt anlegen'}
-          </button>
-        </div>
-      </div>
-
-      <div className="obs-section-label" style={{ marginTop: 24 }}>Produkte</div>
-      {loading && <div className="obs-empty">Lade…</div>}
-      {error && <div className="obs-empty">Konnte nicht geladen werden.</div>}
-      {!loading && list.length === 0 && <div className="obs-card"><div className="obs-empty">Noch keine Produkte angelegt.</div></div>}
-      {list.map(p => (
-        <div className="obs-item-card" key={p.id}>
-          <div className="obs-item-title">{p.name}</div>
-          <div className="obs-item-meta">
-            <span className="obs-pill" style={{ background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>
-              {formatPrice(p.price_cents, p.currency)}{p.mode === 'subscription' ? ` / ${p.recurring_interval === 'year' ? 'Jahr' : 'Monat'}` : ''}
-            </span>
-            {' · '}{p.created_at}
-          </div>
-          {p.description && <div className="obs-item-body">{p.description}</div>}
-          <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
-            {p.payment_link_url ? (
-              <a href={p.payment_link_url} target="_blank" rel="noreferrer" className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}>
-                Zahlungslink öffnen ↗
-              </a>
-            ) : (
-              <button
-                className="panel-add-btn"
-                style={{ fontSize: 11, padding: '4px 10px' }}
-                onClick={() => createPaymentLink(p.id)}
-                disabled={linkingId === p.id}
-              >
-                {linkingId === p.id ? 'Erstellt…' : 'Zahlungslink erstellen'}
-              </button>
-            )}
-            <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => deleteProduct(p.id, p.name)}>Löschen</button>
-          </div>
-        </div>
-      ))}
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
-        Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
-      </p>
-
       {/* Real sales, not just the mechanism to sell — every row here comes
           from a verified Stripe webhook event (checkout.session.completed),
           never a manual entry. Same "Übersicht" + accumulated-list pattern
-          as EmergenceMonitor.tsx. */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
+          as EmergenceMonitor.tsx. Moved above product management: revenue
+          visibility is the thing worth seeing first on open, product CRUD
+          is comparatively rare admin housekeeping. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Bestellungen</div>
         {orders.length > 0 && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -362,6 +298,72 @@ export function Monetization() {
       )}
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
         Jede Zeile stammt aus einem echten, signaturgeprüften Stripe-Webhook-Event (checkout.session.completed) - keine manuelle Eingabe, keine Simulation. E-Mail-Adressen sind nur hier, admin-only, sichtbar - nie öffentlich.
+      </p>
+
+      <div className="obs-section-label" style={{ marginTop: 28 }}>Neues Produkt</div>
+      <div className="obs-card">
+        <div className="obs-form" style={{ marginBottom: 0 }}>
+          <input placeholder="Name, z.B. „State of Emergent Interaction - Q1“" value={name} onChange={e => setName(e.target.value)} />
+          <textarea placeholder="Beschreibung" value={description} onChange={e => setDescription(e.target.value)} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input placeholder="Preis, z.B. 49.00" value={price} onChange={e => setPrice(e.target.value)} style={{ flex: 1 }} />
+            <select value={currency} onChange={e => setCurrency(e.target.value)}>
+              <option value="eur">EUR</option>
+              <option value="usd">USD</option>
+            </select>
+            <select value={mode} onChange={e => setMode(e.target.value as 'payment' | 'subscription')}>
+              <option value="payment">Einmalig</option>
+              <option value="subscription">Abo</option>
+            </select>
+            {mode === 'subscription' && (
+              <select value={interval} onChange={e => setInterval(e.target.value as 'month' | 'year')}>
+                <option value="month">monatlich</option>
+                <option value="year">jährlich</option>
+              </select>
+            )}
+          </div>
+          {formError && <div className="obs-warning-note">{formError}</div>}
+          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
+            {creating ? 'Legt an…' : 'Produkt anlegen'}
+          </button>
+        </div>
+      </div>
+
+      <div className="obs-section-label" style={{ marginTop: 24 }}>Produkte</div>
+      {loading && <div className="obs-empty">Lade…</div>}
+      {error && <div className="obs-empty">Konnte nicht geladen werden.</div>}
+      {!loading && list.length === 0 && <div className="obs-card"><div className="obs-empty">Noch keine Produkte angelegt.</div></div>}
+      {list.map(p => (
+        <div className="obs-item-card" key={p.id}>
+          <div className="obs-item-title">{p.name}</div>
+          <div className="obs-item-meta">
+            <span className="obs-pill" style={{ background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>
+              {formatPrice(p.price_cents, p.currency)}{p.mode === 'subscription' ? ` / ${p.recurring_interval === 'year' ? 'Jahr' : 'Monat'}` : ''}
+            </span>
+            {' · '}{p.created_at}
+          </div>
+          {p.description && <div className="obs-item-body">{p.description}</div>}
+          <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+            {p.payment_link_url ? (
+              <a href={p.payment_link_url} target="_blank" rel="noreferrer" className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}>
+                Zahlungslink öffnen ↗
+              </a>
+            ) : (
+              <button
+                className="panel-add-btn"
+                style={{ fontSize: 11, padding: '4px 10px' }}
+                onClick={() => createPaymentLink(p.id)}
+                disabled={linkingId === p.id}
+              >
+                {linkingId === p.id ? 'Erstellt…' : 'Zahlungslink erstellen'}
+              </button>
+            )}
+            <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => deleteProduct(p.id, p.name)}>Löschen</button>
+          </div>
+        </div>
+      ))}
+      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
+        Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
       </p>
     </div>
   )
