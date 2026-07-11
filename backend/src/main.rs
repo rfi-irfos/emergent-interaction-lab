@@ -184,6 +184,7 @@ async fn main() {
     simulation::init_schema(&db).await;
     agent::init_schema(&db).await;
     emergence::init_schema(&db).await;
+    observatory::init_schema(&db).await;
     billing::init_schema(&db).await;
     github_activity::init_schema(&db).await;
 
@@ -282,6 +283,11 @@ async fn main() {
         .route("/api/observatory/emergence/ccet", get(chat::ccet_summary))
         .route("/api/observatory/agent-activity", get(github_activity::agent_activity))
         .route("/api/observatory/deploy-log", post(github_activity::log_deploy))
+        // Flight recorder: one typed rollup row captured automatically after
+        // every chat turn (see chat.rs::stream_chat's CCET spawn) — this is
+        // the paginated read path, same limit/offset + X-Total-Count
+        // convention as emergence::list_signals / simulation::list_runs.
+        .route("/api/observatory/snapshots", get(observatory::list_snapshots))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))

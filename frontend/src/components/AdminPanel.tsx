@@ -22,6 +22,7 @@ import { AgentActivity } from './observatory/AgentActivity'
 import { ResearchPulse } from './observatory/ResearchPulse'
 import { SimulationCenter } from './observatory/SimulationCenter'
 import { KnowledgeGraph } from './observatory/KnowledgeGraph'
+import { Flugschreiber } from './observatory/Flugschreiber'
 
 interface Props {
   content: SiteContent
@@ -385,6 +386,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
             {adminSection === 'systemstate' && <SystemState />}
             {adminSection === 'agentactivity' && <AgentActivity />}
+            {adminSection === 'flugschreiber' && <Flugschreiber />}
             {adminSection === 'interaction' && <InteractionDynamics />}
             {adminSection === 'information' && <InformationDynamics />}
             {adminSection === 'behavior' && (
