@@ -210,6 +210,22 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Additive: durable link between this assistant row and the
+    // agent_tool_calls row(s) it narrates — a JSON array of
+    // agent_tool_calls.id values, NULL when the turn made no tool call at
+    // all. Up to agent::MAX_TOOL_ITERATIONS tool-call rounds can happen
+    // before the ONE final assistant message for an exchange is persisted
+    // (see stream_chat's 'rounds loop below) — this column is populated
+    // once, at that final INSERT, from a `tool_call_ids` accumulator built
+    // up across every round of the same exchange. Feeds the hallucination-
+    // check background spawn (see hallucination.rs): given this message's
+    // own claim text, it needs to know exactly which real tool-call
+    // results that claim is allowed to be checked against.
+    sqlx::query("ALTER TABLE chat_messages ADD COLUMN tool_call_ids TEXT")
+        .execute(db)
+        .await
+        .ok();
+
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS chat_documents (
             id TEXT PRIMARY KEY,
@@ -985,6 +1001,19 @@ struct MessageOut {
     content: String,
     token_info: Option<String>,
     created_at: String,
+    /// The detail text of the first real `mismatch` verdict (see
+    /// hallucination.rs) recorded against one of this message's own linked
+    /// tool calls — doubles as the frontend badge's tooltip. `None` covers
+    /// three genuinely different cases alike, deliberately NOT
+    /// distinguished here: this turn made no tool call, every linked check
+    /// came back `match`/`unverifiable`, or the background check (spawned
+    /// after this message was already persisted — see stream_chat) simply
+    /// hasn't run yet. All three are the same "nothing to flag right now"
+    /// state from the UI's point of view — see ResearchChat.tsx's own
+    /// "only interrupt on a real problem" convention (ToolCallBadge/
+    /// ReasoningBlock) for why staying quiet is correct for all three,
+    /// not just the genuinely-clean one.
+    hallucination_mismatch: Option<String>,
 }
 
 pub async fn get_conversation(
@@ -1017,9 +1046,38 @@ pub async fn get_conversation(
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
+
+    // A separate query (not a JOIN on the main SELECT above) deliberately:
+    // a LEFT JOIN against hallucination_checks would fan out one message
+    // row per linked mismatch when a turn has more than one, which would
+    // then need de-duplicating anyway — simpler and safer to keep the
+    // already-tested message query untouched and merge this in Rust.
+    // `unwrap_or_default()` on failure (e.g. hallucination_checks not
+    // existing yet in an older DB) degrades to "no badges shown," never a
+    // 500 — matches this endpoint's own existing best-effort reads.
+    let mismatch_rows: Vec<(String, String)> = sqlx::query_as(
+        "SELECT chat_message_id, detail FROM hallucination_checks \
+         WHERE verdict = 'mismatch' AND chat_message_id IN (SELECT id FROM chat_messages WHERE conversation_id = ?1) \
+         ORDER BY created_at ASC",
+    )
+    .bind(&id)
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+    let mut mismatch_by_message: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    for (msg_id, detail) in mismatch_rows {
+        // First mismatch wins (ORDER BY created_at ASC above) — a message
+        // with several mismatched tool calls still surfaces one clear
+        // badge/tooltip rather than concatenating an unbounded list.
+        mismatch_by_message.entry(msg_id).or_insert(detail);
+    }
+
     let out: Vec<MessageOut> = rows
         .into_iter()
-        .map(|(id, role, content, token_info, created_at)| MessageOut { id, role, content, token_info, created_at })
+        .map(|(id, role, content, token_info, created_at)| {
+            let hallucination_mismatch = mismatch_by_message.get(&id).cloned();
+            MessageOut { id, role, content, token_info, created_at, hallucination_mismatch }
+        })
         .collect();
     Json(out).into_response()
 }
@@ -1469,6 +1527,13 @@ pub async fn stream_chat(
         // get_content_section call later in the same exchange would still
         // see the value the exchange started with, not the edit just made.
         let mut local_site_content = body.site_content.clone();
+        // Accumulates every agent_tool_calls.id logged across every round of
+        // THIS exchange (a tool call can happen up to MAX_TOOL_ITERATIONS
+        // times before the final assistant message is known) — written into
+        // that final message's own `tool_call_ids` column below, and handed
+        // to the hallucination-check spawn afterward. See chat_messages'
+        // schema doc comment above for the full contract.
+        let mut tool_call_ids: Vec<String> = Vec::new();
 
         'rounds: for _round in 0..agent::MAX_TOOL_ITERATIONS {
             let build_body = |model: &str| json!({
@@ -1736,7 +1801,13 @@ pub async fn stream_chat(
             match agent::parse_tool_call(&iter_text) {
                 Some(call) => {
                     let result = agent::execute_tool(&state, &call, local_site_content.as_ref(), &conversation_id).await;
-                    agent::log_tool_call(&state, &conversation_id, &call, &result).await;
+                    // Generated here (not inside log_tool_call) so this exact
+                    // id is known to the caller regardless of whether the
+                    // INSERT it drives actually succeeds — see
+                    // tool_call_ids' own doc comment above.
+                    let tool_call_id = Uuid::new_v4().to_string();
+                    agent::log_tool_call(&state, &conversation_id, &tool_call_id, &call, &result).await;
+                    tool_call_ids.push(tool_call_id);
                     if call.tool == "update_content_field" {
                         if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&result) {
                             if parsed["ok"].as_bool() == Some(true) {
@@ -1783,13 +1854,20 @@ pub async fn stream_chat(
 
         let assistant_id = Uuid::new_v4().to_string();
         let token_info = serde_json::to_string(&final_tokens).unwrap_or_default();
+        // NULL (not "[]") when this exchange made no tool call at all — the
+        // overwhelmingly common case — so the hallucination-check spawn
+        // below, and any other future reader, can tell "nothing to check"
+        // apart from "an empty list was somehow recorded."
+        let tool_call_ids_json: Option<String> =
+            if tool_call_ids.is_empty() { None } else { serde_json::to_string(&tool_call_ids).ok() };
         let _ = sqlx::query(
-            "INSERT INTO chat_messages (id, conversation_id, role, content, token_info) VALUES (?1,?2,'assistant',?3,?4)",
+            "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids) VALUES (?1,?2,'assistant',?3,?4,?5)",
         )
         .bind(&assistant_id)
         .bind(&conversation_id)
         .bind(&final_full_text)
         .bind(&token_info)
+        .bind(&tool_call_ids_json)
         .execute(&state.db)
         .await;
         let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
@@ -1856,6 +1934,23 @@ pub async fn stream_chat(
         let fragments_text = user_message.clone();
         tokio::spawn(async move {
             crate::thinking_fragments::classify_turn(&fragments_state, &fragments_conv_id, &fragments_msg_id, &fragments_text).await;
+        });
+
+        // Hallucination Tracker v1 — same background-task pattern as the
+        // three spawns just above, never on the reply's critical path. Only
+        // meaningful when this exchange actually made a tool call
+        // (tool_call_ids non-empty); check_message itself is a fast no-op
+        // otherwise (see its own doc comment in hallucination.rs). Checks
+        // ONLY this specific message's own linked tool calls against their
+        // real, already-persisted `agent_tool_calls.result` — never a
+        // general fact-checker, see that module's scope/no-fabrication doc
+        // comment for the full boundary.
+        let hallucination_state = state.clone();
+        let hallucination_msg_id = assistant_id.clone();
+        let hallucination_tool_call_ids = tool_call_ids.clone();
+        let hallucination_text = final_full_text.clone();
+        tokio::spawn(async move {
+            crate::hallucination::check_message(&hallucination_state, &hallucination_msg_id, &hallucination_tool_call_ids, &hallucination_text).await;
         });
 
         yield Ok(Event::default().event("done").data("[DONE]"));
@@ -3421,6 +3516,155 @@ mod tests {
         assert!(
             (parsed["resonance_frequency"].as_f64().unwrap() - (1.0 / 3.0)).abs() < 0.01,
             "only BETA reuses a framework term ('Emergenz') seen in the immediately preceding turn: {parsed}"
+        );
+    }
+
+    // ── Hallucination Tracker v1: tool-call ↔ message linkage + spawn isolation ──
+
+    /// A mock NVIDIA whose `/v1/chat/completions` returns `tool_call_json`
+    /// verbatim as the reply content on the FIRST request (round 1 of
+    /// stream_chat's tool-calling loop) and `final_text` on every request
+    /// after that (round 2+) — lets a test drive a REAL multi-round
+    /// tool-calling exchange through the actual `stream_chat` handler,
+    /// rather than only agent.rs's own `parse_tool_call` unit tests.
+    async fn start_mock_nvidia_tool_round(tool_call_json: &'static str, final_text: &'static str) -> String {
+        let call_count = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let embeddings = axpost(|| async {
+            let vector: Vec<f32> = vec![0.01; 8];
+            AxJson(json!({ "data": [{ "embedding": vector }] }))
+        });
+        let completions = axpost(move |AxJson(_body): AxJson<serde_json::Value>| {
+            let call_count = call_count.clone();
+            async move {
+                let n = call_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                let content = if n == 0 { tool_call_json } else { final_text };
+                // serde_json::to_string on a &str produces a correctly
+                // escaped JSON string literal, so this embeds safely inside
+                // the hand-built outer SSE JSON regardless of what braces/
+                // quotes `content` itself contains.
+                let escaped_content = serde_json::to_string(content).unwrap();
+                let sse_body = format!("data: {{\"choices\":[{{\"delta\":{{\"content\":{escaped_content}}}}}]}}\n\ndata: [DONE]\n\n");
+                axum::response::Response::builder()
+                    .status(StatusCode::OK)
+                    .header("content-type", "text/event-stream")
+                    .body(axum::body::Body::from(sse_body))
+                    .unwrap()
+            }
+        });
+        let app = Router::new()
+            .route("/v1/chat/completions", completions)
+            .route("/v1/embeddings", embeddings);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        format!("http://{addr}")
+    }
+
+    /// Proves the actual link works end to end (not just that the column
+    /// exists): a real tool-calling round through `stream_chat` must leave
+    /// the final assistant message's `tool_call_ids` pointing at the exact
+    /// `agent_tool_calls` row that round produced.
+    #[tokio::test]
+    async fn tool_call_ids_are_linked_to_the_final_assistant_message() {
+        let base = start_mock_nvidia_tool_round(
+            r#"{"tool": "get_recent_analytics", "arguments": {"days": 7}}"#,
+            "Ihr hattet 0 Seitenaufrufe in den letzten 7 Tagen.",
+        )
+        .await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+        // test_state() here only runs chat::init_schema — create the tables
+        // this specific test needs to inspect, to prove REAL linkage rather
+        // than merely "nothing crashed" (that's the separate isolation test
+        // below, which deliberately does NOT do this).
+        crate::agent::init_schema(&state.db).await;
+        crate::hallucination::init_schema(&state.db).await;
+
+        let req = StreamChatReq {
+            conversation_id: "conv-linkage".to_string(),
+            message: "wie viele Besuche hatten wir?".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+        };
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let body = read_sse_body_bounded(resp).await;
+        assert!(body.contains("event: done"), "the exchange must still complete: {body:?}");
+
+        let row: (Option<String>,) = sqlx::query_as(
+            "SELECT tool_call_ids FROM chat_messages WHERE conversation_id = 'conv-linkage' AND role = 'assistant'",
+        )
+        .fetch_one(&state.db)
+        .await
+        .unwrap();
+        let ids_json = row.0.expect("a turn that made a real tool call must have a non-NULL tool_call_ids");
+        let ids: Vec<String> = serde_json::from_str(&ids_json).unwrap();
+        assert_eq!(ids.len(), 1, "exactly one tool call was made in this exchange");
+
+        let logged: (String,) = sqlx::query_as("SELECT tool_name FROM agent_tool_calls WHERE id = ?1")
+            .bind(&ids[0])
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+        assert_eq!(logged.0, "get_recent_analytics", "the linked id must resolve to the REAL agent_tool_calls row this round produced");
+    }
+
+    /// Same doctrine as the flight-recorder isolation tests above
+    /// (`chat_response_and_persistence_unaffected_when_snapshot_capture_tables_are_missing`):
+    /// a background-task failure — here, the NEW hallucination-check spawn
+    /// added alongside the emergence/CCET/Denkfragmente spawns — must NEVER
+    /// surface on the visible chat response. `test_state()` only runs
+    /// `chat::init_schema`, so BOTH `agent_tool_calls` (log_tool_call's own
+    /// INSERT) and `hallucination_checks` (check_message's SELECT/INSERT)
+    /// are guaranteed missing on this exact request — a real tool call
+    /// happens, and every piece of new logic this feature adds is
+    /// guaranteed to fail from a missing table.
+    #[tokio::test]
+    async fn chat_response_completes_when_a_tool_call_happens_and_hallucination_tables_are_missing() {
+        let base = start_mock_nvidia_tool_round(
+            r#"{"tool": "get_recent_analytics", "arguments": {"days": 7}}"#,
+            "Ihr hattet 0 Seitenaufrufe in den letzten 7 Tagen.",
+        )
+        .await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+        // Deliberately NOT calling agent::init_schema / hallucination::init_schema.
+
+        let req = StreamChatReq {
+            conversation_id: "conv-halluc-fail".to_string(),
+            message: "wie viele Besuche hatten wir?".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+        };
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let body = read_sse_body_bounded(resp).await;
+
+        assert!(
+            body.contains("Ihr hattet 0 Seitenaufrufe") && body.contains("event: done"),
+            "the visible reply must complete normally even though agent_tool_calls/hallucination_checks don't exist: {body:?}"
+        );
+
+        // Give the fire-and-forget hallucination-check spawn a real chance
+        // to run and actually fail — same as the CCET/snapshot isolation
+        // test above, for the same reason (proves this happened, not just
+        // that it hadn't started yet by assertion time).
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
+        let (assistant_count,): (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant'",
+        )
+        .bind("conv-halluc-fail")
+        .fetch_one(&state.db)
+        .await
+        .unwrap();
+        assert_eq!(
+            assistant_count, 1,
+            "the assistant turn must be durably persisted regardless of the hallucination-check spawn's fate"
         );
     }
 }
