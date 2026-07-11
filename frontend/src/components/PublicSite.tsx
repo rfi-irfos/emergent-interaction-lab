@@ -282,6 +282,30 @@ function IconMail() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
 }
 
+// Geometric "E" monogram (Bauhaus-style stacked bars) + a small node/ring
+// accent standing in for the "Interaction Field" concept — inline SVG using
+// `currentColor` (set via .site-logo-mark's `color: var(--primary)`, the
+// same token .site-logo-text already uses) rather than a baked data-URI
+// image with fixed hex colors. A raster/data-URI logo can't see the page's
+// CSS custom properties at all (it renders in an isolated nested context),
+// so it stays one fixed color across every theme — exactly the light/hc
+// bug the HUD corner-frame had before PR #65, and the WCAG AAA hc theme's
+// own "one color, max contrast" rule this would otherwise violate with a
+// stray cyan. Inline SVG in the live DOM inherits theme color correctly in
+// all three themes for free.
+function BrandMark() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 40 40" className="site-logo-mark" aria-hidden="true">
+      <rect x="7" y="6" width="6" height="28" rx="1.2" fill="currentColor" />
+      <rect x="7" y="6" width="23" height="6" rx="1.2" fill="currentColor" />
+      <rect x="7" y="17" width="17" height="6" rx="1.2" fill="currentColor" />
+      <rect x="7" y="28" width="23" height="6" rx="1.2" fill="currentColor" />
+      <circle cx="33" cy="8" r="5" fill="none" stroke="currentColor" strokeWidth="1.3" opacity=".55" />
+      <circle cx="33" cy="8" r="2.6" fill="currentColor" />
+    </svg>
+  )
+}
+
 // ── Framework concept icons ───────────────────────────────────────────────────
 
 function IconEmergence() {
@@ -803,8 +827,7 @@ export function PublicSite({
         <header className="site-nav" style={{ position: 'sticky', top: 0, zIndex: 200 }}>
           <div className="site-nav-inner">
             <span className="site-logo-lockup">
-              {nav.logo && <img src={nav.logo} alt="" className="site-logo-img" />}
-              <span className="site-logo-text">{nav.brand}</span>
+              {nav.logo ? <img src={nav.logo} alt="" className="site-logo-img" /> : <BrandMark />}
             </span>
             <nav className="site-main-nav">{nav.links.map((l, i) => <a key={i} href={l.href}>{l.label}</a>)}</nav>
             <div className="site-nav-right">
@@ -985,7 +1008,7 @@ export function PublicSite({
           <div className="site-nav-inner">
             {nav.logo
               ? <EImg field="nav.logo" src={nav.logo} alt={nav.brand} className="site-logo-img" />
-              : <E field="nav.brand" value={nav.brand} as="span" className="site-logo-text" />
+              : <BrandMark />
             }
             <nav className="site-main-nav">
               {nav.links.map((l, i) => (

@@ -237,6 +237,11 @@ button { cursor: pointer; font-family: inherit; }
 .site-logo-lockup { display: flex; align-items: center; gap: 10px; }
 .site-logo-img { height: 36px; width: auto; }
 .site-logo-text { font-size: 20px; font-weight: 900; color: var(--primary); }
+/* BrandMark's inline SVG (components/PublicSite.tsx) uses fill/stroke=
+   currentColor throughout, so this one rule themes the whole mark across
+   light/dark/hc — the same var(--primary) .site-logo-text already used,
+   picking up hc's forced amber override for free. */
+.site-logo-mark { color: var(--primary); flex-shrink: 0; }
 .site-main-nav { display: flex; gap: 26px; }
 .site-main-nav a { position: relative; font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
 .site-main-nav a:hover { color: var(--primary); }
