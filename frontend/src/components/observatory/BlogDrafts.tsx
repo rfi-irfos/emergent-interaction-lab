@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface BlogPost {
   id: string
@@ -154,7 +156,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
 
   const STATUS_ACCENT: Record<string, string> = { draft: '#f59e0b', published: '#10b981' }
 
-  if (loading && !posts) return <div className="obs-empty">Lade…</div>
+  if (loading && !posts) return <HudSkeleton variant="list" />
   if (error && !posts) return <div className="obs-empty">Fehler beim Laden.</div>
 
   return (
@@ -197,8 +199,8 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
       )}
       {list.length === 0 && <div className="obs-empty">Noch keine Blogpost-Entwürfe.</div>}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
-      {filtered.map(p => (
-        <div className="obs-item-card" key={p.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>
+      {filtered.map((p, i) => (
+        <div className="obs-item-card" key={p.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>
           {editingId === p.id ? (
             <div className="obs-form" style={{ marginBottom: 0 }}>
               <input value={editTitle} onChange={e => setEditTitle(e.target.value)} />

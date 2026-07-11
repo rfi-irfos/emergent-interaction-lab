@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 // One row per anomaly the Anomaly Watchdog v1 flagged — see
 // backend/src/anomaly.rs's module doc comment for the full "what this is
@@ -87,7 +89,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
 
   const loadMore = () => load(items.length, true)
 
-  if (loading && items.length === 0) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading && items.length === 0) return <div className="obs-panel"><HudSkeleton variant="list" /></div>
   if (error && items.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   return (
@@ -120,8 +122,8 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
           <div className="obs-section-label">
             Geloggte Anomalien <span style={{ fontWeight: 400 }}>(geladen: {items.length} von {total ?? '…'})</span>
           </div>
-          {items.map(item => (
-            <div className="obs-item-card" key={item.id} style={{ ['--obs-accent' as string]: KIND_COLORS[item.kind] }}>
+          {items.map((item, i) => (
+            <div className="obs-item-card" key={item.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: KIND_COLORS[item.kind] }}>
               <div className="obs-item-title">
                 <span className="obs-pill" style={{ background: `${KIND_COLORS[item.kind]}1a`, color: KIND_COLORS[item.kind] }}>
                   {KIND_LABELS[item.kind]}

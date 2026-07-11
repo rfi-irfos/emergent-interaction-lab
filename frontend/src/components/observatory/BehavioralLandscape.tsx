@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
@@ -41,7 +43,7 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<BehaviorData>(`/api/observatory/behavior?range=${range}`, [range])
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
@@ -93,7 +95,7 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
       {data.recent_tool_calls.length === 0
         ? <div className="obs-card"><div className="obs-empty">Noch keine Werkzeugaufrufe protokolliert.</div></div>
         : data.recent_tool_calls.map((c, i) => (
-            <div className="obs-item-card" key={i} style={{ ['--obs-accent' as string]: c.status === 'ok' ? '#8b5cf6' : '#ef4444' }}>
+            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: c.status === 'ok' ? '#8b5cf6' : '#ef4444' }}>
               <div className="obs-item-title">{TOOL_LABELS[c.tool_name] ?? c.tool_name}</div>
               <div className="obs-item-meta">
                 <span

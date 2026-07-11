@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { downloadJson } from '../../lib/export'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface Signal {
   id: string
@@ -179,7 +181,7 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
     }
   }
 
-  if (loading && signals.length === 0) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading && signals.length === 0) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error && signals.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   // With a level filter active, only that one level was ever fetched from
@@ -263,8 +265,8 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
         Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
       </div>
       <div className="obs-grid">
-        {visibleSections.map(section => (
-          <div className={`obs-stat ${LEVEL_STAT_ACCENT[section.key]}`} key={section.key}>
+        {visibleSections.map((section, i) => (
+          <div className={`obs-stat ${LEVEL_STAT_ACCENT[section.key]}`} key={section.key} style={hudStagger(i)}>
             <div className="obs-stat-value">{signals.filter(s => s.level === section.key).length}</div>
             <div className="obs-stat-label">{section.label}</div>
           </div>
@@ -309,8 +311,8 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
             {levelSignals.length === 0 ? (
               <div className="obs-empty" style={{ padding: '12px 0', textAlign: 'left' }}>{section.empty}</div>
             ) : (
-              levelSignals.map(s => (
-                <div className="obs-item-card" key={s.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>
+              levelSignals.map((s, i) => (
+                <div className="obs-item-card" key={s.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>
                   {/* The "measured emergence" gate's own verdict, per-card —
                       mirrors the Research page's own "gemessene Emergenz"
                       vs. "Beobachtung" vocabulary exactly (content.json,

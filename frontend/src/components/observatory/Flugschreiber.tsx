@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 // One typed rollup row, captured automatically after every chat turn — see
 // backend/src/observatory.rs's `capture_system_snapshot` (chained inside
@@ -104,7 +106,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
   // in the new page anymore.
   const changeRange = (next: string) => { setRange(next); setSelectedId(null) }
 
-  if (loading && snapshots.length === 0) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading && snapshots.length === 0) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error && snapshots.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   // The API returns newest-first (right for the scrub list below — most
@@ -220,13 +222,13 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
           )}
 
           <div className="obs-section-label">Snapshots durchblättern</div>
-          {snapshots.map(s => (
+          {snapshots.map((s, i) => (
             <div
               className="obs-item-card"
               key={s.id}
               role="button"
               tabIndex={0}
-              style={{ ['--obs-accent' as string]: s.id === selected?.id ? '#3b6bf6' : '#6b7280', cursor: 'pointer' }}
+              style={{ ...hudStagger(i), ['--obs-accent' as string]: s.id === selected?.id ? '#3b6bf6' : '#6b7280', cursor: 'pointer' }}
               onClick={() => setSelectedId(s.id)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setSelectedId(s.id) }}
             >

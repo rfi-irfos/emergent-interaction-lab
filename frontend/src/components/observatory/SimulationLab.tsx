@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import type { AdminSection } from '../../types/admin'
 import type { SignalRef } from './SimulationCenter'
+import { HudSkeleton } from './HudSkeleton'
 
 // One option within a branching decision run ("either the team does A
 // because ..., or B because ..."). Mirrors backend/src/simulation.rs's
@@ -234,14 +236,14 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
       </div>
 
       <div className="obs-section-label">Bisherige Läufe</div>
-      {loading && list.length === 0 && <div className="obs-empty">Lade…</div>}
+      {loading && list.length === 0 && <HudSkeleton variant="list" />}
       {list.length === 0 && !loading && <div className="obs-empty">Noch keine Simulationen.</div>}
-      {list.map(r => {
+      {list.map((r, i) => {
         const related = (r.related_signal_ids ?? [])
           .map(id => signals.find(s => s.id === id))
           .filter((s): s is SignalRef => Boolean(s))
         return (
-          <div className="obs-item-card" key={r.id} style={{ ['--obs-accent' as string]: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>
+          <div className="obs-item-card" key={r.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>
             <div className="obs-item-title">{r.hypothesis}</div>
             <div className="obs-item-meta">
               <span className="obs-pill" style={{ background: `${STATUS_ACCENT[r.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>{r.status}</span>

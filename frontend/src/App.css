@@ -458,8 +458,32 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid var(--border); border-top: 3px solid var(--primary);
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
   transition: transform .3s ease, box-shadow .3s ease;
+  /* Same corner-bracket-frame + radar/dial treatment as the admin
+     Observatory's .obs-stat (see the HUD FRAMING section above) — this is
+     the public site's own stat tile, the plan's explicit "e.g. behind stat
+     tiles" example, brought over verbatim rather than a second look. */
+  position: relative;
+  isolation: isolate;
+}
+.site-livestats-tile::after {
+  content: '';
+  position: absolute; inset: 5px; z-index: -1; pointer-events: none;
+  --corner-c: var(--brand-cyan);
+  background:
+    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(99,240,255,.18) 8px 9px, transparent 9px 15px, rgba(99,240,255,.11) 15px 16px, transparent 16px),
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+  opacity: .5;
+  transition: opacity .2s ease;
 }
 .site-livestats-tile:hover { transform: translateY(-4px); box-shadow: 0 12px 32px var(--shadow); }
+.site-livestats-tile:hover::after { opacity: .85; }
 .site-livestats-tile strong {
   font-size: 34px; font-weight: 900; font-family: var(--mono); color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -644,9 +668,9 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-pcard {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  overflow: hidden; transition: box-shadow .3s, transform .3s; display: flex; flex-direction: column;
+  overflow: hidden; transition: box-shadow .3s, transform .3s, border-color .3s; display: flex; flex-direction: column;
 }
-.site-pcard:hover { box-shadow: 0 18px 48px var(--shadow); transform: translateY(-6px); }
+.site-pcard:hover { box-shadow: 0 18px 48px var(--shadow), 0 0 26px rgba(99,240,255,.14); border-color: var(--brand-cyan); transform: translateY(-6px); }
 .site-pcard-img {
   height: 220px; background: var(--surface-sunken);
   display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -759,9 +783,12 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-news-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  overflow: hidden; transition: box-shadow .25s, transform .25s;
+  overflow: hidden; transition: box-shadow .25s, transform .25s, border-color .25s;
 }
-.site-news-card:hover { box-shadow: 0 10px 28px var(--shadow); transform: translateY(-3px); }
+/* Same cyan-tinted glow language as .site-usp-card's own hover (brought over
+   for "every page, every app" consistency, see the plan) rather than the
+   plain var(--shadow) this card used alone before. */
+.site-news-card:hover { box-shadow: 0 10px 28px var(--shadow), 0 0 22px rgba(99,240,255,.14); border-color: var(--brand-cyan); transform: translateY(-3px); }
 .site-news-img { width: 100%; height: 180px; object-fit: cover; }
 .site-news-body { padding: 22px; }
 .site-news-date { font-size: 12px; font-weight: 600; font-family: var(--mono); color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .06em; }
@@ -1653,7 +1680,8 @@ button { cursor: pointer; font-family: inherit; }
 /* ── CERTIFICATES ─────────────────────────────────────────────────────────── */
 .site-certificates { background: var(--surface); }
 .site-cert-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; margin: 0 auto; }
-.site-cert-card { display: flex; align-items: flex-start; gap: 18px; padding: 24px 28px; background: var(--surface-alt); border: 1.5px solid var(--border, rgba(0,0,0,.1)); border-radius: 12px; cursor: default; text-align: left; width: 100%; transition: box-shadow .18s, transform .18s; font: inherit; color: inherit; }
+.site-cert-card { display: flex; align-items: flex-start; gap: 18px; padding: 24px 28px; background: var(--surface-alt); border: 1.5px solid var(--border, rgba(0,0,0,.1)); border-radius: 12px; cursor: default; text-align: left; width: 100%; transition: box-shadow .18s, transform .18s, border-color .18s; font: inherit; color: inherit; }
+.site-cert-card:hover { box-shadow: 0 10px 26px var(--shadow), 0 0 20px rgba(99,240,255,.12); border-color: var(--brand-cyan); transform: translateY(-2px); }
 .site-cert-icon { color: var(--primary); flex-shrink: 0; margin-top: 2px; }
 .site-cert-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .site-cert-title { font-size: 16px; font-weight: 700; color: var(--text); }
@@ -2436,6 +2464,117 @@ button { cursor: pointer; font-family: inherit; }
 .mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: #eefcff; margin-bottom: 3px; }
 .mycelium-detail-item-excerpt { font-size: 11.5px; color: rgba(226,241,245,.72); line-height: 1.5; margin-bottom: 4px; }
 .mycelium-detail-item-meta { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10px; color: rgba(148,190,199,.55); }
+
+/* ── HUD FRAMING — corner brackets + radar/dial accent ────────────────────
+   Angular Palantir-style card framing, extending the existing HUD glow
+   language (drop-shadow glow, hud-card-in, hud-pulse, the mycelium node
+   glow above) rather than inventing a second system. `.hud-corner-frame` is
+   the reusable primitive — self-contained via `--corner-c` (falls back
+   through --hud-cyan, then the public site's own --brand-cyan, then a
+   literal default) so the exact same class works both inside the admin
+   Observatory and, opted into by hand, on the public site's own cards (see
+   PublicSite.tsx). Applied automatically — no markup changes needed — to
+   every shared HUD card primitive already in use across Observatory
+   modules: .obs-card/.obs-item-card/.obs-map-card/.obs-stat/.live-card.
+
+   One ::after per card carries the whole decoration as stacked background
+   layers (8 short linear-gradients, one per bracket arm) rather than 4 real
+   corner elements, since an element only has 2 pseudo-element slots and
+   ::before is already the accent bar on .obs-stat/.live-card. `isolation:
+   isolate` + `z-index: -1` keeps that ::after correctly sandwiched between
+   the card's own background and its real (text) children — without it, a
+   negative z-index child can escape to the nearest ancestor stacking
+   context and paint behind unrelated content instead of just this card. */
+.hud-corner-frame,
+.observatory-hud .obs-card,
+.observatory-hud .obs-item-card,
+.observatory-hud .obs-map-card,
+.observatory-hud .obs-stat,
+.observatory-hud .live-card {
+  position: relative;
+  isolation: isolate;
+}
+.hud-corner-frame::after,
+.observatory-hud .obs-card::after,
+.observatory-hud .obs-item-card::after,
+.observatory-hud .obs-map-card::after,
+.observatory-hud .obs-stat::after,
+.observatory-hud .live-card::after {
+  content: '';
+  position: absolute; inset: 5px; z-index: -1; pointer-events: none;
+  --corner-c: var(--hud-cyan, var(--brand-cyan, #22d3ee));
+  background:
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+  opacity: .5;
+  filter: drop-shadow(0 0 2px var(--corner-c));
+  transition: opacity .2s ease;
+}
+.hud-corner-frame:hover::after,
+.observatory-hud .obs-card:hover::after,
+.observatory-hud .obs-item-card:hover::after,
+.observatory-hud .obs-map-card:hover::after,
+.observatory-hud .obs-stat:hover::after,
+.observatory-hud .live-card:hover::after {
+  opacity: .9;
+}
+
+/* Radar/dial accent — "a subtle circular/radar visual accent somewhere
+   structurally sensible (e.g. behind stat tiles)" per the plan. Layered
+   onto the SAME ::after as the corner frame above (one decorative
+   pseudo-element per card, not a second one competing for the same
+   pseudo-element budget) as an extra background layer: two faint
+   concentric ring arcs tucked into the tile's own top-right corner.
+   Deliberately static, no sweep animation — a spinning ring reads as a
+   loading spinner and would fight with the real per-card entrance
+   animation below; a still one reads as instrumentation, which is the
+   actual ask. Reused verbatim (bar-for-bar, same 8 corner layers) on the
+   public site's own stat tiles below (.site-livestats-tile). */
+.observatory-hud .obs-stat::after {
+  background:
+    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(34,211,238,.16) 8px 9px, transparent 9px 15px, rgba(34,211,238,.1) 15px 16px, transparent 16px),
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
+    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
+    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
+    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+}
+
+/* ── HUD LOADING SKELETON ──────────────────────────────────────────────────
+   Replaces the old static "Lade…" text swap (see HudSkeleton.tsx) with a
+   real shimmering placeholder shaped like the content about to arrive —
+   honest about "still loading," not a fabricated delay. Neutral grey
+   shimmer by default so it degrades sanely anywhere it's used; the
+   .observatory-hud override re-tints it cyan to match the rest of the
+   theme. Skeleton cards reuse .obs-stat/.obs-item-card verbatim, so they
+   already pick up hud-card-in + the corner-frame/glow above for free. */
+.hud-skeleton-wrap { display: flex; flex-direction: column; gap: 10px; }
+.hud-skeleton-grid { margin-bottom: 22px; }
+.hud-skeleton-bar {
+  border-radius: 6px; background-size: 200% 100%;
+  background-image: linear-gradient(90deg, rgba(148,163,184,.14) 25%, rgba(148,163,184,.32) 50%, rgba(148,163,184,.14) 75%);
+  animation: hud-shimmer 1.6s ease-in-out infinite;
+}
+.observatory-hud .hud-skeleton-bar {
+  background-image: linear-gradient(90deg, rgba(34,211,238,.08) 25%, rgba(34,211,238,.24) 50%, rgba(34,211,238,.08) 75%);
+}
+.hud-skeleton-chart { width: 100%; height: 160px; border-radius: 12px; }
+@keyframes hud-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-skeleton-bar { animation: none; background-position: 0 0; }
+}
 
 /* ── LIVE OBSERVATORY CARDS (above Forschung chat) ───────────────────────────── */
 /* Collapsed by default and visually boxed off from the chat below it — these

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { parseServerTimestamp } from '../../lib/dateGroups'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 // Same 7d/30d/all vocabulary as Behavioral Landscape/System State/
 // Interaction Dynamics' range selectors, but purely client-side — see the
@@ -261,7 +263,7 @@ export function Monetization() {
           ))}
         </div>
       )}
-      {ordersLoading && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Lade…</div></div>}
+      {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
       {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
       {!ordersLoading && !ordersError && orders.length === 0 && (
         <div className="obs-card">
@@ -271,8 +273,8 @@ export function Monetization() {
       {orders.length > 0 && filteredOrders.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Keine Treffer für diesen Filter unter den geladenen Bestellungen.</div></div>
       )}
-      {filteredOrders.map(o => (
-        <div className="obs-item-card" key={o.id}>
+      {filteredOrders.map((o, i) => (
+        <div className="obs-item-card" key={o.id} style={hudStagger(i)}>
           <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
           <div className="obs-item-meta">
             <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>
@@ -330,11 +332,11 @@ export function Monetization() {
       </div>
 
       <div className="obs-section-label" style={{ marginTop: 24 }}>Produkte</div>
-      {loading && <div className="obs-empty">Lade…</div>}
+      {loading && <HudSkeleton variant="list" rows={2} />}
       {error && <div className="obs-empty">Konnte nicht geladen werden.</div>}
       {!loading && list.length === 0 && <div className="obs-card"><div className="obs-empty">Noch keine Produkte angelegt.</div></div>}
-      {list.map(p => (
-        <div className="obs-item-card" key={p.id}>
+      {list.map((p, i) => (
+        <div className="obs-item-card" key={p.id} style={hudStagger(i)}>
           <div className="obs-item-title">{p.name}</div>
           <div className="obs-item-meta">
             <span className="obs-pill" style={{ background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>

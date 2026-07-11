@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { ObsChart } from './ObsChart'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface DayCount { day: string; views: number }
 interface Bucket { label: string; count: number }
@@ -63,7 +64,7 @@ export function Analytics() {
     [bucket, days],
   )
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>
 

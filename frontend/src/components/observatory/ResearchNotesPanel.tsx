@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface NoteOut {
   id: string
@@ -133,7 +135,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
         </div>
       </div>
 
-      {loading && !data && <div className="obs-empty">Lade…</div>}
+      {loading && !data && <HudSkeleton variant="list" />}
       {error && <div className="obs-empty">Fehler beim Laden.</div>}
       {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
       {list.length > 0 && (
@@ -167,10 +169,10 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
         </div>
       )}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
-      {filtered.map(n => {
+      {filtered.map((n, i) => {
         const tags = parseTags(n.tags)
         return (
-          <div className="obs-item-card" key={n.id} style={{ ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>
+          <div className="obs-item-card" key={n.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>
             <div className="obs-item-title">{n.title}</div>
             <div className="obs-item-meta">
               <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>

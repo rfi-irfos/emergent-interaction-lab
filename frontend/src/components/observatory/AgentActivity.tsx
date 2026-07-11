@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudSkeleton } from './HudSkeleton'
 
 interface ActivityItem {
   kind: 'pull_request' | 'commit' | 'workflow_run' | 'deploy'
@@ -53,7 +55,7 @@ export function AgentActivity() {
   // already and there's nothing to gain from a server round-trip here.
   const [kindFilter, setKindFilter] = useState<'' | ActivityItem['kind']>('')
 
-  if (loading) return <div className="obs-panel"><div className="obs-empty">Lade…</div></div>
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="list" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
@@ -86,7 +88,7 @@ export function AgentActivity() {
         : items.length === 0
         ? <div className="obs-card"><div className="obs-empty">Keine Treffer.</div></div>
         : items.map((item, i) => (
-            <div className="obs-item-card" key={i} style={{ ['--obs-accent' as string]: statusColor(item) }}>
+            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: statusColor(item) }}>
               <div className="obs-item-title">
                 {item.url
                   ? <a href={item.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{item.title}</a>

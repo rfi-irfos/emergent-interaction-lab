@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
+import { hudStagger } from '../../lib/hudStagger'
+import { HudSkeleton } from './HudSkeleton'
 import { ExportButtons } from './ExportButtons'
 
 const RANGE_OPTIONS: { value: string; label: string }[] = [
@@ -152,15 +154,15 @@ export function SystemState() {
           )}
         </div>
       </div>
-      {signalsLoading && <div className="obs-empty">Lade…</div>}
+      {signalsLoading && <HudSkeleton variant="list" rows={2} />}
       {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}
       {!signalsLoading && !signalsError && states.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Noch kein Systemzustand erkannt — entsteht automatisch aus Forschungsgesprächen.</div></div>
       )}
-      {states.map(([scope, s]) => {
+      {states.map(([scope, s], i) => {
         const trend = trendLine(trendByScope.get(scope))
         return (
-          <div className="obs-item-card" key={scope}>
+          <div className="obs-item-card" key={scope} style={hudStagger(i)}>
             <div className="obs-item-title">
               {scope}
               <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
@@ -174,7 +176,7 @@ export function SystemState() {
       })}
 
       <div className="obs-section-label" style={{ marginTop: 26 }}>Technische Systemgesundheit</div>
-      {diagLoading && <div className="obs-empty">Lade…</div>}
+      {diagLoading && <HudSkeleton variant="stats" rows={2} />}
       {diagError && <div className="obs-empty">Fehler beim Laden.</div>}
       {diag && (
         <>
