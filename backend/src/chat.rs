@@ -29,19 +29,6 @@ use crate::AppState;
 /// one `.await`, so it never yields a single SSE event, and the client sees
 /// total silence with no way to distinguish it from network latency.
 ///
-/// This was already possible before PR #31, but PR #31's durable,
-/// server-wide model-ladder cache (`AppState::chat_model_idx`, persisted
-/// to `chat_model_state`) is what turned an occasional per-request risk
-/// into a guaranteed, permanent one: once ONE candidate is cached as "the"
-/// winner, EVERY subsequent message goes straight to that same candidate
-/// (see `build_model_ladder`'s `cached_idx` shortcut) until the periodic
-/// force-top re-probe. If that specific cached candidate starts hanging
-/// instead of erroring, every single message after that hangs forever too
-/// — matching exactly why this "started right after the last deploy" and
-/// why it's total silence now instead of the "~30s but eventually
-/// responds" behavior from earlier the same night (when candidates were
-/// failing fast/loud, not hanging silently).
-///
 /// Bounds only the time to receive a response's headers (`reqwest::Client::send`
 /// resolves as soon as headers arrive, before the body/stream is read) — not
 /// the total time to stream a full reply, so a model that's genuinely slow
@@ -68,17 +55,25 @@ pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // 2026-07-10) tried from index 0 fresh on EVERY message, which is exactly
 // the "inference time is very long" bug: paying however many front
 // candidates aren't entitled on this NVIDIA account as a fresh failed
-// round-trip on every single message, forever. Fixed the same day: the
-// ladder position is now cached across HTTP requests in
-// AppState::chat_model_idx (see stream_chat's model-selection setup below),
-// not just within one exchange's tool-calling rounds — so a repeat message
-// reuses the last-known-good candidate instantly, and only a periodic
-// retry-from-the-top (CHAT_MODEL_RETRY_FROM_TOP_EVERY) or an explicit
-// reasoning-toggle request (see StreamChatReq::reasoning_requested and
-// build_model_ladder) ever re-probes earlier candidates.
+// round-trip on every single message, forever. Through 2026-07-11 this was
+// "fixed" with a durable, server-wide sticky cache (AppState::chat_model_idx)
+// plus a periodic force-top re-probe every N requests, to avoid re-walking
+// dead candidates on every message. That machinery is GONE as of the same
+// day's follow-up fix, deliberately: Simeon's ask, verbatim, was "let's use
+// [nemotron-49b] as standard always so we don't get switched around" — the
+// periodic re-probe was itself the thing silently switching the live model
+// out from under a normal-looking session, exactly the behavior he was
+// objecting to, and it was only ever load-bearing while the candidate list
+// itself was unverified guesswork (see the entitlement audit below). Now
+// that every candidate here is individually confirmed against the real
+// account, "start from the top every time" costs nothing extra when the
+// primary works (the overwhelmingly common case) and only pays for a fast
+// fallback on the rare exchange where it doesn't — no settings dropdown,
+// no per-user model picker: the model list is an internal resilience detail,
+// not something Laura should ever need to think about.
 //
-// 2026-07-11: root-caused the "nothing works, no convo, toolcalls no"
-// incident directly against build.nvidia.com/v1/models and
+// 2026-07-11 entitlement audit: root-caused the "nothing works, no convo,
+// toolcalls no" incident directly against build.nvidia.com/v1/models and
 // /v1/chat/completions with the real production key (previously never
 // possible from a dev worktree). Three of the seven candidates from the
 // 2026-07-10 ladder are simply NOT on this account's catalog at all —
@@ -86,39 +81,35 @@ pub(crate) const CHAT_MODEL: &str = "meta/llama-3.1-8b-instruct";
 // org prefix; the real catalog entry is nv-mistralai/..., which is ALSO not
 // entitled on this account), and deepseek-ai/deepseek-r1 (deprecated off
 // the catalog entirely, replaced by the deepseek-v4 family below) — all
-// three 404 instantly, every single force-top retry. Worse: the fourth
-// rung, meta/llama-3.3-70b-instruct, IS a valid catalog entry but its
-// connection reliably never completes at all — confirmed hanging past
-// NVIDIA_CONNECT_TIMEOUT (20s) in direct testing — which is exactly the
-// class of failure this file's own top-of-file doc comment warns about.
-// That candidate being reachable-but-silent (not a fast 404) is what
-// produced the 45s NVIDIA_STREAM_STALL_TIMEOUT log line during the
-// incident: something in the ladder was accepted but never answered.
+// three 404 instantly. Worse: the fourth rung, meta/llama-3.3-70b-instruct,
+// IS a valid catalog entry but its connection reliably never completes at
+// all — confirmed hanging past NVIDIA_CONNECT_TIMEOUT (20s) in direct
+// testing — which is exactly the class of failure this file's own
+// top-of-file doc comment warns about. That candidate being
+// reachable-but-silent (not a fast 404) is what produced the 45s
+// NVIDIA_STREAM_STALL_TIMEOUT log line during the incident: something in
+// the ladder was accepted but never answered.
 //
 // Replaced all four with candidates individually verified (curl, real key,
-// today) to return 200 with an actual completion in under ~1.5s each, and
-// to follow a JSON tool-call instruction correctly on a smoke test:
+// same day) to return 200 with an actual completion in under ~1.5s each,
+// and to follow a JSON tool-call instruction correctly on a smoke test:
 // nvidia/llama-3.3-nemotron-super-49b-v1 (NVIDIA's own tuned 49B — the
 // actual "golden middle" Simeon asked for on 07-10, this account IS
-// entitled to it, unlike nemotron-70b-instruct); nvidia/nemotron-nano-12b-v2-vl
-// as a second fast/light rung; deepseek-ai/deepseek-v4-pro as the
-// bigger/"smarter" option (replaces the hanging 70b-3.3 slot); and
-// deepseek-ai/deepseek-v4-flash as the reasoning-capable slot (replaces
-// dead deepseek-r1 — confirmed it actually populates reasoning_content).
-// mistralai/mixtral-8x7b-instruct-v0.1 and meta/llama-3.1-70b-instruct are
-// both still genuinely entitled and working, kept as deeper fallback rungs.
-// NOT re-verified: nvidia/llama-3.3-nemotron-super-49b-v1.5 (the .5 point
-// release) looked tempting but puts its actual answer in `reasoning` with
-// `content: null` on a plain turn in testing — would silently break the
-// non-reasoning path's `delta.content` extraction, so deliberately NOT
-// used outside the dedicated reasoning slot.
-//
-// Reordering this array changes what a previously-persisted numeric
-// `chat_model_idx` points at — harmless: the ladder loop re-validates
-// whatever it's pointed at on the very next request and falls through
-// correctly if that guess is wrong, self-correcting within one exchange.
+// entitled to it, unlike nemotron-70b-instruct — now the fixed, always-tried-
+// first default) as the primary; nvidia/nemotron-nano-12b-v2-vl as a
+// second fast/light rung; deepseek-ai/deepseek-v4-pro as a bigger/"smarter"
+// fallback (replaces the hanging 70b-3.3 slot); and deepseek-ai/deepseek-v4-flash
+// as the reasoning-capable slot (replaces dead deepseek-r1 — confirmed it
+// actually populates reasoning_content). mistralai/mixtral-8x7b-instruct-v0.1
+// and meta/llama-3.1-70b-instruct are both still genuinely entitled and
+// working, kept as deeper fallback rungs — only reached if nemotron-49b
+// itself is having a real outage. NOT re-verified: nvidia/llama-3.3-nemotron-super-49b-v1.5
+// (the .5 point release) looked tempting but puts its actual answer in
+// `reasoning` with `content: null` on a plain turn in testing — would
+// silently break the non-reasoning path's `delta.content` extraction, so
+// deliberately NOT used outside the dedicated reasoning slot.
 pub(crate) const CHAT_MODEL_CANDIDATES: &[&str] = &[
-    "nvidia/llama-3.3-nemotron-super-49b-v1", // NVIDIA-tuned 49B, verified fast + entitled — the real "golden middle"
+    "nvidia/llama-3.3-nemotron-super-49b-v1", // the standard, fixed default — verified fast + entitled, always tried first
     "meta/llama-3.1-70b-instruct",      // verified fast + entitled, solid non-reasoning fallback
     "nvidia/nemotron-nano-12b-v2-vl",   // verified fast + entitled, light second rung
     "deepseek-ai/deepseek-v4-pro",      // verified working, bigger/"smarter" option — replaces the hanging 70b-3.3 slot
@@ -126,35 +117,24 @@ pub(crate) const CHAT_MODEL_CANDIDATES: &[&str] = &[
     "mistralai/mixtral-8x7b-instruct-v0.1", // MoE, verified entitled — slower, kept as a deep fallback rung
     CHAT_MODEL,                         // meta/llama-3.1-8b-instruct — final safety net, must always work
 ];
-// How often (in requests, server-wide) to ignore AppState::chat_model_idx's
-// cached position and re-probe the ladder from the top, so a bigger model
-// that becomes newly entitled on the account doesn't stay undiscovered
-// forever just because an earlier attempt once failed. The common case
-// (repeat messages within and across sessions) still reuses the cached
-// winner with zero wasted round-trips; only every Nth request pays to
-// re-check.
-const CHAT_MODEL_RETRY_FROM_TOP_EVERY: u64 = 20;
 
 /// Computes the ordered sequence of `CHAT_MODEL_CANDIDATES` indices to try
 /// for one exchange. Pure and side-effect free (no network, no AppState) so
-/// it's directly unit-testable — see the tests module below.
+/// it's directly unit-testable — see the tests module below. Always starts
+/// from the top: no sticky cache, no periodic re-probe (see this file's
+/// candidate-array doc comment for why that machinery was removed
+/// 2026-07-11) — every exchange gets the same fixed, predictable ordering,
+/// falling forward within THIS exchange only if a candidate actually fails.
 ///
-/// - `reasoning_requested` (see `StreamChatReq::reasoning_requested`, wired
-///   from the frontend's reasoning toggle): when true, the reasoning-capable
-///   candidate (`deepseek-ai/deepseek-v4-flash`) is tried FIRST, ahead of the
-///   cached shortcut entirely — the user explicitly asked to see reasoning,
-///   so it's worth paying the round-trip to check, even if a different
-///   candidate is the cached steady-state winner. When false (the default),
-///   the reasoning candidate is skipped entirely: most models aren't
-///   reasoning-capable, so forcing a doomed attempt against it on every
-///   ordinary message would just be a wasted failed round-trip.
-/// - `cached_idx` (see `AppState::chat_model_idx`): the last-known-good
-///   index from a previous request, reused as the starting point instead of
-///   always restarting at 0 — only consulted on the non-reasoning path.
-/// - `force_top` (see `CHAT_MODEL_RETRY_FROM_TOP_EVERY`): when true, ignores
-///   `cached_idx` and starts from 0 anyway, so an earlier candidate that
-///   failed before can periodically be re-checked.
-pub(crate) fn build_model_ladder(reasoning_requested: bool, cached_idx: usize, force_top: bool) -> Vec<usize> {
+/// `reasoning_requested` (see `StreamChatReq::reasoning_requested`, wired
+/// from the frontend's reasoning toggle): when true, the reasoning-capable
+/// candidate (`deepseek-ai/deepseek-v4-flash`) is tried FIRST, ahead of the
+/// standard default — the user explicitly asked to see reasoning, so it's
+/// worth paying the round-trip to check. When false (the default), the
+/// reasoning candidate is skipped entirely: most models aren't
+/// reasoning-capable, so forcing a doomed attempt against it on every
+/// ordinary message would just be a wasted failed round-trip.
+pub(crate) fn build_model_ladder(reasoning_requested: bool) -> Vec<usize> {
     let deepseek_idx = CHAT_MODEL_CANDIDATES
         .iter()
         .position(|&m| m == "deepseek-ai/deepseek-v4-flash")
@@ -164,12 +144,7 @@ pub(crate) fn build_model_ladder(reasoning_requested: bool, cached_idx: usize, f
             .chain((0..CHAT_MODEL_CANDIDATES.len()).filter(|&i| i != deepseek_idx))
             .collect()
     } else {
-        let start = if force_top {
-            0
-        } else {
-            cached_idx.min(CHAT_MODEL_CANDIDATES.len() - 1)
-        };
-        (start..CHAT_MODEL_CANDIDATES.len())
+        (0..CHAT_MODEL_CANDIDATES.len())
             .filter(|&i| i != deepseek_idx)
             .collect()
     }
@@ -330,30 +305,6 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
-    // Singleton row (id is CHECK'd to always be 1 — never a per-conversation
-    // or per-user table) durably backing AppState::chat_model_idx /
-    // chat_request_count. Fix for the 2026-07-10 model-ladder cache (see
-    // CHAT_MODEL_CANDIDATES above) actually doing nothing in production:
-    // this app's fly.toml sets auto_stop_machines/min_machines_running=0, so
-    // a low-traffic site like this one scales to zero between almost every
-    // message and cold-starts fresh on the next one — wiping the in-memory
-    // Arc<AtomicUsize>/Arc<AtomicU64> back to 0/0 and paying the full failed-
-    // ladder-probe cost on nearly every message, same as before the cache
-    // existed. `db` (DB_PATH, on the `eil_data` mounted volume per fly.toml)
-    // IS durable across restarts, unlike process memory — see
-    // load_model_state/persist_model_state below, and main.rs's startup
-    // seeding of AppState from this table.
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS chat_model_state (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            model_idx INTEGER NOT NULL DEFAULT 0,
-            request_count INTEGER NOT NULL DEFAULT 0
-        )",
-    )
-    .execute(db)
-    .await
-    .expect("create chat_model_state");
-
     // CCET (Continuous Co-Evolution Tracker) instrumentation — one row per
     // assistant turn analyzed. `embedding` is stored (not recomputed) so the
     // NEXT turn's similarity check never has to re-embed an old turn.
@@ -388,50 +339,6 @@ pub async fn init_schema(db: &SqlitePool) {
         .ok();
 }
 
-/// Reads the durable model-ladder state at startup, seeding
-/// `AppState::chat_model_idx`/`chat_request_count` so a cold restart resumes
-/// from whatever was last discovered/counted instead of resetting to 0/0 —
-/// see `chat_model_state`'s doc comment in `init_schema` above. Ensures the
-/// singleton row exists first (true first-boot-ever case: nothing has been
-/// persisted yet, so both default to 0, matching the pre-fix behavior for
-/// that one case only).
-pub async fn load_model_state(db: &SqlitePool) -> (usize, u64) {
-    let _ = sqlx::query(
-        "INSERT OR IGNORE INTO chat_model_state (id, model_idx, request_count) VALUES (1, 0, 0)",
-    )
-    .execute(db)
-    .await;
-
-    let row: Option<(i64, i64)> =
-        sqlx::query_as("SELECT model_idx, request_count FROM chat_model_state WHERE id = 1")
-            .fetch_optional(db)
-            .await
-            .ok()
-            .flatten();
-
-    match row {
-        Some((idx, count)) => (idx.max(0) as usize, count.max(0) as u64),
-        None => (0, 0),
-    }
-}
-
-/// Writes the current model-ladder state through to the durable `db` —
-/// called every time `stream_chat` mutates `AppState::chat_model_idx` or
-/// `chat_request_count`, right alongside the in-memory atomic update, so the
-/// two never drift apart. Best-effort like the rest of this module's writes
-/// (`let _ = ...`): a failed write here means the next cold start re-walks
-/// the ladder once more than strictly necessary, not a correctness or
-/// user-visible failure worth surfacing as an error.
-pub(crate) async fn persist_model_state(db: &SqlitePool, model_idx: usize, request_count: u64) {
-    let _ = sqlx::query(
-        "INSERT INTO chat_model_state (id, model_idx, request_count) VALUES (1, ?1, ?2)
-         ON CONFLICT(id) DO UPDATE SET model_idx = excluded.model_idx, request_count = excluded.request_count",
-    )
-    .bind(model_idx as i64)
-    .bind(request_count as i64)
-    .execute(db)
-    .await;
-}
 
 // ── embeddings + vector search (brute-force cosine over SQLite BLOBs) ────────
 
@@ -1556,24 +1463,12 @@ pub async fn stream_chat(
         let mut final_full_text = String::new();
         let mut final_tokens: Vec<serde_json::Value> = Vec::new();
 
-        // Model-selection setup (Fix 1 + Fix 2, 2026-07-10): reasoning_requested
-        // comes straight from the frontend toggle; cached_idx/force_top
-        // determine where THIS exchange's ladder starts (see
-        // build_model_ladder's doc comment for the full picture). request_no
-        // is a server-wide counter (not per-conversation — the ladder
-        // reflects account entitlement, which doesn't vary per conversation).
+        // Model-selection setup: reasoning_requested comes straight from the
+        // frontend toggle (see build_model_ladder's doc comment). No sticky
+        // cache, no per-request counter — every exchange gets the same
+        // fixed, predictable ladder, starting from the standard default.
         let reasoning_requested = body.reasoning_requested.unwrap_or(false);
-        let request_no = state.chat_request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let force_top = request_no % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
-        let cached_idx = state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed);
-        // Write the incremented counter through to the durable DB immediately
-        // (not just the in-memory atomic) — see chat_model_state's doc
-        // comment. Without this, a cold restart (this app scales to zero
-        // between almost every message per fly.toml) would reset the count
-        // to 0 and re-land on a force_top slot on literally every restart,
-        // defeating the cache above even with the index itself persisted.
-        persist_model_state(&state.db, cached_idx, request_no + 1).await;
-        let ladder = build_model_ladder(reasoning_requested, cached_idx, force_top);
+        let ladder = build_model_ladder(reasoning_requested);
         // Position into `ladder` (not directly into CHAT_MODEL_CANDIDATES).
         // Sticky across rounds within one exchange: whichever candidate
         // first succeeds is reused for every later round of the same
@@ -1671,26 +1566,6 @@ pub async fn stream_chat(
             };
             if matches!(&res, Ok(r) if r.status().is_success()) {
                 tracing::info!("chat round served by model {used_model}");
-            }
-            // Persist the resolved ladder position back to the shared,
-            // request-spanning cache (AppState::chat_model_idx) so the NEXT
-            // ordinary (non-reasoning) message starts here instead of
-            // re-discovering it from scratch — the actual fix for "inference
-            // time is very long". Guarded to non-reasoning traffic only: a
-            // reasoning-toggle request intentionally tries
-            // deepseek-ai/deepseek-v4-flash first regardless of the cache (see
-            // build_model_ladder), and persisting that special-cased
-            // position would wrongly make future ordinary messages skip past
-            // untried, possibly-better non-reasoning candidates the
-            // steady-state cache hadn't reached yet.
-            if !reasoning_requested {
-                let resolved_idx = ladder[ladder_pos];
-                state.chat_model_idx.store(resolved_idx, std::sync::atomic::Ordering::Relaxed);
-                // Same write-through as the counter above: the whole point of
-                // this fix is that the NEXT request — quite possibly served
-                // by a freshly cold-started machine — must see this resolved
-                // index, not the one that was true when this request started.
-                persist_model_state(&state.db, resolved_idx, request_no + 1).await;
             }
 
             let res = match res {
@@ -2162,8 +2037,6 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
-            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
@@ -2611,85 +2484,53 @@ mod tests {
         assert_eq!(forwarded, full_reasoning);
     }
 
-    // ── model-selection ladder (2026-07-10 fix) ─────────────────────────
+    // ── model-selection ladder (2026-07-11: fixed default, no sticky cache) ──
+    //
+    // 2026-07-10's version of this ladder cached the last-known-good index
+    // server-wide and only periodically re-probed from the top — removed
+    // 2026-07-11 (see CHAT_MODEL_CANDIDATES' doc comment) because that's
+    // exactly the "switched around" behavior Simeon flagged: once the
+    // candidate list itself is verified against the real account, there's no
+    // more unknown entitlement to keep silently re-discovering, so every
+    // exchange just gets the same fixed, predictable ladder every time.
 
     fn deepseek_idx() -> usize {
         CHAT_MODEL_CANDIDATES.iter().position(|&m| m == "deepseek-ai/deepseek-v4-flash").unwrap()
     }
 
-    /// The regression this fix exists for: `stream_chat` used to always
-    /// start a fresh HTTP request's ladder at index 0, re-paying however
-    /// many front candidates weren't entitled on the account as a failed
-    /// round-trip on EVERY message — "inference time is very long". This is
-    /// the same scenario end to end: a first request discovers (via
-    /// AppState::chat_model_idx, mimicked here by a plain cached_idx value)
-    /// that index 3 is the real winner; a second, later request must start
-    /// there directly, not restart the search at 0.
+    /// The standard, non-reasoning path always walks the full ladder top to
+    /// bottom, every single exchange — no cache, no periodic re-probe, no
+    /// drift. This IS the fix: predictable model selection, not a discovery
+    /// optimization.
     #[test]
-    fn second_request_reuses_cached_index_instead_of_restarting_at_zero() {
-        // First request: as if the ladder walked forward to index 3 and
-        // that got persisted (mirrors `state.chat_model_idx.store(...)`).
-        let cached_idx_after_first_request = 3usize;
-
-        // Second request, ordinary (no reasoning toggle), not a periodic
-        // retry-from-top slot.
-        let ladder = build_model_ladder(false, cached_idx_after_first_request, false);
-
-        assert_eq!(
-            ladder.first().copied(),
-            Some(3),
-            "must start from the cached index, not restart the discovery walk at 0"
-        );
-        assert!(!ladder.contains(&0) && !ladder.contains(&1), "must not re-try earlier candidates already known to have failed");
-    }
-
-    /// A totally fresh cache (no previous request yet, index 0) still walks
-    /// the full ladder top to bottom — the fix must not break the very
-    /// first request's discovery behavior.
-    #[test]
-    fn first_ever_request_starts_at_index_zero() {
-        let ladder = build_model_ladder(false, 0, false);
+    fn non_reasoning_ladder_always_starts_at_index_zero() {
+        let ladder = build_model_ladder(false);
         assert_eq!(ladder, vec![0, 1, 2, 3, 5, 6], "deepseek's slot (4) must be excluded on the default, non-reasoning path");
     }
 
-    /// CHAT_MODEL_RETRY_FROM_TOP_EVERY's mechanism: even with a cached index
-    /// deep into the ladder, a request landing on a periodic retry slot
-    /// ignores the cache and re-walks from the top — otherwise a bigger
-    /// model that becomes newly entitled on the account would stay
-    /// undiscovered forever.
+    /// The reasoning toggle's core behavior: the reasoning-capable candidate
+    /// is tried FIRST, ahead of the standard default — the user explicitly
+    /// asked to see reasoning, so it's worth paying the round-trip to check.
     #[test]
-    fn periodic_retry_slot_ignores_the_cache_and_restarts_at_zero() {
-        let ladder = build_model_ladder(false, 5, true);
-        assert_eq!(ladder, vec![0, 1, 2, 3, 5, 6]);
-    }
-
-    /// Fix 2's core behavior: with the reasoning toggle ON, the
-    /// reasoning-capable candidate is tried FIRST, ahead of the cached
-    /// shortcut entirely — even when the cache points somewhere else deep in
-    /// the ladder, and even on a request that would NOT otherwise be a
-    /// periodic retry-from-top slot.
-    #[test]
-    fn reasoning_requested_tries_deepseek_first_ahead_of_the_cache() {
-        let ladder = build_model_ladder(true, 5, false);
+    fn reasoning_requested_tries_deepseek_first() {
+        let ladder = build_model_ladder(true);
         assert_eq!(
             ladder.first().copied(),
             Some(deepseek_idx()),
-            "reasoning toggle must override the cached-winner shortcut"
+            "reasoning toggle must try the reasoning candidate first"
         );
         // Falls through the rest of the ladder in its normal relative order
-        // if deepseek-r1 isn't entitled, rather than stopping there.
+        // if the reasoning candidate isn't entitled, rather than stopping there.
         assert_eq!(ladder, vec![deepseek_idx(), 0, 1, 2, 3, 5, 6]);
     }
 
-    /// The toggle-OFF counterpart (the default): deepseek-r1 must never
-    /// appear in the ladder at all, so a non-reasoning-capable-account
-    /// never pays for a doomed attempt against it on an ordinary message.
+    /// The toggle-OFF counterpart (the default): the reasoning candidate must
+    /// never appear in the ladder at all, so an ordinary message never pays
+    /// for a doomed attempt against it.
     #[test]
     fn reasoning_not_requested_never_includes_deepseek_in_the_ladder() {
-        for cached in 0..CHAT_MODEL_CANDIDATES.len() {
-            let ladder = build_model_ladder(false, cached, false);
-            assert!(!ladder.contains(&deepseek_idx()), "cached_idx={cached}: deepseek-r1 leaked into the non-reasoning ladder");
-        }
+        let ladder = build_model_ladder(false);
+        assert!(!ladder.contains(&deepseek_idx()), "deepseek leaked into the non-reasoning ladder");
     }
 
     /// `StreamChatReq::reasoning_requested` wiring: absent (older client /
@@ -2713,177 +2554,6 @@ mod tests {
         )
         .unwrap();
         assert_eq!(with_field_true.reasoning_requested.unwrap_or(false), true);
-    }
-
-    // ── durable model-ladder state (2026-07-10 follow-up fix) ───────────
-    //
-    // PR #30's in-memory Arc<AtomicUsize>/Arc<AtomicU64> cache does nothing
-    // for a low-traffic site behind fly.toml's
-    // auto_stop_machines/min_machines_running=0: the app scales to zero
-    // between almost every message and cold-starts fresh on the next one,
-    // wiping the cache back to 0/0 and re-paying the full failed-ladder-probe
-    // latency on nearly every message — same as before PR #30 existed. These
-    // tests drive load_model_state/persist_model_state directly against an
-    // in-memory SQLite DB (the same pattern agent.rs's tests use), standing
-    // in for the durable `eil_data` volume in production.
-    //
-    // (HashMap/PathBuf/Arc already brought into scope by this module's
-    // earlier `use std::{...}` — see the search-tests' test_state() fixture
-    // above — so no re-import here; would otherwise be an E0252 conflict.)
-
-    /// True first boot ever: nothing has been persisted yet, so both values
-    /// default to 0 — the one case where this fix's behavior matches the old
-    /// (buggy) always-0 behavior, because there's genuinely nothing to load.
-    #[tokio::test]
-    async fn model_state_defaults_to_zero_on_true_first_boot() {
-        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-        init_schema(&db).await;
-
-        let (idx, count) = load_model_state(&db).await;
-        assert_eq!(idx, 0);
-        assert_eq!(count, 0);
-    }
-
-    /// (a) The regression this fix exists for: a cold restart must load
-    /// whatever a previous process discovered and persisted, not silently
-    /// reset to index 0 the way an in-memory-only AtomicUsize does. Mirrors
-    /// exactly what `main` does at startup — call `load_model_state` against
-    /// the DB and seed a fresh `AppState`'s atomics from the result.
-    #[tokio::test]
-    async fn cold_restart_seeds_fresh_appstate_from_persisted_index_not_zero() {
-        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-        init_schema(&db).await;
-
-        // A previous process's stream_chat discovered index 3 was the real
-        // winner (e.g. the 405b/70b candidates aren't entitled, but
-        // deepseek-r1's slot is skipped and llama-3.1-70b at index 3 works)
-        // and wrote it through before the machine scaled to zero.
-        persist_model_state(&db, 3, 17).await;
-
-        // "Cold restart": build a brand new AppState the same way `main`
-        // does — seeded from load_model_state, not AtomicUsize::new(0).
-        let (seeded_idx, seeded_count) = load_model_state(&db).await;
-        let state = AppState {
-            sessions: Arc::new(std::sync::RwLock::new(std::collections::HashMap::new())),
-            content_path: PathBuf::from("content.json"),
-            uploads_dir: PathBuf::from("uploads"),
-            static_dir: PathBuf::from("dist"),
-            allowed_email: String::new(),
-            google_client_id: String::new(),
-            google_client_secret: String::new(),
-            redirect_uri: String::new(),
-            dev_mode: true,
-            db: db.clone(),
-            http: reqwest::Client::new(),
-            nvidia_api_key: String::new(),
-            nvidia_api_base: "https://integrate.api.nvidia.com".to_string(),
-            nvidia_connect_timeout: crate::chat::NVIDIA_CONNECT_TIMEOUT,
-            chat_secret: String::new(),
-            stripe_secret_key: String::new(),
-            stripe_api_base: "https://api.stripe.com".to_string(),
-            stripe_webhook_secret: String::new(),
-            ddg_api_base: "http://127.0.0.1:1".to_string(),
-            github_token: String::new(),
-            github_api_base: "https://api.github.com".to_string(),
-            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(seeded_idx)),
-            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(seeded_count)),
-            audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
-        };
-
-        assert_eq!(
-            state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed),
-            3,
-            "fresh AppState must be seeded from the DB, not default to 0 on a cold restart"
-        );
-        assert_eq!(state.chat_request_count.load(std::sync::atomic::Ordering::Relaxed), 17);
-    }
-
-    /// (b) An update actually persists to the DB — not just the in-memory
-    /// atomic — and a second update overwrites the same singleton row rather
-    /// than accumulating extra rows (the whole point of the `id INTEGER
-    /// PRIMARY KEY CHECK (id = 1)` + `ON CONFLICT` upsert).
-    #[tokio::test]
-    async fn updated_index_persists_to_the_db_and_would_survive_a_restart() {
-        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-        init_schema(&db).await;
-
-        let (idx0, count0) = load_model_state(&db).await;
-        assert_eq!((idx0, count0), (0, 0));
-
-        // Mirrors stream_chat's write-through when the ladder resolves to a
-        // new index.
-        persist_model_state(&db, 2, 1).await;
-
-        // A brand new load — as a freshly restarted process would issue —
-        // must see the update, proving it actually reached the DB.
-        let (idx1, count1) = load_model_state(&db).await;
-        assert_eq!(idx1, 2, "update must have reached the DB, not only an in-memory atomic");
-        assert_eq!(count1, 1);
-
-        // A later update (e.g. the periodic retry-from-top discovering a
-        // still-better candidate) overwrites in place.
-        persist_model_state(&db, 4, 21).await;
-        let (idx2, count2) = load_model_state(&db).await;
-        assert_eq!(idx2, 4);
-        assert_eq!(count2, 21);
-
-        let row_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_model_state")
-            .fetch_one(&db)
-            .await
-            .unwrap();
-        assert_eq!(row_count.0, 1, "must stay a singleton row, not insert a new one per update");
-    }
-
-    /// (c) The periodic-retry-from-top counter (CHAT_MODEL_RETRY_FROM_TOP_EVERY)
-    /// must keep counting across a simulated restart, continuing the SAME
-    /// server-wide count instead of restarting at 0 — otherwise (this is the
-    /// second half of the bug the DB-persistence fix closes, not just the
-    /// index) every cold start would land request_no=0 and force_top=true on
-    /// literally every single request post-restart, re-walking the whole
-    /// ladder from scratch every time regardless of how well the index cache
-    /// itself is persisted.
-    #[tokio::test]
-    async fn periodic_retry_counter_continues_across_a_simulated_restart() {
-        let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
-        init_schema(&db).await;
-
-        // Process A: 20 requests already served since boot, cached index
-        // settled at 3 — both persisted right before the machine scales to
-        // zero. (fetch_add returns the PRE-increment value, so the Nth
-        // absolute request server-wide has request_no == N-1 — a persisted
-        // count of 20 means the next fetch_add returns old value 20, landing
-        // exactly on the request_no % 20 == 0 boundary.)
-        persist_model_state(&db, 3, 20).await;
-
-        // Process B ("cold restart"): seeds in-memory atomics from the DB,
-        // exactly like `main` does at startup.
-        let (seeded_idx, seeded_count) = load_model_state(&db).await;
-        let model_idx = std::sync::atomic::AtomicUsize::new(seeded_idx);
-        let request_count = std::sync::atomic::AtomicU64::new(seeded_count);
-
-        // Request #21 server-wide (request_no == 20) correctly lands on the
-        // periodic retry-from-top slot, continuing the count that started
-        // before the restart — not a fresh "request 0 of this process" that
-        // would force_top on every single cold start.
-        let request_no = request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let force_top = request_no % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
-        assert_eq!(request_no, 20);
-        assert!(force_top, "request #21 server-wide must still land on the periodic retry slot after a restart");
-
-        let cached_idx = model_idx.load(std::sync::atomic::Ordering::Relaxed);
-        assert_eq!(cached_idx, 3, "the previously-discovered winner must have survived the restart too");
-        let ladder = build_model_ladder(false, cached_idx, force_top);
-        assert_eq!(ladder, vec![0, 1, 2, 3, 5, 6], "the periodic slot re-walks from the top even though the cache says 3");
-
-        // The NEXT request (#22) is back to normal: reuses the cache
-        // directly, rather than forcing another re-walk the way a
-        // reset-to-zero-every-restart counter would on every request.
-        let request_no2 = request_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let force_top2 = request_no2 % CHAT_MODEL_RETRY_FROM_TOP_EVERY == 0;
-        assert_eq!(request_no2, 21);
-        assert!(!force_top2, "the request right after the periodic slot must not also force_top");
-        let ladder2 = build_model_ladder(false, cached_idx, force_top2);
-        assert_eq!(ladder2.first().copied(), Some(3), "must resume reusing the cached winner, not re-walk again");
     }
 
     // ── NVIDIA request hang guard (2026-07-10 incident fix) ─────────────
@@ -3150,8 +2820,6 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
-            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         };
         crate::observatory::capture_system_snapshot(&state, "conv-bare", None).await;

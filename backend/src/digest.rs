@@ -140,15 +140,9 @@ async fn call_nvidia_once(
         .ok_or_else(|| "empty completion".to_string())
 }
 
-/// Walks the same model ladder `chat::stream_chat` uses, starting from the
-/// current server-wide cached candidate (`AppState::chat_model_idx`), so a
-/// digest doesn't waste round-trips re-probing candidates already known to
-/// be unavailable on this NVIDIA account. Unlike `stream_chat`, a digest
-/// generation never WRITES BACK to that shared cache — it's an infrequent,
-/// best-effort background call (at most once a week), not the steady-state
-/// signal the interactive chat path tunes itself against; letting it
-/// overwrite the cache on, say, a transient failure would risk degrading
-/// every real chat message that follows.
+/// Walks the same fixed model ladder `chat::stream_chat` uses, always
+/// starting from the standard default candidate (see
+/// `chat::build_model_ladder`'s doc comment).
 ///
 /// Falls back to `facts::fallback_digest_text` (still real numbers, just no
 /// model prose) if every candidate fails — matches this codebase's existing
@@ -156,8 +150,7 @@ async fn call_nvidia_once(
 /// empty retrieval context) rather than blocking the digest entirely or
 /// fabricating placeholder text.
 async fn generate_prose(state: &AppState, facts: &DigestFacts) -> String {
-    let cached_idx = state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed);
-    let ladder = chat::build_model_ladder(false, cached_idx, false);
+    let ladder = chat::build_model_ladder(false);
     let messages = vec![
         json!({"role": "system", "content": format!("{}{}", chat::SYSTEM_PROMPT, DIGEST_FRAMING)}),
         json!({"role": "user", "content": facts::format_facts_for_prompt(facts)}),
@@ -320,8 +313,6 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
-            chat_model_idx: Arc::new(AtomicUsize::new(0)),
-            chat_request_count: Arc::new(AtomicU64::new(0)),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

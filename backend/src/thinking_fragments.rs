@@ -226,22 +226,22 @@ async fn persist_fragments(db: &SqlitePool, conversation_id: &str, message_id: &
 /// Public (crate-visible) entry point — always called from a `tokio::spawn`
 /// at the call site (chat.rs's `stream_chat`, right alongside the
 /// emergence/CCET spawns), never awaited on the chat response's own path.
-/// Walks the same server-wide model ladder `digest::generate_prose` does
-/// (starting from the cached `AppState::chat_model_idx`, non-reasoning),
-/// trying the next candidate only on a genuine request/network/parse
-/// failure — an empty-but-successful classification is trusted as-is (see
-/// `classify_once`'s doc comment) rather than retried against a different
-/// candidate. Writes nothing at all if every candidate fails or the model
-/// never returns a valid layer — honest silence, not a fabricated/default
-/// row (matches this project's established no-fabrication doctrine — see
-/// e.g. `emergence::analyze_recent_interactions`'s own "erfinde nichts"
+/// Walks the same fixed model ladder `digest::generate_prose` does (always
+/// starting from the standard default, non-reasoning — see
+/// `chat::build_model_ladder`'s doc comment), trying the next candidate only
+/// on a genuine request/network/parse failure — an empty-but-successful
+/// classification is trusted as-is (see `classify_once`'s doc comment)
+/// rather than retried against a different candidate. Writes nothing at all
+/// if every candidate fails or the model never returns a valid layer —
+/// honest silence, not a fabricated/default row (matches this project's
+/// established no-fabrication doctrine — see e.g.
+/// `emergence::analyze_recent_interactions`'s own "erfinde nichts"
 /// instruction).
 pub(crate) async fn classify_turn(state: &AppState, conversation_id: &str, message_id: &str, user_text: &str) {
     if state.nvidia_api_key.is_empty() || user_text.trim().is_empty() {
         return;
     }
-    let cached_idx = state.chat_model_idx.load(std::sync::atomic::Ordering::Relaxed);
-    let ladder = crate::chat::build_model_ladder(false, cached_idx, false);
+    let ladder = crate::chat::build_model_ladder(false);
     let messages = vec![
         json!({ "role": "system", "content": CLASSIFY_SYSTEM_PROMPT }),
         json!({ "role": "user", "content": format_classify_prompt(user_text) }),
@@ -446,8 +446,6 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
-            chat_model_idx: Arc::new(AtomicUsize::new(0)),
-            chat_request_count: Arc::new(AtomicU64::new(0)),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

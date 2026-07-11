@@ -292,8 +292,6 @@ mod tests {
             stripe_api_base: "https://api.stripe.com".to_string(),
             stripe_webhook_secret: String::new(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
-            chat_model_idx: Arc::new(AtomicUsize::new(0)),
-            chat_request_count: Arc::new(AtomicU64::new(0)),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),

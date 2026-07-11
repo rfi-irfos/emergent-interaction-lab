@@ -267,8 +267,6 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
-            chat_model_idx: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-            chat_request_count: Arc::new(std::sync::atomic::AtomicU64::new(0)),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

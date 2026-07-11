@@ -27,10 +27,7 @@ use sqlx::SqlitePool;
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{
-        atomic::{AtomicU64, AtomicUsize},
-        Arc, RwLock,
-    },
+    sync::{Arc, RwLock},
 };
 use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
 use serde::{Deserialize, Serialize};
@@ -92,35 +89,6 @@ pub struct AppState {
     /// GitHub REST API — never overridden in production, where it's always
     /// "https://api.github.com".
     pub github_api_base: String,
-    /// Sticky across HTTP requests (not just within one exchange's
-    /// tool-calling rounds): the last-known-good index into
-    /// chat::CHAT_MODEL_CANDIDATES, so a fresh user message reuses whatever
-    /// candidate last proved entitled on this NVIDIA account instead of
-    /// re-discovering it from index 0 on every single message. Shared
-    /// server-wide rather than per-conversation, since the ladder reflects
-    /// account entitlement, not anything conversation-specific. See
-    /// chat::stream_chat's model-selection loop.
-    ///
-    /// Seeded at startup from the `chat_model_state` DB table (see
-    /// `chat::load_model_state`, called in `main`) rather than always
-    /// starting at 0 — this app's fly.toml scales to zero between almost
-    /// every message, so an in-memory-only value would be wiped on nearly
-    /// every cold start. Every update also writes through to that same table
-    /// (`chat::persist_model_state`) so this atomic stays fast to read
-    /// within one process's lifetime while the DB — on the durable `eil_data`
-    /// volume — is the actual source of truth across restarts.
-    pub chat_model_idx: Arc<AtomicUsize>,
-    /// Counts stream_chat invocations so the ladder can periodically ignore
-    /// the cache above and re-probe from the top (see
-    /// chat::CHAT_MODEL_RETRY_FROM_TOP_EVERY) in case a bigger model becomes
-    /// newly entitled on the account without a deploy.
-    ///
-    /// Durable the same way as `chat_model_idx` above (seeded from and
-    /// written through to `chat_model_state`) — without persisting this too,
-    /// every cold start would reset the count to 0 and re-land on a
-    /// force-top slot on literally every restart, defeating the index cache
-    /// even with the index itself persisted.
-    pub chat_request_count: Arc<AtomicU64>,
     /// Serializes `auditlog::record`'s "read last row_hash → compute this
     /// row's hash → insert" sequence (see auditlog.rs). SQLite itself is
     /// single-writer, so two concurrent inserts can never actually corrupt
@@ -203,17 +171,6 @@ async fn main() {
     // immutability triggers must exist before any handler can ever run.
     auditlog::init_schema(&db).await;
     chat::init_schema(&db).await;
-    // Seed the model-ladder cache from durable storage instead of always
-    // starting at 0/0 — see chat_model_state's doc comment in chat.rs. This
-    // app's fly.toml scales to zero between almost every message
-    // (auto_stop_machines/min_machines_running=0), so without this the
-    // in-memory-only cache added in PR #30 gets wiped on nearly every cold
-    // start, and every message keeps paying the full failed-ladder-probe
-    // latency the cache was supposed to eliminate.
-    let (chat_model_idx_seed, chat_request_count_seed) = chat::load_model_state(&db).await;
-    tracing::info!(
-        "model-ladder state seeded from DB at startup: model_idx={chat_model_idx_seed}, request_count={chat_request_count_seed}"
-    );
     blog::init_schema(&db).await;
     contact::init_schema(&db).await;
     research::init_schema(&db).await;
@@ -271,8 +228,6 @@ async fn main() {
         ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
         github_token,
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
-        chat_model_idx: Arc::new(AtomicUsize::new(chat_model_idx_seed)),
-        chat_request_count: Arc::new(AtomicU64::new(chat_request_count_seed)),
         audit_lock: Arc::new(tokio::sync::Mutex::new(())),
     };
 
