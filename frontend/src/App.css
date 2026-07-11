@@ -158,7 +158,8 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="dark"] .site-usp-card,
 .site[data-theme="dark"] .site-news-card,
 .site[data-theme="dark"] .site-cert-card,
-.site[data-theme="dark"] .site-livestats-tile {
+.site[data-theme="dark"] .site-livestats-tile,
+.site[data-theme="dark"] .site-protocol-diagram {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -236,6 +237,11 @@ button { cursor: pointer; font-family: inherit; }
 .site-logo-lockup { display: flex; align-items: center; gap: 10px; }
 .site-logo-img { height: 36px; width: auto; }
 .site-logo-text { font-size: 20px; font-weight: 900; color: var(--primary); }
+/* BrandMark's inline SVG (components/PublicSite.tsx) uses fill/stroke=
+   currentColor throughout, so this one rule themes the whole mark across
+   light/dark/hc — the same var(--primary) .site-logo-text already used,
+   picking up hc's forced amber override for free. */
+.site-logo-mark { color: var(--primary); flex-shrink: 0; }
 .site-main-nav { display: flex; gap: 26px; }
 .site-main-nav a { position: relative; font-size: 14px; font-weight: 500; color: var(--text-soft); transition: color .2s; }
 .site-main-nav a:hover { color: var(--primary); }
@@ -283,6 +289,14 @@ button { cursor: pointer; font-family: inherit; }
   width: 38px; height: 38px; border-radius: 9px; transition: filter .2s, transform .15s;
 }
 .site-nav-cta:hover { filter: brightness(.9); transform: translateY(-1px); }
+/* The live nav renders nav.ctaLabel as visible text (unlike the rearrange-
+   mode builder preview above, which only ever shows an icon inside this same
+   class) — pinning it to the icon button's fixed 38x38 box let real text
+   ("Contact"/"Kontakt") overflow past its own edge and get clipped at the
+   viewport boundary (confirmed by screenshot at 1024/1280/1440px, part of
+   the nav-crowding fix). Scoped to its own modifier so the icon-only preview
+   usage above is untouched. */
+.site-nav-cta-label { width: auto; padding: 0 18px; white-space: nowrap; }
 .site-nav-icon-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; border-radius: 9px;
@@ -1680,6 +1694,54 @@ button { cursor: pointer; font-family: inherit; }
 /* ── JARVIS ──────────────────────────────────────────────────────────────── */
 .site-jarvis-body { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 .site-jarvis-body p { font-size: 17px; line-height: 1.8; color: var(--text); margin: 0; }
+
+/* ── CO-EVOLUTION PROTOCOL ─────────────────────────────────────────────────
+   The public site's own small animated loop diagram (see
+   components/CoEvolutionDiagram.tsx) — 5 fixed stages on a closed path, one
+   or two particles circulating via <animateMotion>. Deliberately themed
+   through var(--primary)/var(--accent), never the fixed var(--brand-cyan)
+   the hero band uses — see the HUD-FRAMING theme-adaptation comment further
+   down in this file for why a theme-independent color there went invisible
+   on the light theme until PR #65. .hud-corner-frame on the panel itself
+   already gets that correction for free (light/hc overrides keyed off the
+   class, not this section). */
+.site-protocol-intro {
+  max-width: 640px; margin: 0 auto 40px; text-align: center;
+  font-size: 16px; line-height: 1.7; color: var(--text-soft);
+}
+.site-protocol-diagram {
+  max-width: 960px; margin: 0 auto; padding: 40px 32px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 36px;
+}
+.site-protocol-svg { width: 100%; max-width: 400px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+.site-protocol-loop { fill: none; stroke: var(--primary); stroke-width: 1.6; opacity: .4; }
+.site-protocol-particle { filter: drop-shadow(0 0 4px currentColor); }
+.site-protocol-particle-a { fill: var(--primary); color: var(--primary); }
+.site-protocol-particle-b { fill: var(--accent); color: var(--accent); opacity: .85; }
+.site-protocol-node {
+  fill: var(--surface); stroke: var(--primary); stroke-width: 2;
+  filter: drop-shadow(0 0 4px var(--primary));
+}
+.site-protocol-node-label { font-size: 10px; font-weight: 700; fill: var(--text); font-family: var(--mono); }
+.site-protocol-node-index { font-size: 9px; font-weight: 800; fill: var(--primary); font-family: var(--mono); }
+.site-protocol-legend {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 24px 28px; width: 100%;
+}
+.site-protocol-legend-item { display: flex; gap: 10px; align-items: flex-start; }
+.site-protocol-legend-index {
+  flex-shrink: 0; font-family: var(--mono); font-size: 12px; font-weight: 800; color: var(--primary); padding-top: 1px;
+}
+.site-protocol-legend-item strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.site-protocol-legend-item p { font-size: 13px; line-height: 1.6; color: var(--text-soft); margin: 0; }
+.site-protocol-closing {
+  max-width: 700px; margin: 32px auto 0; text-align: center;
+  font-size: 16.5px; line-height: 1.7; color: var(--text); font-weight: 500;
+}
+@media (max-width: 640px) {
+  .site-protocol-diagram { padding: 28px 18px; gap: 24px; }
+}
 
 /* ── CERTIFICATES ─────────────────────────────────────────────────────────── */
 .site-certificates { background: var(--surface); }

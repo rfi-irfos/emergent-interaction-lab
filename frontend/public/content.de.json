@@ -69,9 +69,29 @@
     "items": []
   },
   "about": {
-    "eyebrow": "Systemdefinition",
-    "headline": "Was ist das Interaction Field?",
-    "bio": "Das Interaction Field ist ein gekoppeltes kognitiv-inferentielles System. Es überträgt Information nicht einseitig, sondern aktualisiert fortlaufend eine gemeinsame Bedeutungskonfiguration durch Interaktion - jeder Austausch verändert die Bedingungen des nächsten. Es ist kein Tracking-, Analytics- oder Verhaltensüberwachungs-Tool: Es speichert keine personenbezogenen Daten und bewertet keine Einzelpersonen. Es modelliert Interaktion als strukturellen Prozess - in der Praxis erfasst durch ein live laufendes Dashboard namens Observatory, das Emergenz-Werte, Drift und Interaktionsdynamik misst, während sie entstehen, mit einem KI-Forschungspartner (Jarvis), der Notizen entwirft und Simulationen neben dem menschlichen Forscher durchführt. Ziel ist zu verstehen, wie intelligenzähnliche Eigenschaften aus wiederholten Interaktionszyklen entstehen, und wie sich semantische Stabilität, Drift und Neukonfiguration in gekoppelten Mensch-KI-Systemen über Zeit entwickeln."
+    "eyebrow": "Forscherin & Systemanalytikerin",
+    "headline": "Laura Serna Gaviria",
+    "bio": "Laura Serna Gaviria ist Systemanalytikerin und Forscherin an der Schnittstelle von Mensch-KI-Interaktion, kognitiver Architektur und emergenter Intelligenz. Ihr Hintergrund ist bewusst interdisziplinär - Mechatronik, User Experience und digitale Transformation - und genau das zeigt sich in ihrer Arbeitsweise: Ein anhaltendes Gespräch mit einem Sprachmodell wird wie ein instabiles System behandelt, das instrumentiert und gemessen werden muss, nicht wie ein Werkzeug, das man einfach benutzt.<br><br>Seit 2023 entwickelt und wendet sie dafür ihre eigenen methodischen Frameworks an - darunter das User Integrity Protocol (UIP) und die Emergent Interaction Analysis (EIA), auf denen das Observatory dieser Seite läuft - und stützt sich dabei auf Emergenz- und Komplexitätstheorie (Goldstein, Bedau, Holland, Kauffman), systemische und biologische Ko-Evolution (Maturana &amp; Varela, Luhmann), die Literatur zu Extended Mind und Technologie (Clark, Kelly, Turkle, DeLanda) sowie aktuelle KI-Forschung (Mitchell, Chollet, Bengio). Die Regel bleibt dabei immer dieselbe: erst die vollständige, ungefilterte Interaktion analysieren, nur die Muster extrahieren, die sich tatsächlich über mehrere Sitzungen wiederholen, und nie ein Framework der Evidenz vorauseilen lassen.<br><br>Dieselbe interdisziplinäre Sorgfalt gibt es auch außerhalb dieses Forschungsprojekts - für Systemanalyse- und Organisationsberatungs-Mandate.",
+    "stats": [
+      { "value": "2023", "label": "Systematische Praxis begann" },
+      { "value": "8", "label": "Ebenen im 8-Schichten-Modell" },
+      { "value": "3", "label": "Verbundene Disziplinen: Mechatronik, UX, digitale Transformation" }
+    ],
+    "ctaLabel": "Kontakt aufnehmen",
+    "ctaHref": "#location"
+  },
+  "protocol": {
+    "eyebrow": "So funktioniert es wirklich",
+    "title": "Das Co-Evolution Protocol",
+    "intro": "Keine Blackbox. Eine echte, fünfstufige Arbeitsschleife zwischen einer menschlichen Forscherin und einem KI-Forschungspartner - dieselbe ehrliche Mechanik, die diese Seite an anderer Stelle längst beschreibt, hier sichtbar gemacht.",
+    "nodes": [
+      { "id": "interact", "label": "Interagieren", "description": "Laura arbeitet mit echtem Material - Fragen, Entwürfen, Korrekturen - direkt in Forschung, dem Research-Chat dieses Projekts." },
+      { "id": "retrieve", "label": "Abrufen", "description": "Jarvis stützt jede Antwort auf relevante Passagen aus früheren Gesprächen und hochgeladenen Dokumenten per Retrieval-Augmented Generation, nicht nur auf den aktuellen Austausch." },
+      { "id": "surface", "label": "Sichtbar machen", "description": "Wiederkehrende Muster werden als Research Notes entworfen und im Observatory als Emergenzsignale protokolliert - nie unterstellt, nur sichtbar gemacht." },
+      { "id": "validate", "label": "Validieren", "description": "Laura prüft, was den Messkriterien auf der Forschungsseite tatsächlich standhält - mindestens drei Sitzungen, strukturell statt stilistisch, reproduzierbar ohne erneute Vorgabe, im CCET quantifizierbar." },
+      { "id": "feedback", "label": "Zurückführen", "description": "Bestätigte Muster werden zur Arbeitsstruktur der nächsten Interaktion - fortgeführt, nicht neu erklärt -, und die Schleife schließt sich." }
+    ],
+    "closing": "So läuft es zwischen den beiden tatsächlich ab: Laura bringt die Fragen, die Urteilsfähigkeit und das letzte Wort darüber, was als echtes Muster zählt; Jarvis bringt den Abruf, den Entwurf und den unermüdlichen ersten Durchgang durch alles, was vorher war."
   },
   "jarvis": {
     "title": "Was ist Jarvis?",

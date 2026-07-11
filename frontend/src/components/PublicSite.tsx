@@ -5,6 +5,7 @@ import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
 import { API_BASE } from '../lib/apiBase'
 import { LiveStatsSection, ShippingFeedSection, CurrentFocusBadge, SignalLevelsSection, CcetTrendSection, SimulationStatusSection } from './PublicLiveActivity'
+import { CoEvolutionDiagram } from './CoEvolutionDiagram'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -279,6 +280,30 @@ function IconPhone() {
 }
 function IconMail() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+}
+
+// Geometric "E" monogram (Bauhaus-style stacked bars) + a small node/ring
+// accent standing in for the "Interaction Field" concept — inline SVG using
+// `currentColor` (set via .site-logo-mark's `color: var(--primary)`, the
+// same token .site-logo-text already uses) rather than a baked data-URI
+// image with fixed hex colors. A raster/data-URI logo can't see the page's
+// CSS custom properties at all (it renders in an isolated nested context),
+// so it stays one fixed color across every theme — exactly the light/hc
+// bug the HUD corner-frame had before PR #65, and the WCAG AAA hc theme's
+// own "one color, max contrast" rule this would otherwise violate with a
+// stray cyan. Inline SVG in the live DOM inherits theme color correctly in
+// all three themes for free.
+function BrandMark() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 40 40" className="site-logo-mark" aria-hidden="true">
+      <rect x="7" y="6" width="6" height="28" rx="1.2" fill="currentColor" />
+      <rect x="7" y="6" width="23" height="6" rx="1.2" fill="currentColor" />
+      <rect x="7" y="17" width="17" height="6" rx="1.2" fill="currentColor" />
+      <rect x="7" y="28" width="23" height="6" rx="1.2" fill="currentColor" />
+      <circle cx="33" cy="8" r="5" fill="none" stroke="currentColor" strokeWidth="1.3" opacity=".55" />
+      <circle cx="33" cy="8" r="2.6" fill="currentColor" />
+    </svg>
+  )
 }
 
 // ── Framework concept icons ───────────────────────────────────────────────────
@@ -802,8 +827,7 @@ export function PublicSite({
         <header className="site-nav" style={{ position: 'sticky', top: 0, zIndex: 200 }}>
           <div className="site-nav-inner">
             <span className="site-logo-lockup">
-              {nav.logo && <img src={nav.logo} alt="" className="site-logo-img" />}
-              <span className="site-logo-text">{nav.brand}</span>
+              {nav.logo ? <img src={nav.logo} alt="" className="site-logo-img" /> : <BrandMark />}
             </span>
             <nav className="site-main-nav">{nav.links.map((l, i) => <a key={i} href={l.href}>{l.label}</a>)}</nav>
             <div className="site-nav-right">
@@ -984,7 +1008,7 @@ export function PublicSite({
           <div className="site-nav-inner">
             {nav.logo
               ? <EImg field="nav.logo" src={nav.logo} alt={nav.brand} className="site-logo-img" />
-              : <E field="nav.brand" value={nav.brand} as="span" className="site-logo-text" />
+              : <BrandMark />
             }
             <nav className="site-main-nav">
               {nav.links.map((l, i) => (
@@ -1001,8 +1025,17 @@ export function PublicSite({
                     <E field="nav.phone" value={nav.phone} as="span" />
                   </a>
                 )}
+                <a
+                  href="https://github.com/rfi-irfos/emergent-interaction-lab"
+                  target="_blank" rel="noopener noreferrer"
+                  className="site-nav-icon-btn" aria-label="Source on GitHub" title="Source on GitHub"
+                >
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+                  </svg>
+                </a>
                 {nav.ctaLabel && (
-                  <E field="nav.ctaLabel" value={nav.ctaLabel} as="a" href={nav.ctaHref ?? '#'} className="site-nav-cta" />
+                  <E field="nav.ctaLabel" value={nav.ctaLabel} as="a" href={nav.ctaHref ?? '#'} className="site-nav-cta site-nav-cta-label" />
                 )}
               </div>
               {/* compact lang toggle — always visible on mobile, hidden on desktop */}
@@ -1132,10 +1165,26 @@ export function PublicSite({
                     ))}
                   </div>
                 )}
+                {content.about.ctaLabel && (
+                  <a href={content.about.ctaHref ?? '#location'} className="site-btn-lime-solid" data-cid="about.ctaLabel">
+                    {content.about.ctaLabel}
+                  </a>
+                )}
               </div>
             </div>
           </section>
         )}
+
+        {/* ── CO-EVOLUTION PROTOCOL ────────────────────────────────────── */}
+        {content.protocol?.nodes?.length ? (
+          <section className={reveal("site-section site-section-alt site-protocol")} id="protocol" data-cid="protocol.title">
+            {content.protocol.eyebrow && <div className="site-eyebrow">{content.protocol.eyebrow}</div>}
+            <h2 className="site-section-title">{content.protocol.title}</h2>
+            {content.protocol.intro && <p className="site-protocol-intro">{content.protocol.intro}</p>}
+            <CoEvolutionDiagram nodes={content.protocol.nodes} />
+            {content.protocol.closing && <p className="site-protocol-closing">{content.protocol.closing}</p>}
+          </section>
+        ) : null}
 
         {/* ── JARVIS ───────────────────────────────────────────────────── */}
         {content.jarvis?.body && (
