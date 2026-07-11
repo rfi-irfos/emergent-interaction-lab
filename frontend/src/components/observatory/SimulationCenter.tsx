@@ -4,6 +4,7 @@ import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
+import { ObsDonut } from './ObsDonut'
 import type { AdminSection } from '../../types/admin'
 
 interface RunOut {
@@ -195,6 +196,10 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
   const addCompareSlot = () => setCompareIds(ids => (ids.length < MAX_COMPARE ? [...ids, ''] : ids))
   const removeCompareSlot = (idx: number) => setCompareIds(ids => (ids.length > 1 ? ids.filter((_, i) => i !== idx) : ids))
 
+  // Flattened once for both the branch-status donut's slices and its
+  // centerLabel below, rather than recomputing the same flatMap per slice.
+  const allBranches = runs.flatMap(r => r.branches ?? [])
+
   return (
     <div className="obs-panel">
       <div className="obs-section-label">
@@ -214,6 +219,45 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           filenameBase="simulation-runs"
           title="Simulationsläufe"
         />
+      </div>
+      {/* Two BI donuts, client-aggregated — no backend GROUP BY exists for
+          either shape (list_runs in backend/src/simulation.rs is a flat,
+          paginated read, no aggregate query), so both are computed here
+          from whatever page of `runs` "Weitere laden" has already
+          accumulated, same "geladen: X von Y" scope as the header above.
+          With a status filter active, only that ONE status was ever
+          fetched from the backend at all (see loadRuns' `params.set(
+          'status', ...)`), so the run-status donut hides the other two
+          entirely rather than showing them as a misleading literal zero —
+          same convention as EmergenceMonitor.tsx's own visibleStatuses.
+          Branches have no equivalent server-side filter, so the
+          branch-status donut always considers all three. Trusts
+          ObsDonut's own built-in "Keine Daten." empty state (see
+          ObsDonut.tsx) rather than adding a second empty check here. */}
+      <div className="obs-card">
+        <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <ObsDonut
+            data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
+              label: status,
+              value: runs.filter(r => r.status === status).length,
+              color: STATUS_ACCENT[status] ?? '#3b6bf6',
+            }))}
+            centerLabel={`${runs.length}\nLäufe`}
+            gradientIdPrefix="simulation-run-status-mix"
+          />
+          <ObsDonut
+            data={Object.keys(STATUS_ACCENT).map(status => ({
+              label: status,
+              value: allBranches.filter(b => b.status === status).length,
+              color: STATUS_ACCENT[status] ?? '#3b6bf6',
+            }))}
+            centerLabel={`${allBranches.length}\nZweige`}
+            gradientIdPrefix="simulation-branch-status-mix"
+          />
+        </div>
+        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+          Status-Verteilung der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf Status „${statusFilter}“)` : ''} und ihrer Zweige (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}) — kein serverseitiges Gesamt-Grouping über alle jemals gestarteten Simulationsläufe, nur die oben geladene Seite.
+        </p>
       </div>
       <SimulationLab
         runs={runs}
