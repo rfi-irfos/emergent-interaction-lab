@@ -398,14 +398,6 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                     uploading={uploading && uploadTarget === 'about.photo'}
                   />
                 </PanelSection>
-                <PanelSection title="Consulting CTA">
-                  <Field label="Button label">
-                    <input value={draft.about?.ctaLabel ?? ''} onChange={e => update('about.ctaLabel', e.target.value)} placeholder="Get in touch" />
-                  </Field>
-                  <Field label="Button link">
-                    <input value={draft.about?.ctaHref ?? ''} onChange={e => update('about.ctaHref', e.target.value)} placeholder="#location" />
-                  </Field>
-                </PanelSection>
                 <PanelSection title="Stats">
                   {(draft.about?.stats ?? []).map((s, i) => (
                     <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
