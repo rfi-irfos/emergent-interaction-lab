@@ -28,12 +28,20 @@
         "href": "#usp"
       },
       {
+        "label": "Methode",
+        "href": "#protocol"
+      },
+      {
         "label": "Blog",
         "href": "#news"
       },
       {
         "label": "Forschung",
         "href": "#p/research"
+      },
+      {
+        "label": "Preise",
+        "href": "#webhub-pricing"
       },
       {
         "label": "Zertifizierung",
