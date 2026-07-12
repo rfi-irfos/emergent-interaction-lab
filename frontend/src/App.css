@@ -3126,8 +3126,13 @@ button { cursor: pointer; font-family: inherit; }
    see --glass-bg/--brand-cyan (those only exist under .site[data-theme=dark]). */
 /* Wraps LiveCards + ResearchChat in the Forschung tab so the cards take
    their natural height and the chat panel fills exactly what's left,
-   instead of the chat's height:100% overflowing past the cards row. */
-.forschung-view { display: flex; flex-direction: column; height: 100%; }
+   instead of the chat's height:100% overflowing past the cards row. With the
+   Forschung KPI wall (ForschungKpis.tsx) now a tall 8-tile grid, a fixed
+   height:100% column would collapse the chat to ~0 (flex min-height:0) once
+   the wall exceeds the viewport — so the view flows naturally and the chat
+   gets a guaranteed floor instead. */
+.forschung-view { display: flex; flex-direction: column; min-height: 0; }
+.forschung-view .chat-panel { min-height: 62vh; flex: 1 1 auto; }
 
 .chat-panel {
   flex: 1 1 auto; min-height: 0; display: flex; gap: 0; overflow: hidden; border-radius: 14px;
