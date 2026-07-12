@@ -3,6 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
+import { HudGrid, HudTile } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -38,41 +39,31 @@ export function InformationDynamics() {
         <div className="obs-stat c-teal"><div className="obs-stat-value">{data.documents}</div><div className="obs-stat-label">Dokumente</div></div>
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.chunks}</div><div className="obs-stat-label">Embedding-Chunks</div></div>
       </div>
-      <div className="obs-card">
-        <div className="obs-section-label">Retrieval-Score-Trend (14 T.)</div>
-        {data.retrieval_by_day.length === 0
-          ? <div className="obs-empty">Noch keine Retrieval-Daten.</div>
-          : <ObsChart
-              data={data.retrieval_by_day.map(d => ({ label: d.day.slice(5), value: d.avg_top_score }))}
-              color="#14b8a6"
-              gradientId="info-score"
-              valueFormat={v => v.toFixed(2)}
+      <HudGrid cols={4}>
+        <HudTile title="Retrieval-Score" badge="14 T." accent="var(--obs-teal)" span={2}>
+          {data.retrieval_by_day.length === 0
+            ? <div className="obs-empty">Noch keine Retrieval-Daten.</div>
+            : <ObsChart
+                data={data.retrieval_by_day.map(d => ({ label: d.day.slice(5), value: d.avg_top_score }))}
+                color="#14b8a6"
+                gradientId="info-score"
+                valueFormat={v => v.toFixed(2)}
+              />
+          }
+        </HudTile>
+        {data.retrieval_by_day.length > 0 && (
+          <HudTile title="Treffer / Anfrage" badge="Ø 14 T." accent="var(--obs-blue)" span={2}>
+            <ObsChart
+              data={data.retrieval_by_day.map(d => ({ label: d.day.slice(5), value: d.avg_hit_count }))}
+              color="#3b6bf6"
+              gradientId="info-hits"
+              valueFormat={v => v.toFixed(1)}
             />
-        }
-      </div>
-      {data.retrieval_by_day.length > 0 && (
-        <div className="obs-card">
-          <div className="obs-section-label">Treffer pro Anfrage (Ø, 14 T.)</div>
-          <ObsChart
-            data={data.retrieval_by_day.map(d => ({ label: d.day.slice(5), value: d.avg_hit_count }))}
-            color="#3b6bf6"
-            gradientId="info-hits"
-            valueFormat={v => v.toFixed(1)}
-          />
-        </div>
-      )}
-      {/* Direct client feedback on this exact page: a raw per-item score
-          ("SCORE 0.65") with zero aggregate was "so nichtssagend [so
-          uninformative]... das muss logischer sein [that needs to be more
-          logical]." Real German-language buckets over the currently loaded
-          page's own top_score values, matching this module's existing
-          Gut/Mittel/Schwach-style honesty about scope (same idea as
-          "geladen: X von Y" elsewhere) — this is NOT a global aggregate,
-          there is no backend GROUP BY for retrieval quality, so it's
-          disclosed as exactly what it is: the loaded page, bucketed. */}
+          </HudTile>
+        )}
+      </HudGrid>
       {data.recent_retrievals.length > 0 && (
-        <div className="obs-card" style={{ marginTop: 22 }}>
-          <div className="obs-section-label">Retrieval-Qualität — Verteilung</div>
+        <HudTile title="Retrieval-Qualität" badge="VERT" accent="var(--obs-green)" span={4}>
           <ObsDonut
             data={[
               { label: 'Gut (>0.6)', value: data.recent_retrievals.filter(r => r.top_score > 0.6).length, color: 'var(--obs-green)' },
@@ -85,7 +76,7 @@ export function InformationDynamics() {
             Basis: die {data.recent_retrievals.length} aktuell geladenen Anfragen{gapOnly ? ' (nur Wissenslücken)' : ''} — kein
             serverseitiges Gesamt-Grouping über alle jemals gestellten Anfragen, siehe "Letzte Anfragen" unten.
           </p>
-        </div>
+        </HudTile>
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, marginBottom: 10 }}>

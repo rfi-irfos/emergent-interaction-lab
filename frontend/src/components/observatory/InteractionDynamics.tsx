@@ -4,6 +4,7 @@ import { TokenBreakdown, type TokenInfo } from './TokenBreakdown'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
+import { HudTile } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -60,29 +61,19 @@ export function InteractionDynamics() {
       )}
 
       {data.messages_by_day.length > 0 && (
-        <div className="obs-card">
+        <HudTile title="Gesprächsentwicklung" badge={RANGE_SUFFIX[data.range] ?? data.range} accent="var(--obs-purple)" span={4}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-            <div className="obs-section-label" style={{ marginBottom: 0 }}>Gesprächsentwicklung ({RANGE_SUFFIX[data.range] ?? data.range})</div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-                {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              {/* The one genuinely row-shaped dataset this view owns (same
-                  day+count shape as Analytics' views_by_day / Information
-                  Dynamics' retrieval_by_day, both exportable) — everything
-                  else on this page is either a single aggregate stat or the
-                  token-by-token detail of one specific reply, not a list.
-                  Exports whatever the range selector above currently
-                  narrowed messages_by_day to. */}
-              <ExportButtons
-                rows={data.messages_by_day.map(d => ({ ...d }))}
-                filenameBase={`interaction-messages-by-day-${range}`}
-                title={`Interaction Dynamics — Gesprächsentwicklung (${RANGE_SUFFIX[data.range] ?? data.range})`}
-              />
-            </div>
+            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <ExportButtons
+              rows={data.messages_by_day.map(d => ({ ...d }))}
+              filenameBase={`interaction-messages-by-day-${range}`}
+              title={`Interaction Dynamics — Gesprächsentwicklung (${RANGE_SUFFIX[data.range] ?? data.range})`}
+            />
           </div>
           <ObsChart data={data.messages_by_day.map(d => ({ label: d.day.slice(5), value: d.count }))} color="#8b5cf6" gradientId="interaction-trend" />
-        </div>
+        </HudTile>
       )}
 
       {/* mean_token_confidence is a real 0-1 fraction — a gauge. user_messages
@@ -91,7 +82,7 @@ export function InteractionDynamics() {
           multi-category breakdown). mean_latency_seconds is a duration, not
           a fraction, so it stays a plain .obs-stat tile — kept rather than
           dropped, it's real information a gauge can't honestly represent. */}
-      <div className="obs-card">
+      <HudTile title="Mensch ↔ KI" badge="RATIO" accent="var(--obs-blue)" span={4}>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
           <ObsDonut
             data={[
@@ -112,7 +103,7 @@ export function InteractionDynamics() {
             <div className="obs-stat-label">Ø Antwort-Tempo ({data.latency_sample_size} Proben)</div>
           </div>
         </div>
-      </div>
+      </HudTile>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
         Konfidenz und Antwort-Tempo sind Signale über Anpassung und Rhythmus des Gesprächs, keine Leistungsmessung. Klick auf ein Token oben für die Alternativen, die das Modell erwogen hat.
       </p>

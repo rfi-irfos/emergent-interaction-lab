@@ -6,6 +6,7 @@ import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
+import { HudGrid, HudTile } from './Hud'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
@@ -76,21 +77,21 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
           title={`Jarvis-Werkzeugaufrufe (${RANGE_SUFFIX[data.range] ?? data.range})`}
         />
       </div>
-      <div className="obs-section-label">Research-Aktivität nach Kategorie</div>
-      <div className="obs-card">
-        {data.category_mix.length === 0
-          ? <div className="obs-empty">Noch keine Research Notes.</div>
-          : <ObsDonut data={categoryMixData} gradientIdPrefix="behavior-category-mix" />
-        }
-      </div>
+      <HudGrid cols={4}>
+        <HudTile title="Research-Aktivität" badge="KAT" accent="var(--obs-purple)" span={2}>
+          {data.category_mix.length === 0
+            ? <div className="obs-empty">Noch keine Research Notes.</div>
+            : <ObsDonut data={categoryMixData} gradientIdPrefix="behavior-category-mix" />
+          }
+        </HudTile>
 
-      <div className="obs-section-label">Jarvis-Werkzeugnutzung ({RANGE_SUFFIX[data.range] ?? data.range})</div>
-      <div className="obs-card">
-        {data.tool_distribution.length === 0
-          ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
-          : <ObsDonut data={toolDistributionData} gradientIdPrefix="behavior-tool-distribution" />
-        }
-      </div>
+        <HudTile title="Jarvis-Werkzeuge" badge={RANGE_SUFFIX[data.range] ?? data.range} accent="var(--obs-teal)" span={2}>
+          {data.tool_distribution.length === 0
+            ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
+            : <ObsDonut data={toolDistributionData} gradientIdPrefix="behavior-tool-distribution" />
+          }
+        </HudTile>
+      </HudGrid>
 
       <div className="obs-section-label">Jarvis-Aktivität (letzte Aufrufe)</div>
       {data.recent_tool_calls.length === 0
@@ -123,13 +124,14 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
           ))
       }
 
-      <div className="obs-section-label">Gesprächslänge — Verteilung</div>
-      <div className="obs-card">
-        {data.length_distribution.length === 0
-          ? <div className="obs-empty">Noch keine Gespräche.</div>
-          : <ObsDonut data={lengthDistributionData} gradientIdPrefix="behavior-length-distribution" />
-        }
-      </div>
+      <HudGrid cols={4}>
+        <HudTile title="Gesprächslänge" badge="VERT" accent="var(--obs-amber)" span={2}>
+          {data.length_distribution.length === 0
+            ? <div className="obs-empty">Noch keine Gespräche.</div>
+            : <ObsDonut data={lengthDistributionData} gradientIdPrefix="behavior-length-distribution" />
+          }
+        </HudTile>
+      </HudGrid>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
         Aggregierte Muster über alle Gespräche und Einträge — keine Einzelpersonen-Überwachung.
       </p>
