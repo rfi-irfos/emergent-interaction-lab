@@ -3609,3 +3609,107 @@ button { cursor: pointer; font-family: inherit; }
   .chat-topbar { padding: 10px 14px; }
   .chat-composer { padding: 12px 14px; }
 }
+
+/* ── CUSTOM DASHBOARD (Track A Phase 6c) ──────────────────────────────────── */
+.dash-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.dash-toolbar-new { display: flex; gap: 6px; }
+.dash-toolbar-new input { width: 160px; }
+.panel-add-btn.active { background: rgba(52,225,255,.14); border-color: var(--hud-cyan, #34e1ff); color: var(--hud-cyan, #34e1ff); }
+
+/* Free-positioned canvas — widgets are absolutely placed in grid units
+   converted to pixels by DashboardCanvas.tsx (fixed column width measured
+   from the container, fixed row height); this element only needs to be a
+   positioning root tall enough to contain every widget. */
+.dash-canvas { position: relative; }
+.dash-canvas--edit {
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 95px, rgba(120,150,170,.06) 95px, rgba(120,150,170,.06) 96px);
+}
+.dash-widget-wrap { position: absolute; }
+.dash-canvas--edit .dash-widget-wrap { cursor: grab; }
+.dash-canvas--edit .dash-widget-wrap:active { cursor: grabbing; }
+
+.dash-widget {
+  --dash-accent: var(--hud-cyan, #34e1ff);
+  height: 100%; display: flex; flex-direction: column;
+  background: var(--gotham-panel, rgba(16,24,34,.72));
+  border: 1px solid var(--gotham-border, rgba(120,150,170,.16));
+  border-radius: 10px; padding: 10px 12px 12px; overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.35);
+}
+/* Edit mode gets an animated dashed outline — an active HUD affordance that
+   only ever appears while editing, never in normal view. A slow opacity
+   breathe (not a real marching-ants offset scroll, which needs a border-
+   image trick outline can't do) reads as "this is live and editable"
+   without competing for attention with the charts inside. */
+.dash-canvas--edit .dash-widget {
+  outline: 1.5px dashed var(--dash-accent);
+  outline-offset: 2px;
+  animation: dash-breathe 2.6s ease-in-out infinite;
+}
+@keyframes dash-breathe { 0%, 100% { outline-color: color-mix(in srgb, var(--dash-accent) 30%, transparent); } 50% { outline-color: color-mix(in srgb, var(--dash-accent) 75%, transparent); } }
+.dash-widget-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.dash-widget-title {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase; color: rgba(206,224,232,.78);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dash-widget-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.dash-widget-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px; background: transparent;
+  border: 1px solid var(--gotham-border, rgba(120,150,170,.2)); color: rgba(206,224,232,.6);
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.dash-widget-btn:hover { color: var(--dash-accent); border-color: var(--dash-accent); }
+.dash-widget-btn--danger:hover { color: #ef4444; border-color: #ef4444; }
+.dash-widget-body { flex: 1; min-height: 0; overflow: auto; }
+.dash-widget-resize {
+  position: absolute; right: 2px; bottom: 2px; width: 14px; height: 14px; cursor: nwse-resize;
+  border-right: 2px solid var(--dash-accent); border-bottom: 2px solid var(--dash-accent);
+  border-radius: 0 0 4px 0; opacity: .5;
+}
+.dash-widget-resize:hover { opacity: 1; }
+
+/* ── modals shared by AddWidgetModal / WidgetEditPopover ── */
+.dash-modal-overlay {
+  position: fixed; inset: 0; background: rgba(3,6,12,.72); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 60;
+}
+.dash-modal {
+  background: #0d1626; border: 1px solid rgba(148,197,214,.22); border-radius: 14px;
+  max-width: 520px; width: 100%; max-height: 82vh; overflow: auto; padding: 18px 20px 20px;
+  --text: #e9fbff;
+}
+.dash-modal--narrow { max-width: 380px; }
+.dash-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.dash-modal-head h3 { font-size: 15px; font-weight: 800; color: var(--text); margin: 0; }
+.dash-modal-body { display: flex; flex-direction: column; gap: 10px; }
+.dash-modal-body input, .dash-modal-body select { width: 100%; }
+.dash-modal-group { margin-bottom: 6px; }
+.dash-modal-group-label {
+  font: 700 9.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--hud-cyan, #34e1ff); margin-bottom: 6px;
+}
+.dash-modal-group-items { display: flex; flex-direction: column; gap: 4px; }
+.dash-modal-item {
+  display: flex; align-items: center; gap: 8px; text-align: left;
+  background: rgba(52,225,255,.04); border: 1px solid rgba(148,197,214,.16); border-radius: 7px;
+  padding: 8px 10px; color: var(--text); font-size: 13px; cursor: pointer; transition: background .15s, border-color .15s;
+}
+.dash-modal-item:hover { background: rgba(52,225,255,.1); border-color: var(--hud-cyan, #34e1ff); }
+.dash-modal-item-kind {
+  font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .08em; text-transform: uppercase; color: rgba(206,224,232,.55);
+  border: 1px solid rgba(148,197,214,.2); border-radius: 4px; padding: 2px 5px; flex-shrink: 0;
+}
+.dash-field-label {
+  font: 700 9.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .08em; text-transform: uppercase; color: rgba(206,224,232,.6); margin-top: 4px;
+}
+.dash-swatches { display: flex; gap: 8px; }
+.dash-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.dash-swatch.active { border-color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-widget { animation: none; }
+}

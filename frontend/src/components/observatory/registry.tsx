@@ -129,4 +129,5 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   anomalies: 'Anomalie-Log',
   forschungspipeline: 'Forschungspipeline',
   changelog: 'Changelog',
+  dashboard: 'Custom Dashboard',
 }
