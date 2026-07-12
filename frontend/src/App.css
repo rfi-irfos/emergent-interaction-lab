@@ -1690,10 +1690,22 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-stat { display: flex; flex-direction: column; align-items: flex-start; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }
 .site-about-stat span { font-size: 13px; color: var(--text-soft, #666); margin-top: 2px; font-weight: 500; }
+/* call-laura credibility row — proof-of-framework links, not a CTA, so it
+   reads quieter than the button above it (small caps label + plain
+   underlined links, no button chrome). */
+.site-about-proof { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.site-about-proof-label {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--text-soft); margin-bottom: 8px;
+}
+.site-about-proof-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.site-about-proof-links a { font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.site-about-proof-links a:hover { color: var(--accent); }
 @media (max-width: 640px) {
   .site-about-inner { flex-direction: column; gap: 28px; align-items: center; text-align: center; }
   .site-about-stats { justify-content: center; }
   .site-about-stat { align-items: center; }
+  .site-about-proof-links { justify-content: center; }
 }
 
 

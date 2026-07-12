@@ -644,6 +644,31 @@ interface Props {
   onSectionReorder?: (order: SectionId[]) => void
 }
 
+// call-laura — a real, deployed instrument built on two of Laura's own
+// UIP/8-Layer lenses (eight_layer, uip_check) plus two RFI-IRFOS additions
+// (resonance, ecocentric); fully deterministic, no LLM call, no network
+// dependency at inference time (see the project's own README for the full
+// attribution table). Shipped 2026-07-12. Linked here as concrete proof the
+// framework runs in production, not just on this site's own Observatory —
+// Smithery listing is a still-open step (per the ship email) and
+// deliberately not linked yet, to avoid a dead/premature link.
+const CALL_LAURA_COPY = {
+  en: {
+    label: 'call-laura — her framework, running in production:',
+    github: 'GitHub',
+    coreCrate: 'crates.io (core)',
+    serverCrate: 'crates.io (server)',
+    api: 'Live API',
+  },
+  de: {
+    label: 'call-laura — ihr Framework, live im Einsatz:',
+    github: 'GitHub',
+    coreCrate: 'crates.io (Core)',
+    serverCrate: 'crates.io (Server)',
+    api: 'Live-API',
+  },
+} as const
+
 export function PublicSite({
   content, editMode = false, rearrangeMode = false, initPositions = {},
   onTextChange, onImageClick, onUpdate,
@@ -659,7 +684,7 @@ export function PublicSite({
   const [browseCatIdx, setBrowseCatIdx] = useState<number | null>(null)
   const [activeNewsCategory, setActiveNewsCategory] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
-  const { t } = useLang()
+  const { t, lang } = useLang()
 
   // Tracking pixel — fires once per page load in production (skipped in edit
   // mode). Published articles now navigate to their own #p/blog/<id> route
@@ -1184,6 +1209,17 @@ export function PublicSite({
                   <a href={content.about.ctaHref ?? '#location'} className="site-btn-lime-solid" data-cid="about.ctaLabel">
                     {content.about.ctaLabel}
                   </a>
+                )}
+                {!editMode && (
+                  <div className="site-about-proof">
+                    <span className="site-about-proof-label">{CALL_LAURA_COPY[lang].label}</span>
+                    <div className="site-about-proof-links">
+                      <a href="https://github.com/rfi-irfos/call-laura" target="_blank" rel="noopener noreferrer">{CALL_LAURA_COPY[lang].github}</a>
+                      <a href="https://crates.io/crates/call-laura-core" target="_blank" rel="noopener noreferrer">{CALL_LAURA_COPY[lang].coreCrate}</a>
+                      <a href="https://crates.io/crates/laura-mcp" target="_blank" rel="noopener noreferrer">{CALL_LAURA_COPY[lang].serverCrate}</a>
+                      <a href="https://laura-api.fly.dev" target="_blank" rel="noopener noreferrer">{CALL_LAURA_COPY[lang].api}</a>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
