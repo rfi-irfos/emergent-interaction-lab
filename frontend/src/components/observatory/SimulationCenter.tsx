@@ -221,22 +221,20 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           title="Simulationsläufe"
         />
       </div>
-      {/* Two BI donuts, client-aggregated — no backend GROUP BY exists for
-          either shape (list_runs in backend/src/simulation.rs is a flat,
-          paginated read, no aggregate query), so both are computed here
-          from whatever page of `runs` "Weitere laden" has already
-          accumulated, same "geladen: X von Y" scope as the header above.
-          With a status filter active, only that ONE status was ever
-          fetched from the backend at all (see loadRuns' `params.set(
-          'status', ...)`), so the run-status donut hides the other two
-          entirely rather than showing them as a misleading literal zero —
-          same convention as EmergenceMonitor.tsx's own visibleStatuses.
-          Branches have no equivalent server-side filter, so the
-          branch-status donut always considers all three. Trusts
-          ObsDonut's own built-in "Keine Daten." empty state (see
-          ObsDonut.tsx) rather than adding a second empty check here. */}
-      <HudTile title="Status-Verteilung" badge="SIM" accent="var(--obs-amber)" span={4}>
-        <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
+      {/* Three distinct compact status instruments — the old design jammed a
+          run-status and a branch-status donut into ONE centered HudTile,
+          which read as a single oversized chart. Splitting into three
+          separate tiles (one per dimension) makes each its own framed
+          instrument on the watch-floor, none stretched to the viewport.
+          All three are client-aggregated from the already-loaded
+          `runs`/`allBranches` (no backend GROUP BY exists — same
+          "geladen: X von Y" scope as the header). Branches have no
+          server-side status filter, so the branch-status + rationale
+          tiles always consider all of them; the run-status tile hides
+          statuses that weren't fetched when a status filter is active
+          (same convention as EmergenceMonitor's visibleStatuses). */}
+      <HudTile title="Run-Status" badge="SIM" accent="var(--obs-amber)" span={4}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
               label: status,
@@ -244,8 +242,16 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
               color: STATUS_ACCENT[status] ?? '#3b6bf6',
             }))}
             centerLabel={`${runs.length}\nLäufe`}
-            gradientIdPrefix="simulation-run-status-mix"
+            gradientIdPrefix="simulation-run-status"
           />
+        </div>
+        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+          Status der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf „${statusFilter}“)` : ''} (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}).
+        </p>
+      </HudTile>
+
+      <HudTile title="Zweig-Status" badge="SIM" accent="var(--obs-cyan)" span={4}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={Object.keys(STATUS_ACCENT).map(status => ({
               label: status,
@@ -253,11 +259,27 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
               color: STATUS_ACCENT[status] ?? '#3b6bf6',
             }))}
             centerLabel={`${allBranches.length}\nZweige`}
-            gradientIdPrefix="simulation-branch-status-mix"
+            gradientIdPrefix="simulation-branch-status"
           />
         </div>
         <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
-          Status-Verteilung der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf Status „${statusFilter}“)` : ''} und ihrer Zweige (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}) — kein serverseitiges Gesamt-Grouping über alle jemals gestarteten Simulationsläufe, nur die oben geladene Seite.
+          Status aller geladenen Zweige (geladen: {allBranches.length}).
+        </p>
+      </HudTile>
+
+      <HudTile title="Zweig-Begründung" badge="SIM" accent="var(--obs-green)" span={4}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <ObsDonut
+            data={[
+              { label: 'begründet', value: allBranches.filter(b => (b.rationale ?? '').trim().length > 0).length, color: '#10b981' },
+              { label: 'ohne Begründung', value: allBranches.filter(b => (b.rationale ?? '').trim().length === 0).length, color: '#6b7280' },
+            ]}
+            centerLabel={`${allBranches.filter(b => (b.rationale ?? '').trim().length > 0).length}\nbegründet`}
+            gradientIdPrefix="simulation-branch-rationale"
+          />
+        </div>
+        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+          Wie viele Zweige eine dokumentierte Entscheidungs-Begründung tragen (geladen: {allBranches.length}).
         </p>
       </HudTile>
       <SimulationLab

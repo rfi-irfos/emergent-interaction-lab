@@ -274,6 +274,24 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, Query(q
     }).filter(|s| *s >= 0.0).collect();
     let mean_latency_s = if !latencies.is_empty() { Some(latencies.iter().sum::<f64>() / latencies.len() as f64) } else { None };
 
+    // Lifetime token + reasoning accounting for the Forschung KPI wall's
+    // "Token & Reasoning" tile. All-time (same convention as the other
+    // `*_messages` totals above — these back a cumulative KPI, not the
+    // range-scoped `messages_by_day`). `total_completion_tokens` sums the
+    // REAL output count persisted per assistant message; `total_prompt_tokens`
+    // is the request-side count (0 when the model didn't emit `usage`);
+    // `total_reasoning_ms` sums the wall-clock reasoning time measured live
+    // in chat::stream_chat (asserted, never estimated).
+    let (total_prompt_tokens,): (i64,) = sqlx::query_as(
+        "SELECT COALESCE(SUM(prompt_tokens),0) FROM chat_messages WHERE role='assistant'"
+    ).fetch_one(db).await.unwrap_or((0,));
+    let (total_completion_tokens,): (i64,) = sqlx::query_as(
+        "SELECT COALESCE(SUM(completion_tokens),0) FROM chat_messages WHERE role='assistant'"
+    ).fetch_one(db).await.unwrap_or((0,));
+    let (total_reasoning_ms,): (i64,) = sqlx::query_as(
+        "SELECT COALESCE(SUM(reasoning_ms),0) FROM chat_messages WHERE role='assistant'"
+    ).fetch_one(db).await.unwrap_or((0,));
+
     // The module anchors around this: the actual token-by-token breakdown of
     // the most recent reply, not just an averaged number.
     let latest: Option<(String, String, String)> = sqlx::query_as(
@@ -296,6 +314,9 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, Query(q
         "mean_token_confidence": mean_confidence,
         "mean_latency_seconds": mean_latency_s,
         "latency_sample_size": latencies.len(),
+        "total_prompt_tokens": total_prompt_tokens,
+        "total_completion_tokens": total_completion_tokens,
+        "total_reasoning_ms": total_reasoning_ms,
         "latest_reply": latest_reply,
         "latest_tokens": latest_tokens,
         "latest_at": latest_at,

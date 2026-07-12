@@ -253,6 +253,30 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Additive: token + reasoning accounting for the Forschung KPI wall's
+    // "Token & Reasoning" tile. `prompt_tokens` is the request-side
+    // count (filled only when the model's SSE stream emits a final
+    // `usage` object — NVIDIA's deepseek-v4-flash does; many candidates
+    // don't, in which case it stays 0 honestly rather than fabricated).
+    // `completion_tokens` is the REAL output count (sum of each
+    // completion token's `n`, computed in stream_chat). `reasoning_ms`
+    // is wall-clock time the reasoning_content stream was actually active
+    // this turn (asserted conclusively: NOT estimated). All three are
+    // SUMmed in observatory::human_ai so the tile can show lifetime
+    // totals without re-streaming anything.
+    sqlx::query("ALTER TABLE chat_messages ADD COLUMN prompt_tokens INTEGER NOT NULL DEFAULT 0")
+        .execute(db)
+        .await
+        .ok();
+    sqlx::query("ALTER TABLE chat_messages ADD COLUMN completion_tokens INTEGER NOT NULL DEFAULT 0")
+        .execute(db)
+        .await
+        .ok();
+    sqlx::query("ALTER TABLE chat_messages ADD COLUMN reasoning_ms INTEGER NOT NULL DEFAULT 0")
+        .execute(db)
+        .await
+        .ok();
+
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS chat_documents (
             id TEXT PRIMARY KEY,
@@ -1513,6 +1537,14 @@ pub async fn stream_chat(
         // looping/struggling signal, computed as `!resolved_within_rounds`
         // right after the loop.
         let mut resolved_within_rounds = false;
+        // Hoisted out of the `rounds:` loop so they survive to the
+        // assistant-row INSERT after the loop: request-side token count
+        // (captured live from a streamed `usage` object) and the
+        // wall-clock reasoning time measured live while reasoning_content
+        // streamed this turn. Both 0 unless the model/stream provides them —
+        // never fabricated.
+        let mut prompt_tokens: i64 = 0;
+        let mut reasoning_ms: i64 = 0;
 
         'rounds: for _round in 0..agent::MAX_TOOL_ITERATIONS {
             let build_body = |model: &str| json!({
@@ -1623,8 +1655,20 @@ pub async fn stream_chat(
             // (see below) — same mechanism as the main content, but tracked
             // separately since it's a wholly separate stream, never joined
             // with `iter_text` and never fed to `agent::parse_tool_call`.
+            // `reasoning_start`/`reasoning_ms` measure the wall-clock time
+            // reasoning_content was actually streaming this turn — the real
+            // "time spent reasoning", persisted for the Forschung KPI wall's
+            // "Token & Reasoning" tile (see observatory::human_ai's SUM).
+            // Stamped on the first reasoning delta and finalized when the
+            // reasoning stream ends (a non-reasoning delta, the round's
+            // final remainder flush, or a tool call). Never estimated.
             let mut reasoning_text = String::new();
             let mut reasoning_forwarded_len = 0usize;
+            let mut reasoning_active = false;
+            let mut reasoning_start: Option<std::time::Instant> = None;
+            // `reasoning_ms` is declared once, OUTSIDE the `rounds:` loop
+            // (search 'Hoisted out of the `rounds:` loop'), so it survives
+            // to the assistant-row INSERT and accumulates across rounds.
 
             // Companion guard to the connect-timeout above (see
             // `NVIDIA_STREAM_STALL_TIMEOUT`'s doc comment): a candidate that
@@ -1664,6 +1708,14 @@ pub async fn stream_chat(
                         Ok(v) => v,
                         Err(_) => continue,
                     };
+                    // Request-side token count: NVIDIA's completion stream
+                    // emits a final `usage` object alongside the last delta
+                    // on some models (not all). Capture it live where
+                    // `parsed` is in scope; persists as `prompt_tokens` on
+                    // the assistant row. Honestly 0 when absent.
+                    if let Some(pt) = parsed.get("usage").and_then(|u| u.get("prompt_tokens")).and_then(|p| p.as_i64()) {
+                        prompt_tokens = prompt_tokens.max(pt);
+                    }
                     let choice = &parsed["choices"][0];
                     let delta_text = choice["delta"]["content"].as_str().unwrap_or("").to_string();
                     if !delta_text.is_empty() {
@@ -1692,7 +1744,18 @@ pub async fn stream_chat(
                     // section.
                     let delta_reasoning = choice["delta"]["reasoning_content"].as_str().unwrap_or("");
                     if !delta_reasoning.is_empty() {
+                        if !reasoning_active {
+                            reasoning_active = true;
+                            reasoning_start = Some(std::time::Instant::now());
+                        }
                         reasoning_text.push_str(delta_reasoning);
+                    } else if reasoning_active {
+                        // Reasoning stream ended; fold the elapsed wall-clock
+                        // into reasoning_ms before the main-content stream resumes.
+                        if let Some(start) = reasoning_start.take() {
+                            reasoning_ms += start.elapsed().as_millis() as i64;
+                        }
+                        reasoning_active = false;
                     }
                     if safe_to_forward_live(&reasoning_text) {
                         let catchup = &reasoning_text[reasoning_forwarded_len..];
@@ -1755,6 +1818,15 @@ pub async fn stream_chat(
             let reasoning_remainder = &reasoning_text[reasoning_forwarded_len..];
             if !reasoning_remainder.is_empty() {
                 yield Ok(Event::default().event("reasoning").data(json!({ "delta": reasoning_remainder }).to_string()));
+            }
+            // Reasoning reached the end of its stream (no subsequent
+            // non-reasoning delta will flip it off) — fold the final
+            // elapsed wall-clock into reasoning_ms now.
+            if reasoning_active {
+                if let Some(start) = reasoning_start.take() {
+                    reasoning_ms += start.elapsed().as_millis() as i64;
+                }
+                reasoning_active = false;
             }
 
             match agent::parse_tool_call(&iter_text) {
@@ -1826,6 +1898,22 @@ pub async fn stream_chat(
 
         let assistant_id = Uuid::new_v4().to_string();
         let token_info = serde_json::to_string(&final_tokens).unwrap_or_default();
+        // Token accounting for the Forschung KPI wall's "Token & Reasoning"
+        // tile. `completion_tokens` is the REAL output count: the sum of
+        // each completion token's `n` in the streamed token_info.
+        // `prompt_tokens` is the request-side count — filled only when the
+        // model's SSE stream emits a final `usage` object (NVIDIA's
+        // deepseek-v4-flash does, many candidates don't); honestly 0
+        // otherwise, never fabricated. `reasoning_ms` was measured live
+        // above while reasoning_content streamed.
+        let completion_tokens: i64 = final_tokens
+            .iter()
+            .filter_map(|t| t.get("n").and_then(|n| n.as_i64()))
+            .sum();
+        // prompt_tokens was captured live above from the streamed `usage`
+        // object (0 when the model didn't emit one) — no `parsed` here.
+        // reasoning_ms was measured live above while reasoning_content
+        // streamed, and is hoisted out of the stream loop into scope.
         // NULL (not "[]") when this exchange made no tool call at all — the
         // overwhelmingly common case — so the hallucination-check spawn
         // below, and any other future reader, can tell "nothing to check"
@@ -1833,13 +1921,16 @@ pub async fn stream_chat(
         let tool_call_ids_json: Option<String> =
             if tool_call_ids.is_empty() { None } else { serde_json::to_string(&tool_call_ids).ok() };
         let _ = sqlx::query(
-            "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids) VALUES (?1,?2,'assistant',?3,?4,?5)",
+            "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids, prompt_tokens, completion_tokens, reasoning_ms) VALUES (?1,?2,'assistant',?3,?4,?5,?6,?7,?8)",
         )
         .bind(&assistant_id)
         .bind(&conversation_id)
         .bind(&final_full_text)
         .bind(&token_info)
         .bind(&tool_call_ids_json)
+        .bind(prompt_tokens)
+        .bind(completion_tokens)
+        .bind(reasoning_ms)
         .execute(&state.db)
         .await;
         let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")

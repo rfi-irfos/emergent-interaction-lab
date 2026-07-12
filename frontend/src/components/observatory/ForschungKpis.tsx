@@ -23,6 +23,9 @@ interface HumanAi {
   mean_token_confidence: number | null
   mean_latency_seconds: number | null
   latency_sample_size: number
+  total_prompt_tokens: number
+  total_completion_tokens: number
+  total_reasoning_ms: number
   recent_user_messages: { id: string; excerpt: string; conversation_id: string; created_at: string }[]
 }
 
@@ -66,8 +69,12 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
   const ratio = total + assistant > 0 ? total / (total + assistant) : 0
   const conf = data?.mean_token_confidence ?? null
   const latency = data?.mean_latency_seconds ?? null
-  const activeConvs = recents.length > 0 ? new Set(recents.map(r => r.conversation_id)).size : 0
   const trend = days.map(d => ({ label: d.day.slice(5), value: d.count }))
+
+  // Token + reasoning accounting (lifetime, from the new human-ai fields).
+  const promptTok = data?.total_prompt_tokens ?? 0
+  const completionTok = data?.total_completion_tokens ?? 0
+  const reasoningS = (data?.total_reasoning_ms ?? 0) / 1000
 
   // Sparkline series: last 7 buckets of the daily volume.
   const spark = days.slice(-7).map(d => d.count)
@@ -80,10 +87,10 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
       </div>
 
       <HudGrid cols={4}>
-        {/* 1 — Message-volume trend (line chart, full width) */}
-        <HudTile title="Nachrichten-Volumen" badge="TREND" accent="var(--obs-purple)" span={4}>
+        {/* 1 — Message-volume trend (compact line chart, half width) */}
+        <HudTile title="Nachrichten-Volumen" badge="TREND" accent="var(--obs-purple)" span={2}>
           {trend.length > 0
-            ? <ObsChart data={trend} color="#8b5cf6" gradientId="forschung-volume" />
+            ? <ObsChart data={trend} color="#8b5cf6" gradientId="forschung-volume" height={56} />
             : <div className="obs-empty">Noch keine Daten.</div>}
         </HudTile>
 
@@ -138,9 +145,27 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
           />
         </HudTile>
 
-        {/* 8 — Active conversations stat */}
-        <HudTile title="Aktive Gespräche" badge="KONTEXTE" accent="var(--obs-red)" span={2}>
-          <HudStat value={activeConvs} label="laufende Kontexte (letzte Prompts)" accent="var(--obs-red)" />
+        {/* 8 — Token & Reasoning (in/out + reasoning time) */}
+        <HudTile title="Token & Reasoning" badge="LEBENSLANG" accent="var(--obs-purple)" span={2}>
+          <div style={{ display: 'flex', gap: 14, marginTop: 4 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--obs-cyan)', lineHeight: 1 }}>{completionTok.toLocaleString('de-DE')}</div>
+              <div style={{ fontSize: 9, color: '#9aa0a8', marginTop: 3 }}>TOKEN OUT</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--obs-teal)', lineHeight: 1 }}>{promptTok.toLocaleString('de-DE')}</div>
+              <div style={{ fontSize: 9, color: '#9aa0a8', marginTop: 3 }}>TOKEN IN</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--obs-amber)', lineHeight: 1 }}>
+                {reasoningS >= 60 ? `${(reasoningS / 60).toFixed(1)}m` : `${Math.round(reasoningS)}s`}
+              </div>
+              <div style={{ fontSize: 9, color: '#9aa0a8', marginTop: 3 }}>REASONING</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: '#6b7280', marginTop: 8 }}>
+            {promptTok === 0 ? 'Token-In erst ab Modellen mit usage-Report' : 'kumuliert über alle Antworten'}
+          </div>
         </HudTile>
       </HudGrid>
 
