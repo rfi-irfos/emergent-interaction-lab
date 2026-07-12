@@ -2875,7 +2875,19 @@ button { cursor: pointer; font-family: inherit; }
 .obs-donut-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: #6b7280; font-weight: 600; }
 .obs-donut-legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
-.observatory-hud .obs-donut-segment { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor); }
+/* Donut segments were ORIGINALLY given the same 4px+10px double glow as
+   .obs-gauge-fill below — screenshot-verified (Playwright, real seeded
+   data) that this looks genuinely good on a gauge (one isolated colored
+   arc against a dim track, nothing else to bleed into) but actively wrong
+   on a donut: multiple differently-hued segments sit only ~2deg apart
+   (see ObsDonut.tsx's `gapDeg`), and a 10px blur radius comfortably spans
+   that gap — adjacent segments' glows visibly blend into each other,
+   destroying exactly the "where does this category end and the next
+   begin" boundary a donut chart's whole legibility depends on. A donut
+   this blurry isn't a stylistic choice, it's a broken chart. Reduced to a
+   single, tight 2px glow here — enough to still read as "lit up," matching
+   the HUD language, without the blur radius reaching a neighboring slice. */
+.observatory-hud .obs-donut-segment { filter: drop-shadow(0 0 2px currentColor); }
 .observatory-hud .obs-gauge-fill { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor); }
 .observatory-hud .obs-donut-center { color: #eefcff; }
 .observatory-hud .obs-donut-legend-item { color: rgba(148,190,199,.75); }
@@ -3114,7 +3126,12 @@ button { cursor: pointer; font-family: inherit; }
 .chat-bubble-content strong { color: #63f0ff; }
 .chat-bubble.user .chat-bubble-content { background: rgba(99,240,255,.16); border: 1px solid rgba(99,240,255,.25); color: #e9fbff; }
 .chat-bubble.assistant .chat-bubble-content {
-  background: rgba(16,26,44,.65); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  /* 18px was a clear outlier against every other backdrop-filter blur in
+     this codebase (2-12px elsewhere — nav: 12px, footer bars: 8px, hero
+     overlay: 4px) — brought in line at 8px, still a genuine frosted-glass
+     read behind scrolled-past bubbles/the ambient background, without the
+     heavier value's softer edge. */
+  background: rgba(16,26,44,.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(148,197,214,.16); color: #e9fbff;
 }
 .chat-bubble-tools { margin-top: 4px; }
