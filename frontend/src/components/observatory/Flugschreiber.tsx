@@ -3,6 +3,7 @@ import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
+import { HudGrid, HudTile } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -202,30 +203,31 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
             Verlauf über die Zeit <span style={{ fontWeight: 400 }}>(geladen: {snapshots.length} von {total ?? '…'})</span>
           </div>
 
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Signale gesamt</div>
-            <ObsChart data={chartData(totalSignals)} color="#8b5cf6" gradientId="fs-signals" />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>CEI (Co-Evolution Index)</div>
-            <ObsChart data={chartData(s => s.cei)} color="#10b981" gradientId="fs-cei" valueFormat={formatPercent} />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Resonance Frequency</div>
-            <ObsChart data={chartData(s => s.resonance_frequency)} color="#14b8a6" gradientId="fs-rf" valueFormat={formatPercent} />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Simulationen gesamt</div>
-            <ObsChart data={chartData(totalSimRuns)} color="#f59e0b" gradientId="fs-sims" />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Research Notes</div>
-            <ObsChart data={chartData(s => s.research_notes_total)} color="#3b6bf6" gradientId="fs-notes" />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Jarvis-Werkzeugaufrufe (7 Tage)</div>
-            <ObsChart data={chartData(s => s.agent_tool_calls_7d)} color="#ef4444" gradientId="fs-tools" />
-          </div>
+          {/* Six trajectory charts — previously six full-width .obs-card
+              rows (each tiny line chart stretched to the viewport). Now a
+              fixed 3×2 instrument wall: each chart in its own sized HudTile,
+              so the flight-recorder reads as one dense panel, not six
+              stacked full-width sparklines. */}
+          <HudGrid cols={3}>
+            <HudTile title="Signale gesamt" badge="FLUG" accent="#8b5cf6" span={1}>
+              <ObsChart data={chartData(totalSignals)} color="#8b5cf6" gradientId="fs-signals" />
+            </HudTile>
+            <HudTile title="CEI" badge="CO-EVO" accent="#10b981" span={1}>
+              <ObsChart data={chartData(s => s.cei)} color="#10b981" gradientId="fs-cei" valueFormat={formatPercent} />
+            </HudTile>
+            <HudTile title="Resonance" badge="FREQ" accent="#14b8a6" span={1}>
+              <ObsChart data={chartData(s => s.resonance_frequency)} color="#14b8a6" gradientId="fs-rf" valueFormat={formatPercent} />
+            </HudTile>
+            <HudTile title="Simulationen" badge="RUNS" accent="#f59e0b" span={1}>
+              <ObsChart data={chartData(totalSimRuns)} color="#f59e0b" gradientId="fs-sims" />
+            </HudTile>
+            <HudTile title="Research Notes" badge="NOTES" accent="#3b6bf6" span={1}>
+              <ObsChart data={chartData(s => s.research_notes_total)} color="#3b6bf6" gradientId="fs-notes" />
+            </HudTile>
+            <HudTile title="Jarvis-Tools" badge="7T" accent="#ef4444" span={1}>
+              <ObsChart data={chartData(s => s.agent_tool_calls_7d)} color="#ef4444" gradientId="fs-tools" />
+            </HudTile>
+          </HudGrid>
 
           <div className="obs-section-label">Snapshots durchblättern</div>
           {snapshots.map((s, i) => (

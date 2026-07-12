@@ -4,6 +4,7 @@ import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { parseServerTimestamp } from '../../lib/dateGroups'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
+import { HudGrid, HudTile } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
 
@@ -291,21 +292,22 @@ export function Monetization() {
           above (hidden until the first orders fetch has actually resolved,
           not just "not yet fetched"). */}
       {ordersTotal !== null && (
-        <div className="obs-card" style={{ marginBottom: 14 }}>
-          <div className="obs-section-label">Umsatz nach Produkt</div>
-          <ObsDonut
-            data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
-            valueFormat={(v, _t, pct) =>
-              revenueCurrency ? `${formatPrice(v, revenueCurrency)} · ${Math.round(pct * 100)}%` : `${v.toLocaleString('de-AT')} Cent · ${Math.round(pct * 100)}%`
-            }
-            gradientIdPrefix="monetization-revenue-by-product"
-          />
-          <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
-            Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}) — kein serverseitiges
-            Gesamt-Grouping nach Produkt, siehe „Weitere laden" oben.
-            {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
-          </p>
-        </div>
+        <HudGrid cols={4}>
+          <HudTile title="Umsatz nach Produkt" badge="REV" accent="var(--obs-green)" span={2}>
+            <ObsDonut
+              data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
+              valueFormat={(v, _t, pct) =>
+                revenueCurrency ? `${formatPrice(v, revenueCurrency)} · ${Math.round(pct * 100)}%` : `${v.toLocaleString('de-AT')} Cent · ${Math.round(pct * 100)}%`
+              }
+              gradientIdPrefix="monetization-revenue-by-product"
+            />
+            <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+              Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}) — kein serverseitiges
+              Gesamt-Grouping nach Produkt, siehe „Weitere laden" oben.
+              {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
+            </p>
+          </HudTile>
+        </HudGrid>
       )}
       {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
       {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}

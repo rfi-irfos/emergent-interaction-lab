@@ -2554,6 +2554,7 @@ button { cursor: pointer; font-family: inherit; }
 /* ── HUD TILE — the shared framed-instrument cell (Hud.tsx) ───────────────── */
 .hud-grid { display: grid; gap: 14px; margin-bottom: 16px; }
 .hud-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hud-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .hud-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hud-tile {
   --hud-accent: var(--hud-cyan, #34e1ff);
@@ -2604,8 +2605,8 @@ button { cursor: pointer; font-family: inherit; }
 .hud-tile .obs-donut-wrap, .hud-tile .obs-gauge-wrap { margin: 0 auto; }
 .hud-tile .obs-chart-wrap { align-self: stretch; }
 
-@media (max-width: 1100px) { .hud-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .hud-grid--4, .hud-grid--2 { grid-template-columns: minmax(0, 1fr); } .hud-tile { grid-column: 1 / -1 !important; } }
+@media (max-width: 1100px) { .hud-grid--4, .hud-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .hud-grid--4, .hud-grid--3, .hud-grid--2 { grid-template-columns: minmax(0, 1fr); } .hud-tile { grid-column: 1 / -1 !important; } }
 .observatory-hud .obs-warning-note { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); color: #fbbf24; }
 .observatory-hud .obs-activity-row { border-bottom-color: rgba(34,211,238,.1); }
 .observatory-hud .obs-activity-row:hover { background: rgba(34,211,238,.05); }
