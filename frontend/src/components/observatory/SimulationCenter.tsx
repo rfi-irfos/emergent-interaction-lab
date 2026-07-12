@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
+import { HudTile } from './Hud'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import { ObsDonut } from './ObsDonut'
@@ -234,7 +235,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           branch-status donut always considers all three. Trusts
           ObsDonut's own built-in "Keine Daten." empty state (see
           ObsDonut.tsx) rather than adding a second empty check here. */}
-      <div className="obs-card">
+      <HudTile title="Status-Verteilung" badge="SIM" accent="var(--obs-amber)" span={4}>
         <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
           <ObsDonut
             data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
@@ -258,7 +259,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
         <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
           Status-Verteilung der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf Status „${statusFilter}“)` : ''} und ihrer Zweige (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}) — kein serverseitiges Gesamt-Grouping über alle jemals gestarteten Simulationsläufe, nur die oben geladene Seite.
         </p>
-      </div>
+      </HudTile>
       <SimulationLab
         runs={runs}
         loading={loading}
