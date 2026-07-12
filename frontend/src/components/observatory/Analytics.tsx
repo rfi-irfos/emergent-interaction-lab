@@ -3,6 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
+import { HudGrid, HudTile } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -108,128 +109,112 @@ export function Analytics() {
         <div className="obs-stat c-purple"><div className="obs-stat-value">{data.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aktionen (7 T.)</div></div>
       </div>
 
-      {/* blog_posts_draft/blog_posts_published used to be two separate stat
-          numbers in the grid above — a 2-slice donut carries the exact same
-          two counts plus the actual draft-vs-published split they never
-          showed, so it replaces rather than duplicates them. */}
-      <div className="obs-card">
-        <div className="obs-section-label">Blog — Entwürfe vs. Veröffentlicht</div>
-        <ObsDonut
-          data={[
-            { label: 'Entwürfe', value: data.blog_posts_draft, color: 'var(--obs-amber)' },
-            { label: 'Veröffentlicht', value: data.blog_posts_published, color: 'var(--obs-green)' },
-          ]}
-          gradientIdPrefix="analytics-blog-status"
-        />
-      </div>
+      {/* ── instrument wall: every chart in a fixed-size framed HudTile,
+          never a lone full-width card. Small donuts get span=1 (sized by
+          HudTile, no dead space); the activity trend + views line read
+          better wide, so span=2/4. */}
 
-      <div className="obs-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-          <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>
-            Aktivität im Zeitverlauf — retrospektiv nach Tag oder Woche
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select value={bucket} onChange={e => setBucket(e.target.value as 'day' | 'week')} style={{ fontSize: 12, padding: '5px 8px' }}>
-              <option value="day">Pro Tag</option>
-              <option value="week">Pro Woche</option>
-            </select>
-            <select value={days} onChange={e => setDays(Number(e.target.value))} style={{ fontSize: 12, padding: '5px 8px' }}>
-              {DAYS_OPTIONS.map(d => <option key={d} value={d}>letzte {d} Tage</option>)}
-            </select>
-            {/* Exports the retrospective trend table above — the one
-                dataset on this page actually gated by the bucket/days
-                selector, so the export honestly reflects the active
-                filter rather than some other fixed-window total shown
-                elsewhere on the page. */}
-            <ExportButtons
-              rows={data.activity_trend.map(p => ({ ...p }))}
-              filenameBase={`analytics-activity-${bucket}`}
-              title={`Analytics — Aktivität pro ${bucket === 'week' ? 'Woche' : 'Tag'} (letzte ${days} Tage)`}
-            />
-          </div>
-        </div>
-        {data.activity_trend.length === 0
-          ? <div className="obs-empty">Noch keine Aktivität in diesem Zeitraum.</div>
-          : (
-            // Small-multiples, NOT one shared-axis overlay (see ObsMultiChart.tsx,
-            // built and available but deliberately not used here): views
-            // routinely runs 50-300x research_notes/blog_posts/simulation_runs in
-            // real seeded data, and a screenshot check of the unified-overlay
-            // version confirmed the predicted failure mode — the dominant
-            // series flattens the other five into an unreadable near-zero band,
-            // and even toggling off the single worst offender still left three
-            // series flattened (chat_messages/tool_calls still dwarf the
-            // remaining three). Six independently-scaled mini-charts, each
-            // auto-scaled to its own max, is the one that actually reads.
-            <div className="obs-multichart-grid">
-              {TREND_COLUMNS.map(col => {
-                const total = data.activity_trend.reduce((sum, p) => sum + p[col.key], 0)
-                return (
-                  <div key={col.key} className="obs-multichart-mini">
-                    <div className="obs-multichart-mini-head">
-                      <span className="obs-multichart-mini-swatch" style={{ background: col.color }} />
-                      <span className="obs-multichart-mini-label">{col.label}</span>
-                      <span className="obs-multichart-mini-total">{total}</span>
-                    </div>
-                    <ObsChart
-                      data={data.activity_trend.map((p, i) => ({ label: trendAxisLabel(data.activity_trend.length, i, p.bucket), value: p[col.key] }))}
-                      color={col.color}
-                      height={72}
-                      gradientId={`analytics-activity-${col.key}`}
-                    />
-                  </div>
-                )
-              })}
+      <HudGrid cols={4}>
+        <HudTile title="Blog" badge="STATUS" accent="var(--obs-amber)" span={1}>
+          <div className="obs-section-label" style={{ marginBottom: 10 }}>Entwürfe vs. Veröffentlicht</div>
+          <ObsDonut
+            data={[
+              { label: 'Entwürfe', value: data.blog_posts_draft, color: 'var(--obs-amber)' },
+              { label: 'Veröffentlicht', value: data.blog_posts_published, color: 'var(--obs-green)' },
+            ]}
+            gradientIdPrefix="analytics-blog-status"
+          />
+        </HudTile>
+
+        <HudTile title="Quellen" badge="30 T." accent="var(--obs-teal)" span={1}>
+          {data.top_sources.length > 0 ? (
+            <ObsDonut data={topSourcesData} gradientIdPrefix="analytics-top-sources" />
+          ) : <div className="obs-empty">Keine Quellen.</div>}
+        </HudTile>
+
+        <HudTile title="Jarvis-Werkzeuge" badge="30 T." accent="var(--obs-purple)" span={1}>
+          {data.tool_call_counts.length > 0 ? (
+            <ObsDonut data={toolCallCountsData} gradientIdPrefix="analytics-tool-calls" />
+          ) : <div className="obs-empty">Keine Aufrufe.</div>}
+        </HudTile>
+
+        <HudTile title="Aufrufe" badge="14 T." accent="var(--obs-blue)" span={1}>
+          {data.views_by_day.length > 0 ? (
+            <ObsChart data={data.views_by_day.map(d => ({ label: d.day.slice(5), value: d.views }))} color="#3b6bf6" gradientId="analytics-views" />
+          ) : <div className="obs-empty">Keine Aufrufe.</div>}
+        </HudTile>
+      </HudGrid>
+
+      <HudGrid cols={4}>
+        <HudTile title="Aktivität im Zeitverlauf" badge="RETRO" accent="var(--obs-cyan)" span={4}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+            <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>retrospektiv nach Tag oder Woche</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <select value={bucket} onChange={e => setBucket(e.target.value as 'day' | 'week')} style={{ fontSize: 12, padding: '5px 8px' }}>
+                <option value="day">Pro Tag</option>
+                <option value="week">Pro Woche</option>
+              </select>
+              <select value={days} onChange={e => setDays(Number(e.target.value))} style={{ fontSize: 12, padding: '5px 8px' }}>
+                {DAYS_OPTIONS.map(d => <option key={d} value={d}>letzte {d} Tage</option>)}
+              </select>
+              <ExportButtons
+                rows={data.activity_trend.map(p => ({ ...p }))}
+                filenameBase={`analytics-activity-${bucket}`}
+                title={`Analytics — Aktivität pro ${bucket === 'week' ? 'Woche' : 'Tag'} (letzte ${days} Tage)`}
+              />
             </div>
-          )
-        }
-      </div>
+          </div>
+          {data.activity_trend.length === 0
+            ? <div className="obs-empty">Noch keine Aktivität in diesem Zeitraum.</div>
+            : (
+              <div className="obs-multichart-grid">
+                {TREND_COLUMNS.map(col => {
+                  const total = data.activity_trend.reduce((sum, p) => sum + p[col.key], 0)
+                  return (
+                    <div key={col.key} className="obs-multichart-mini">
+                      <div className="obs-multichart-mini-head">
+                        <span className="obs-multichart-mini-swatch" style={{ background: col.color }} />
+                        <span className="obs-multichart-mini-label">{col.label}</span>
+                        <span className="obs-multichart-mini-total">{total}</span>
+                      </div>
+                      <ObsChart
+                        data={data.activity_trend.map((p, i) => ({ label: trendAxisLabel(data.activity_trend.length, i, p.bucket), value: p[col.key] }))}
+                        color={col.color}
+                        height={72}
+                        gradientId={`analytics-activity-${col.key}`}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+        </HudTile>
+      </HudGrid>
 
-      {data.views_by_day.length > 0 && (
-        <div className="obs-card">
-          <div className="obs-section-label">Seitenaufrufe — letzte 14 Tage</div>
-          <ObsChart data={data.views_by_day.map(d => ({ label: d.day.slice(5), value: d.views }))} color="#3b6bf6" gradientId="analytics-views" />
-        </div>
-      )}
+      <HudGrid cols={4}>
+        <HudTile title="Beliebteste Seiten" badge="RANK" accent="var(--obs-green)" span={2}>
+          {data.top_paths.length > 0 ? (
+            data.top_paths.map((p, i) => (
+              <div className="obs-activity-row" key={p.label}>
+                <span className="obs-activity-kind">#{i + 1}</span>
+                <span className="obs-activity-label" style={{ fontFamily: 'monospace' }}>{p.label || '/'}</span>
+                <span className="obs-activity-ts">{p.count}</span>
+              </div>
+            ))
+          ) : <div className="obs-empty">Keine Pfade.</div>}
+        </HudTile>
 
-      {data.top_sources.length > 0 && (
-        <div className="obs-card">
-          <div className="obs-section-label">Quellen (30 T.)</div>
-          <ObsDonut data={topSourcesData} gradientIdPrefix="analytics-top-sources" />
-        </div>
-      )}
-
-      {data.top_paths.length > 0 && (
-        <div className="obs-card">
-          <div className="obs-section-label">Beliebteste Seiten</div>
-          {data.top_paths.map((p, i) => (
-            <div className="obs-activity-row" key={p.label}>
-              <span className="obs-activity-kind">#{i + 1}</span>
-              <span className="obs-activity-label" style={{ fontFamily: 'monospace' }}>{p.label || '/'}</span>
-              <span className="obs-activity-ts">{p.count}</span>
+        <HudTile title="Laufende Aktivität" badge="LIVE" accent="var(--hud-cyan)" span={2}>
+          {data.recent_activity.length === 0 && <div className="obs-empty">Noch keine Aktivität.</div>}
+          {data.recent_activity.map((a, i) => (
+            <div className="obs-activity-row" key={i}>
+              <span className="obs-activity-kind">{a.kind}</span>
+              <span className="obs-activity-label">{a.label}</span>
+              <span className="obs-activity-ts">{a.created_at}</span>
             </div>
           ))}
-        </div>
-      )}
-
-      {data.tool_call_counts.length > 0 && (
-        <div className="obs-card">
-          <div className="obs-section-label">Jarvis-Werkzeugaufrufe (30 T.)</div>
-          <ObsDonut data={toolCallCountsData} gradientIdPrefix="analytics-tool-calls" />
-        </div>
-      )}
-
-      <div className="obs-section-label">Laufende Aktivität</div>
-      <div className="obs-card">
-        {data.recent_activity.length === 0 && <div className="obs-empty">Noch keine Aktivität.</div>}
-        {data.recent_activity.map((a, i) => (
-          <div className="obs-activity-row" key={i}>
-            <span className="obs-activity-kind">{a.kind}</span>
-            <span className="obs-activity-label">{a.label}</span>
-            <span className="obs-activity-ts">{a.created_at}</span>
-          </div>
-        ))}
-      </div>
+        </HudTile>
+      </HudGrid>
     </div>
   )
 }
