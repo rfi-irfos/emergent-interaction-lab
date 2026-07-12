@@ -20,7 +20,7 @@ Built for Laura Serna Gaviria's Emergent Interaction Lab research (RFI-IRFOS). S
 ## What's actually in here
 
 **Research instrument**
-- **Jarvis** — an AI research partner embedded in the Forschung tab: RAG chat over uploaded documents and past conversations, autonomous tool use (research notes, simulation runs, blog drafts, live web search), a four-level signal classification (Human / AI / Interaction / System), and a reasoning-mode toggle.
+- **Jarvis** — an self improving, recursive AI research partner embedded and growing from within the Forschung tab: RAG chat over uploaded documents and past conversations, autonomous tool use (research notes, simulation runs, blog drafts, live web search), a four-level signal classification (Human / AI / Interaction / System), and a reasoning-mode toggle.
 - **Observatory dashboard** — Emergence Monitor, Simulation Center, Research Pulse, Knowledge Graph, System Map, System State, Interaction Dynamics, Behavioral Landscape, Information Dynamics — each surfacing real queried data, never a fabricated placeholder.
 - A deliberate **no-fabrication principle** running through the whole system: heuristic connections are labeled as heuristic, missing data is left honestly absent rather than invented, and this is enforced structurally (schema, UI, system prompt), not left to convention.
 
