@@ -92,7 +92,17 @@ pub struct AppState {
     /// Bearer token for `hermes_url`. Server-side only, and the reason Hermes
     /// runs as a service rather than in the browser: this key buys inference,
     /// so it must never reach a visitor's tab. Never a `VITE_*` var.
+    ///
+    /// In the bundled deployment an operator never sets this: start.sh generates
+    /// it per boot and hands the same value to both processes.
     pub hermes_api_key: String,
+    /// How long a research turn waits for a still-booting Hermes before giving
+    /// up — see `hermes::HERMES_BOOT_GRACE` for why the wait exists at all.
+    /// Overridable (same pattern, and the same reason, as
+    /// `nvidia_connect_timeout`) so a test can prove the give-up path against an
+    /// unreachable Hermes in milliseconds instead of waiting out the real
+    /// production grace period.
+    pub hermes_boot_grace: std::time::Duration,
     /// Server-side-only classic GitHub PAT, read from `GITHUB_ACTIVITY_TOKEN`
     /// — powers the Observatory's Agent-Aktivität transparency feed (real
     /// PRs/commits/workflow runs on this repo, see github_activity.rs). Never
@@ -251,6 +261,11 @@ async fn main() {
         // router 404s on.
         hermes_url: std::env::var("HERMES_URL").unwrap_or_default().trim_end_matches('/').to_string(),
         hermes_api_key: std::env::var("HERMES_API_KEY").unwrap_or_default(),
+        hermes_boot_grace: std::env::var("HERMES_BOOT_GRACE_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .map(std::time::Duration::from_secs)
+            .unwrap_or(hermes::HERMES_BOOT_GRACE),
         github_token,
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
         audit_lock: Arc::new(tokio::sync::Mutex::new(())),

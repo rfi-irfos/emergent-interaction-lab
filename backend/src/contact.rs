@@ -207,6 +207,7 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             hermes_url: String::new(),
             hermes_api_key: String::new(),
+            hermes_boot_grace: crate::hermes::HERMES_BOOT_GRACE,
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),

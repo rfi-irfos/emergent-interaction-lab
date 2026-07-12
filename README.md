@@ -118,26 +118,54 @@ runs server-side and the tab streams from it.
 Nothing about Hermes is vendored into this repo: `hermes.rs` drives the HTTP API
 server Hermes already ships, so it stays on its own release cycle.
 
-**Enable it:**
+### Deployed (Docker/Fly): nothing to configure
+
+Hermes is **bundled into the image** and started by `start.sh`. It uses the same
+`NVIDIA_API_KEY` the backend already has — Hermes's `nvidia` provider reads that
+exact variable — so there is no second key and no second service to run:
 
 ```bash
-# 1. Run Hermes with its API-server platform enabled (see the hermes-agent repo
-#    for install + provider config). The API server is a gateway platform, so
-#    it's switched on by env and served by the gateway:
-API_SERVER_ENABLED=1 \
-API_SERVER_KEY=<pick-a-secret> \
-API_SERVER_PORT=8765 \
-API_SERVER_HOST=127.0.0.1 \
-  hermes gateway run
-
-# 2. Point this backend at it
-HERMES_URL=http://127.0.0.1:8765
-HERMES_API_KEY=<the same API_SERVER_KEY>
+NVIDIA_API_KEY=<your key>     # that's it
 ```
 
-An engine picker then appears in the Forschung tab's topbar. With `HERMES_URL`
-unset — the default, and the deployed state today — `hermes.rs` is inert: the
-picker never renders, and every turn takes the built-in path exactly as before.
+The engine picker then appears in the Forschung tab. Optional knobs:
+`HERMES_ENABLED=0` (don't start it at all), `HERMES_MODEL=<model>` (override the
+default).
+
+Two things `start.sh` handles that are easy to get wrong:
+
+- **Memory lives on the volume** (`HERMES_HOME=/app/data/hermes`). The container's
+  writable layer is erased on every deploy *and* whenever the machine idles out
+  (`min_machines_running = 0`) — the same trap that silently ate uploaded images
+  before 2026-07-11. An agent whose long-term memory resets when the machine
+  sleeps isn't a growing agent.
+- **The agent runs with a research-only toolset** (`deploy/hermes-config.yaml`).
+  Hermes's *default* API-server toolset includes `terminal`, `process` and
+  `read_file`/`write_file` — a shell and filesystem, over HTTP, in a container
+  holding `STRIPE_SECRET_KEY`, `CHAT_API_SECRET` and the live database, driven by
+  whatever someone types into a chat box. The bundled agent is pinned to `web` +
+  `memory` and nothing else. **Don't widen that list in place** — if you need
+  those tools, give Hermes its own container with no production secrets.
+
+**Cold start:** the machine scales to zero, and Hermes (Python) takes ~20s to come
+up after a wake while the Rust binary is serving immediately. The engine picker
+health-probes Hermes, so it appears once Hermes can actually answer; a turn sent
+during that window waits it out rather than failing.
+
+### Local dev: point at your own Hermes
+
+```bash
+API_SERVER_ENABLED=1 API_SERVER_KEY=<secret> API_SERVER_PORT=8765 \
+API_SERVER_HOST=127.0.0.1 hermes gateway run
+
+# then, for this backend:
+HERMES_URL=http://127.0.0.1:8765
+HERMES_API_KEY=<the same secret>
+```
+
+With `HERMES_URL` unset and no `NVIDIA_API_KEY` in a bundled image, `hermes.rs` is
+inert: the picker never renders and every turn takes the built-in path exactly as
+before.
 
 **How a Hermes turn stays a first-class citizen.** One Hermes session per EIL
 conversation, keyed by the same id. A Hermes turn ends in the same

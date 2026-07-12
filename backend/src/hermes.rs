@@ -58,10 +58,44 @@ use crate::AppState;
 /// SSE stream) — never the time Hermes is allowed to spend generating.
 const HERMES_CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
+/// How long a research turn will wait for a Hermes that is still booting.
+///
+/// The bundled deployment runs `min_machines_running = 0` (see fly.toml), so an
+/// idle machine is stopped and the next request wakes it. The Rust binary is
+/// serving within milliseconds; Hermes — a Python agent loading its toolset — is
+/// not, and took ~20s to become ready when driven locally. Without this, the
+/// first research question after an idle period would fail against a Hermes that
+/// was seconds away from being able to answer it.
+///
+/// Bounded, because waiting forever on a Hermes that is never coming (crashed,
+/// misconfigured) would just hang the tab: past this, the turn fails with a
+/// message that says what actually happened.
+pub(crate) const HERMES_BOOT_GRACE: std::time::Duration = std::time::Duration::from_secs(45);
+
 /// True when a Hermes API server is configured. Everything else in this module
 /// is unreachable when this is false.
 pub(crate) fn enabled(state: &AppState) -> bool {
     !state.hermes_url.is_empty()
+}
+
+/// Whether Hermes is configured AND actually answering right now.
+///
+/// `enabled` only says an operator pointed us at a URL. This says the thing at
+/// that URL is alive — which is what the engine picker needs to know, so it
+/// never offers an engine that is crashed, still booting, or misconfigured.
+async fn healthy(state: &AppState) -> bool {
+    if !enabled(state) {
+        return false;
+    }
+    state
+        .http
+        .get(format!("{}/v1/models", state.hermes_url))
+        .bearer_auth(&state.hermes_api_key)
+        .timeout(std::time::Duration::from_secs(3))
+        .send()
+        .await
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
 }
 
 /// Create the Hermes session for this conversation if it doesn't exist yet.
@@ -72,21 +106,47 @@ pub(crate) fn enabled(state: &AppState) -> bool {
 /// error — and it's reported rather than swallowed, because a Hermes turn that
 /// silently ran without its session would be a turn that silently lost its
 /// memory, which is the one thing this engine exists to provide.
+/// Retried, not just attempted once, so a turn sent while Hermes is still
+/// booting waits for it instead of failing in front of the user — see
+/// `HERMES_BOOT_GRACE`. Only a *connection* failure is retried: a 401 is a
+/// misconfiguration that will still be a 401 in 40 seconds, and retrying it
+/// would turn a clear error into a long silence.
 async fn ensure_session(state: &AppState, conversation_id: &str) -> Result<(), String> {
-    let res = state
-        .http
-        .post(format!("{}/api/sessions", state.hermes_url))
-        .bearer_auth(&state.hermes_api_key)
-        .timeout(HERMES_CONNECT_TIMEOUT)
-        .json(&json!({ "id": conversation_id }))
-        .send()
-        .await
-        .map_err(|e| format!("Hermes nicht erreichbar: {e}"))?;
+    let deadline = tokio::time::Instant::now() + state.hermes_boot_grace;
+    let mut last_err = String::from("Hermes nicht erreichbar.");
 
-    match res.status().as_u16() {
-        201 | 409 => Ok(()),
-        401 | 403 => Err("Hermes lehnt den API-Key ab.".to_string()),
-        code => Err(format!("Hermes-Session fehlgeschlagen (HTTP {code}).")),
+    loop {
+        let res = state
+            .http
+            .post(format!("{}/api/sessions", state.hermes_url))
+            .bearer_auth(&state.hermes_api_key)
+            .timeout(HERMES_CONNECT_TIMEOUT)
+            .json(&json!({ "id": conversation_id }))
+            .send()
+            .await;
+
+        match res {
+            // 409 = the session already exists, which is the expected answer on
+            // every turn after the first, and is success.
+            Ok(r) if matches!(r.status().as_u16(), 201 | 409) => return Ok(()),
+            Ok(r) if matches!(r.status().as_u16(), 401 | 403) => {
+                return Err("Hermes lehnt den API-Key ab.".to_string());
+            }
+            Ok(r) => {
+                // A 5xx can genuinely mean "still coming up" (the API server is
+                // listening before the agent behind it is ready), so it's worth
+                // one more try — but it's remembered as the failure to report.
+                last_err = format!("Hermes-Session fehlgeschlagen (HTTP {}).", r.status().as_u16());
+            }
+            Err(_) => {
+                last_err = "Hermes nicht erreichbar — startet der Agent gerade?".to_string();
+            }
+        }
+
+        if tokio::time::Instant::now() >= deadline {
+            return Err(last_err);
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     }
 }
 
@@ -106,7 +166,11 @@ pub async fn engines(
         return axum::http::StatusCode::UNAUTHORIZED.into_response();
     }
     let mut available = vec!["builtin"];
-    if enabled(&state) {
+    // Probed, not merely "is a URL configured": on a scaled-to-zero machine
+    // Hermes is still booting for the first ~20s after a wake, and a picker that
+    // offers an engine which cannot yet answer is worse than one that appears a
+    // moment later. Same for a Hermes that crashed or was misconfigured.
+    if healthy(&state).await {
         available.push("hermes");
     }
     axum::Json(json!({ "engines": available })).into_response()
@@ -179,6 +243,13 @@ pub(crate) async fn stream_turn(
         let mut final_full_text = String::new();
         let mut tool_call_ids: Vec<String> = Vec::new();
         let mut errored_tool_calls: Vec<(String, String)> = Vec::new();
+        // Exactly what the tab has been shown so far. Tracked separately from
+        // `final_full_text` because the two can legitimately diverge: Hermes can
+        // finish a turn with `assistant.completed` having streamed no deltas at
+        // all (its streaming is configurable, and a tool-only round can end that
+        // way). Without this, such a turn is persisted to the DB and rendered as
+        // an empty bubble — the reply exists, and nobody ever sees it.
+        let mut streamed_text = String::new();
 
         let mut body = res.bytes_stream();
         let mut buf = String::new();
@@ -205,6 +276,7 @@ pub(crate) async fn stream_turn(
                         if let Some(d) = ev.data["delta"].as_str() {
                             if !d.is_empty() {
                                 final_full_text.push_str(d);
+                                streamed_text.push_str(d);
                                 yield Ok(Event::default().data(json!({ "delta": d, "tokens": Vec::<serde_json::Value>::new() }).to_string()));
                             }
                         }
@@ -300,7 +372,25 @@ pub(crate) async fn stream_turn(
         // assistant turn silently.
         if final_full_text.trim().is_empty() {
             final_full_text = "Hermes hat den Lauf beendet, aber keine Antwort formuliert — frag gern nochmal genauer nach.".to_string();
-            yield Ok(Event::default().data(json!({ "delta": final_full_text, "tokens": Vec::<serde_json::Value>::new() }).to_string()));
+            streamed_text.clear();
+        }
+
+        // Flush whatever the tab has NOT been shown. Normally a no-op: the
+        // deltas already add up to the final text, so the tail is empty. It
+        // matters in the case that has no deltas at all — Hermes ending a turn
+        // with `assistant.completed` alone — where without this the reply is
+        // persisted but never rendered, and the user sees an empty bubble.
+        //
+        // Only ever appends the missing tail, so nothing already on screen is
+        // repeated. If Hermes REVISED the answer mid-turn (final text isn't an
+        // extension of what streamed) the divergence is left alone rather than
+        // papered over by re-sending the whole reply underneath the old one: the
+        // authoritative text is what gets persisted, and the tab shows it on the
+        // next load.
+        if let Some(tail) = final_full_text.strip_prefix(&streamed_text) {
+            if !tail.is_empty() {
+                yield Ok(Event::default().data(json!({ "delta": tail, "tokens": Vec::<serde_json::Value>::new() }).to_string()));
+            }
         }
 
         // The one and only place a Hermes turn diverges from a built-in one is
@@ -456,6 +546,11 @@ mod tests {
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
             hermes_url,
             hermes_api_key: "test-key".to_string(),
+            // Short but not zero, so the unreachable-Hermes test genuinely
+            // exercises the retry-then-give-up path rather than skipping it —
+            // same reasoning as chat.rs's short `nvidia_connect_timeout` in the
+            // hanging-candidate tests.
+            hermes_boot_grace: std::time::Duration::from_millis(150),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
@@ -698,6 +793,134 @@ mod tests {
         assert!(
             body.contains("event: reasoning") && body.contains("Erst überlegen"),
             "real reasoning must still be forwarded: {body:?}"
+        );
+    }
+
+    /// A turn that streams NO deltas and only lands its text in
+    /// `assistant.completed` must still be shown to the user.
+    ///
+    /// Hermes can legitimately finish a turn this way — its streaming is
+    /// configurable, and this repo's own seed config is free to change. Before
+    /// this was handled, such a turn was persisted to `chat_messages` and the tab
+    /// rendered an empty bubble: the answer existed and nobody could see it.
+    #[tokio::test]
+    async fn a_turn_with_no_deltas_still_shows_its_answer_in_the_tab() {
+        let sse = concat!(
+            "event: assistant.completed\ndata: {\"content\":\"Die ganze Antwort auf einmal.\"}\n\n",
+            "event: run.completed\ndata: {\"completed\":true}\n\n",
+        );
+        let body = drive_turn_against(sse, "conv-nodeltas").await;
+
+        assert!(
+            body.contains("Die ganze Antwort auf einmal."),
+            "a non-streamed reply must still reach the tab, not just the DB: {body:?}"
+        );
+    }
+
+    /// The flip side: the normal streamed turn must NOT have its text repeated
+    /// by the flush. Pins that the tail logic appends only what's missing.
+    #[tokio::test]
+    async fn a_normally_streamed_turn_is_not_repeated_by_the_final_flush() {
+        let sse = concat!(
+            "event: assistant.delta\ndata: {\"delta\":\"Hallo \"}\n\n",
+            "event: assistant.delta\ndata: {\"delta\":\"Welt.\"}\n\n",
+            "event: assistant.completed\ndata: {\"content\":\"Hallo Welt.\"}\n\n",
+            "event: run.completed\ndata: {\"completed\":true}\n\n",
+        );
+        let body = drive_turn_against(sse, "conv-nodup").await;
+
+        assert_eq!(
+            body.matches("Welt.").count(),
+            1,
+            "the reply must appear exactly once, not be re-sent by the flush: {body:?}"
+        );
+    }
+
+    /// The engine picker must not offer a Hermes that cannot answer.
+    ///
+    /// `HERMES_URL` being set only means an operator pointed us somewhere. On a
+    /// scaled-to-zero machine that somewhere is still booting for ~20s after a
+    /// wake, and it may be crashed or misconfigured. Reporting it as available
+    /// would put an engine in the picker that fails the moment it's used.
+    #[tokio::test]
+    async fn a_configured_but_unreachable_hermes_is_not_offered_as_an_engine() {
+        let state = test_state("http://127.0.0.1:1".to_string()).await;
+        assert!(enabled(&state), "it IS configured…");
+        assert!(!healthy(&state).await, "…but it cannot answer, so it must not be offered");
+    }
+
+    /// A turn sent while Hermes is still booting must WAIT for it, not fail.
+    ///
+    /// This is the cold-start case the bundled deployment creates: the Rust
+    /// binary serves in milliseconds, the Python agent behind it does not. The
+    /// mock refuses the first two session calls (as a not-yet-listening Hermes
+    /// does) and then comes up — the turn must ride that out and still answer.
+    #[tokio::test]
+    async fn a_turn_sent_while_hermes_is_still_booting_waits_for_it() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let attempts = Arc::new(AtomicUsize::new(0));
+
+        let sessions_attempts = attempts.clone();
+        let app = Router::new()
+            .route(
+                "/api/sessions",
+                axpost(move || {
+                    let attempts = sessions_attempts.clone();
+                    async move {
+                        // First two calls: "not up yet."
+                        if attempts.fetch_add(1, Ordering::SeqCst) < 2 {
+                            return StatusCode::SERVICE_UNAVAILABLE.into_response();
+                        }
+                        (StatusCode::CREATED, AxJson(json!({ "session": { "id": "x" } }))).into_response()
+                    }
+                }),
+            )
+            .route(
+                "/api/sessions/:id/chat/stream",
+                axpost(|| async {
+                    axum::response::Response::builder()
+                        .status(StatusCode::OK)
+                        .header("content-type", "text/event-stream")
+                        .body(axum::body::Body::from(
+                            "event: assistant.completed\ndata: {\"content\":\"Endlich wach.\"}\n\nevent: run.completed\ndata: {}\n\n",
+                        ))
+                        .unwrap()
+                }),
+            )
+            .route(
+                "/v1/embeddings",
+                axpost(|| async { AxJson(json!({ "data": [{ "embedding": vec![0.01f32; 8] }] })) }),
+            );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let mut state = test_state(format!("http://{addr}")).await;
+        // Long enough to outlast the mock's two "still booting" refusals (the
+        // retry sleeps 2s between attempts), far short of the production grace.
+        state.hermes_boot_grace = std::time::Duration::from_secs(10);
+        let _ = sqlx::query("INSERT INTO chat_conversations (id, title) VALUES ('conv-boot','T')")
+            .execute(&state.db)
+            .await;
+
+        let resp = stream_turn(state.clone(), "conv-boot".to_string(), "um-b".to_string(), "hi".to_string()).await;
+        let bytes = tokio::time::timeout(
+            std::time::Duration::from_secs(20),
+            axum::body::to_bytes(resp.into_body(), usize::MAX),
+        )
+        .await
+        .expect("must not hang")
+        .unwrap();
+        let body = String::from_utf8_lossy(&bytes).to_string();
+
+        assert!(
+            body.contains("Endlich wach."),
+            "a turn sent during boot must wait for Hermes and still answer: {body:?}"
+        );
+        assert!(
+            attempts.load(Ordering::SeqCst) >= 3,
+            "the session call must actually have been retried, got {} attempts",
+            attempts.load(Ordering::SeqCst)
         );
     }
 

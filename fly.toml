@@ -40,6 +40,13 @@ primary_region = "fra"
   destination = "/app/data"
 
 [[vm]]
-  memory = "512mb"
+  # Raised from 512mb when the Hermes research agent was bundled into the image
+  # (see Dockerfile + backend/src/hermes.rs): the machine now runs the Rust
+  # backend AND a Python agent process, and 512mb does not hold both — Hermes
+  # would be OOM-killed, taking the Forschung tab's second engine down with it.
+  #
+  # If Hermes is not wanted, HERMES_ENABLED=0 keeps the process from starting and
+  # this can go back to 512mb — the backend then simply never offers the engine.
+  memory = "1gb"
   cpu_kind = "shared"
   cpus = 1
