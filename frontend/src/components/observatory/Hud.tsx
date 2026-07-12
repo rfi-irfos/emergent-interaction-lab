@@ -17,7 +17,7 @@ export interface HudTileProps {
   title?: string
   /** Short uppercase status caption rendered right of the title (e.g. "LIVE", "ANALYSIS"). */
   badge?: string
-  /** Accent hue for the corner brackets + LED. Defaults to the cyan telemetry accent. */
+  /** Accent hue for the soft glow + LED. Defaults to the cyan telemetry accent. */
   accent?: string
   /** Column span inside the HudGrid (1–4 of 4). 2 = half-width on desktop. */
   span?: HudTileSpan
@@ -27,9 +27,11 @@ export interface HudTileProps {
   children?: React.ReactNode
 }
 
-/// A framed instrument panel: hairline border, glowing corner brackets,
+/// A framed instrument panel: hairline border with a soft accent glow,
 /// a monospace title bar with a live LED, hairline inner grid. Sized by the
 /// grid, never by its content, so a chart can't blow the layout out.
+/// No corner brackets — the frame reads as a lit instrument, not a boxed
+/// label (the corner-bracket decoration was removed app-wide per feedback).
 export function HudTile({ title, badge, accent, span = 1, tall, className, children }: HudTileProps) {
   const style = accent ? ({ ['--hud-accent' as string]: accent } as React.CSSProperties) : undefined
   return (
@@ -37,10 +39,6 @@ export function HudTile({ title, badge, accent, span = 1, tall, className, child
       className={`hud-tile${tall ? ' hud-tile--tall' : ''}${className ? ` ${className}` : ''}`}
       style={{ ...style, ['--hud-span' as string]: String(span) }}
     >
-      <span className="hud-corner hud-corner--tl" aria-hidden />
-      <span className="hud-corner hud-corner--tr" aria-hidden />
-      <span className="hud-corner hud-corner--bl" aria-hidden />
-      <span className="hud-corner hud-corner--br" aria-hidden />
       {title && (
         <header className="hud-tile-head">
           <span className="hud-led" aria-hidden />

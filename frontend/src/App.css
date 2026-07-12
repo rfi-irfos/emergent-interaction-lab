@@ -2584,18 +2584,11 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid color-mix(in srgb, var(--hud-accent) 40%, transparent); padding: 1px 6px; border-radius: 4px;
 }
 .hud-tile-body { position: relative; height: calc(100% - 24px); display: flex; flex-direction: column; }
-/* Glowing corner brackets — the "proprietary instrument" frame. */
-.hud-corner { position: absolute; width: 12px; height: 12px; pointer-events: none; opacity: .8; }
-.hud-corner::before, .hud-corner::after { content: ''; position: absolute; background: var(--hud-accent); box-shadow: 0 0 6px var(--hud-accent); }
-.hud-corner::before { width: 100%; height: 2px; }
-.hud-corner::after { width: 2px; height: 100%; }
-.hud-corner--tl { top: 5px; left: 5px; }
-.hud-corner--tr { top: 5px; right: 5px; }
-.hud-corner--tr::before { right: 0; } .hud-corner--tr::after { right: 0; }
-.hud-corner--bl { bottom: 5px; left: 5px; }
-.hud-corner--bl::before { bottom: 0; } .hud-corner--bl::after { bottom: 0; }
-.hud-corner--br { bottom: 5px; right: 5px; }
-.hud-corner--br::before { bottom: 0; right: 0; } .hud-corner--br::after { bottom: 0; right: 0; }
+/* Soft accent glow on the frame — replaces the old corner brackets (removed
+   per feedback). The glow is driven by --hud-accent so each tile's hue
+   lights its own edge, reading as a live instrument rather than a boxed label. */
+.hud-tile { box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 18%, transparent), 0 0 18px -6px color-mix(in srgb, var(--hud-accent) 55%, transparent); }
+.hud-tile:hover { box-shadow: inset 0 0 24px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 34%, transparent), 0 0 26px -4px color-mix(in srgb, var(--hud-accent) 70%, transparent); }
 
 .hud-stat { text-align: left; }
 .hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; text-shadow: 0 0 16px color-mix(in srgb, var(--hud-accent, #34e1ff) 35%, transparent); font-variant-numeric: tabular-nums; }
@@ -2707,7 +2700,8 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .pem-tag-input-row input { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: #eefcff; }
 .observatory-hud .pem-tag-add { background: var(--hud-cyan); color: #04222b; }
 
-/* Live/stat cards above the Forschung chat (LiveCards.tsx) */
+/* Live/stat cards above the Forschung chat (LiveCards.tsx, retained for
+   other contexts) + the Forschung KPI tracker (ForschungKpis.tsx) */
 .observatory-hud .live-card {
   background: linear-gradient(180deg, rgba(20,30,42,.75), rgba(11,17,26,.75));
   border-color: rgba(34,211,238,.16);
@@ -2715,6 +2709,17 @@ button { cursor: pointer; font-family: inherit; }
 }
 .observatory-hud .live-card-value { color: #eefcff; }
 .observatory-hud .live-card-label { color: rgba(148,190,199,.7); }
+
+/* ForschungKpis — real-time emergent-signal tracker above the Forschung
+   chat. Replaces the old module-count strip with Laura's own user-data
+   KPIs. Kept visually consistent with the HudGrid wall below it. */
+.forschung-kpis { margin-bottom: 16px; }
+.forschung-kpis-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.forschung-kpis-title {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 11px; font-weight: 800;
+  letter-spacing: .11em; color: rgba(52,225,255,.92); text-shadow: 0 0 14px rgba(52,225,255,.35);
+}
+.forschung-kpis-sub { font-size: 10.5px; color: rgba(148,190,199,.6); letter-spacing: .03em; }
 
 /* Blog edit modal — .pem-overlay renders as a sibling of .crm-main, not a
    descendant of it (see AdminPanel.tsx), so it can't inherit the HUD scope
@@ -2823,6 +2828,12 @@ button { cursor: pointer; font-family: inherit; }
   position: relative;
   isolation: isolate;
 }
+/* Soft accent glow — replaces the old corner-bracket decoration (removed
+   per feedback). Each card gets a faint halo in its own accent hue
+   (--hud-accent on the Observatory, --brand-cyan on the public site) plus a
+   still radar ring tucked into the top-right — instrumentation, not a boxed
+   label. One ::after per card (the corner brackets used 8 gradient layers we
+   no longer want). */
 .hud-corner-frame::after,
 .observatory-hud .obs-card::after,
 .observatory-hud .obs-item-card::after,
@@ -2830,20 +2841,16 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-stat::after,
 .observatory-hud .live-card::after {
   content: '';
-  position: absolute; inset: 5px; z-index: -1; pointer-events: none;
-  --corner-c: var(--hud-cyan, var(--brand-cyan, #22d3ee));
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  --corner-c: var(--hud-accent, var(--hud-cyan, var(--brand-cyan, #22d3ee)));
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--corner-c) 16%, transparent),
+    0 0 22px -8px color-mix(in srgb, var(--corner-c) 55%, transparent);
   background:
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
-  opacity: .5;
-  filter: drop-shadow(0 0 2px var(--corner-c));
-  transition: opacity .2s ease;
+    radial-gradient(circle at 92% 6%, transparent 0 9px, rgba(34,211,238,.14) 9px 10px, transparent 10px 17px, rgba(34,211,238,.08) 17px 18px, transparent 18px);
+  opacity: .85;
+  transition: opacity .2s ease, box-shadow .2s ease;
 }
 .hud-corner-frame:hover::after,
 .observatory-hud .obs-card:hover::after,
@@ -2851,31 +2858,10 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-map-card:hover::after,
 .observatory-hud .obs-stat:hover::after,
 .observatory-hud .live-card:hover::after {
-  opacity: .9;
-}
-
-/* Radar/dial accent — "a subtle circular/radar visual accent somewhere
-   structurally sensible (e.g. behind stat tiles)" per the plan. Layered
-   onto the SAME ::after as the corner frame above (one decorative
-   pseudo-element per card, not a second one competing for the same
-   pseudo-element budget) as an extra background layer: two faint
-   concentric ring arcs tucked into the tile's own top-right corner.
-   Deliberately static, no sweep animation — a spinning ring reads as a
-   loading spinner and would fight with the real per-card entrance
-   animation below; a still one reads as instrumentation, which is the
-   actual ask. Reused verbatim (bar-for-bar, same 8 corner layers) on the
-   public site's own stat tiles below (.site-livestats-tile). */
-.observatory-hud .obs-stat::after {
-  background:
-    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(34,211,238,.16) 8px 9px, transparent 9px 15px, rgba(34,211,238,.1) 15px 16px, transparent 16px),
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+  opacity: 1;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--corner-c) 30%, transparent),
+    0 0 30px -6px color-mix(in srgb, var(--corner-c) 72%, transparent);
 }
 
 /* ── HUD FRAMING — public-site theme adaptation ───────────────────────────

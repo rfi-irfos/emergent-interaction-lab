@@ -12,7 +12,7 @@ import { Analytics } from './observatory/Analytics'
 import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
 import { Inbox, type ContactMessage } from './observatory/Inbox'
-import { LiveCards } from './observatory/LiveCards'
+import { ForschungKpis } from './observatory/ForschungKpis'
 import { SystemMap } from './observatory/SystemMap'
 import { EmergenceMonitor } from './observatory/EmergenceMonitor'
 import { SystemState } from './observatory/SystemState'
@@ -258,15 +258,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               {!sidebarCollapsed && 'Monetarisierung'}
             </button>
-            {/* Same Verwaltung tier as Analytics/Monetarisierung above, NOT
-                nested under the Observatory groups below — see
-                types/admin.ts's own 'changelog' doc comment for why: every
-                row here is a platform-operational record, not a research
-                observable or a Jarvis system-health signal. */}
-            <button className={`crm-nav-item ${adminSection === 'changelog' ? 'active' : ''}`} onClick={() => setAdminSection('changelog')} title="Changelog">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-              {!sidebarCollapsed && 'Changelog'}
-            </button>
 
             {!sidebarCollapsed && <div className="crm-nav-group-label">Observatory</div>}
             {(['research', 'system', 'technical'] as ObservatoryTier[]).map(tier => (
@@ -280,6 +271,15 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 ))}
               </div>
             ))}
+
+            {/* Changelog — moved to the absolute bottom of the nav (under all
+                Observatory tiers) per feedback: it's a platform-operational
+                audit record, not a research observable, and shouldn't sit
+                among the Verwaltung/observatory surfaces above. */}
+            <button className={`crm-nav-item crm-nav-item--bottom ${adminSection === 'changelog' ? 'active' : ''}`} onClick={() => setAdminSection('changelog')} title="Changelog">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+              {!sidebarCollapsed && 'Changelog'}
+            </button>
           </nav>
           {/* Fixed footer, NOT inside <nav> — a separate flex sibling so it
               never scrolls away with the nav list above it (see App.css's
@@ -399,7 +399,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {adminSection === 'forschung' && (
               <div className="forschung-view">
-                <LiveCards refreshSignal={forschungRefresh} onNavigate={setAdminSection} />
+                <ForschungKpis refreshSignal={forschungRefresh} />
                 <ResearchChat
                   siteContent={draft}
                   onMessageComplete={() => setForschungRefresh(n => n + 1)}
