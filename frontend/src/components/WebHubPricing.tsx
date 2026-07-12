@@ -8,7 +8,8 @@ import { useLang } from '../hooks/useLang'
 // content.products (unrelated portfolio catalog) and from
 // CertificationPage. Rendered directly on the main site as a tight card
 // wall + themed modal: the card shows only name + price + a basket link +
-// a "more" button; the modal carries the full EN/DE narrative so the
+// a "more" button; the modal carries the single-language narrative for
+// whichever language the site is currently in (see DETAIL below) so the
 // ladder reads as ONE method scoped to layers (Intake → Cluster → Derive
 // → Reconstruct → Design → Build → Operate) — never "mysterious option A
 // vs Z".
@@ -53,56 +54,58 @@ const CROSS = (
   </svg>
 )
 
-// Phase chip + bilingual narrative, keyed by product name. Mirrors the
-// canonical Desktop ladder copy (webhub-systemaudit-tiers.html). Falls back
-// to the backend `description`/`description_de` if a name isn't listed.
-// `phase` is the ladder position — it makes the interdisciplinary arc
-// explicit so no one wonders where a tier sits.
+// Phase chip + single-language-at-a-time narrative, keyed by product name.
+// Deliberately outcome-only: what changes for the client / what they get,
+// never the internal mechanism (no "how it's built" language) — a client
+// buys a result, not a methodology explainer. Falls back to the backend
+// `description`/`description_de` if a name isn't listed. `phase` is the
+// ladder position — it makes the interdisciplinary arc explicit so no one
+// wonders where a tier sits.
 const DETAIL: Record<string, { phase: string; en: string; de: string }> = {
   'Case Intake Scan': {
     phase: 'Intake',
-    en: 'The first structured entry into a case or project — quick orientation without overhead: case description, rough thematic assignment, first defect hints, open questions, priorities for the next stage.',
-    de: 'Erster strukturierter Einstieg in einen Fall oder ein Projekt – schnelle Einordnung ohne Overhead: Fallbeschreibung, grobe Themenzuordnung, erste Mängelhinweise, offene Fragen, Prioritäten für die nächste Stufe.',
+    en: "A fast, honest read on where a case or project actually stands - the real starting point, the open questions, and what needs to happen next. No overhead, no premature conclusions.",
+    de: 'Ein schneller, ehrlicher Blick darauf, wo ein Fall oder Projekt wirklich steht - der reale Ausgangspunkt, die offenen Fragen und was als Nächstes zu tun ist. Ohne Overhead, ohne vorschnelle Schlüsse.',
   },
   'Mangelcluster Sprint': {
     phase: 'Cluster',
-    en: 'Turning raw material into a clean defect and theme structure: defect list, theme areas, contradictions, gaps, prioritisation, next steps.',
-    de: 'Aus Rohmaterial eine saubere Mängel- und Themenstruktur: Mängelliste, Themenbereiche, Widersprüche, Lücken, Priorisierung, nächste Schritte.',
+    en: "Turns scattered raw material into a case you can actually act on - what's wrong, what's missing, what contradicts itself, and what to tackle first.",
+    de: 'Macht aus verstreutem Rohmaterial einen Fall, mit dem sich arbeiten lässt - was falsch ist, was fehlt, was sich widerspricht, und was zuerst dran ist.',
   },
   'Market & Competitor Intelligence': {
     phase: 'Market',
-    en: 'The same observational-analysis method turned outward: who else operates in this space, how they are positioned and priced, where the real gaps and openings are — a structured, evidence-based read of the actual competitive field, not a generic market report.',
-    de: 'Dieselbe beobachtende Analysemethode nach außen gerichtet: wer sonst in diesem Feld agiert, wie positioniert und bepreist ist, wo die echten Lücken und Chancen liegen – eine strukturierte, evidenzbasierte Lesart des tatsächlichen Wettbewerbsfelds, kein generischer Marktbericht.',
+    en: 'An honest, evidence-based read of where you actually stand against the field - not a generic market report, the real gaps and openings worth acting on.',
+    de: 'Eine ehrliche, evidenzbasierte Einschätzung, wo du im Feld tatsächlich stehst - kein generischer Marktbericht, sondern die echten Lücken und Chancen, die es wert sind, verfolgt zu werden.',
   },
   'Framework Magnification': {
     phase: 'Derive',
-    en: 'Deriving the underlying principles from the case: frameworks, terms, rules, decision logic, system principles.',
-    de: 'Aus dem Fall die zugrundeliegenden Prinzipien ableiten: Frameworks, Begriffe, Regeln, Entscheidungslogik, Systemprinzipien.',
+    en: 'The underlying principles behind a case, made explicit - the rules and logic that were already there, now usable on purpose instead of by accident.',
+    de: 'Die zugrunde liegenden Prinzipien eines Falls, sichtbar gemacht - die Regeln und die Logik, die längst da waren, jetzt bewusst nutzbar statt zufällig.',
   },
   'Emergent Case Intelligence Sprint': {
     phase: 'Reconstruct',
-    en: 'The core offer. A complex case, a set of documents, case-file access, or a conversation history is reconstructed into what it actually is — the defects, contradictions and gaps that are visible, the theme areas present, and the logic a framework or agent architecture gets built from. Not a vibe check. Structure.',
-    de: 'Das Kernangebot: ein komplexer Fall, eine Dokumentation, Akteneinsicht oder ein Interaktionsverlauf wird rekonstruiert – was der Fall wirklich ist, welche Mängel, Widersprüche und Lücken sichtbar sind, welche Themenbereiche vorliegen und welche Logik sich daraus für Framework- und Agentenarchitektur ableiten lässt.',
+    en: 'The core offer. A complex case - documents, case-file access, or a conversation history - reconstructed into what it actually is: the real defects, contradictions and gaps, and the logic everything else gets built from. Not a vibe check. Structure.',
+    de: 'Das Kernangebot: ein komplexer Fall - Dokumentation, Akteneinsicht oder ein Interaktionsverlauf - wird rekonstruiert zu dem, was er wirklich ist: die echten Mängel, Widersprüche und Lücken, und die Logik, aus der sich alles Weitere ableitet. Kein Bauchgefühl. Struktur.',
   },
   'Multi-Agent System Design': {
     phase: 'Agent Design',
-    en: 'Translating the case logic into an agent system: role model, agent tasks, runtime logic, state and memory, audit and drift, monitoring, control mechanisms — with explicit safety and alignment mechanisms.',
-    de: 'Die Fall-Logik in ein Agentensystem übersetzen: Rollenmodell, Agentenaufgaben, Runtime-Logik, State und Memory, Audit und Drift, Monitoring, Kontrollmechanismen – mit expliziten Sicherheits- und Ausrichtungsmechanismen.',
+    en: 'A working team of specialized agents built around your case, each with a clear job and a clear boundary - so the system does what it is supposed to, and nothing it is not.',
+    de: 'Ein arbeitsfähiges Team spezialisierter Agenten, gebaut um deinen Fall herum, jeder mit klarer Aufgabe und klarer Grenze - damit das System genau das tut, was es soll, und nichts, was es nicht soll.',
   },
   'Implementation Build': {
     phase: 'Build',
-    en: 'Setting up the architecture in practice: automations, workflows, intake, routing, analysis pipeline, delivery, monitoring, follow-up.',
-    de: 'Die Architektur praktisch aufsetzen: Automationen, Workflows, Intake, Routing, Analysepipeline, Delivery, Monitoring, Follow-up.',
+    en: 'Your system, actually running - live, handling real cases end to end, not a design document waiting to be built.',
+    de: 'Dein System, tatsächlich am Laufen - live, im echten Fallbetrieb, kein Konzeptpapier, das noch gebaut werden muss.',
   },
   'Retainer / Monitoring': {
     phase: 'Operate',
-    en: 'Ongoing care, evaluation and extension: new cases, review, drift checks, framework updates, system adjustments, continuous control.',
-    de: 'Laufende Pflege, Auswertung und Erweiterung: neue Fälle, Review, Drift-Checks, Framework-Updates, Systemanpassungen, laufende Kontrolle.',
+    en: 'Someone keeping watch after delivery - new cases handled, drift caught early, the system kept current instead of quietly going stale.',
+    de: 'Jemand, der nach der Auslieferung weiter hinschaut - neue Fälle werden bearbeitet, Drift wird früh erkannt, das System bleibt aktuell statt still zu veralten.',
   },
   'Framework Update': {
     phase: 'Maintain',
-    en: 'One-off update of frameworks, check routines and agent logic.',
-    de: 'Einmaliges Update der Frameworks, Prüfroutinen und Agentenlogik.',
+    en: 'A refresh for a framework and its agents once the underlying case has moved on.',
+    de: 'Eine Auffrischung für ein Framework und seine Agenten, wenn sich der zugrunde liegende Fall weiterentwickelt hat.',
   },
 }
 
@@ -116,10 +119,16 @@ const COPY = {
     more: 'More',
     loading: 'Loading the offer ladder…',
     error: 'Could not load pricing right now - reach out directly instead.',
-    enLabel: 'EN — what is being done & how',
-    deLabel: 'DE — was gemacht wird & wie',
+    whatLabel: 'What this is',
     buy: 'Buy',
     close: 'Close',
+    consentTitle: 'Please confirm before checkout',
+    consentB2b: 'I am acting as a business customer and confirm that this purchase is made in the course of my commercial or professional activity.',
+    consentAgbBefore: 'I agree to the ',
+    consentAgbLink: 'Terms of Service',
+    consentAgbAfter: '. I understand that the service begins immediately upon payment and that no right of withdrawal applies. Refunds are excluded.',
+    cancel: 'Cancel',
+    continueToStripe: 'Continue to Stripe →',
   },
   de: {
     eyebrow: 'Angebot',
@@ -130,10 +139,16 @@ const COPY = {
     more: 'Mehr',
     loading: 'Angebotsleiter wird geladen…',
     error: 'Preise konnten gerade nicht geladen werden - melde dich direkt.',
-    enLabel: 'EN — what is being done & how',
-    deLabel: 'DE — was gemacht wird & wie',
+    whatLabel: 'Was das ist',
     buy: 'Kaufen',
     close: 'Schließen',
+    consentTitle: 'Bitte vor dem Checkout bestätigen',
+    consentB2b: 'Ich handle als Unternehmer und bestätige, dass dieser Kauf im Rahmen meiner gewerblichen oder beruflichen Tätigkeit erfolgt.',
+    consentAgbBefore: 'Ich stimme den ',
+    consentAgbLink: 'Allgemeinen Geschäftsbedingungen',
+    consentAgbAfter: ' zu. Mir ist bewusst, dass die Leistung sofort nach Zahlung beginnt und daher kein Widerrufsrecht besteht. Rückerstattungen sind ausgeschlossen.',
+    cancel: 'Abbrechen',
+    continueToStripe: 'Weiter zu Stripe →',
   },
 } as const
 
@@ -143,6 +158,27 @@ export function WebHubPricing() {
   const [products, setProducts] = useState<PublicProduct[] | null>(null)
   const [error, setError] = useState(false)
   const [active, setActive] = useState<PublicProduct | null>(null)
+  // Legal consent gate before any Stripe redirect — mirrors rfi-irfos.com's
+  // own B2B-checkout-confirmation modal (Abmahnung-proofing: self-declared
+  // commercial customer excludes the KSchG consumer-protection Widerrufsrecht
+  // per §1(2) KSchG / §18(1)(1) FAGG, matched by AgbContent in LegalPage.tsx).
+  // Holds the product pending checkout; both checkboxes reset whenever a new
+  // checkout is opened so consent is given fresh per purchase, not carried
+  // over from an earlier one.
+  const [checkoutTarget, setCheckoutTarget] = useState<PublicProduct | null>(null)
+  const [b2bChecked, setB2bChecked] = useState(false)
+  const [agbChecked, setAgbChecked] = useState(false)
+
+  const openCheckout = (p: PublicProduct) => {
+    setB2bChecked(false)
+    setAgbChecked(false)
+    setCheckoutTarget(p)
+  }
+  const confirmCheckout = () => {
+    if (!checkoutTarget) return
+    window.open(checkoutTarget.payment_link_url, '_blank', 'noopener,noreferrer')
+    setCheckoutTarget(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -156,13 +192,18 @@ export function WebHubPricing() {
     return () => { cancelled = true }
   }, [])
 
-  // Close modal on Escape.
+  // Close modal(s) on Escape — checkout consent takes priority since it
+  // renders on top of the detail modal.
   useEffect(() => {
-    if (!active) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setActive(null) }
+    if (!active && !checkoutTarget) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (checkoutTarget) setCheckoutTarget(null)
+      else setActive(null)
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active])
+  }, [active, checkoutTarget])
 
   if (!error && products !== null && products.length === 0) return null
 
@@ -180,29 +221,25 @@ export function WebHubPricing() {
       {products !== null && products.length > 0 && (
         <div className="site-webhub-grid">
           {products.map((p, i) => {
-            const d = DETAIL[p.name]
-            const phase = d?.phase ?? p.category
             const isFlagship = p.name === FLAGSHIP_NAME
             return (
               <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}`}>
                 {isFlagship && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
-                <span className="site-webhub-chip">{phase}</span>
                 <h3>{p.name}</h3>
                 <div className="site-webhub-price">
                   {formatPrice(p.price_cents, p.currency, lang)}
                   {p.mode === 'subscription' && <span className="site-webhub-per"> / {c.recurring}</span>}
                 </div>
                 <div className="site-webhub-row">
-                  <a
-                    href={p.payment_link_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
                     className="site-webhub-buy"
                     title={`${c.buy}: ${p.name}`}
                     aria-label={`${c.buy}: ${p.name}`}
+                    onClick={() => openCheckout(p)}
                   >
                     {BASKET}
-                  </a>
+                  </button>
                   <button
                     type="button"
                     className="site-webhub-more"
@@ -238,22 +275,60 @@ export function WebHubPricing() {
             </div>
 
             <div className="site-webhub-blk">
-              <div className="site-webhub-lbl">{c.enLabel}</div>
-              <div className="site-webhub-txt">{DETAIL[active.name]?.en ?? active.description}</div>
-            </div>
-            <div className="site-webhub-blk">
-              <div className="site-webhub-lbl">{c.deLabel}</div>
-              <div className="site-webhub-txt">{DETAIL[active.name]?.de ?? active.description_de ?? active.description}</div>
+              <div className="site-webhub-lbl">{c.whatLabel}</div>
+              <div className="site-webhub-txt">
+                {lang === 'en'
+                  ? (DETAIL[active.name]?.en ?? active.description)
+                  : (DETAIL[active.name]?.de ?? active.description_de ?? active.description)}
+              </div>
             </div>
 
-            <a
-              href={active.payment_link_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="site-webhub-buy big"
-            >
+            <button type="button" className="site-webhub-buy big" onClick={() => openCheckout(active)}>
               {BASKET}<span>{c.buy}</span>
-            </a>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {checkoutTarget && (
+        <div
+          className="site-webhub-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={c.consentTitle}
+          onClick={(e) => { if (e.target === e.currentTarget) setCheckoutTarget(null) }}
+        >
+          <div className="site-webhub-modal site-webhub-consent">
+            <button type="button" className="site-webhub-x" aria-label={c.close} onClick={() => setCheckoutTarget(null)}>
+              {CROSS}
+            </button>
+            <div className="site-webhub-lbl">{c.consentTitle}</div>
+            <h3 className="site-webhub-modal-name">{checkoutTarget.name}</h3>
+            <label className="site-webhub-consent-row">
+              <input type="checkbox" checked={b2bChecked} onChange={e => setB2bChecked(e.target.checked)} />
+              <span>{c.consentB2b}</span>
+            </label>
+            <label className="site-webhub-consent-row">
+              <input type="checkbox" checked={agbChecked} onChange={e => setAgbChecked(e.target.checked)} />
+              <span>
+                {c.consentAgbBefore}
+                <a href="#p/agb" target="_blank" rel="noopener noreferrer">{c.consentAgbLink}</a>
+                {c.consentAgbAfter}
+              </span>
+            </label>
+            <div className="site-webhub-consent-actions">
+              <button type="button" className="site-webhub-consent-cancel" onClick={() => setCheckoutTarget(null)}>
+                {c.cancel}
+              </button>
+              <button
+                type="button"
+                className="site-webhub-buy big"
+                disabled={!b2bChecked || !agbChecked}
+                onClick={confirmCheckout}
+              >
+                <span>{c.continueToStripe}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

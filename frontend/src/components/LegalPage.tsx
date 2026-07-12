@@ -75,12 +75,18 @@ function AgbContent({ brand }: { brand: string }) {
   return (
     <>
       <h1>Allgemeine Geschäftsbedingungen</h1>
-      <h2>1. Geltungsbereich</h2>
-      <p>Diese Allgemeinen Geschäftsbedingungen gelten für alle Leistungen von <strong>{brand}</strong>.</p>
+      <h2>1. Geltungsbereich - nur für Unternehmer (B2B)</h2>
+      <p>
+        Diese Allgemeinen Geschäftsbedingungen gelten für alle Leistungen von <strong>{brand}</strong>, insbesondere die über diese Website als Payment Link angebotenen Case-Intelligence-, Framework- und Systemleistungen.<br /><br />
+        Dieses Angebot richtet sich <strong>ausschließlich an Unternehmer</strong> im Sinne des § 1(2) Konsumentenschutzgesetz (KSchG). Verträge mit Verbrauchern im Sinne des KSchG sind ausgeschlossen. Mit der Bestellung bestätigt der Kunde, im Rahmen seiner gewerblichen oder beruflichen Tätigkeit zu handeln.
+      </p>
       <h2>2. Leistungserbringung</h2>
-      <p>Die konkreten Leistungen, Preise und Konditionen werden individuell vereinbart.</p>
+      <p>Die konkreten Leistungen, Preise und Konditionen sind auf dieser Website beschrieben, richten sich im Detail aber nach dem tatsächlich bestellten Produkt. Website-Beschreibungen und Preisangaben sind indikativ; der genaue Leistungsumfang ergibt sich aus dem jeweils bestellten Angebot.</p>
       <h2>3. Zahlung</h2>
-      <p>Zahlungsbedingungen werden individuell vereinbart. Rechnungen sind innerhalb der vereinbarten Frist zu begleichen.</p>
+      <p>
+        Preise verstehen sich in Euro. Die Zahlung erfolgt <strong>vollständig im Voraus</strong>, vor Leistungsbeginn, ausschließlich über die auf dieser Website angebotene Zahlungsmethode (Stripe).<br /><br />
+        Die Leistungserbringung beginnt <strong>unmittelbar</strong> nach Zahlungseingang. Der Kunde stimmt diesem sofortigen Beginn ausdrücklich zu. Ein Widerrufsrecht besteht dementsprechend nicht (§ 18(1)(1) Fern- und Auswärtsgeschäfte-Gesetz, FAGG). Eine Stornierung oder Rückerstattung nach Zahlungseingang ist ausgeschlossen.
+      </p>
       <h2>4. Haftung</h2>
       <p>Die Haftung beschränkt sich auf Vorsatz und grobe Fahrlässigkeit.</p>
       <h2>5. Anwendbares Recht</h2>

@@ -1774,10 +1774,16 @@ button { cursor: pointer; font-family: inherit; }
   display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50;
 }
 .site-webhub-modal {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  /* Self-contained dark panel: the fixed overlay can inherit a flipped
+     --text / --surface from a theme scope (Light/Dark/High-contrast
+     color-scheme), which turned light-on-dark modal text into invisible
+     background-colored text. Pin explicit dark-surface + light-text here
+     so the modal is always readable regardless of the site theme. */
+  background: #0d1626; border: 1px solid rgba(148, 197, 214, .22); border-radius: 16px;
   max-width: 560px; width: 100%; max-height: 86vh; overflow: auto;
   padding: 24px 24px 22px; position: relative;
   box-shadow: 0 24px 70px -24px rgba(0, 0, 0, .7);
+  --text: #e9fbff;
 }
 .site-webhub-modal .site-webhub-chip { margin-bottom: 10px; }
 .site-webhub-modal-name { font-size: 20px; font-weight: 800; margin: 0 0 4px; color: var(--text); }
@@ -1800,8 +1806,35 @@ button { cursor: pointer; font-family: inherit; }
   font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: .06em; text-transform: uppercase; color: var(--on-primary);
   background: var(--accent); border: 1px solid var(--accent);
+  cursor: pointer;
 }
 .site-webhub-buy.big:hover { background: #5fe3ff; }
+.site-webhub-buy.big:disabled {
+  background: transparent; border-color: rgba(148, 197, 214, .18); color: rgba(233, 251, 255, .3);
+  cursor: not-allowed;
+}
+.site-webhub-buy.big:disabled:hover { background: transparent; }
+
+/* ── legal consent gate (mirrors rfi-irfos.com's own B2B checkout-confirmation
+   modal) — every Stripe redirect goes through this, never a bare link. ── */
+.site-webhub-consent-row {
+  display: flex; gap: 11px; align-items: flex-start; margin-bottom: 14px; cursor: pointer;
+}
+.site-webhub-consent-row input[type="checkbox"] {
+  margin-top: 3px; width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--accent);
+}
+.site-webhub-consent-row span { font-size: 13px; line-height: 1.6; color: var(--text); opacity: .88; }
+.site-webhub-consent-row a { color: var(--accent); }
+.site-webhub-consent-actions { display: flex; gap: 10px; margin-top: 6px; }
+.site-webhub-consent-cancel {
+  flex: 1; padding: 11px 16px; border-radius: 10px; background: transparent;
+  border: 1px solid var(--border); color: var(--text-soft);
+  font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+}
+.site-webhub-consent-cancel:hover { color: var(--text); border-color: var(--text); }
+.site-webhub-consent .site-webhub-buy.big { flex: 2; justify-content: center; margin-top: 0; }
+
 @media (max-width: 640px) {
   .site-webhub-grid { grid-template-columns: 1fr; }
 }
