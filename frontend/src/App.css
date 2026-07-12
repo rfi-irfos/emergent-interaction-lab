@@ -1729,7 +1729,19 @@ button { cursor: pointer; font-family: inherit; }
 .site-webhub-status { text-align: center; font-size: 14px; color: var(--text-soft); }
 .site-webhub-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 14px;
-  max-width: 1160px; margin: 0 auto;
+  max-width: 1160px; margin: 0 auto 28px;
+}
+/* Two distinct methodologies (case-intelligence ladder vs. the newer
+   Systemaudit ladder) share this product list now — a labelled divider
+   between them instead of one flat price-sorted wall, so the two ladders
+   read as two coherent groups rather than 20+ interleaved cards. */
+.site-webhub-group-label {
+  max-width: 1160px; margin: 0 auto 14px; font-size: 11px; font-weight: 800;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--primary);
+}
+.site-webhub-group-divider {
+  max-width: 1160px; margin: 0 auto 28px; height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
 }
 .site-webhub-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;

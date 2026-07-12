@@ -215,6 +215,10 @@
       {
         "label": "Impressum",
         "href": "/impressum"
+      },
+      {
+        "label": "AGB",
+        "href": "/agb"
       }
     ],
     "copyright": "© 2026 Emergent Interaction Lab - made with <3 in Graz by RFI-IRFOS, for Laura"
