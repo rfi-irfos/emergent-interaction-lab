@@ -51,7 +51,7 @@ Copy `.env.example` → `.env` in `backend/` and fill in what you need — most 
 
 - **Backend:** Rust, Axum 0.7, Tokio, SQLite (`sqlx`) — content API, chat/RAG, Observatory endpoints, billing, OAuth2, file uploads, serves the built SPA.
 - **Frontend:** React 19, TypeScript, Vite — public site renderer + admin/Observatory UI.
-- **AI:** NVIDIA-hosted LLMs (chat + embeddings), with a fallback ladder across candidate models.
+- **AI:** NVIDIA-hosted LLMs (chat + embeddings), with a fallback ladder across candidate models. The Forschung tab can optionally run on a [Hermes](https://github.com/NousResearch/hermes-agent) agent instead — see *Hermes research engine* below.
 - **Auth:** Google OAuth2 for the admin login, plus a shared-secret header for API calls from the admin UI.
 - **Payments:** Stripe (Products → Prices → Payment Links).
 - **Deploy:** Fly.io (backend + SQLite on a persistent volume) and GitHub Pages (public frontend build).
@@ -69,6 +69,7 @@ emergent-interaction-lab/
 │       ├── authz.rs          shared-secret admin auth check
 │       ├── chat.rs           Jarvis: RAG, streaming, model ladder, tool loop
 │       ├── agent.rs           tool definitions (notes, simulations, blog, web search)
+│       ├── hermes.rs          optional 2nd research engine: a Hermes agent as a service
 │       ├── emergence.rs       emergence signal detection
 │       ├── observatory.rs     Observatory dashboard endpoints
 │       ├── research.rs        Research Workspace / Innovation Lab notes
@@ -93,6 +94,57 @@ emergent-interaction-lab/
 │       └── lib/                      shared frontend helpers (github.ts, adminApi.ts, ...)
 └── .env.example
 ```
+
+---
+
+## Hermes research engine (optional)
+
+The Forschung tab can be answered by one of two engines:
+
+- **Jarvis** (default) — the built-in loop in `chat.rs`: one NVIDIA chat-completions
+  call per round, tool calls parsed out of the model's own text. Stateless between
+  turns; everything it "remembers" is what `chat.rs` reassembles from SQLite and
+  the RAG chunks on the next request.
+- **Hermes** (opt-in) — [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+  (MIT), a full agent runtime with its own tool loop, its own skills, and its own
+  long-term memory that persists across turns and grows.
+
+Hermes runs as a **service**, not in the browser. It needs a long-lived process, a
+filesystem for its memory, and an inference key — in a browser tab (WASM/Pyodide)
+the key would ship to every visitor, the tools wouldn't run, and the memory would
+die with the tab, which is the one property the agent exists to have. So Hermes
+runs server-side and the tab streams from it.
+
+Nothing about Hermes is vendored into this repo: `hermes.rs` drives the HTTP API
+server Hermes already ships, so it stays on its own release cycle.
+
+**Enable it:**
+
+```bash
+# 1. Run Hermes with its API-server platform enabled (see the hermes-agent repo
+#    for install + provider config). The API server is a gateway platform, so
+#    it's switched on by env and served by the gateway:
+API_SERVER_ENABLED=1 \
+API_SERVER_KEY=<pick-a-secret> \
+API_SERVER_PORT=8765 \
+API_SERVER_HOST=127.0.0.1 \
+  hermes gateway run
+
+# 2. Point this backend at it
+HERMES_URL=http://127.0.0.1:8765
+HERMES_API_KEY=<the same API_SERVER_KEY>
+```
+
+An engine picker then appears in the Forschung tab's topbar. With `HERMES_URL`
+unset — the default, and the deployed state today — `hermes.rs` is inert: the
+picker never renders, and every turn takes the built-in path exactly as before.
+
+**How a Hermes turn stays a first-class citizen.** One Hermes session per EIL
+conversation, keyed by the same id. A Hermes turn ends in the same
+`chat::finalize_turn` a built-in turn does, so it lands in the same tables and
+feeds the same machinery: the transcript, the cross-chat RAG memory, the tool-call
+log the Observatory reads, and the emergence / CCET / anomaly instrumentation.
+The engine choice changes *who thinks*, not what the system learns from it.
 
 ---
 

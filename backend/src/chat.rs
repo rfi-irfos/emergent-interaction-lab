@@ -1379,6 +1379,185 @@ pub struct StreamChatReq {
     /// entirely for this request. `Some(true)`: prioritize trying it FIRST,
     /// ahead of the cached-winner shortcut — see `build_model_ladder`.
     reasoning_requested: Option<bool>,
+    /// Which agent engine answers this turn. `None`/`Some("builtin")` (the
+    /// default, and what every existing client sends) takes the NVIDIA tool
+    /// loop below. `Some("hermes")` hands the turn to a Hermes agent — see
+    /// hermes.rs — and is honoured only when `HERMES_URL` is configured, so an
+    /// unconfigured deployment cannot be talked into a Hermes turn by a
+    /// crafted request body.
+    engine: Option<String>,
+}
+
+/// Everything that happens *after* a research turn's reply has finished
+/// streaming: persist the assistant message, fold both sides of the
+/// exchange into cross-chat memory, and fire the observability spawns
+/// (emergence, CCET, Denkfragmente, hallucination + anomaly).
+///
+/// Extracted from `stream_chat` so the Hermes engine (`hermes.rs`) runs the
+/// exact same pipeline rather than a parallel half-copy of it — a Hermes
+/// turn has to land in the same tables, and grow the same memory, as a
+/// built-in one, or the Forschung tab's history, KPI wall and Observatory
+/// would quietly disagree about what the agent actually did. Takes owned
+/// values because every one of these was already an owned local in
+/// `stream_chat`'s stream body, which is what lets the moved code below
+/// stay byte-for-byte what it was.
+///
+/// The caller still owns the `done` SSE event: this fn is deliberately
+/// yield-free so it can be awaited from inside or outside an
+/// `async_stream!` block.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn finalize_turn(
+    state: AppState,
+    conversation_id: String,
+    user_msg_id: String,
+    user_message: String,
+    final_full_text: String,
+    final_tokens: Vec<serde_json::Value>,
+    prompt_tokens: i64,
+    reasoning_ms: i64,
+    tool_call_ids: Vec<String>,
+    errored_tool_calls: Vec<(String, String)>,
+    hit_iteration_cap: bool,
+) {
+    let assistant_id = Uuid::new_v4().to_string();
+    let token_info = serde_json::to_string(&final_tokens).unwrap_or_default();
+    // Token accounting for the Forschung KPI wall's "Token & Reasoning"
+    // tile. `completion_tokens` is the REAL output count: the sum of
+    // each completion token's `n` in the streamed token_info.
+    // `prompt_tokens` is the request-side count — filled only when the
+    // model's SSE stream emits a final `usage` object (NVIDIA's
+    // deepseek-v4-flash does, many candidates don't); honestly 0
+    // otherwise, never fabricated. `reasoning_ms` was measured live
+    // above while reasoning_content streamed.
+    let completion_tokens: i64 = final_tokens
+        .iter()
+        .filter_map(|t| t.get("n").and_then(|n| n.as_i64()))
+        .sum();
+    // prompt_tokens was captured live above from the streamed `usage`
+    // object (0 when the model didn't emit one) — no `parsed` here.
+    // reasoning_ms was measured live above while reasoning_content
+    // streamed, and is hoisted out of the stream loop into scope.
+    // NULL (not "[]") when this exchange made no tool call at all — the
+    // overwhelmingly common case — so the hallucination-check spawn
+    // below, and any other future reader, can tell "nothing to check"
+    // apart from "an empty list was somehow recorded."
+    let tool_call_ids_json: Option<String> =
+        if tool_call_ids.is_empty() { None } else { serde_json::to_string(&tool_call_ids).ok() };
+    let _ = sqlx::query(
+        "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids, prompt_tokens, completion_tokens, reasoning_ms) VALUES (?1,?2,'assistant',?3,?4,?5,?6,?7,?8)",
+    )
+    .bind(&assistant_id)
+    .bind(&conversation_id)
+    .bind(&final_full_text)
+    .bind(&token_info)
+    .bind(&tool_call_ids_json)
+    .bind(prompt_tokens)
+    .bind(completion_tokens)
+    .bind(reasoning_ms)
+    .execute(&state.db)
+    .await;
+    let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
+        .bind(&conversation_id)
+        .execute(&state.db)
+        .await;
+
+    // Cross-chat memory: both sides of this exchange become recallable in future conversations.
+    store_chunks(&state, "message", &user_msg_id, "Nachricht", &user_message).await;
+    if !final_full_text.trim().is_empty() {
+        store_chunks(&state, "message", &assistant_id, "Antwort", &final_full_text).await;
+    }
+
+    // Emergence signal detection: automatic after every exchange (an
+    // explicit, accepted cost/latency tradeoff) — spawned so it never
+    // delays the visible reply finishing.
+    let emergence_state = state.clone();
+    let emergence_conv_id = conversation_id.clone();
+    tokio::spawn(async move {
+        crate::emergence::analyze_recent_interactions(&emergence_state, &emergence_conv_id).await;
+    });
+
+    // CCET (Continuous Co-Evolution Tracker) instrumentation — same
+    // background-task pattern as the emergence-signal spawn just above
+    // (an accepted extra-NVIDIA-call-per-turn tradeoff, never on the
+    // reply's critical path). See the CCET section above the
+    // "conversations CRUD" marker for what's this project's own
+    // operationalization vs. the paper's actual formula.
+    //
+    // Flight recorder (`system_snapshots`): chained immediately after,
+    // INSIDE the same spawned task — not a second `tokio::spawn` — so it
+    // rides the exact same fire-and-forget guarantee record_ccet_turn
+    // already has. Both run strictly after the "done" SSE event's
+    // precursor work is queued below (`tokio::spawn` returns instantly
+    // without polling the future at all), so neither can ever add
+    // latency to, or fail, the visible reply — see
+    // `observatory::capture_system_snapshot`'s own doc comment for the
+    // best-effort contract this depends on, and the module doc comment
+    // at the top of this file for why that guarantee matters here in
+    // particular (the 2026-07-10 production outage).
+    let ccet_state = state.clone();
+    let ccet_conv_id = conversation_id.clone();
+    let ccet_text = final_full_text.clone();
+    tokio::spawn(async move {
+        let trigger_turn_id = record_ccet_turn(&ccet_state, &ccet_conv_id, &ccet_text).await;
+        crate::observatory::capture_system_snapshot(&ccet_state, &ccet_conv_id, trigger_turn_id).await;
+    });
+
+    // Denkfragmente (thinking-fragment classification) — same
+    // background-task pattern as the emergence-signal and CCET spawns
+    // just above: an LLM call classifying which of Laura's own
+    // IEIA-2025 "8-Layer Model" layers THIS TURN spans, never on the
+    // reply's critical path. See thinking_fragments.rs's module doc
+    // comment for the full disclosure (this project's own
+    // operationalization of the classification criteria, not an
+    // algorithm from Laura's paper itself). Deliberately classifies
+    // only the USER's own turn (`user_msg_id`/`user_message`, captured
+    // earlier in this function) — Laura's own thinking, not the
+    // assistant's reply — matching her own framing when she asked for
+    // this ("die Interaktion zeigt auch meine Denkweise").
+    let fragments_state = state.clone();
+    let fragments_conv_id = conversation_id.clone();
+    let fragments_msg_id = user_msg_id.clone();
+    let fragments_text = user_message.clone();
+    tokio::spawn(async move {
+        crate::thinking_fragments::classify_turn(&fragments_state, &fragments_conv_id, &fragments_msg_id, &fragments_text).await;
+    });
+
+    // Hallucination Tracker v1 + Anomaly Watchdog v1 (see anomaly.rs) —
+    // ONE combined background task, not two separate tokio::spawn calls.
+    // Same background-task pattern as the three spawns just above (never
+    // on the reply's critical path); check_message itself is a fast
+    // no-op when tool_call_ids is empty (see its own doc comment in
+    // hallucination.rs). The anomaly watchdog's fourth signal
+    // (`hallucination_mismatch`) reads the exact `hallucination_checks`
+    // rows `check_message` just persisted — a real ordering dependency,
+    // not just a stylistic grouping choice — so
+    // `anomaly::detect_and_record` is chained strictly AFTER
+    // `check_message` completes, INSIDE this same spawned task: the same
+    // "chain, don't fork a second spawn" pattern the CCET spawn above
+    // already uses for `capture_system_snapshot`. The other three
+    // anomaly signals (tool_error, iteration_cap, refusal_triggered)
+    // have no such dependency and could in principle run independently,
+    // but keeping all four together keeps "the watchdog that watches the
+    // watchdog" one coherent unit instead of a sixth near-identical
+    // spawn block for what is, in the end, one derived concern.
+    let hallucination_state = state.clone();
+    let hallucination_msg_id = assistant_id.clone();
+    let hallucination_tool_call_ids = tool_call_ids.clone();
+    let hallucination_text = final_full_text.clone();
+    let anomaly_conv_id = conversation_id.clone();
+    let anomaly_errored_tool_calls = errored_tool_calls.clone();
+    tokio::spawn(async move {
+        crate::hallucination::check_message(&hallucination_state, &hallucination_msg_id, &hallucination_tool_call_ids, &hallucination_text).await;
+        crate::anomaly::detect_and_record(
+            &hallucination_state,
+            &anomaly_conv_id,
+            &hallucination_msg_id,
+            &hallucination_text,
+            &anomaly_errored_tool_calls,
+            hit_iteration_cap,
+        )
+        .await;
+    });
 }
 
 pub async fn stream_chat(
@@ -1389,7 +1568,18 @@ pub async fn stream_chat(
     if !is_authorized(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    if state.nvidia_api_key.is_empty() {
+    // Resolved once, up front, because it decides which credentials this turn
+    // actually needs. Falls back to the built-in engine whenever Hermes isn't
+    // configured — see the fork further down for why that degradation is
+    // deliberate.
+    let use_hermes = body.engine.as_deref() == Some("hermes") && crate::hermes::enabled(&state);
+    // A Hermes turn generates its text through Hermes, not NVIDIA, so it must
+    // not be gated on an NVIDIA key: a deployment that runs Hermes only (no
+    // NVIDIA account at all) is a legitimate configuration, and gating it here
+    // would 503 every one of its turns. NVIDIA is still used for the embeddings
+    // behind cross-chat memory, but that path is best-effort and already
+    // degrades honestly on its own when there's no key.
+    if !use_hermes && state.nvidia_api_key.is_empty() {
         return StatusCode::SERVICE_UNAVAILABLE.into_response();
     }
     let user_message = body.message.trim().to_string();
@@ -1423,6 +1613,19 @@ pub async fn stream_chat(
             .bind(&conversation_id)
             .execute(&state.db)
             .await;
+    }
+
+    // Engine fork. Everything above is engine-agnostic (the user's turn is
+    // persisted and the conversation titled the same way either way) and
+    // everything below this point is the built-in NVIDIA tool loop, so this is
+    // the one seam where a Hermes turn peels off. It rejoins in
+    // `finalize_turn`, which both engines end in.
+    //
+    // Falls through to the built-in engine when Hermes isn't configured rather
+    // than erroring: a stale tab that still has "Hermes" selected after the env
+    // var is removed should degrade to a working answer, not a broken one.
+    if use_hermes {
+        return crate::hermes::stream_turn(state, conversation_id, user_msg_id, user_message).await;
     }
 
     let stream = async_stream::stream! {
@@ -1896,145 +2099,20 @@ pub async fn stream_chat(
             yield Ok(Event::default().data(json!({ "delta": final_full_text, "tokens": Vec::<serde_json::Value>::new() }).to_string()));
         }
 
-        let assistant_id = Uuid::new_v4().to_string();
-        let token_info = serde_json::to_string(&final_tokens).unwrap_or_default();
-        // Token accounting for the Forschung KPI wall's "Token & Reasoning"
-        // tile. `completion_tokens` is the REAL output count: the sum of
-        // each completion token's `n` in the streamed token_info.
-        // `prompt_tokens` is the request-side count — filled only when the
-        // model's SSE stream emits a final `usage` object (NVIDIA's
-        // deepseek-v4-flash does, many candidates don't); honestly 0
-        // otherwise, never fabricated. `reasoning_ms` was measured live
-        // above while reasoning_content streamed.
-        let completion_tokens: i64 = final_tokens
-            .iter()
-            .filter_map(|t| t.get("n").and_then(|n| n.as_i64()))
-            .sum();
-        // prompt_tokens was captured live above from the streamed `usage`
-        // object (0 when the model didn't emit one) — no `parsed` here.
-        // reasoning_ms was measured live above while reasoning_content
-        // streamed, and is hoisted out of the stream loop into scope.
-        // NULL (not "[]") when this exchange made no tool call at all — the
-        // overwhelmingly common case — so the hallucination-check spawn
-        // below, and any other future reader, can tell "nothing to check"
-        // apart from "an empty list was somehow recorded."
-        let tool_call_ids_json: Option<String> =
-            if tool_call_ids.is_empty() { None } else { serde_json::to_string(&tool_call_ids).ok() };
-        let _ = sqlx::query(
-            "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids, prompt_tokens, completion_tokens, reasoning_ms) VALUES (?1,?2,'assistant',?3,?4,?5,?6,?7,?8)",
+        finalize_turn(
+            state.clone(),
+            conversation_id.clone(),
+            user_msg_id,
+            user_message,
+            final_full_text,
+            final_tokens,
+            prompt_tokens,
+            reasoning_ms,
+            tool_call_ids,
+            errored_tool_calls,
+            hit_iteration_cap,
         )
-        .bind(&assistant_id)
-        .bind(&conversation_id)
-        .bind(&final_full_text)
-        .bind(&token_info)
-        .bind(&tool_call_ids_json)
-        .bind(prompt_tokens)
-        .bind(completion_tokens)
-        .bind(reasoning_ms)
-        .execute(&state.db)
         .await;
-        let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
-            .bind(&conversation_id)
-            .execute(&state.db)
-            .await;
-
-        // Cross-chat memory: both sides of this exchange become recallable in future conversations.
-        store_chunks(&state, "message", &user_msg_id, "Nachricht", &user_message).await;
-        if !final_full_text.trim().is_empty() {
-            store_chunks(&state, "message", &assistant_id, "Antwort", &final_full_text).await;
-        }
-
-        // Emergence signal detection: automatic after every exchange (an
-        // explicit, accepted cost/latency tradeoff) — spawned so it never
-        // delays the visible reply finishing.
-        let emergence_state = state.clone();
-        let emergence_conv_id = conversation_id.clone();
-        tokio::spawn(async move {
-            crate::emergence::analyze_recent_interactions(&emergence_state, &emergence_conv_id).await;
-        });
-
-        // CCET (Continuous Co-Evolution Tracker) instrumentation — same
-        // background-task pattern as the emergence-signal spawn just above
-        // (an accepted extra-NVIDIA-call-per-turn tradeoff, never on the
-        // reply's critical path). See the CCET section above the
-        // "conversations CRUD" marker for what's this project's own
-        // operationalization vs. the paper's actual formula.
-        //
-        // Flight recorder (`system_snapshots`): chained immediately after,
-        // INSIDE the same spawned task — not a second `tokio::spawn` — so it
-        // rides the exact same fire-and-forget guarantee record_ccet_turn
-        // already has. Both run strictly after the "done" SSE event's
-        // precursor work is queued below (`tokio::spawn` returns instantly
-        // without polling the future at all), so neither can ever add
-        // latency to, or fail, the visible reply — see
-        // `observatory::capture_system_snapshot`'s own doc comment for the
-        // best-effort contract this depends on, and the module doc comment
-        // at the top of this file for why that guarantee matters here in
-        // particular (the 2026-07-10 production outage).
-        let ccet_state = state.clone();
-        let ccet_conv_id = conversation_id.clone();
-        let ccet_text = final_full_text.clone();
-        tokio::spawn(async move {
-            let trigger_turn_id = record_ccet_turn(&ccet_state, &ccet_conv_id, &ccet_text).await;
-            crate::observatory::capture_system_snapshot(&ccet_state, &ccet_conv_id, trigger_turn_id).await;
-        });
-
-        // Denkfragmente (thinking-fragment classification) — same
-        // background-task pattern as the emergence-signal and CCET spawns
-        // just above: an LLM call classifying which of Laura's own
-        // IEIA-2025 "8-Layer Model" layers THIS TURN spans, never on the
-        // reply's critical path. See thinking_fragments.rs's module doc
-        // comment for the full disclosure (this project's own
-        // operationalization of the classification criteria, not an
-        // algorithm from Laura's paper itself). Deliberately classifies
-        // only the USER's own turn (`user_msg_id`/`user_message`, captured
-        // earlier in this function) — Laura's own thinking, not the
-        // assistant's reply — matching her own framing when she asked for
-        // this ("die Interaktion zeigt auch meine Denkweise").
-        let fragments_state = state.clone();
-        let fragments_conv_id = conversation_id.clone();
-        let fragments_msg_id = user_msg_id.clone();
-        let fragments_text = user_message.clone();
-        tokio::spawn(async move {
-            crate::thinking_fragments::classify_turn(&fragments_state, &fragments_conv_id, &fragments_msg_id, &fragments_text).await;
-        });
-
-        // Hallucination Tracker v1 + Anomaly Watchdog v1 (see anomaly.rs) —
-        // ONE combined background task, not two separate tokio::spawn calls.
-        // Same background-task pattern as the three spawns just above (never
-        // on the reply's critical path); check_message itself is a fast
-        // no-op when tool_call_ids is empty (see its own doc comment in
-        // hallucination.rs). The anomaly watchdog's fourth signal
-        // (`hallucination_mismatch`) reads the exact `hallucination_checks`
-        // rows `check_message` just persisted — a real ordering dependency,
-        // not just a stylistic grouping choice — so
-        // `anomaly::detect_and_record` is chained strictly AFTER
-        // `check_message` completes, INSIDE this same spawned task: the same
-        // "chain, don't fork a second spawn" pattern the CCET spawn above
-        // already uses for `capture_system_snapshot`. The other three
-        // anomaly signals (tool_error, iteration_cap, refusal_triggered)
-        // have no such dependency and could in principle run independently,
-        // but keeping all four together keeps "the watchdog that watches the
-        // watchdog" one coherent unit instead of a sixth near-identical
-        // spawn block for what is, in the end, one derived concern.
-        let hallucination_state = state.clone();
-        let hallucination_msg_id = assistant_id.clone();
-        let hallucination_tool_call_ids = tool_call_ids.clone();
-        let hallucination_text = final_full_text.clone();
-        let anomaly_conv_id = conversation_id.clone();
-        let anomaly_errored_tool_calls = errored_tool_calls.clone();
-        tokio::spawn(async move {
-            crate::hallucination::check_message(&hallucination_state, &hallucination_msg_id, &hallucination_tool_call_ids, &hallucination_text).await;
-            crate::anomaly::detect_and_record(
-                &hallucination_state,
-                &anomaly_conv_id,
-                &hallucination_msg_id,
-                &hallucination_text,
-                &anomaly_errored_tool_calls,
-                hit_iteration_cap,
-            )
-            .await;
-        });
 
         yield Ok(Event::default().event("done").data("[DONE]"));
     };
@@ -2132,6 +2210,8 @@ mod tests {
             stripe_api_base: "https://api.stripe.com".to_string(),
             stripe_webhook_secret: String::new(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            hermes_url: String::new(),
+            hermes_api_key: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
@@ -2775,6 +2855,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
             .await
@@ -2811,6 +2892,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
             .await
@@ -2820,6 +2902,48 @@ mod tests {
         assert!(
             body.contains("Hallo aus dem Mock") && body.contains("event: done"),
             "must still deliver the real reply from the working candidate, not get stuck on the hung one: {body:?}"
+        );
+    }
+
+    /// A client asking for the Hermes engine on a deployment that has no
+    /// Hermes configured must still get a real answer from the built-in engine.
+    ///
+    /// This is the honest-degradation guarantee the engine fork is written
+    /// around: `HERMES_URL` can be removed from the environment at any time
+    /// while tabs are still open with "Hermes" selected in their engine picker,
+    /// and those tabs must keep working. It also pins the security property —
+    /// an `engine: "hermes"` in a crafted request body cannot reach the Hermes
+    /// path on a deployment that never configured one.
+    #[tokio::test]
+    async fn a_hermes_request_falls_back_to_the_builtin_engine_when_hermes_is_unconfigured() {
+        let base = start_mock_nvidia(MockNvidiaConfig {
+            hang_models: vec![],
+            success_model: Some("nvidia/llama-3.3-nemotron-super-49b-v1"),
+        })
+        .await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+        // The deployed state today, and the default: no Hermes anywhere.
+        assert!(state.hermes_url.is_empty());
+
+        let req = StreamChatReq {
+            conversation_id: "conv-hermes-unconfigured".to_string(),
+            message: "hallo".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+            engine: Some("hermes".to_string()),
+        };
+        let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
+            .await
+            .into_response();
+        let body = read_sse_body_bounded(resp).await;
+
+        assert!(
+            body.contains("Hallo aus dem Mock") && body.contains("event: done"),
+            "an unconfigured Hermes must degrade to a working built-in reply, not an error: {body:?}"
         );
     }
 
@@ -2855,6 +2979,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req))
             .await
@@ -2915,6 +3040,8 @@ mod tests {
             stripe_api_base: "https://api.stripe.com".to_string(),
             stripe_webhook_secret: String::new(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            hermes_url: String::new(),
+            hermes_api_key: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
@@ -3064,6 +3191,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req))
             .await
@@ -3469,6 +3597,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -3521,6 +3650,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -3588,6 +3718,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -3633,6 +3764,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -3687,6 +3819,7 @@ mod tests {
             current_module: None,
             site_content: None,
             reasoning_requested: None,
+            engine: None,
         };
         let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;

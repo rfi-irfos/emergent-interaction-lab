@@ -14,6 +14,7 @@ mod digest;
 mod emergence;
 mod github_activity;
 mod hallucination;
+mod hermes;
 mod inspect;
 mod observatory;
 mod public;
@@ -79,6 +80,19 @@ pub struct AppState {
     /// instead of the real DuckDuckGo Instant Answer API — never overridden
     /// in production, where it's always "https://api.duckduckgo.com".
     pub ddg_api_base: String,
+    /// Base URL of the Hermes API server (a gateway platform: run it with
+    /// `API_SERVER_ENABLED=1 API_SERVER_KEY=… hermes gateway run`) that backs
+    /// the Forschung tab's second engine — see hermes.rs and the README.
+    /// Empty (the default, and
+    /// the state of the deployed site today) means no Hermes is configured:
+    /// `hermes::enabled` is false, the engine selector never offers it, and
+    /// every research turn takes the built-in path exactly as before. Doubles
+    /// as the test seam, same pattern as `nvidia_api_base`/`ddg_api_base`.
+    pub hermes_url: String,
+    /// Bearer token for `hermes_url`. Server-side only, and the reason Hermes
+    /// runs as a service rather than in the browser: this key buys inference,
+    /// so it must never reach a visitor's tab. Never a `VITE_*` var.
+    pub hermes_api_key: String,
     /// Server-side-only classic GitHub PAT, read from `GITHUB_ACTIVITY_TOKEN`
     /// — powers the Observatory's Agent-Aktivität transparency feed (real
     /// PRs/commits/workflow runs on this repo, see github_activity.rs). Never
@@ -232,6 +246,11 @@ async fn main() {
         stripe_api_base: std::env::var("STRIPE_API_BASE").unwrap_or("https://api.stripe.com".into()),
         stripe_webhook_secret: std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default(),
         ddg_api_base: std::env::var("DDG_API_BASE").unwrap_or("https://api.duckduckgo.com".into()),
+        // Trailing slash trimmed so hermes.rs can build paths by plain
+        // concatenation without emitting `//api/sessions`, which Hermes's
+        // router 404s on.
+        hermes_url: std::env::var("HERMES_URL").unwrap_or_default().trim_end_matches('/').to_string(),
+        hermes_api_key: std::env::var("HERMES_API_KEY").unwrap_or_default(),
         github_token,
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
         audit_lock: Arc::new(tokio::sync::Mutex::new(())),
@@ -245,6 +264,13 @@ async fn main() {
     }
     if state.stripe_webhook_secret.is_empty() {
         tracing::warn!("STRIPE_WEBHOOK_SECRET missing at startup — incoming Stripe webhooks will be rejected (503), no orders will be recorded until it's configured");
+    }
+    // Not an error: no HERMES_URL is the normal, deployed state today, and the
+    // Forschung tab simply never offers the Hermes engine. Only the half-set
+    // case is worth a warning — a URL with no key means every Hermes turn would
+    // fail its 401 at the session call.
+    if !state.hermes_url.is_empty() && state.hermes_api_key.is_empty() {
+        tracing::warn!("HERMES_URL is set but HERMES_API_KEY is missing — the Hermes research engine will be rejected by the API server and every Hermes turn will fail");
     }
 
     if dev_mode {
@@ -280,6 +306,7 @@ async fn main() {
         // doc comment for the exact per-message/per-conversation cleanup).
         .route("/api/chat/conversations/:id/messages/:message_id", axum::routing::delete(chat::delete_message_and_after))
         .route("/api/chat/stream", post(chat::stream_chat))
+        .route("/api/chat/engines", get(hermes::engines))
         .route("/api/chat/documents", get(chat::list_documents).post(chat::upload_document))
         .route("/api/chat/documents/:id", axum::routing::delete(chat::delete_document))
         // Observatory (emergence signals only — business/CMS metrics live in /api/analytics)

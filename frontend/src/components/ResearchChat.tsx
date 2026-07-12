@@ -56,11 +56,25 @@ function groupConversationsByDate(conversations: Conversation[]): ConversationGr
 // when nothing changed, defeating its React.memo (see ChatBubble below).
 const EMPTY_TOOL_CALLS: ToolCallEvent[] = []
 
+/// Which agent engine answers a research turn. 'builtin' is Jarvis's own NVIDIA
+/// tool loop and is always available; 'hermes' is a Hermes agent running as a
+/// server-side service, offered only when the backend reports it configured
+/// (GET /api/chat/engines). Both stream the same SSE dialect, so everything
+/// below this line renders a Hermes turn with the code that renders a built-in
+/// one — the engine choice changes who thinks, not how it's displayed.
+type ChatEngine = 'builtin' | 'hermes'
+
 async function streamChat(
   conversationId: string,
   message: string,
   siteContent: unknown,
   reasoningRequested: boolean,
+  // Which agent answers this turn: the built-in NVIDIA loop, or a Hermes agent
+  // running server-side (see backend/src/hermes.rs). The backend ignores
+  // 'hermes' entirely when no Hermes is configured and answers with the
+  // built-in engine instead, so a stale tab can never get stuck on an engine
+  // that has gone away.
+  engine: ChatEngine,
   // "LKS" kill-switch: lets send() cut the connection from a stable ref
   // (see ResearchChat's streamAbortControllerRef) without waiting for the
   // server to notice — see the two catch blocks below for why an aborted
@@ -86,6 +100,7 @@ async function streamChat(
         current_module: 'Forschung',
         site_content: siteContent,
         reasoning_requested: reasoningRequested,
+        engine,
       }),
       signal,
     })
@@ -486,6 +501,11 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   // the backend). Explicitly opt in when you actually want to see the
   // step-by-step thinking.
   const [reasoningEnabled, setReasoningEnabled] = useState(false)
+  // Engine selection. Defaults to the built-in engine, and `hermesAvailable`
+  // stays false unless the backend says otherwise — so a deployment without
+  // Hermes renders exactly the UI it rendered before this existed.
+  const [engine, setEngine] = useState<ChatEngine>('builtin')
+  const [hermesAvailable, setHermesAvailable] = useState(false)
   // Per-message: true once a message that WAS sent with reasoning requested
   // finishes streaming without ever receiving any reasoning_content — see
   // send()'s onDone handler below. Drives the honest "kein Reasoning-Modell
@@ -567,6 +587,22 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     const t = setTimeout(() => setDebouncedSearch(searchInput), 280)
     return () => clearTimeout(t)
   }, [searchInput])
+
+  // Ask once, on mount, which engines this deployment can actually run. Any
+  // failure here leaves `hermesAvailable` false, which is the safe answer: the
+  // picker stays hidden and every turn takes the built-in path, exactly as it
+  // did before the engine fork existed.
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE}/api/chat/engines`, { headers: authHeaders() })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data) return
+        setHermesAvailable(Array.isArray(data.engines) && data.engines.includes('hermes'))
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => { refreshDocuments() }, [])
   // Fires on mount (debouncedSearch starts at '', fetching the unfiltered
@@ -671,6 +707,9 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       // exchange still honors whatever the user actually asked for when
       // they hit send.
       const reasoningWasRequested = reasoningEnabled
+      // Snapshotted for the same reason: switching engine mid-stream must not
+      // retarget the exchange already in flight.
+      const engineForThisTurn: ChatEngine = hermesAvailable ? engine : 'builtin'
 
       let fullText = ''
       let reasoningText = ''
@@ -720,6 +759,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
         text,
         siteContent,
         reasoningWasRequested,
+        engineForThisTurn,
         abortController.signal,
         (delta, tokens) => {
           fullText += delta
@@ -991,6 +1031,19 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
             >
               🧠 Reasoning {reasoningEnabled ? 'an' : 'aus'}
             </button>
+            {hermesAvailable && (
+              <button
+                type="button"
+                className={`chat-export-btn chat-engine-toggle-btn ${engine === 'hermes' ? 'active' : ''}`}
+                disabled={streaming}
+                onClick={() => setEngine(e => (e === 'hermes' ? 'builtin' : 'hermes'))}
+                title={engine === 'hermes'
+                  ? 'Hermes: ein eigenständiger Agent mit eigenem Werkzeug-Loop und eigenem Langzeitgedächtnis, das über Gespräche hinweg wächst'
+                  : 'Jarvis: der eingebaute Agent dieses Backends'}
+              >
+                🜂 Engine: {engine === 'hermes' ? 'Hermes' : 'Jarvis'}
+              </button>
+            )}
             {messages.length > 0 && (
               <>
                 <button

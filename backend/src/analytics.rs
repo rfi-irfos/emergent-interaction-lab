@@ -292,6 +292,8 @@ mod tests {
             stripe_api_base: "https://api.stripe.com".to_string(),
             stripe_webhook_secret: String::new(),
             ddg_api_base: "https://api.duckduckgo.com".to_string(),
+            hermes_url: String::new(),
+            hermes_api_key: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
