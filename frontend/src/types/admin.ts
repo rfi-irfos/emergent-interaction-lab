@@ -27,7 +27,7 @@ export type AdminSection =
   // Changelog — the full, standalone hash-chained audit_log surface (see
   // backend/src/auditlog.rs + components/observatory/Changelog.tsx).
   // Verwaltung-tier, same category as Analytics/Monetarisierung/the
-  // not-yet-built Custom Dashboard page, deliberately NOT nested under
+  // Custom Dashboard page below, deliberately NOT nested under
   // Observatory's research/system/technical taxonomy: every row here is an
   // operational/business record (a content edit, a login, a Stripe order,
   // a deletion) about the PLATFORM ITSELF, never a research observable
@@ -37,3 +37,10 @@ export type AdminSection =
   // entries + a chain-intact dot) stays exactly as-is; this is a genuinely
   // separate, more complete surface, not a replacement.
   | 'changelog'
+  // Custom Dashboard — Track A Phase 6c: a movable-card grid of widgets
+  // picked from the fixed catalog in lib/dashboardCatalog.ts (see
+  // components/dashboard/DashboardPage.tsx). Verwaltung-tier alongside
+  // Analytics/Monetarisierung/Changelog, same reasoning as those: this is a
+  // BI-dashboard-building tool, not a research observable or a system-
+  // health signal.
+  | 'dashboard'

@@ -27,6 +27,7 @@ import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
 import { Denkfragmente } from './observatory/Denkfragmente'
 import { AnomalyLog } from './observatory/AnomalyLog'
 import { Changelog } from './observatory/Changelog'
+import { DashboardPage } from './dashboard/DashboardPage'
 
 interface Props {
   content: SiteContent
@@ -257,6 +258,10 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               {!sidebarCollapsed && 'Monetarisierung'}
             </button>
+            <button className={`crm-nav-item ${adminSection === 'dashboard' ? 'active' : ''}`} onClick={() => setAdminSection('dashboard')} title="Custom Dashboard">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+              {!sidebarCollapsed && 'Custom Dashboard'}
+            </button>
 
             {!sidebarCollapsed && <div className="crm-nav-group-label">Observatory</div>}
             {(['research', 'system', 'technical'] as ObservatoryTier[]).map(tier => (
@@ -282,7 +287,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           </nav>
         </aside>
 
-        <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
+        <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog' || adminSection === 'dashboard') ? 'observatory-hud' : ''}`}>
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
             <div className="crm-topbar-actions">
@@ -391,6 +396,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {/* ── CHANGELOG TAB ─────────────────────────────────────────── */}
             {adminSection === 'changelog' && <Changelog />}
+
+            {/* ── CUSTOM DASHBOARD TAB ──────────────────────────────────── */}
+            {adminSection === 'dashboard' && <DashboardPage />}
 
             {adminSection === 'forschung' && (
               <div className="forschung-view">
