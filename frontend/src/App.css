@@ -1525,6 +1525,14 @@ button { cursor: pointer; font-family: inherit; }
   .site-cat-grid, .site-product-grid, .site-usp-grid, .site-news-grid { grid-template-columns: repeat(2, 1fr); }
   .site-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
   .site-trust { gap: 28px; padding: 20px 28px; }
+  /* nav.links grew from 5 to 7 entries (Method, Pricing added 2026-07-12) —
+     the full desktop nav plus the lang/theme toggles and Contact button no
+     longer fit above ~1100px and pushed Contact off-screen. Switching to
+     the burger here (previously only below 680px) is the actual fix; the
+     Phone block below still applies its own extra tightening beneath 680px. */
+  .site-main-nav, .site-nav-desktop { display: none; }
+  .site-nav-burger { display: flex; }
+  .site-nav-lang-topbar { display: flex; align-items: center; }
 }
 
 /* ── Phone ──────────────────────────────────────────────────────────────────── */
@@ -1610,6 +1618,9 @@ button { cursor: pointer; font-family: inherit; }
   .site-cat-grid, .site-product-grid, .site-usp-grid, .site-news-grid { grid-template-columns: repeat(2, 1fr); }
   .site-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
   .site-trust { gap: 28px; padding: 20px 28px; }
+  .site-main-nav, .site-nav-desktop { display: none; }
+  .site-nav-burger { display: flex; }
+  .site-nav-lang-topbar { display: flex; align-items: center; }
 }
 @container dev (max-width: 680px) {
   .site-main-nav, .site-nav-desktop { display: none; }
