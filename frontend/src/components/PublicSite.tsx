@@ -6,6 +6,7 @@ import { trackPageView } from '../lib/tracking'
 import { API_BASE } from '../lib/apiBase'
 import { LiveStatsSection, ShippingFeedSection, CurrentFocusBadge, SignalLevelsSection, CcetTrendSection, SimulationStatusSection } from './PublicLiveActivity'
 import { CoEvolutionDiagram } from './CoEvolutionDiagram'
+import { WebHubPricing } from './WebHubPricing'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -1493,6 +1494,14 @@ export function PublicSite({
             </div>
           </section>
         )}
+
+        {/* ── WEBHUB OFFER LADDER ──────────────────────────────────────── */}
+        {/* Real, buyable service tiers - see WebHubPricing.tsx. Independent
+            of the free-text pricing.body block above (that's arbitrary
+            prose an editor can still set; this is the live Stripe-backed
+            product ladder) and renders nothing if no service products exist
+            yet, so an empty backend never shows an empty heading here. */}
+        {!editMode && <WebHubPricing />}
 
         {/* ── CERTIFICATES ─────────────────────────────────────────────── */}
         {(certificates?.items?.length ?? 0) > 0 && (

@@ -180,6 +180,7 @@ async fn main() {
     emergence::init_schema(&db).await;
     observatory::init_schema(&db).await;
     billing::init_schema(&db).await;
+    billing::seed_webhub_products(&db).await;
     github_activity::init_schema(&db).await;
     thinking_fragments::init_schema(&db).await;
     hallucination::init_schema(&db).await;
