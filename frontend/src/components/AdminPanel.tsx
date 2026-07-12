@@ -27,6 +27,7 @@ import { Flugschreiber } from './observatory/Flugschreiber'
 import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
 import { Denkfragmente } from './observatory/Denkfragmente'
 import { AnomalyLog } from './observatory/AnomalyLog'
+import { Changelog } from './observatory/Changelog'
 
 interface Props {
   content: SiteContent
@@ -257,6 +258,15 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               {!sidebarCollapsed && 'Monetarisierung'}
             </button>
+            {/* Same Verwaltung tier as Analytics/Monetarisierung above, NOT
+                nested under the Observatory groups below — see
+                types/admin.ts's own 'changelog' doc comment for why: every
+                row here is a platform-operational record, not a research
+                observable or a Jarvis system-health signal. */}
+            <button className={`crm-nav-item ${adminSection === 'changelog' ? 'active' : ''}`} onClick={() => setAdminSection('changelog')} title="Changelog">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+              {!sidebarCollapsed && 'Changelog'}
+            </button>
 
             {!sidebarCollapsed && <div className="crm-nav-group-label">Observatory</div>}
             {(['research', 'system', 'technical'] as ObservatoryTier[]).map(tier => (
@@ -277,7 +287,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           <AuditChangelog collapsed={sidebarCollapsed} />
         </aside>
 
-        <div className={`crm-main ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection)) ? 'observatory-hud' : ''}`}>
+        <div className={`crm-main ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
             <div className="crm-topbar-actions">
@@ -383,6 +393,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {/* ── MONETIZATION TAB ───────────────────────────────────────── */}
             {adminSection === 'monetization' && <Monetization />}
+
+            {/* ── CHANGELOG TAB ─────────────────────────────────────────── */}
+            {adminSection === 'changelog' && <Changelog />}
 
             {adminSection === 'forschung' && (
               <div className="forschung-view">
