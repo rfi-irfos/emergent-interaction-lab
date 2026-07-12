@@ -98,6 +98,15 @@ if [ -n "$NVIDIA_API_KEY" ] && [ "${HERMES_ENABLED:-1}" != "0" ]; then
   export HERMES_API_KEY="$API_SERVER_KEY"
   export HERMES_URL="http://127.0.0.1:8765"
 
+  # The other direction: the token Hermes presents to /api/mcp when it writes a
+  # research note back into the lab (backend/src/mcp.rs). Same deal — generated
+  # here, given to both sides, never persisted. Hermes's config refers to it as
+  # ${EIL_MCP_TOKEN}, which its MCP client resolves from this environment, so the
+  # config on the volume never holds a stale secret.
+  EIL_MCP_TOKEN="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+  export EIL_MCP_TOKEN
+  export EIL_MCP_URL="http://127.0.0.1:${PORT:-3000}/api/mcp"
+
   echo "Starting bundled Hermes research agent on 127.0.0.1:8765"
   API_SERVER_ENABLED=1 \
   API_SERVER_HOST=127.0.0.1 \

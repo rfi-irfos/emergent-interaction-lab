@@ -70,6 +70,7 @@ emergent-interaction-lab/
 │       ├── chat.rs           Jarvis: RAG, streaming, model ladder, tool loop
 │       ├── agent.rs           tool definitions (notes, simulations, blog, web search)
 │       ├── hermes.rs          optional 2nd research engine: a Hermes agent as a service
+│       ├── mcp.rs             MCP server: lets the Hermes agent write research notes back
 │       ├── emergence.rs       emergence signal detection
 │       ├── observatory.rs     Observatory dashboard endpoints
 │       ├── research.rs        Research Workspace / Innovation Lab notes
@@ -151,6 +152,33 @@ Two things `start.sh` handles that are easy to get wrong:
 up after a wake while the Rust binary is serving immediately. The engine picker
 health-probes Hermes, so it appears once Hermes can actually answer; a turn sent
 during that window waits it out rather than failing.
+
+### What the Hermes agent can do
+
+Hermes runs its *own* tool loop, so it never calls the tools in `agent.rs`. To let
+it take part in the lab rather than just talk in it, the backend exposes an **MCP
+server** at `POST /api/mcp` (`backend/src/mcp.rs`) — no bridge process; the Rust
+backend *is* the MCP server. Hermes gets exactly three tools:
+
+| tool | what it does |
+|---|---|
+| `log_research_note` | writes into the same `research_notes` table the human UI and Jarvis write to — the note shows up in Research Pulse tagged **🜂 Hermes**, linked to the conversation it grew out of |
+| `search_research_notes` | reads what the lab already knows, so it builds on existing notes instead of re-deriving them |
+| `web_search` | the backend's own keyless DuckDuckGo search |
+
+`web_search` is served from here rather than from Hermes's own `web` toolset
+because that toolset needs a *separate* search-provider API key and silently drops
+its tools without one — driven for real, the bundled agent was offered `memory`
+and nothing else. Routing search through the lab's keyless tool is what keeps
+"one NVIDIA key and it works" actually true.
+
+Note there is **no update and no delete**. The agent can add to the lab's
+knowledge and read it back; it cannot rewrite or destroy it. A bad turn (or a
+prompt injection in a page it read) can leave a junk note for a human to remove —
+it cannot take anything away.
+
+The endpoint is guarded by `EIL_MCP_TOKEN`, generated per boot and given to both
+processes. Without it the route does not exist at all.
 
 ### Local dev: point at your own Hermes
 

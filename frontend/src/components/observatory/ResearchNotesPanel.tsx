@@ -29,6 +29,16 @@ const CATEGORY_ACCENT: Record<string, string> = {
 // current research picture or archived out of it.
 const STATUS_ACCENT: Record<string, string> = { active: '#10b981', archived: '#6b7280' }
 
+// Who wrote a note. Both agents can log into Research Pulse now — Jarvis through
+// its own `log_research_note` tool, Hermes through the lab's MCP server (see
+// backend/src/mcp.rs) — so the panel has to say WHICH one, or the lab's record of
+// who-thought-what is wrong. Anything unrecognised falls back to 'manuell', which
+// is what a human-written note has always been.
+const SOURCE_LABEL: Record<string, string> = {
+  agent: '🤖 Jarvis',
+  hermes: '🜂 Hermes',
+}
+
 // `tags` has been on research_notes since day one — Jarvis's own
 // log_research_note(category, title, body, tags?) tool already populates it
 // on every note it logs autonomously — but this panel only ever read
@@ -178,7 +188,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
               <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
               {' · '}
               <span className="obs-pill" style={{ background: `${STATUS_ACCENT[n.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[n.status] ?? '#3b6bf6' }}>{n.status}</span>
-              {' · '}{n.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {n.updated_at}
+              {' · '}{SOURCE_LABEL[n.source] ?? 'manuell'} · {n.updated_at}
               {n.source_conversation_id && onOpenConversation && (
                 <>
                   {' · '}

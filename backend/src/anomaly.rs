@@ -429,6 +429,7 @@ mod tests {
             hermes_url: String::new(),
             hermes_api_key: String::new(),
             hermes_boot_grace: crate::hermes::HERMES_BOOT_GRACE,
+            mcp_token: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),

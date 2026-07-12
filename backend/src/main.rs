@@ -16,6 +16,7 @@ mod github_activity;
 mod hallucination;
 mod hermes;
 mod inspect;
+mod mcp;
 mod observatory;
 mod public;
 mod research;
@@ -103,6 +104,16 @@ pub struct AppState {
     /// unreachable Hermes in milliseconds instead of waiting out the real
     /// production grace period.
     pub hermes_boot_grace: std::time::Duration,
+    /// Bearer token guarding `/api/mcp`, the MCP server that lets the bundled
+    /// Hermes agent write research notes back into the lab (see mcp.rs).
+    /// Generated per boot by start.sh and handed to BOTH processes — Hermes's
+    /// config reads it back out of the environment as `${EIL_MCP_TOKEN}`.
+    ///
+    /// Empty (the default, and the state of any deployment not running the
+    /// bundled agent) means the route does not exist at all. That matters more
+    /// than usual here: this is a write path into the database exposed to a
+    /// language model, so it fails closed.
+    pub mcp_token: String,
     /// Server-side-only classic GitHub PAT, read from `GITHUB_ACTIVITY_TOKEN`
     /// — powers the Observatory's Agent-Aktivität transparency feed (real
     /// PRs/commits/workflow runs on this repo, see github_activity.rs). Never
@@ -261,6 +272,7 @@ async fn main() {
         // router 404s on.
         hermes_url: std::env::var("HERMES_URL").unwrap_or_default().trim_end_matches('/').to_string(),
         hermes_api_key: std::env::var("HERMES_API_KEY").unwrap_or_default(),
+        mcp_token: std::env::var("EIL_MCP_TOKEN").unwrap_or_default(),
         hermes_boot_grace: std::env::var("HERMES_BOOT_GRACE_SECS")
             .ok()
             .and_then(|v| v.parse().ok())
@@ -322,6 +334,9 @@ async fn main() {
         .route("/api/chat/conversations/:id/messages/:message_id", axum::routing::delete(chat::delete_message_and_after))
         .route("/api/chat/stream", post(chat::stream_chat))
         .route("/api/chat/engines", get(hermes::engines))
+        // The bundled Hermes agent's write path back into the lab. Guarded by
+        // EIL_MCP_TOKEN and absent entirely without it — see mcp.rs.
+        .route("/api/mcp", post(mcp::handle))
         .route("/api/chat/documents", get(chat::list_documents).post(chat::upload_document))
         .route("/api/chat/documents/:id", axum::routing::delete(chat::delete_document))
         // Observatory (emergence signals only — business/CMS metrics live in /api/analytics)

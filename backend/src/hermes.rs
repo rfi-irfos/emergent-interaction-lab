@@ -176,6 +176,41 @@ pub async fn engines(
     axum::Json(json!({ "engines": available })).into_response()
 }
 
+/// What the agent is told about the lab it's working in, per turn.
+///
+/// Two jobs. It tells Hermes it is a member of this lab rather than a general
+/// assistant — and, load-bearing, it carries the conversation id, because an MCP
+/// tool call arrives at `mcp.rs` with no idea which conversation it came from.
+/// The id has to travel through the model for a note to link back to the talk it
+/// grew out of. `mcp.rs` validates whatever comes back, so a model that garbles
+/// or invents an id costs the link, never a wrong link.
+///
+/// Only mentions the notes tools when they're actually reachable
+/// (`EIL_MCP_TOKEN` set): telling an agent to use a tool it hasn't got is how you
+/// get a model that apologizes for failing to do something it was never able to
+/// do.
+fn turn_instructions(state: &AppState, conversation_id: &str) -> String {
+    let mut s = String::from(
+        "Du bist ein Forschungsagent im Emergent Interaction Lab (RFI-IRFOS). \
+Du arbeitest mit Laura an emergenter Interaktion zwischen Mensch und KI. \
+Antworte auf Deutsch, präzise und ohne Floskeln.",
+    );
+
+    if crate::mcp::enabled(state) {
+        s.push_str(&format!(
+            "\n\nDu hast Zugriff auf die Forschungsnotizen des Labs (Research Pulse):\n\
+- `search_research_notes`: Sieh nach, was das Lab schon weiß, bevor du etwas Neues herleitest.\n\
+- `log_research_note`: Halte fest, was aus diesem Gespräch erhalten bleiben soll — eine Hypothese, \
+eine Idee, ein Konzept, ein Framework, ein Prototyp-Entwurf oder die Zusammenfassung eines Papers. \
+Nicht jede Antwort ist eine Notiz wert; lieber eine gehaltvolle als drei dünne.\n\n\
+Die ID dieses Gesprächs ist `{conversation_id}`. Gib sie beim Anlegen einer Notiz als \
+`conversation_id` mit, damit die Notiz mit diesem Gespräch verknüpft bleibt."
+        ));
+    }
+
+    s
+}
+
 /// One event parsed off Hermes's SSE stream — `event:` name plus decoded `data:`
 /// JSON. Hermes's event vocabulary is documented at the top of its
 /// `api_server.py`; the handful this module acts on are matched by name in
@@ -218,7 +253,10 @@ pub(crate) async fn stream_turn(
             .post(format!("{}/api/sessions/{}/chat/stream", state.hermes_url, conversation_id))
             .bearer_auth(&state.hermes_api_key)
             .timeout(HERMES_CONNECT_TIMEOUT)
-            .json(&json!({ "message": user_message }))
+            .json(&json!({
+                "message": user_message,
+                "system_message": turn_instructions(&state, &conversation_id),
+            }))
             .send()
             .await;
 
@@ -551,6 +589,7 @@ mod tests {
             // same reasoning as chat.rs's short `nvidia_connect_timeout` in the
             // hanging-candidate tests.
             hermes_boot_grace: std::time::Duration::from_millis(150),
+            mcp_token: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
