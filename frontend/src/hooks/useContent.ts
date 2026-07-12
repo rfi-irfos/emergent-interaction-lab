@@ -18,26 +18,35 @@ export function useContent(lang: Lang) {
     // immediately without requiring a full GitHub Pages rebuild.
     const bust = `?t=${Date.now()}`
     const rawBase = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/`
-    ;(async () => {
-      try {
-        const rawUrl = `${rawBase}${contentPathFor(lang)}${bust}`
-        const res = await fetch(rawUrl, { cache: 'no-store' })
-        if (!res.ok) throw new Error('missing')
-        const data = await res.json()
-        if (!cancelled) setContent(data)
-      } catch {
-        // Non-EN missing -> fall back to EN raw file, then to bundled default
-        if (lang !== 'en') {
-          try {
-            const res = await fetch(`${rawBase}${contentPathFor('en')}${bust}`, { cache: 'no-store' })
-            if (res.ok) { const d = await res.json(); if (!cancelled) setContent(d); return }
-          } catch { /* fall through */ }
-        }
-        const { defaultContent } = await import('../types/defaultContent')
-        if (!cancelled) setContent(defaultContent)
-      } finally {
-        if (!cancelled) setLoading(false)
+    // One retry after a short delay before giving up on the requested
+    // language — raw.githubusercontent.com occasionally 404s/errors on a
+    // brief propagation lag right after a push, which previously fell
+    // straight through to the English file: a German visitor would see an
+    // all-English page (nav labels, badges, buttons) with "DE" still
+    // selected, with nothing prompting a re-fetch of the real German copy.
+    const fetchJson = async (url: string): Promise<SiteContent | null> => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' })
+          if (res.ok) return await res.json()
+        } catch { /* try again / fall through */ }
+        if (attempt === 0) await new Promise(r => setTimeout(r, 400))
       }
+      return null
+    }
+    ;(async () => {
+      const primary = await fetchJson(`${rawBase}${contentPathFor(lang)}${bust}`)
+      if (cancelled) return
+      if (primary) { setContent(primary); setLoading(false); return }
+      // Requested language still unavailable after retry -> fall back to
+      // EN raw file, then to the bundled default.
+      if (lang !== 'en') {
+        const en = await fetchJson(`${rawBase}${contentPathFor('en')}${bust}`)
+        if (cancelled) return
+        if (en) { setContent(en); setLoading(false); return }
+      }
+      const { defaultContent } = await import('../types/defaultContent')
+      if (!cancelled) { setContent(defaultContent); setLoading(false) }
     })()
     return () => { cancelled = true }
   }, [lang])
