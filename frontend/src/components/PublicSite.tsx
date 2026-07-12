@@ -670,6 +670,20 @@ export function PublicSite({
     trackPageView()
   }, [editMode])
 
+  // The home route is the one page in this app that never set its own
+  // document.title — CertificationPage/BlogPostPage/DynamicPage all do (see
+  // their own `document.title = ...` effects), but nothing here ever
+  // overrode index.html's placeholder <title>frontend</title>, so every
+  // visitor to the actual homepage saw a literal "frontend" browser tab
+  // forever. Same effect shape as those pages: set on mount from the site's
+  // own meta.title, restore whatever was there on unmount.
+  useEffect(() => {
+    if (editMode || !content.meta?.title) return
+    const prev = document.title
+    document.title = content.meta.title
+    return () => { document.title = prev }
+  }, [editMode, content.meta?.title])
+
   // Soft scroll-reveal for sections (dark theme only, see .site-reveal in App.css) —
   // sections fade + rise into place the first time they cross into view.
   const reveal = (cls: string) => editMode ? cls : `${cls} site-reveal`

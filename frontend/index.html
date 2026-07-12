@@ -22,7 +22,12 @@
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <!-- Static fallback shown until React hydrates and PublicSite's own
+         document.title effect takes over from content.meta.title (see
+         PublicSite.tsx) — was left as Vite's literal scaffold placeholder
+         since this project's init, so every visitor saw a bare "frontend"
+         tab title for however long the JS bundle took to load. -->
+    <title>Emergent Interaction Lab</title>
   </head>
   <body>
     <div id="root"></div>
