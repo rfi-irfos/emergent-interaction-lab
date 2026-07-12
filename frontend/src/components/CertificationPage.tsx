@@ -15,6 +15,7 @@ interface PublicProduct {
   mode: string
   recurring_interval: string | null
   payment_link_url: string
+  category: string
 }
 
 function formatPrice(cents: number, currency: string, lang: 'en' | 'de'): string {
@@ -77,7 +78,13 @@ export function CertificationPage({ content }: { content: SiteContent }) {
         if (!res.ok) throw new Error(`status ${res.status}`)
         return res.json()
       })
-      .then((data: PublicProduct[]) => { if (!cancelled) setProducts(data) })
+      .then((data: PublicProduct[]) => {
+        // The public-products feed now also carries the WebHub service
+        // ladder (category: 'service') alongside certification products —
+        // this page shows only the latter, or a pre-category row (category
+        // defaults to 'certification' server-side; see billing.rs).
+        if (!cancelled) setProducts(data.filter(p => p.category === 'certification'))
+      })
       .catch(() => { if (!cancelled) setError(true) })
     return () => { cancelled = true }
   }, [])

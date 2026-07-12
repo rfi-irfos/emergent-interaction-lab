@@ -55,6 +55,24 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Additive: distinguishes the certification storefront (CertificationPage,
+    // "Certified Emergence Interaction Analyst") from every other sellable
+    // product. Before this column existed, `list_public_products` returned
+    // every product with a payment_link_url and CertificationPage rendered
+    // ALL of them under its own "Zertifizierung" heading — harmless while
+    // certification was the only real product, but wrong the moment a
+    // second, unrelated storefront (the WebHub service ladder below) needed
+    // its own products with real Stripe links. NULL/empty is treated as
+    // 'certification' by the frontend (see CertificationPage.tsx) — the
+    // only category that existed before this column did — so pre-existing
+    // rows keep showing up on the cert page exactly as before rather than
+    // silently disappearing. Every row created by the seed below sets
+    // category explicitly to 'service'.
+    sqlx::query("ALTER TABLE products ADD COLUMN category TEXT")
+        .execute(db)
+        .await
+        .ok();
+
     // Real sales/orders visibility: previously a completed Stripe purchase
     // left zero trace anywhere in this system — payment links existed, but
     // nothing ever recorded that one had actually been paid. This table is
@@ -96,6 +114,117 @@ pub async fn init_schema(db: &SqlitePool) {
         .ok();
 }
 
+/// One-time seed for the real WebHub service ladder — Laura's own product
+/// definition and pricing, with real Stripe Payment Links she created
+/// directly in the Stripe dashboard (handed over 2026-07-12, not minted by
+/// this app's own create_payment_link flow, which is why payment_link_url
+/// is set directly here instead of through that endpoint). Idempotent by
+/// name: runs on every startup, but only inserts a row the first time each
+/// product name is missing, so re-deploys never duplicate these or clobber
+/// anything an admin has since edited (price, description, link) through
+/// the Monetization panel.
+///
+/// Deliberately NOT called from `init_schema` — every test in this file
+/// spins up its own throwaway db via `init_schema` for pure schema setup,
+/// and pulling this seed in there would silently add 7 real product rows to
+/// every test's product list (see the test this broke:
+/// `public_products_excludes_drafts_and_hides_stripe_ids`, which asserts an
+/// exact public-product count). Call this once, separately, from the real
+/// app's own startup path in main.rs, after `billing::init_schema`.
+pub async fn seed_webhub_products(db: &SqlitePool) {
+    struct Seed {
+        name: &'static str,
+        description: &'static str,
+        price_cents: i64,
+        mode: &'static str,
+        recurring_interval: Option<&'static str>,
+        payment_link_url: &'static str,
+    }
+    let seeds = [
+        Seed {
+            name: "Emergent Case Intelligence Sprint",
+            description: "Das Kernangebot: ein komplexer Fall, eine Dokumentation, Akteneinsicht oder ein Interaktionsverlauf wird rekonstruiert - was der Fall wirklich ist, welche Mängel, Widersprüche und Lücken sichtbar sind, welche Themenbereiche vorliegen und welche Logik sich daraus für Framework- und Agentenarchitektur ableiten lässt.",
+            price_cents: 79_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/dRmaEZ7SMbU30DH2367N60b",
+        },
+        Seed {
+            name: "Case Intake Scan",
+            description: "Erster strukturierter Einstieg in einen Fall oder ein Projekt - schnelle Einordnung ohne Overhead: Fallbeschreibung, grobe Themenzuordnung, erste Mängelhinweise, offene Fragen, Prioritäten für die nächste Stufe.",
+            price_cents: 14_900,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/bJecN72ys4rB9adbDG7N60c",
+        },
+        Seed {
+            name: "Mangelcluster Sprint",
+            description: "Aus Rohmaterial eine saubere Mängel- und Themenstruktur: Mängelliste, Themenbereiche, Widersprüche, Lücken, Priorisierung, nächste Schritte.",
+            price_cents: 49_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/bJe7sNa0U5vF3PT37a7N60d",
+        },
+        Seed {
+            name: "Framework Magnification",
+            description: "Aus dem Fall die zugrundeliegenden Prinzipien ableiten: Frameworks, Begriffe, Regeln, Entscheidungslogik, Systemprinzipien.",
+            price_cents: 129_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/6oUfZj5KE7DN5Y18ru7N60e",
+        },
+        Seed {
+            name: "Multi-Agent System Design",
+            description: "Die Fall-Logik in ein Agentensystem übersetzen: Rollenmodell, Agentenaufgaben, Runtime-Logik, State und Memory, Audit und Drift, Monitoring, Kontrollmechanismen.",
+            price_cents: 250_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/9B6eVfc924rBcmp2367N60f",
+        },
+        Seed {
+            name: "Implementation Build",
+            description: "Die Architektur praktisch aufsetzen: Automationen, Workflows, Intake, Routing, Analysepipeline, Delivery, Monitoring, Follow-up.",
+            price_cents: 490_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/aFabJ3eha0bl5Y18ru7N60g",
+        },
+        Seed {
+            name: "Retainer / Monitoring",
+            description: "Laufende Pflege, Auswertung und Erweiterung: neue Fälle, Review, Drift-Checks, Framework-Updates, Systemanpassungen, laufende Kontrolle.",
+            price_cents: 120_000,
+            mode: "subscription",
+            recurring_interval: Some("month"),
+            payment_link_url: "https://buy.stripe.com/fZuaEZeha5vF5Y18ru7N60h",
+        },
+    ];
+
+    for s in seeds {
+        let exists: Option<String> = sqlx::query_scalar("SELECT id FROM products WHERE name = ?1")
+            .bind(s.name)
+            .fetch_optional(db)
+            .await
+            .unwrap_or(None);
+        if exists.is_some() {
+            continue;
+        }
+        let id = Uuid::new_v4().to_string();
+        let _ = sqlx::query(
+            "INSERT INTO products (id, name, description, price_cents, currency, mode, recurring_interval, category, payment_link_url) \
+             VALUES (?1,?2,?3,?4,'eur',?5,?6,'service',?7)",
+        )
+        .bind(&id)
+        .bind(s.name)
+        .bind(s.description)
+        .bind(s.price_cents)
+        .bind(s.mode)
+        .bind(s.recurring_interval)
+        .bind(s.payment_link_url)
+        .execute(db)
+        .await;
+    }
+}
+
 #[derive(Deserialize)]
 pub struct CreateProductReq {
     name: String,
@@ -104,14 +233,25 @@ pub struct CreateProductReq {
     currency: String,
     mode: String,
     recurring_interval: Option<String>,
+    /// 'service' | 'certification' | None (treated as 'certification' — see
+    /// init_schema's category column comment). Lets the storefronts
+    /// (CertificationPage vs the public WebHub pricing section) each show
+    /// only the products meant for them.
+    category: Option<String>,
+    /// An admin can paste an already-existing Stripe Payment Link here
+    /// (created directly in the Stripe dashboard, outside this app) instead
+    /// of using `create_payment_link` below, which would mint a brand new
+    /// Stripe product/price/link via the API — wrong when the link already
+    /// exists and just needs to be attached to a local product row.
+    payment_link_url: Option<String>,
 }
 
 pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
     if !require_admin(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    let rows: Vec<(String, String, String, i64, String, String, Option<String>, Option<String>, Option<String>, Option<String>, String)> = sqlx::query_as(
-        "SELECT id, name, description, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at FROM products ORDER BY created_at DESC",
+    let rows: Vec<(String, String, String, i64, String, String, Option<String>, Option<String>, Option<String>, Option<String>, String, Option<String>)> = sqlx::query_as(
+        "SELECT id, name, description, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at, category FROM products ORDER BY created_at DESC",
     )
     .fetch_all(&state.db)
     .await
@@ -119,7 +259,7 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
 
     Json(
         rows.into_iter()
-            .map(|(id, name, description, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at)| {
+            .map(|(id, name, description, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at, category)| {
                 json!({
                     "id": id,
                     "name": name,
@@ -132,6 +272,7 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
                     "stripe_price_id": stripe_price_id,
                     "payment_link_url": payment_link_url,
                     "created_at": created_at,
+                    "category": category.unwrap_or_else(|| "certification".to_string()),
                 })
             })
             .collect::<Vec<_>>(),
@@ -146,8 +287,8 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
 /// public site, and the Stripe product/price IDs are internal bookkeeping
 /// with no reason to be exposed to a visitor's browser.
 pub async fn list_public_products(State(state): State<AppState>) -> impl IntoResponse {
-    let rows: Vec<(String, String, i64, String, String, Option<String>, String)> = sqlx::query_as(
-        "SELECT name, description, price_cents, currency, mode, recurring_interval, payment_link_url \
+    let rows: Vec<(String, String, i64, String, String, Option<String>, String, Option<String>)> = sqlx::query_as(
+        "SELECT name, description, price_cents, currency, mode, recurring_interval, payment_link_url, category \
          FROM products WHERE payment_link_url IS NOT NULL ORDER BY created_at DESC",
     )
     .fetch_all(&state.db)
@@ -156,7 +297,7 @@ pub async fn list_public_products(State(state): State<AppState>) -> impl IntoRes
 
     Json(
         rows.into_iter()
-            .map(|(name, description, price_cents, currency, mode, recurring_interval, payment_link_url)| {
+            .map(|(name, description, price_cents, currency, mode, recurring_interval, payment_link_url, category)| {
                 json!({
                     "name": name,
                     "description": description,
@@ -165,6 +306,9 @@ pub async fn list_public_products(State(state): State<AppState>) -> impl IntoRes
                     "mode": mode,
                     "recurring_interval": recurring_interval,
                     "payment_link_url": payment_link_url,
+                    // Same NULL->'certification' default as list_products — see
+                    // init_schema's category column comment for why.
+                    "category": category.unwrap_or_else(|| "certification".to_string()),
                 })
             })
             .collect::<Vec<_>>(),
@@ -191,8 +335,9 @@ pub async fn create_product(
     }
 
     let id = Uuid::new_v4().to_string();
+    let payment_link_url = body.payment_link_url.filter(|u| !u.trim().is_empty());
     let _ = sqlx::query(
-        "INSERT INTO products (id, name, description, price_cents, currency, mode, recurring_interval) VALUES (?1,?2,?3,?4,?5,?6,?7)",
+        "INSERT INTO products (id, name, description, price_cents, currency, mode, recurring_interval, category, payment_link_url) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
     )
     .bind(&id)
     .bind(&body.name)
@@ -201,6 +346,8 @@ pub async fn create_product(
     .bind(&body.currency)
     .bind(&body.mode)
     .bind(&body.recurring_interval)
+    .bind(&body.category)
+    .bind(&payment_link_url)
     .execute(&state.db)
     .await;
 
@@ -746,6 +893,8 @@ mod tests {
                     currency: currency.to_string(),
                     mode: mode.to_string(),
                     recurring_interval: interval.map(|s| s.to_string()),
+                    category: None,
+                    payment_link_url: None,
                 }),
             )
             .await
@@ -795,6 +944,8 @@ mod tests {
                 currency: "eur".to_string(),
                 mode: "payment".to_string(),
                 recurring_interval: None,
+                category: None,
+                payment_link_url: None,
             }),
         )
         .await
@@ -829,6 +980,8 @@ mod tests {
                 currency: "eur".to_string(),
                 mode: "payment".to_string(),
                 recurring_interval: None,
+                category: None,
+                payment_link_url: None,
             }),
         )
         .await
@@ -847,6 +1000,8 @@ mod tests {
                 currency: "eur".to_string(),
                 mode: "payment".to_string(),
                 recurring_interval: None,
+                category: None,
+                payment_link_url: None,
             }),
         )
         .await
@@ -1044,6 +1199,8 @@ mod tests {
                 currency: "eur".to_string(),
                 mode: "payment".to_string(),
                 recurring_interval: None,
+                category: None,
+                payment_link_url: None,
             }),
         )
         .await

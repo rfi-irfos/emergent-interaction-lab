@@ -37,6 +37,10 @@ interface ProductOut {
   stripe_price_id: string | null
   payment_link_url: string | null
   created_at: string
+  /// 'service' | 'certification' — see backend/src/billing.rs's category
+  /// column comment. Determines which public storefront (CertificationPage
+  /// vs the main site's WebHub pricing section) shows this product.
+  category: string
 }
 
 // Mirrors backend/src/billing.rs's OrderOut — one row per real, verified
@@ -82,6 +86,8 @@ export function Monetization() {
   const [currency, setCurrency] = useState('eur')
   const [mode, setMode] = useState<'payment' | 'subscription'>('payment')
   const [interval, setInterval] = useState<'month' | 'year'>('month')
+  const [category, setCategory] = useState<'service' | 'certification'>('service')
+  const [existingLink, setExistingLink] = useState('')
   const [creating, setCreating] = useState(false)
   const [linkingId, setLinkingId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -110,6 +116,8 @@ export function Monetization() {
           currency,
           mode,
           recurring_interval: mode === 'subscription' ? interval : null,
+          category,
+          payment_link_url: existingLink.trim() || null,
         }),
       })
       if (!res.ok) {
@@ -117,7 +125,7 @@ export function Monetization() {
         return
       }
       await refresh()
-      setName(''); setDescription(''); setPrice('')
+      setName(''); setDescription(''); setPrice(''); setExistingLink('')
     } finally {
       setCreating(false)
     }
@@ -369,7 +377,20 @@ export function Monetization() {
                 <option value="year">jährlich</option>
               </select>
             )}
+            <select value={category} onChange={e => setCategory(e.target.value as 'service' | 'certification')}>
+              <option value="service">Service (Hauptseite)</option>
+              <option value="certification">Zertifizierung</option>
+            </select>
           </div>
+          {/* Optional: attach an already-existing Stripe Payment Link (created
+              directly in the Stripe dashboard) instead of using "Zahlungslink
+              erstellen" below, which mints a brand new Stripe product/price/
+              link via the API — wrong when the link already exists. */}
+          <input
+            placeholder="Bereits vorhandener Zahlungslink (optional, z.B. https://buy.stripe.com/...)"
+            value={existingLink}
+            onChange={e => setExistingLink(e.target.value)}
+          />
           {formError && <div className="obs-warning-note">{formError}</div>}
           <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
             {creating ? 'Legt an…' : 'Produkt anlegen'}
@@ -387,6 +408,10 @@ export function Monetization() {
           <div className="obs-item-meta">
             <span className="obs-pill" style={{ background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>
               {formatPrice(p.price_cents, p.currency)}{p.mode === 'subscription' ? ` / ${p.recurring_interval === 'year' ? 'Jahr' : 'Monat'}` : ''}
+            </span>
+            {' '}
+            <span className="obs-pill" style={{ background: 'rgba(148,163,184,.14)', color: '#9aa0a8' }}>
+              {p.category === 'certification' ? 'Zertifizierung' : 'Service'}
             </span>
             {' · '}{p.created_at}
           </div>
