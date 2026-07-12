@@ -58,3 +58,25 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # The actual live app (backend + the frontend it serves at
+  # emergent-interaction-lab.fly.dev) only ever moved via a manual
+  # `fly deploy` run from someone's machine — this workflow only ever
+  # published the static GitHub Pages mirror. That gap meant a merged PR
+  # could look "deployed" (this workflow green) while the real backend
+  # (and the app.db it seeds on startup) was still running old code, with
+  # nothing surfacing the mismatch. Confirmed 2026-07-12: a billing.rs
+  # change shipped this way with the Pages mirror pointed at the stale
+  # backend for hours before anyone noticed the seeded products were
+  # missing. Runs independently of the two Pages jobs above (`needs:` is
+  # deliberately omitted) since Fly builds its own image from the repo's
+  # Dockerfile — it doesn't consume the `build` job's artifact.
+  deploy-fly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
