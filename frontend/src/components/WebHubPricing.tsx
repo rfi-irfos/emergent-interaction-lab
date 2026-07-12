@@ -107,7 +107,91 @@ const DETAIL: Record<string, { phase: string; en: string; de: string }> = {
     en: 'A refresh for a framework and its agents once the underlying case has moved on.',
     de: 'Eine Auffrischung für ein Framework und seine Agenten, wenn sich der zugrunde liegende Fall weiterentwickelt hat.',
   },
+
+  // ── Systemaudit ladder — a separate methodology (system/organisation/
+  // product diagnosis, not case reconstruction), see SYSTEMAUDIT_CATALOG
+  // below for the group split shown on the page.
+  'Systemaudit': {
+    phase: 'Diagnose',
+    en: "The core diagnostic. You bring a system - software, product, organisation, or agent flow. I come back with where it actually creates friction, what's structurally sound, and which agents and automated checks should watch it going forward.",
+    de: 'Die Kerndiagnose. Du bringst ein System mit - Software, Produkt, Organisation oder Agenten-Flow. Ich liefere zurück, wo tatsächlich Reibung entsteht, was strukturell trägt, und welche Agenten und automatischen Prüfungen es künftig überwachen sollten.',
+  },
+  'Rollenreview': {
+    phase: 'Review',
+    en: 'A clear read on who actually owns what in the system - where roles overlap, where they are missing, and where that ambiguity is the real source of friction.',
+    de: 'Ein klarer Blick darauf, wer im System wirklich wofür zuständig ist - wo sich Rollen überschneiden, wo sie fehlen, und wo genau diese Unklarheit die eigentliche Reibung erzeugt.',
+  },
+  'Prozessreview': {
+    phase: 'Review',
+    en: 'Where a process actually holds up under real use, where the handoffs break down, and where a decision quietly stalls instead of getting made.',
+    de: 'Wo ein Prozess im echten Betrieb wirklich trägt, wo Übergaben brechen, und wo eine Entscheidung still steckenbleibt, statt getroffen zu werden.',
+  },
+  'Root Level Review': {
+    phase: 'Review',
+    en: "Root-level review of the system's foundations: the deepest structural, organisational and interaction layers, and where they load-bear or fail.",
+    de: 'Root-Level-Prüfung der Grundlagen des Systems: die tiefsten strukturellen, organisationellen und Interaktionsschichten, und wo sie tragen oder versagen.',
+  },
+  'Schnittstellenreview': {
+    phase: 'Review',
+    en: 'Where the seams between systems, teams, or tools actually leak - the handoffs nobody owns and the assumptions each side makes about the other.',
+    de: 'Wo die Schnittstellen zwischen Systemteilen, Teams oder Tools tatsächlich undicht sind - die Übergaben, die niemand verantwortet, und die Annahmen, die jede Seite über die andere trifft.',
+  },
+  'Betriebsreview': {
+    phase: 'Review',
+    en: 'Whether the way a system is actually run day to day can carry real load, and whether anyone would notice if it started to fail.',
+    de: 'Ob die Art, wie ein System im Alltag tatsächlich betrieben wird, echte Last tragen kann - und ob es überhaupt auffallen würde, wenn es anfinge zu versagen.',
+  },
+  'Organisationsreview': {
+    phase: 'Review',
+    en: 'A structural read on the organisation itself: whether roles, responsibilities, interfaces and handovers are clear enough to survive contact with a bad week.',
+    de: 'Ein struktureller Blick auf die Organisation selbst: ob Rollen, Zuständigkeiten, Schnittstellen und Übergaben klar genug sind, um eine schlechte Woche zu überstehen.',
+  },
+  'Produktreview': {
+    phase: 'Review',
+    en: "Where the product's actual usage logic creates friction for the people using it, and what specifically needs to change - not just a list of opinions about it.",
+    de: 'Wo die tatsächliche Nutzungslogik des Produkts für die Anwendenden Reibung erzeugt, und was sich konkret ändern muss - keine bloße Meinungsliste dazu.',
+  },
+  'Framework Design from Analysis': {
+    phase: 'Design',
+    en: 'Translating the diagnosis into a concrete design: agent roles, check rules, control logic, interfaces - with safety and alignment built in.',
+    de: 'Übersetzung der Diagnose in ein konkretes Design: Agentenrollen, Prüfregeln, Kontrolllogik, Schnittstellen - mit eingebauter Sicherheit und Ausrichtung.',
+  },
+  'System Design & Deployment': {
+    phase: 'Build',
+    en: 'The designed system, actually built and running: infrastructure, agent logic, monitoring and interfaces in place - not a design document waiting on a build.',
+    de: 'Das entworfene System, tatsächlich gebaut und im Betrieb: Infrastruktur, Agentenlogik, Monitoring und Schnittstellen stehen - kein Konzeptpapier, das noch auf den Bau wartet.',
+  },
+  'Watchtower Retainment': {
+    phase: 'License',
+    en: 'Monthly usage licence for the system, its agents and the automated check routines - ongoing care and further development of the system, not a one-off delivered and forgotten.',
+    de: 'Laufende Nutzungslizenz pro Monat für das System, die Agenten und die automatisierten Prüfroutinen - laufende Betreuung und Weiterentwicklung des Systems, kein Einmalprodukt, das danach vergessen wird.',
+  },
+  'Multiagent System Coordination': {
+    phase: 'Operate',
+    en: 'The agent family actually watching the system every month - running, catching deviations, and flagging what needs a human look, not sitting idle after handover.',
+    de: 'Die Agenten-Familie, die das System jeden Monat tatsächlich im Blick behält - läuft, erkennt Abweichungen und markiert, was einen menschlichen Blick braucht, statt nach der Übergabe stillzustehen.',
+  },
+  'Further Development': {
+    phase: 'Maintain',
+    en: 'The system kept current after delivery - adjusted as the underlying case or organisation moves, not left to quietly drift out of date.',
+    de: 'Das System bleibt nach der Auslieferung aktuell - angepasst, wenn sich der zugrunde liegende Fall oder die Organisation weiterentwickelt, statt still zu veralten.',
+  },
 }
+
+// Two genuinely different methodologies live in the same product list now
+// (the original case-intelligence ladder from WEBHUB(1).md, and the newer
+// system/organisation-diagnosis ladder from SYSTEMAUDIT_ANGEBOT.md) - a
+// flat price-sorted wall interleaves them, which is exactly what read as
+// cluttered. Split into two labelled groups (each still price-sorted
+// within itself) with a divider between, rather than inventing a third
+// arbitrary "tier" grouping neither source document describes. Anything
+// not in this set defaults to the first group - a new product an admin
+// adds later shows up somewhere sensible instead of silently vanishing.
+const SYSTEMAUDIT_NAMES = new Set([
+  'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
+  'Betriebsreview', 'Organisationsreview', 'Produktreview', 'Framework Design from Analysis',
+  'System Design & Deployment', 'Watchtower Retainment', 'Multiagent System Coordination', 'Further Development',
+])
 
 const COPY = {
   en: {
@@ -122,6 +206,8 @@ const COPY = {
     whatLabel: 'What this is',
     buy: 'Buy',
     close: 'Close',
+    groupCase: 'Case Intelligence',
+    groupSystemaudit: 'Systemaudit',
     consentTitle: 'Please confirm before checkout',
     consentB2b: 'I am acting as a business customer and confirm that this purchase is made in the course of my commercial or professional activity.',
     consentAgbBefore: 'I agree to the ',
@@ -142,6 +228,8 @@ const COPY = {
     whatLabel: 'Was das ist',
     buy: 'Kaufen',
     close: 'Schließen',
+    groupCase: 'Case Intelligence',
+    groupSystemaudit: 'Systemaudit',
     consentTitle: 'Bitte vor dem Checkout bestätigen',
     consentB2b: 'Ich handle als Unternehmer und bestätige, dass dieser Kauf im Rahmen meiner gewerblichen oder beruflichen Tätigkeit erfolgt.',
     consentAgbBefore: 'Ich stimme den ',
@@ -186,7 +274,15 @@ export function WebHubPricing() {
       .then(res => { if (!res.ok) throw new Error(String(res.status)); return res.json() })
       .then((data: PublicProduct[]) => {
         if (cancelled) return
-        setProducts(data.filter(p => p.category !== 'certification').sort((a, b) => a.price_cents - b.price_cents))
+        // Case Intelligence first (it's the flagship ladder), then Systemaudit
+        // — each group price-sorted within itself, see SYSTEMAUDIT_NAMES's own
+        // comment for why a flat price sort across both reads as cluttered.
+        const sorted = [...data.filter(p => p.category !== 'certification')].sort((a, b) => {
+          const groupA = SYSTEMAUDIT_NAMES.has(a.name) ? 1 : 0
+          const groupB = SYSTEMAUDIT_NAMES.has(b.name) ? 1 : 0
+          return groupA !== groupB ? groupA - groupB : a.price_cents - b.price_cents
+        })
+        setProducts(sorted)
       })
       .catch(() => { if (!cancelled) setError(true) })
     return () => { cancelled = true }
@@ -218,42 +314,59 @@ export function WebHubPricing() {
       {products === null && !error && <p className="site-webhub-status">{c.loading}</p>}
       {error && <p className="site-webhub-status">{c.error}</p>}
 
-      {products !== null && products.length > 0 && (
-        <div className="site-webhub-grid">
-          {products.map((p, i) => {
-            const isFlagship = p.name === FLAGSHIP_NAME
-            return (
-              <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}`}>
-                {isFlagship && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
-                <h3>{p.name}</h3>
-                <div className="site-webhub-price">
-                  {formatPrice(p.price_cents, p.currency, lang)}
-                  {p.mode === 'subscription' && <span className="site-webhub-per"> / {c.recurring}</span>}
-                </div>
-                <div className="site-webhub-row">
-                  <button
-                    type="button"
-                    className="site-webhub-buy"
-                    title={`${c.buy}: ${p.name}`}
-                    aria-label={`${c.buy}: ${p.name}`}
-                    onClick={() => openCheckout(p)}
-                  >
-                    {BASKET}
-                  </button>
-                  <button
-                    type="button"
-                    className="site-webhub-more"
-                    onClick={() => setActive(p)}
-                    aria-haspopup="dialog"
-                  >
-                    {c.more} {PLUS}
-                  </button>
-                </div>
+      {products !== null && products.length > 0 && (() => {
+        const caseGroup = products.filter(p => !SYSTEMAUDIT_NAMES.has(p.name))
+        const auditGroup = products.filter(p => SYSTEMAUDIT_NAMES.has(p.name))
+        const renderCard = (p: PublicProduct, i: number) => {
+          const isFlagship = p.name === FLAGSHIP_NAME
+          return (
+            <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}`}>
+              {isFlagship && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
+              <h3>{p.name}</h3>
+              <div className="site-webhub-price">
+                {formatPrice(p.price_cents, p.currency, lang)}
+                {p.mode === 'subscription' && <span className="site-webhub-per"> / {c.recurring}</span>}
               </div>
-            )
-          })}
-        </div>
-      )}
+              <div className="site-webhub-row">
+                <button
+                  type="button"
+                  className="site-webhub-buy"
+                  title={`${c.buy}: ${p.name}`}
+                  aria-label={`${c.buy}: ${p.name}`}
+                  onClick={() => openCheckout(p)}
+                >
+                  {BASKET}
+                </button>
+                <button
+                  type="button"
+                  className="site-webhub-more"
+                  onClick={() => setActive(p)}
+                  aria-haspopup="dialog"
+                >
+                  {c.more} {PLUS}
+                </button>
+              </div>
+            </div>
+          )
+        }
+        return (
+          <>
+            {caseGroup.length > 0 && (
+              <>
+                <div className="site-webhub-group-label">{c.groupCase}</div>
+                <div className="site-webhub-grid">{caseGroup.map(renderCard)}</div>
+              </>
+            )}
+            {auditGroup.length > 0 && (
+              <>
+                <div className="site-webhub-group-divider" />
+                <div className="site-webhub-group-label">{c.groupSystemaudit}</div>
+                <div className="site-webhub-grid">{auditGroup.map(renderCard)}</div>
+              </>
+            )}
+          </>
+        )
+      })()}
 
       {active && (
         <div
