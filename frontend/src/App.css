@@ -1716,22 +1716,18 @@ button { cursor: pointer; font-family: inherit; }
 .site-webhub-intro { font-size: 16px; line-height: 1.75; color: var(--text); opacity: .82; margin-top: 14px; }
 .site-webhub-status { text-align: center; font-size: 14px; color: var(--text-soft); }
 .site-webhub-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 14px;
   max-width: 1160px; margin: 0 auto;
 }
 .site-webhub-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  padding: 26px 24px; display: flex; flex-direction: column; position: relative;
+  padding: 16px 16px 14px; display: flex; flex-direction: column; position: relative;
+  min-height: 124px;
   transition: transform .25s ease, border-color .25s ease;
 }
 .site-webhub-card:hover { transform: translateY(-3px); border-color: var(--primary); }
 @media (prefers-reduced-motion: reduce) { .site-webhub-card:hover { transform: none; } }
-/* Core offer: same card as the rest (var(--surface), same shape/padding),
-   just highlighted with an accent border + glow + filled accent CTA.
-   Was previously `background: var(--text)` which inverted to a white card
-   in dark mode (--text is #e9fbff there) and a black card in light mode
-   — never matching its siblings. Now it reads as a highlight, not a
-   different card. */
+/* Core offer: same card as the rest (var(--surface)), just highlighted. */
 .site-webhub-card.flagship {
   background: var(--surface);
   border-color: var(--primary);
@@ -1739,24 +1735,73 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-webhub-card.flagship h3,
 .site-webhub-card.flagship .site-webhub-price { color: var(--text); }
-.site-webhub-card.flagship .site-webhub-desc { color: var(--text-soft); }
-.site-webhub-card.flagship .site-webhub-cta { background: var(--primary); color: var(--on-primary); }
-.site-webhub-card.flagship .site-webhub-cta:hover { filter: brightness(1.08); }
 .site-webhub-flag {
-  position: absolute; top: -11px; left: 20px; background: var(--primary); color: var(--on-primary);
+  position: absolute; top: -11px; left: 16px; background: var(--primary); color: var(--on-primary);
   font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
   padding: 4px 10px; border-radius: 4px;
 }
-.site-webhub-card h3 { font-size: 17px; font-weight: 800; margin: 0 0 10px; color: var(--text); }
-.site-webhub-desc { font-size: 13px; line-height: 1.6; color: var(--text-soft); flex: 1; margin: 0 0 18px; }
-.site-webhub-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.site-webhub-price { font-size: 21px; font-weight: 900; color: var(--text); }
-.site-webhub-per { font-size: 12px; font-weight: 600; opacity: .7; }
-.site-webhub-cta {
-  background: var(--text); color: var(--bg); font-size: 12px; font-weight: 700;
-  padding: 9px 16px; border-radius: 7px; white-space: nowrap; transition: background .2s, color .2s;
+/* Phase chip — the ladder position, so the arc reads explicitly. */
+.site-webhub-chip {
+  display: inline-block; align-self: flex-start;
+  font: 700 8.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--text-soft);
+  border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; margin-bottom: 8px;
 }
-.site-webhub-cta:hover { background: var(--primary); color: var(--on-primary); }
+.site-webhub-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 2px; color: var(--text); line-height: 1.22; }
+.site-webhub-price { font-size: 18px; font-weight: 900; color: var(--text); margin-top: auto; }
+.site-webhub-per { font-size: 10px; font-weight: 600; opacity: .7; }
+/* Bottom row: basket link (left) + More button (right). */
+.site-webhub-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.site-webhub-buy {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; color: var(--accent);
+  border: 1px solid var(--border); background: rgba(52, 225, 255, .05);
+  text-decoration: none; transition: background .15s, border-color .15s;
+}
+.site-webhub-buy:hover { background: rgba(52, 225, 255, .14); border-color: var(--accent); }
+.site-webhub-more {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: transparent; border: 1px solid var(--border); color: var(--text);
+  font: 700 10.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .06em; text-transform: uppercase; border-radius: 8px; padding: 7px 10px;
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.site-webhub-more:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── modal ── */
+.site-webhub-overlay {
+  position: fixed; inset: 0; background: rgba(3, 6, 12, .72); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+}
+.site-webhub-modal {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  max-width: 560px; width: 100%; max-height: 86vh; overflow: auto;
+  padding: 24px 24px 22px; position: relative;
+  box-shadow: 0 24px 70px -24px rgba(0, 0, 0, .7);
+}
+.site-webhub-modal .site-webhub-chip { margin-bottom: 10px; }
+.site-webhub-modal-name { font-size: 20px; font-weight: 800; margin: 0 0 4px; color: var(--text); }
+.site-webhub-modal-price { font-size: 18px; font-weight: 900; color: var(--text); margin: 0 0 16px; }
+.site-webhub-blk { margin-bottom: 14px; }
+.site-webhub-lbl {
+  font: 800 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--primary); margin-bottom: 5px;
+}
+.site-webhub-txt { font-size: 13px; line-height: 1.62; color: var(--text); opacity: .9; }
+.site-webhub-x {
+  position: absolute; top: 14px; right: 14px; width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;
+  background: transparent; border: 1px solid var(--border); color: var(--text-soft); cursor: pointer;
+}
+.site-webhub-x:hover { color: var(--text); border-color: var(--text); }
+.site-webhub-buy.big {
+  display: inline-flex; align-items: center; gap: 8px; width: auto; height: auto;
+  padding: 11px 16px; border-radius: 10px; margin-top: 4px;
+  font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--on-primary);
+  background: var(--accent); border: 1px solid var(--accent);
+}
+.site-webhub-buy.big:hover { background: #5fe3ff; }
 @media (max-width: 640px) {
   .site-webhub-grid { grid-template-columns: 1fr; }
 }
