@@ -45,8 +45,8 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
           </linearGradient>
         </defs>
         {gridLines.map((y, i) => <line key={i} x1={padLeft} x2={W - padRight} y1={y} y2={y} className="obs-chart-grid" />)}
-        <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" />
-        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" className="obs-chart-area" />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="obs-chart-line" />
         {hover !== null && (
           <line x1={points[hover].x} x2={points[hover].x} y1={padTop} y2={padTop + innerH} className="obs-chart-crosshair" />
         )}

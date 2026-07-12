@@ -1,5 +1,12 @@
 import type { AdminSection } from '../../types/admin'
 
+// Shared status → color map for emergence signals. Defined once here (not
+// per-module) because EmergenceMonitor, SimulationCenter, InteractionDynamics
+// and the Intrachat loop all need the same status hues.
+export const STATUS_ACCENT: Record<string, string> = {
+  emerging: '#f59e0b', stable: '#10b981', fading: '#6b7280', hypothetical: '#8b5cf6',
+}
+
 // Icons kept tiny and inline, matching the existing crm-nav-item convention
 // in AdminPanel.tsx (Inbox/Forschung/Blog/Analytics use the same style).
 function I(paths: React.ReactNode) {

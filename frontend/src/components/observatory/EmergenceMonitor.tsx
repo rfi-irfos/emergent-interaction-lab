@@ -5,8 +5,10 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudGrid, HudTile } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
+import { STATUS_ACCENT } from './registry'
 
 interface Signal {
   id: string
@@ -49,10 +51,6 @@ interface CcetSummary {
 
 const EVOLUTION_ARROW: Record<string, string> = {
   increasing: '↑', decreasing: '↓', steady: '→', unclear: '?',
-}
-
-const STATUS_ACCENT: Record<string, string> = {
-  emerging: '#f59e0b', stable: '#10b981', fading: '#6b7280', hypothetical: '#8b5cf6',
 }
 
 // Nicht nur Human-AI — vier Ebenen, getrennt nach Laura's eigener
@@ -349,15 +347,14 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           "geladen" note below, honest about that now that this list is
           paginated instead of always holding everything up to the old cap. */}
       <div className="obs-section-label">
+        {/* Two donuts replace the old flat per-level stat-tile row — framed in
+            fixed-size HUD tiles so they read as instruments, not one chart
+            stretched across the viewport. Each tile sizes itself; the grid
+            keeps several per row on desktop, stacking only when narrow. */}
         Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
       </div>
-      {/* Two donuts replace the old flat per-level stat-tile row — the
-          legend + hover tooltip on each still carry every raw count the
-          tiles did, plus the actual share each level/status makes up, which
-          the tiles never showed. Kept inside .obs-card so both inherit the
-          corner-bracket framing every other Observatory primitive gets. */}
-      <div className="obs-card">
-        <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <HudGrid cols={4}>
+        <HudTile title="Ebenen-Mix" badge="SIGNALE" accent="var(--obs-purple)" span={2}>
           <ObsDonut
             data={visibleSections.map(section => ({
               label: section.label,
@@ -367,6 +364,8 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
             centerLabel={`${signals.length}\nSignale`}
             gradientIdPrefix="emergence-level-mix"
           />
+        </HudTile>
+        <HudTile title="Status-Mix" badge="SIGNALE" accent="var(--obs-blue)" span={2}>
           <ObsDonut
             data={visibleStatuses.map(status => ({
               label: status,
@@ -375,11 +374,11 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
             }))}
             gradientIdPrefix="emergence-status-mix"
           />
-        </div>
-        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
-          Ebenen- und Status-Verteilung der aktuell geladenen Signale (siehe "geladen" oben) — kein serverseitiges Gesamt-Grouping.
-        </p>
-      </div>
+        </HudTile>
+      </HudGrid>
+      <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #9aa0a8)', marginTop: -4, marginBottom: 14 }}>
+        Ebenen- und Status-Verteilung der aktuell geladenen Signale (siehe "geladen" oben) — kein serverseitiges Gesamt-Grouping.
+      </p>
 
       <div
         className="obs-badge-experimental"
@@ -393,24 +392,28 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           right beside the two gauges is also the literal demonstration that
           ObsGauge slots in next to plain stat tiles without looking like a
           different component family. */}
-      <div className="obs-card" style={{ marginBottom: 22 }}>
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+      <HudGrid cols={4}>
+        <HudTile title="CEI" badge="CO-EVOLUTION" accent="var(--obs-green)" span={1}>
           {ccet ? (
-            <ObsGauge value={ccet.cei} label="CEI (Co-Evolution Index)" color="var(--obs-green)" />
+            <ObsGauge value={ccet.cei} label="Co-Evolution Index" color="var(--obs-green)" />
           ) : (
             <div className="obs-stat c-green"><div className="obs-stat-value">—</div><div className="obs-stat-label">CEI (Co-Evolution Index)</div></div>
           )}
+        </HudTile>
+        <HudTile title="Resonance" badge="CO-EVOLUTION" accent="var(--obs-teal)" span={1}>
           {ccet ? (
             <ObsGauge value={ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" />
           ) : (
             <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Resonance Frequency</div></div>
           )}
+        </HudTile>
+        <HudTile title="CEP" badge="CO-EVOLUTION" accent="var(--obs-purple)" span={2}>
           <div className="obs-stat c-purple" style={{ flex: '0 1 160px' }}>
             <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
             <div className="obs-stat-label">CEP (Co-Evolution Points)</div>
           </div>
-        </div>
-      </div>
+        </HudTile>
+      </HudGrid>
 
       {signals.length === 0 && !loading && (
         <div className="obs-card">

@@ -287,7 +287,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           <AuditChangelog collapsed={sidebarCollapsed} />
         </aside>
 
-        <div className={`crm-main ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
+        <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
             <div className="crm-topbar-actions">

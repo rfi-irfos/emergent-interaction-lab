@@ -3,7 +3,9 @@ import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudTile } from './Hud'
 import { ObsRadar } from './ObsRadar'
+import { STATUS_ACCENT } from './registry'
 
 // Denkfragmente — Laura's own ask, verbatim-translated: "I mostly look at my
 // AI interaction meta-retrospectively, but the whole thing through
@@ -141,6 +143,182 @@ function groupByTurn(fragments: Fragment[]): Turn[] {
     turn.layers.push(f.layer)
   }
   return order.map(id => byId.get(id)!)
+}
+
+// ── INTRACHAT LOOP ────────────────────────────────────────────────────────
+// The missing 90%: Laura's own data is captured + classified (above), but the
+// platform never showed her the LOOP — how her input moved through the system
+// in real time. Each of her turns is rendered as a "loop node": the raw
+// transmission she sent → which of her own 8 layers fired → which emergence
+// signals that conversation spawned around that moment → the nearest system
+// snapshot delta (CEI / resonance shift). Reading top-to-bottom is the
+// "writing the book about how to fly the plane, while flying it midair"
+// metaphor: you watch the rulebook get written turn by turn, not after.
+//
+// All four nodes come from EXISTING endpoints (no backend change):
+//   - input + layer:  /api/observatory/fragments?conversation_id=X  (excerpt)
+//   - spawned signals:/api/observatory/emergence/signals  (client-filtered by
+//                     source_conversation_id, aligned by created_at proximity)
+//   - system shift:   /api/observatory/snapshots?range=all  (nearest CEI/resonance)
+// Signals have no conversation_id server param, so we fetch all and filter
+// client-side, same idiom EmergenceMonitor/SimulationCenter already use.
+
+interface LoopSignal {
+  id: string
+  pattern: string
+  level: string
+  status: string
+  source_conversation_id: string | null
+  created_at: string
+}
+interface LoopSnapshot {
+  created_at: string
+  cei: number
+  resonance_frequency: number
+}
+
+function alignSignals(turnTime: number, signals: LoopSignal[]): LoopSignal[] {
+  // Signals spawned within 20 min after a turn belong to that turn's loop.
+  const window = 20 * 60 * 1000
+  return signals.filter(s => {
+    const t = Date.parse(s.created_at)
+    return s.source_conversation_id && t >= turnTime && t <= turnTime + window
+  })
+}
+
+function nearestSnapshotDelta(turnTime: number, snaps: LoopSnapshot[]): { before?: LoopSnapshot; after?: LoopSnapshot } {
+  if (snaps.length === 0) return {}
+  const before = [...snaps].reverse().find(s => Date.parse(s.created_at) <= turnTime)
+  const after = snaps.find(s => Date.parse(s.created_at) >= turnTime)
+  return { before, after }
+}
+
+function fmtPct(v: number): string { return `${Math.round(v * 100)}%` }
+
+function LoopNode({
+  index, turn, signals, snap,
+}: {
+  index: number
+  turn: Turn
+  signals: LoopSignal[]
+  snap?: { before?: LoopSnapshot; after?: LoopSnapshot }
+}) {
+  const spawned = alignSignals(Date.parse(turn.created_at), signals)
+  const ceiBefore = snap?.before?.cei
+  const ceiAfter = snap?.after?.cei
+  const resBefore = snap?.before?.resonance_frequency
+  const resAfter = snap?.after?.resonance_frequency
+  const ceiDelta = ceiBefore !== undefined && ceiAfter !== undefined ? ceiAfter - ceiBefore : null
+  const resDelta = resBefore !== undefined && resAfter !== undefined ? resAfter - resBefore : null
+  return (
+    <HudTile
+      title={`TURN ${String(index + 1).padStart(3, '0')}`}
+      badge="INTRACHAT"
+      accent={LAYER_COLORS[turn.layers[0]] ?? 'var(--hud-cyan)'}
+      span={4}
+    >
+      {/* 1 · RAW TRANSMISSION — Laura's own input (preview; backend truncates
+          to 120 chars in the fragments excerpt; full text needs a message-by-id
+          endpoint, flagged as a follow-up). */}
+      <div style={{ fontFamily: "'SF Mono','JetBrains Mono',Consolas,monospace", fontSize: 12, lineHeight: 1.55, color: 'rgba(226,241,245,.9)', background: 'rgba(7,14,20,.5)', borderLeft: '2px solid var(--hud-cyan)', padding: '8px 10px', borderRadius: 6, marginBottom: 10 }}>
+        {turn.excerpt || '—'}
+      </div>
+      {/* 2 · HER LAYERS — which of the 8 IEIA layers this turn drew on. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        {turn.layers.map(layer => (
+          <span key={layer} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: '#eefcff', background: `${LAYER_COLORS[layer] ?? '#888'}22`, border: `1px solid ${LAYER_COLORS[layer] ?? '#888'}`, borderRadius: 20, padding: '2px 9px' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: LAYER_COLORS[layer] ?? '#888' }} />
+            {LAYER_LABELS[layer] ?? layer}
+          </span>
+        ))}
+      </div>
+      {/* 3 + 4 · MODEL REACTION + SYSTEM SHIFT, side by side. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 9.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'rgba(148,190,199,.6)', marginBottom: 5 }}>Modell-Reaktion</div>
+          {spawned.length === 0 ? (
+            <div style={{ fontSize: 11, color: 'rgba(148,190,199,.45)' }}>keine Signale in diesem Fenster</div>
+          ) : (
+            spawned.map(s => (
+              <div key={s.id} style={{ fontSize: 11, color: 'rgba(226,241,245,.82)', marginBottom: 4 }}>
+                <span style={{ color: STATUS_ACCENT[s.status] ?? 'var(--hud-cyan)' }}>●</span> {s.pattern}
+                <span style={{ color: 'rgba(148,190,199,.5)' }}> · {s.level}</span>
+              </div>
+            ))
+          )}
+        </div>
+        <div>
+          <div style={{ fontSize: 9.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'rgba(148,190,199,.6)', marginBottom: 5 }}>System-Shift</div>
+          {ceiDelta === null ? (
+            <div style={{ fontSize: 11, color: 'rgba(148,190,199,.45)' }}>kein Snapshot-Delta</div>
+          ) : (
+            <div style={{ display: 'flex', gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: ceiDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{ceiDelta >= 0 ? '+' : ''}{fmtPct(Math.abs(ceiDelta))}</div>
+                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>CEI Δ</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: resDelta !== null && resDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{(resDelta ?? 0) >= 0 ? '+' : ''}{fmtPct(Math.abs(resDelta ?? 0))}</div>
+                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>Resonanz Δ</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </HudTile>
+  )
+}
+
+function IntrachatLoop({ conversationId }: { conversationId: string }) {
+  const [signals, setSignals] = useState<LoopSignal[]>([])
+  const [snaps, setSnaps] = useState<LoopSnapshot[]>([])
+  const [loading, setLoading] = useState(false)
+  const { data: fragments } = useAdminFetch<Fragment[]>(
+    `/api/observatory/fragments?conversation_id=${encodeURIComponent(conversationId)}`,
+    [conversationId],
+  )
+  useEffect(() => {
+    if (!conversationId) return
+    let cancelled = false
+    setLoading(true)
+    Promise.all([
+      fetch(`${API_BASE}/api/observatory/emergence/signals?limit=200`, { headers: authHeaders() }).then(r => r.ok ? r.json() : []),
+      fetch(`${API_BASE}/api/observatory/snapshots?range=all&limit=200`, { headers: authHeaders() }).then(r => r.ok ? r.json() : { items: [] }),
+    ]).then(([sig, snap]: [LoopSignal[], { items: LoopSnapshot[] }]) => {
+      if (cancelled) return
+      setSignals(sig)
+      setSnaps((snap.items ?? []).slice().sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at)))
+      setLoading(false)
+    }).catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [conversationId])
+
+  const turns = groupByTurn(fragments ?? [])
+  if (!conversationId) return null
+  if (turns.length === 0) return null
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div className="obs-section-label">Intrachat-Schleife — Laura → Modell → System</div>
+      <p style={{ fontSize: 11.5, color: 'rgba(148,190,199,.6)', margin: '0 0 12px', lineHeight: 1.5 }}>
+        Der geschlossene Kreis: was Laura eingibt (Transmis­sion) → welche ihrer 8 Denkebenen feuert → welche Emergenz-Signale das Gespräch
+        in diesem Moment auslöst → wie sich der Systemzustand (CEI / Resonanz) verschiebt. Wie ein Handbuch übers Fliegen schreiben, während
+        man die Maschine baut und fliegt.
+      </p>
+      {loading ? <HudSkeleton variant="list" rows={3} /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {turns.map((turn, i) => (
+            <LoopNode
+              key={turn.message_id}
+              index={i}
+              turn={turn}
+              signals={signals}
+              snap={nearestSnapshotDelta(Date.parse(turn.created_at), snaps)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
@@ -335,6 +513,11 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
         Verteilung über alle Forschungsgespräche hinweg, nicht nur das oben gewählte — zeigt, welche Denkebenen (nach Lauras eigenem
         8-Layer-Model) über die Zeit dominieren.
       </p>
+
+      {/* ── INTRACHAT LOOP: the missing 90% — Laura's own data shown as a
+          live closed loop, not just classified. Rendered for the currently
+          selected conversation. See IntrachatLoop above. */}
+      <IntrachatLoop conversationId={selectedConv} />
     </div>
   )
 }
