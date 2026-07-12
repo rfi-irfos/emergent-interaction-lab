@@ -1686,12 +1686,14 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
 .site-about-headline { font-size: 32px; font-weight: 900; color: var(--text, #1a1a1a); line-height: 1.2; margin-bottom: 16px; }
 .site-about-bio { font-size: 17px; color: var(--text-soft, #4a4a4a); line-height: 1.75; margin-bottom: 28px; }
-/* One horizontal credential strip: her two stat numbers and the
-   call-laura proof-links (GitHub/crates.io/Live API) sit in the same
-   row, read together as one line of "credentials and unique selling
-   point" ahead of the Get in touch button, instead of stacking as
-   separate blocks. */
-.site-about-credentials { display: flex; align-items: center; flex-wrap: wrap; gap: 20px 28px; margin-bottom: 24px; }
+/* Credentials block: her two stat numbers on one row, the call-laura
+   proof-links (GitHub/crates.io/Live API) on their own row below —
+   two clean, independently-wrapping rows rather than one flex row
+   where badges stagger unpredictably next to the stats depending on
+   viewport width. */
+.site-about-credentials { display: flex; flex-direction: column; gap: 18px; margin-bottom: 8px; }
+.site-about-stats-row { display: flex; flex-wrap: wrap; gap: 20px 32px; }
+.site-about-badges-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .site-about-stat { display: flex; flex-direction: column; align-items: flex-start; flex: 0 1 auto; max-width: 220px; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }
 .site-about-stat span { font-size: 13px; color: var(--text-soft, #666); margin-top: 2px; font-weight: 500; }
@@ -1724,7 +1726,8 @@ button { cursor: pointer; font-family: inherit; }
 @media (prefers-reduced-motion: reduce) { .site-about-proof-dot { animation: none; } }
 @media (max-width: 640px) {
   .site-about-inner { flex-direction: column; gap: 28px; align-items: center; text-align: center; }
-  .site-about-credentials { justify-content: center; }
+  .site-about-credentials { align-items: center; }
+  .site-about-stats-row, .site-about-badges-row { justify-content: center; }
   .site-about-stat { align-items: center; }
 }
 

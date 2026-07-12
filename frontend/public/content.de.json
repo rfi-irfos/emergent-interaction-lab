@@ -83,9 +83,7 @@
     "stats": [
       { "value": "2023", "label": "Systematische Praxis seit" },
       { "value": "6", "label": "Verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse" }
-    ],
-    "ctaLabel": "Kontakt aufnehmen",
-    "ctaHref": "#location"
+    ]
   },
   "protocol": {
     "eyebrow": "So funktioniert es wirklich",
