@@ -1686,21 +1686,20 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
 .site-about-headline { font-size: 32px; font-weight: 900; color: var(--text, #1a1a1a); line-height: 1.2; margin-bottom: 16px; }
 .site-about-bio { font-size: 17px; color: var(--text-soft, #4a4a4a); line-height: 1.75; margin-bottom: 28px; }
-.site-about-stats { display: flex; gap: 32px; flex-wrap: wrap; }
-.site-about-stat { display: flex; flex-direction: column; align-items: flex-start; }
+/* One horizontal credential strip: her two stat numbers and the
+   call-laura proof-links (GitHub/crates.io/Live API) sit in the same
+   row, read together as one line of "credentials and unique selling
+   point" ahead of the Get in touch button, instead of stacking as
+   separate blocks. */
+.site-about-credentials { display: flex; align-items: center; flex-wrap: wrap; gap: 20px 28px; margin-bottom: 24px; }
+.site-about-stat { display: flex; flex-direction: column; align-items: flex-start; flex: 0 1 auto; max-width: 220px; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }
 .site-about-stat span { font-size: 13px; color: var(--text-soft, #666); margin-top: 2px; font-weight: 500; }
-/* call-laura credibility row — real, checkable credentials (a shipped
+/* call-laura credibility badges — real, checkable credentials (a shipped
    crate, a live API), so these get actual badge chrome instead of reading
    like one more piece of body text: a bordered pill each, with its own
    icon, that lifts and glows on hover the same way a verified-credential
    badge would elsewhere on the web. */
-.site-about-proof { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
-.site-about-proof-label {
-  display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--text-soft); margin-bottom: 10px;
-}
-.site-about-proof-links { display: flex; flex-wrap: wrap; gap: 10px; }
 .site-about-proof-badge {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: 12.5px; font-weight: 700; color: var(--text);
@@ -1725,9 +1724,8 @@ button { cursor: pointer; font-family: inherit; }
 @media (prefers-reduced-motion: reduce) { .site-about-proof-dot { animation: none; } }
 @media (max-width: 640px) {
   .site-about-inner { flex-direction: column; gap: 28px; align-items: center; text-align: center; }
-  .site-about-stats { justify-content: center; }
+  .site-about-credentials { justify-content: center; }
   .site-about-stat { align-items: center; }
-  .site-about-proof-links { justify-content: center; }
 }
 
 
