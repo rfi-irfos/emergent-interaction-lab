@@ -81,9 +81,16 @@ function screenFractionOfPoint(vb: ViewBox, px: number, py: number) {
 
 describe('panViewBox', () => {
   it('translates x/y by the given SVG-space delta', () => {
-    const next = panViewBox(BASE, 20, -10, BASE)
-    expect(next.x).toBeCloseTo(BASE.x - 20, 9)
-    expect(next.y).toBeCloseTo(BASE.y - -10, 9)
+    // Starts from an already-zoomed-in view, not BASE itself — panning
+    // exactly at 100% zoom (viewBox === base) is now a deliberate no-op
+    // (see clampPanToBounds' own doc comment and its dedicated test below),
+    // so translating from BASE would always clamp straight back to BASE
+    // regardless of the requested delta and wouldn't actually exercise this
+    // function's translation math.
+    const zoomedIn: ViewBox = { x: 100, y: 80, w: 300, h: 230 }
+    const next = panViewBox(zoomedIn, 20, -10, BASE)
+    expect(next.x).toBeCloseTo(zoomedIn.x - 20, 9)
+    expect(next.y).toBeCloseTo(zoomedIn.y - -10, 9)
   })
 
   it('does not drift or lose precision over many round-trip pan operations', () => {
@@ -102,9 +109,22 @@ describe('panViewBox', () => {
   it('clamps panning so the view cannot drift infinitely far from the canvas', () => {
     let vb = BASE
     for (let i = 0; i < 500; i++) vb = panViewBox(vb, 10000, 10000, BASE)
-    // Bounded by clampPanToBounds' margin (one base width/height), not unbounded.
+    // Bounded by clampPanToBounds' margin, not unbounded.
     expect(vb.x).toBeGreaterThanOrEqual(BASE.x - BASE.w - 1e-6)
     expect(vb.y).toBeGreaterThanOrEqual(BASE.y - BASE.h - 1e-6)
+  })
+
+  it('at exactly 100% zoom, panning is fully locked to the base view — the real bug this fixed', () => {
+    // Real symptom this reproduces: KnowledgeGraph/SystemMap, screenshot-
+    // confirmed at "100%" zoom, with real node labels cut off mid-word at
+    // the left edge — only reachable if an accidental drag/trackpad-scroll
+    // could pan the view away from base even though nothing was zoomed in.
+    let vb = BASE
+    for (let i = 0; i < 500; i++) vb = panViewBox(vb, 10000, 10000, BASE)
+    expect(vb.x).toBeCloseTo(BASE.x, 6)
+    expect(vb.y).toBeCloseTo(BASE.y, 6)
+    expect(vb.w).toBe(BASE.w)
+    expect(vb.h).toBe(BASE.h)
   })
 })
 
@@ -119,6 +139,26 @@ describe('clampPanToBounds', () => {
     const clamped = clampPanToBounds(vb, BASE)
     expect(clamped.x).toBeGreaterThan(vb.x)
     expect(clamped.y).toBeGreaterThan(vb.y)
+  })
+
+  it('locks pan to exactly base.x/base.y when viewBox matches base (100% zoom, not zoomed in at all)', () => {
+    // The actual fix: margin scales with how zoomed-in the view is. At
+    // w===base.w/h===base.h (no zoom), the margin must be exactly 0 — any
+    // requested pan collapses back to the base origin, since the whole
+    // deterministically laid-out graph already fits in that one view.
+    const vb: ViewBox = { x: 12345, y: -9876, w: BASE.w, h: BASE.h }
+    const clamped = clampPanToBounds(vb, BASE)
+    expect(clamped.x).toBe(BASE.x)
+    expect(clamped.y).toBe(BASE.y)
+  })
+
+  it('allows proportionally more pan margin the further zoomed in the view is', () => {
+    // Zoomed to 50% of base width/height (zoomLevel 2x) — margin should be
+    // exactly half of base.w/base.h, not the old fixed full-base-size margin.
+    const zoomedIn: ViewBox = { x: 100000, y: 100000, w: BASE.w / 2, h: BASE.h / 2 }
+    const clamped = clampPanToBounds(zoomedIn, BASE)
+    const expectedMaxX = BASE.x + BASE.w + BASE.w / 2 - BASE.w / 2 // base.x + base.w + marginX - viewBox.w
+    expect(clamped.x).toBeCloseTo(expectedMaxX, 6)
   })
 })
 
