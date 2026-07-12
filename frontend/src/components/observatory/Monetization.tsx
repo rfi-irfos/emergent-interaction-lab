@@ -286,12 +286,25 @@ export function Monetization() {
             <div className="obs-stat-value">{filteredOrders.length} / {orders.length}</div>
             <div className="obs-stat-label">sichtbar von geladen (Filter)</div>
           </div>
-          {Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
-            <div className="obs-stat c-blue" key={cur}>
-              <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
-              <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
+          {Object.entries(totalRevenueByCurrency).length > 0 ? (
+            Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
+              <div className="obs-stat c-blue" key={cur}>
+                <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
+                <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
+              </div>
+            ))
+          ) : (
+            // No orders yet (or none in the current filter) means this map
+            // is empty and simply renders nothing — which left a visible
+            // hole next to the other two stat tiles rather than an honest
+            // zero. EUR is every product's actual currency here (see
+            // billing.rs's seed_webhub_products), so a real €0.00 is a
+            // truthful default, not a fabricated one.
+            <div className="obs-stat c-blue">
+              <div className="obs-stat-value">{formatPrice(0, 'eur')}</div>
+              <div className="obs-stat-label">Umsatz, sichtbar (EUR)</div>
             </div>
-          ))}
+          )}
         </div>
       )}
       {/* Trusts ObsDonut's own built-in "Keine Daten." empty state (see
