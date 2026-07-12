@@ -17,3 +17,16 @@ export type AdminSection =
   // observable about Laura's own work — see registry.tsx's own placement
   // comment for the full reasoning.
   | 'anomalies'
+  // Changelog — the full, standalone hash-chained audit_log surface (see
+  // backend/src/auditlog.rs + components/observatory/Changelog.tsx).
+  // Verwaltung-tier, same category as Analytics/Monetarisierung/the
+  // not-yet-built Custom Dashboard page, deliberately NOT nested under
+  // Observatory's research/system/technical taxonomy: every row here is an
+  // operational/business record (a content edit, a login, a Stripe order,
+  // a deletion) about the PLATFORM ITSELF, never a research observable
+  // about Laura's own work or a system-health signal about Jarvis's
+  // behavior — a different axis entirely from what OBSERVATORY_MODULES
+  // groups. The existing sidebar `AuditChangelog.tsx` widget (last 8
+  // entries + a chain-intact dot) stays exactly as-is; this is a genuinely
+  // separate, more complete surface, not a replacement.
+  | 'changelog'

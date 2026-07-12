@@ -6,7 +6,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sqlx::SqlitePool;
+use sqlx::{QueryBuilder, Sqlite, SqlitePool};
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
@@ -217,6 +217,41 @@ const MAX_LOG_LIMIT: i64 = 200;
 pub struct ListLogQuery {
     limit: Option<i64>,
     offset: Option<i64>,
+    /// Exact match against `actor` (e.g. `"admin"`, `"system"`, `"stripe"`,
+    /// or a real logged-in email — see `record`'s call sites across the
+    /// codebase for the actual values in use). Absent/blank means "any."
+    actor: Option<String>,
+    /// Exact match against `event_type` (e.g. `content_updated`,
+    /// `blog_published`, `admin_login`, `anomaly_detected`, ...). Absent/
+    /// blank means "any."
+    event_type: Option<String>,
+    /// Inclusive lower bound on `created_at`, compared as a plain string —
+    /// `created_at` is stored as an RFC3339 timestamp (see `record`'s own
+    /// microsecond-precision doc comment), which sorts lexicographically
+    /// identically to chronological order as long as both bounds are given
+    /// in the same UTC/zero-padded shape. This deliberately does NOT reuse
+    /// `observatory::resolve_range`'s `?range=7d|30d|all` convention —
+    /// that idiom answers "how far back from right now," a RELATIVE window
+    /// expressed as `datetime('now', '-N days')`. `from`/`to` here are
+    /// ABSOLUTE, caller-supplied bounds (a real date-range picker), which
+    /// is a different shape of question — so this instead mirrors the
+    /// direct value-comparison idiom `chat::delete_message_and_after`
+    /// already uses for `created_at >= ?` against a caller-supplied
+    /// timestamp, rather than inventing a third date-handling convention.
+    from: Option<String>,
+    /// Inclusive upper bound on `created_at`, same string-comparison idiom
+    /// as `from` above. A caller sending a bare date (`"2026-07-01"`) rather
+    /// than a full timestamp gets a same-day cutoff at midnight — the
+    /// frontend is expected to append `T23:59:59.999999` (end of day) when
+    /// the user picks a calendar day, exactly as the reverse is true for
+    /// `from` defaulting to that day's midnight already.
+    to: Option<String>,
+    /// Free-text search over `summary` only (not `meta`, which is an
+    /// unindexed opaque JSON blob) — a plain `LIKE '%...%'`, no wildcard
+    /// escaping. This table is an admin-only, single-tenant append log, not
+    /// a large multi-tenant corpus, so the simple form is deliberately
+    /// enough (see the plan this shipped against).
+    q: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -231,10 +266,59 @@ struct AuditLogOut {
 
 type LogRow = (String, String, String, String, Option<String>, String);
 
+/// Appends every present, non-blank filter in `q` onto `qb` as `WHERE`
+/// (first hit) / `AND` (every hit after) clauses — shared between the count
+/// query and the page query in `list_log` below so the two can never drift
+/// apart (see that function's own doc comment for why that matters: a
+/// filtered `X-Total-Count` that silently forgot one of the filters would
+/// under/over-report how much more there is to page through). Same
+/// `QueryBuilder<Sqlite>` dynamic-clause idiom `dashboards::update_widget`
+/// already uses for its optional `SET` fields, just building a `WHERE`
+/// instead of a `SET`.
+fn append_log_filters<'q>(qb: &mut QueryBuilder<'q, Sqlite>, q: &'q ListLogQuery) {
+    let mut any = false;
+
+    if let Some(actor) = q.actor.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        qb.push(if any { " AND " } else { " WHERE " });
+        qb.push("actor = ").push_bind(actor);
+        any = true;
+    }
+    if let Some(event_type) = q.event_type.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        qb.push(if any { " AND " } else { " WHERE " });
+        qb.push("event_type = ").push_bind(event_type);
+        any = true;
+    }
+    if let Some(from) = q.from.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        qb.push(if any { " AND " } else { " WHERE " });
+        qb.push("created_at >= ").push_bind(from);
+        any = true;
+    }
+    if let Some(to) = q.to.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        qb.push(if any { " AND " } else { " WHERE " });
+        qb.push("created_at <= ").push_bind(to);
+        any = true;
+    }
+    if let Some(term) = q.q.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        qb.push(if any { " AND " } else { " WHERE " });
+        qb.push("summary LIKE ").push_bind(format!("%{term}%"));
+    }
+}
+
 /// `GET /api/observatory/audit/log` — paginated, newest first. Same
 /// `limit`/`offset` + `X-Total-Count` response header convention as
 /// `emergence::list_signals` / `simulation::list_runs`, so the frontend's
 /// changelog panel needs no new pagination idiom.
+///
+/// `actor`/`event_type`/`from`/`to`/`q` (see `ListLogQuery`'s own field doc
+/// comments for each) are all optional and combine with AND when several
+/// are present at once — a request naming both `actor` and `event_type`
+/// narrows to rows matching both, not either. Critically, `X-Total-Count`
+/// is computed with the SAME filters as the page itself (via the shared
+/// `append_log_filters` helper): the total is "how many rows match this
+/// filtered view," never the unfiltered whole-table count, which would
+/// otherwise make the frontend's "Weitere laden (X / Y)" counter and
+/// load-more-availability check lie the moment any filter narrows the
+/// result set below the true total.
 pub async fn list_log(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListLogQuery>) -> impl IntoResponse {
     if !require_admin(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
@@ -242,16 +326,15 @@ pub async fn list_log(State(state): State<AppState>, headers: HeaderMap, Query(q
     let limit = q.limit.unwrap_or(DEFAULT_LOG_LIMIT).clamp(1, MAX_LOG_LIMIT);
     let offset = q.offset.unwrap_or(0).max(0);
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM audit_log").fetch_one(&state.db).await.unwrap_or(0);
+    let mut count_qb: QueryBuilder<Sqlite> = QueryBuilder::new("SELECT COUNT(*) FROM audit_log");
+    append_log_filters(&mut count_qb, &q);
+    let total: i64 = count_qb.build_query_scalar().fetch_one(&state.db).await.unwrap_or(0);
 
-    let rows: Vec<LogRow> = sqlx::query_as(
-        "SELECT id, actor, event_type, summary, meta, created_at FROM audit_log ORDER BY rowid DESC LIMIT ?1 OFFSET ?2",
-    )
-    .bind(limit)
-    .bind(offset)
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
+    let mut select_qb: QueryBuilder<Sqlite> =
+        QueryBuilder::new("SELECT id, actor, event_type, summary, meta, created_at FROM audit_log");
+    append_log_filters(&mut select_qb, &q);
+    select_qb.push(" ORDER BY rowid DESC LIMIT ").push_bind(limit).push(" OFFSET ").push_bind(offset);
+    let rows: Vec<LogRow> = select_qb.build_query_as().fetch_all(&state.db).await.unwrap_or_default();
 
     let out: Vec<AuditLogOut> = rows
         .into_iter()
@@ -484,6 +567,17 @@ mod tests {
 
     // ── list_log() ─────────────────────────────────────────────────────
 
+    fn empty_log_query() -> ListLogQuery {
+        ListLogQuery { limit: None, offset: None, actor: None, event_type: None, from: None, to: None, q: None }
+    }
+
+    async fn log_body(res: axum::response::Response) -> (Vec<serde_json::Value>, Option<i64>) {
+        let total = res.headers().get("x-total-count").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<i64>().ok());
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
+        (body, total)
+    }
+
     #[tokio::test]
     async fn list_log_reports_total_count_via_header_and_respects_limit() {
         let state = test_state().await;
@@ -491,9 +585,13 @@ mod tests {
             record(&state, "admin", "content_updated", &format!("Eintrag {i}"), None).await;
         }
 
-        let res = list_log(AxState(state.clone()), HeaderMap::new(), AxQuery(ListLogQuery { limit: Some(2), offset: None }))
-            .await
-            .into_response();
+        let res = list_log(
+            AxState(state.clone()),
+            HeaderMap::new(),
+            AxQuery(ListLogQuery { limit: Some(2), ..empty_log_query() }),
+        )
+        .await
+        .into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let total_header = res.headers().get("x-total-count").unwrap().to_str().unwrap().to_string();
         assert_eq!(total_header, "3");
@@ -508,9 +606,193 @@ mod tests {
     async fn list_log_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "s3cret".to_string();
-        let res = list_log(AxState(state), HeaderMap::new(), AxQuery(ListLogQuery { limit: None, offset: None }))
-            .await
-            .into_response();
+        let res = list_log(AxState(state), HeaderMap::new(), AxQuery(empty_log_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn list_log_filters_by_exact_actor() {
+        let state = test_state().await;
+        record(&state, "admin", "content_updated", "von admin", None).await;
+        record(&state, "system", "anomaly_detected", "von system", None).await;
+        record(&state, "stripe", "order_recorded", "von stripe", None).await;
+
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery { actor: Some("system".to_string()), ..empty_log_query() }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1), "X-Total-Count must reflect only the actor-filtered rows");
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["actor"], json!("system"));
+        assert_eq!(body[0]["summary"], json!("von system"));
+    }
+
+    #[tokio::test]
+    async fn list_log_filters_by_exact_event_type() {
+        let state = test_state().await;
+        record(&state, "admin", "content_updated", "eins", None).await;
+        record(&state, "admin", "blog_published", "zwei", None).await;
+        record(&state, "admin", "blog_published", "drei", None).await;
+
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery { event_type: Some("blog_published".to_string()), ..empty_log_query() }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(2));
+        assert_eq!(body.len(), 2);
+        assert!(body.iter().all(|e| e["event_type"] == json!("blog_published")));
+    }
+
+    #[tokio::test]
+    async fn list_log_filters_by_free_text_q_over_summary() {
+        let state = test_state().await;
+        record(&state, "admin", "content_updated", "Startseite aktualisiert", None).await;
+        record(&state, "admin", "blog_published", "Neuer Blogbeitrag veröffentlicht", None).await;
+
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery { q: Some("Blogbeitrag".to_string()), ..empty_log_query() }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1), "free-text q must only match the row whose summary contains the term");
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["summary"], json!("Neuer Blogbeitrag veröffentlicht"));
+    }
+
+    /// `from`/`to` compare directly against the stored RFC3339 `created_at`
+    /// string (see `ListLogQuery::from`'s doc comment for why) — seeds one
+    /// deliberately old row the same way `observatory::list_snapshots_range_
+    /// filter_excludes_older_snapshots` seeds an old fixture, since `record`
+    /// itself always stamps "now" and can't produce an old row on demand.
+    #[tokio::test]
+    async fn list_log_filters_by_from_and_to_date_range() {
+        let state = test_state().await;
+        sqlx::query(
+            "INSERT INTO audit_log (id, actor, event_type, summary, meta, prev_hash, row_hash, created_at) \
+             VALUES (?1, 'admin', 'content_updated', 'alt', NULL, 'genesis', 'irrelevant-old-hash', '2020-01-01T00:00:00.000000Z')",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .execute(&state.db)
+        .await
+        .unwrap();
+        record(&state, "admin", "content_updated", "neu", None).await;
+
+        // `from` alone: excludes the 2020 row.
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery { from: Some("2025-01-01T00:00:00.000000Z".to_string()), ..empty_log_query() }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1));
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["summary"], json!("neu"));
+
+        // `to` alone: excludes the new row, keeps only the 2020 one.
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery { to: Some("2020-12-31T23:59:59.999999Z".to_string()), ..empty_log_query() }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1));
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["summary"], json!("alt"));
+
+        // `from` + `to` together, both far in the past: matches neither row.
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery {
+                    from: Some("2019-01-01T00:00:00.000000Z".to_string()),
+                    to: Some("2019-12-31T23:59:59.999999Z".to_string()),
+                    ..empty_log_query()
+                }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(0));
+        assert_eq!(body.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn list_log_combines_actor_and_event_type_filters_with_and() {
+        let state = test_state().await;
+        record(&state, "admin", "content_updated", "admin+content", None).await;
+        record(&state, "admin", "blog_published", "admin+blog", None).await;
+        record(&state, "system", "content_updated", "system+content", None).await;
+
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery {
+                    actor: Some("admin".to_string()),
+                    event_type: Some("content_updated".to_string()),
+                    ..empty_log_query()
+                }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1), "AND must narrow to only the row matching BOTH filters, not either alone");
+        assert_eq!(body.len(), 1);
+        assert_eq!(body[0]["summary"], json!("admin+content"));
+    }
+
+    /// The exact "off-by-one-in-spirit" bug the plan called out: a naive
+    /// implementation might compute `X-Total-Count` from the whole,
+    /// unfiltered table while still returning a filtered page — this proves
+    /// the header tracks the FILTERED count even when it's smaller than the
+    /// real table size.
+    #[tokio::test]
+    async fn list_log_total_count_header_reflects_filtered_count_not_whole_table() {
+        let state = test_state().await;
+        for i in 0..5 {
+            record(&state, "admin", "content_updated", &format!("Eintrag {i}"), None).await;
+        }
+        record(&state, "system", "anomaly_detected", "der eine Ausreißer", None).await;
+
+        let (body, total) = log_body(
+            list_log(
+                AxState(state.clone()),
+                HeaderMap::new(),
+                AxQuery(ListLogQuery { actor: Some("system".to_string()), ..empty_log_query() }),
+            )
+            .await
+            .into_response(),
+        )
+        .await;
+        assert_eq!(total, Some(1), "must be the filtered count (1), never the unfiltered table total (6)");
+        assert_eq!(body.len(), 1);
     }
 }
