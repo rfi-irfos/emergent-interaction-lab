@@ -38,3 +38,8 @@ Thumbs.db
 # Runtime data (not source)
 backend/contacts.jsonl
 backend/uploads/
+
+# runtime SQLite artifacts (never commit the live DB)
+*.db
+*.sqlite
+*.sqlite3
