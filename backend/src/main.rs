@@ -9,6 +9,7 @@ mod blog;
 mod chat;
 mod contact;
 mod content;
+mod dashboards;
 mod digest;
 mod emergence;
 mod github_activity;
@@ -187,6 +188,10 @@ async fn main() {
     // 4), so it's the natural final entry in this feature-addition order,
     // right after the tracker it partly builds on.
     anomaly::init_schema(&db).await;
+    // Customizable Dashboard system (plan §A2) — see dashboards.rs's own
+    // module doc comment; no dependency on any table above, placed last
+    // simply as the newest addition.
+    dashboards::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -348,6 +353,20 @@ async fn main() {
         // other list endpoint here.
         .route("/api/observatory/audit/verify", get(auditlog::verify))
         .route("/api/observatory/audit/log", get(auditlog::list_log))
+        // Customizable Dashboard system (plan §A2, see dashboards.rs's own
+        // module doc comment): a picker/switcher list, one dashboard's own
+        // widgets nested in a single response (no N+1), and a per-widget
+        // CRUD surface. `PATCH /api/dashboards/widgets/:id` is deliberately
+        // NOT nested under `/api/dashboards/:id/...` — a widget id alone is
+        // enough to address it, and this keeps the drag/resize/pencil-edit
+        // hot path a flat, single-segment-id route.
+        .route("/api/dashboards", get(dashboards::list_dashboards).post(dashboards::create_dashboard))
+        .route("/api/dashboards/:id", get(dashboards::get_dashboard).delete(dashboards::delete_dashboard))
+        .route("/api/dashboards/:id/widgets", post(dashboards::add_widget))
+        .route(
+            "/api/dashboards/widgets/:id",
+            axum::routing::patch(dashboards::update_widget).delete(dashboards::delete_widget),
+        )
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))
