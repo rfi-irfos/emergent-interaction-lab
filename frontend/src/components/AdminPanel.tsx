@@ -5,7 +5,6 @@ import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { AgentDock } from './AgentDock'
-import { AuditChangelog } from './AuditChangelog'
 import { useAdminFetch } from '../lib/adminApi'
 import { OBSERVATORY_MODULES, SECTION_LABELS, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
 import { Analytics } from './observatory/Analytics'
@@ -281,10 +280,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               {!sidebarCollapsed && 'Changelog'}
             </button>
           </nav>
-          {/* Fixed footer, NOT inside <nav> — a separate flex sibling so it
-              never scrolls away with the nav list above it (see App.css's
-              .crm-audit-panel doc comment). */}
-          <AuditChangelog collapsed={sidebarCollapsed} />
         </aside>
 
         <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>

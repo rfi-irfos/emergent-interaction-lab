@@ -19,11 +19,27 @@ const NODES = [
   { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
 ]
 
-const CX = 300, CY = 230, R = 168
+const CX = 500, CY = 420, R = 300
 
 // Module-level constant so it's referentially stable across renders — the
-// pan/zoom hook uses it as a dependency and doesn't deep-compare.
-const BASE_VIEWBOX: ViewBox = { x: 0, y: 0, w: 600, h: 460 }
+// pan/zoom hook uses it as a dependency and doesn't deep-compare. Sized to a
+// wide canvas so the organism spreads edge-to-edge instead of sitting in a
+// 640px stamp in the middle of the screen.
+const BASE_VIEWBOX: ViewBox = { x: 0, y: 0, w: 1000, h: 840 }
+
+// Age-decay in [0,1]: a fresh record → 1 (bright, long trail), an old one →
+// toward 0 (faint, evaporated), like an ant's pheromone path fading. Half-life
+// ~7 days so a week-old trail is at half strength — matches the mostly-7d
+// windows the backing endpoints report on. Unparseable/missing dates fall back
+// to mid strength rather than vanishing.
+function ageDecay(createdAt: string): number {
+  const t = Date.parse(createdAt)
+  if (Number.isNaN(t)) return 0.5
+  const ageMs = Date.now() - t
+  if (ageMs <= 0) return 1
+  const halfLifeMs = 7 * 24 * 60 * 60 * 1000
+  return Math.max(0.12, Math.pow(0.5, ageMs / halfLifeMs))
+}
 
 // Deterministic pseudo-random in [0,1) — stable satellite placement across
 // re-renders (a real Math.random() would make the mycelium jitter every
@@ -64,11 +80,18 @@ function useTypewriter(text: string, active: boolean) {
 // backend actually found, capped at 5, same visual budget as before. If a
 // category has fewer real items than that cap, fewer satellites render —
 // that gap is honest, not a bug.
+//
+// Rendered as a pheromone TRAIL, not a lone dot: `createdAt` drives age-decay
+// (older = fainter/shorter, like an ant trail evaporating) and `confidence`
+// (0..1) drives trail thickness + head glow. confidence is null where no real
+// strength signal exists (a raw message has none) — those trails render at a
+// neutral weight rather than a fabricated one.
 interface SatelliteItem {
   id: string
   label: string
   createdAt: string
   conversationId: string | null
+  confidence: number | null
 }
 
 const ORGANIZATION_KIND_LABELS: Record<string, string> = {
@@ -84,6 +107,7 @@ function buildHumanSatellites(humanAi: any): SatelliteItem[] {
     label: `Nutzer-Nachricht: „${m.excerpt}“`,
     createdAt: m.created_at,
     conversationId: m.conversation_id ?? null,
+    confidence: null, // a raw human message carries no strength signal
   }))
 }
 
@@ -98,6 +122,7 @@ function buildAiSatellites(aiActivity: any): SatelliteItem[] {
         label: `Werkzeugaufruf: ${toolLabel}${failed ? ' (Fehler)' : ''}`,
         createdAt: item.created_at,
         conversationId: item.conversation_id ?? null,
+        confidence: failed ? 0.2 : 1, // a failed call is a weak/broken trail
       }
     }
     return {
@@ -105,6 +130,7 @@ function buildAiSatellites(aiActivity: any): SatelliteItem[] {
       label: `Antwort von Jarvis: „${item.label}“`,
       createdAt: item.created_at,
       conversationId: item.conversation_id ?? null,
+      confidence: typeof item.confidence === 'number' ? item.confidence : null,
     }
   })
 }
@@ -116,6 +142,7 @@ function buildOrganizationSatellites(organization: any): SatelliteItem[] {
     label: `${ORGANIZATION_KIND_LABELS[item.kind] ?? item.kind}: „${item.title}“`,
     createdAt: item.created_at,
     conversationId: item.conversation_id ?? null,
+    confidence: null,
   }))
 }
 
@@ -126,6 +153,7 @@ function buildTechnologySatellites(information: any): SatelliteItem[] {
     label: `Dokument hochgeladen: „${d.filename}“`,
     createdAt: d.created_at,
     conversationId: null,
+    confidence: null,
   }))
 }
 
@@ -138,6 +166,9 @@ function buildInformationSatellites(information: any): SatelliteItem[] {
       label: `Retrieval-Anfrage: „${r.query_text}“ — ${hits}`,
       createdAt: r.created_at,
       conversationId: r.conversation_id ?? null,
+      // Retrieval carries a genuine strength signal: the top similarity score
+      // (0..1). A knowledge gap is the weakest possible trail.
+      confidence: r.is_gap ? 0.05 : Math.max(0, Math.min(1, Number(r.top_score) || 0)),
     }
   })
 }
@@ -241,10 +272,12 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   const hoveredSatellitePos = (() => {
     if (!hoveredSatellite || !hoveredSatelliteNode) return null
     const pi = positions.findIndex(p => p.id === hoveredSatellite.nodeId)
-    const si = (satellites[hoveredSatellite.nodeId] ?? []).findIndex(s => s.id === hoveredSatellite.itemId)
+    const items = satellites[hoveredSatellite.nodeId] ?? []
+    const si = items.findIndex(s => s.id === hoveredSatellite.itemId)
     if (pi < 0 || si < 0) return null
-    const a = hoveredSatelliteNode.angle + (hash(pi * 13 + si) - 0.5) * 1.8
-    const dist = 44 + hash(pi * 29 + si) * 26
+    const decay = ageDecay(items[si].createdAt)
+    const a = hoveredSatelliteNode.angle + (hash(pi * 13 + si) - 0.5) * 1.5
+    const dist = 46 + decay * 96 + hash(pi * 29 + si) * 20
     return { x: hoveredSatelliteNode.x + Math.cos(a) * dist, y: hoveredSatelliteNode.y + Math.sin(a) * dist }
   })()
 
@@ -261,7 +294,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
             thing" and "this is what it means" doesn't require guessing. */}
         <div className="mycelium-legend">
           <span className="mycelium-legend-title">Was zeigt dieses Netzwerk?</span>
-          <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem; Kantenstärke = relative Aktivität. Klicken für Details.</span>
+          <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem; Kantenstärke = relative Aktivität. Die Ausläufer sind Pheromon-Spuren echter Einzelereignisse — Länge/Helligkeit = Alter (frisch → lang & hell, alt → verblasst), Dicke/Leuchten = Konfidenz. Knoten oder Spur anklicken für Details.</span>
           <div className="mycelium-legend-items">
             {NODES.map(n => (
               <span key={n.id} className="mycelium-legend-item">
@@ -284,7 +317,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           ref={svgRef}
           viewBox={viewBoxStr}
           style={{
-            width: '100%', maxWidth: 640, display: 'block', margin: '0 auto',
+            width: '100%', height: '100%', minHeight: '78vh', display: 'block', margin: '0 auto',
             cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none',
           }}
           onPointerDown={onPointerDown}
@@ -302,6 +335,23 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           </defs>
 
           <g key={layoutKey}>
+            {/* Inter-node web — faint threads between neighbouring nodes so the
+                five subsystems read as one connected organism rather than five
+                isolated spokes off a hub. Purely structural (not data-weighted):
+                a resting mycelial lattice the live edges pulse over. */}
+            {positions.map((p, pi) => {
+              const q = positions[(pi + 1) % positions.length]
+              const mx = (p.x + q.x) / 2 + (CX - (p.x + q.x) / 2) * 0.22
+              const my = (p.y + q.y) / 2 + (CY - (p.y + q.y) / 2) * 0.22
+              return (
+                <path
+                  key={`web-${p.id}`}
+                  d={`M ${p.x} ${p.y} Q ${mx} ${my} ${q.x} ${q.y}`}
+                  fill="none" stroke="rgba(148,197,214,.16)" strokeWidth={1} strokeDasharray="2 7"
+                />
+              )
+            })}
+
             {positions.map((p, pi) => {
               const weight = counts[p.id] ?? 0
               const w = 1 + (weight / maxCount) * 4
@@ -319,16 +369,31 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
                       <mpath href={`#obs-map-path-${p.id}`} />
                     </animateMotion>
                   </circle>
-                  {/* Budding satellites — the "growing mycelium" itself: one per
-                      real recent record this node actually has, up to 5. No
-                      padding when fewer than 5 exist — an honest gap beats a
-                      fabricated one. Each is independently clickable now. */}
+                  {/* Pheromone trails — the "growing organism" itself: one per
+                      real recent record this node actually has, up to 5. Each
+                      trail is a curved path fading from the node outward; its
+                      LENGTH + OPACITY encode age (fresh = long/bright, old =
+                      short/evaporated) and its THICKNESS + head-glow encode
+                      confidence (retrieval score / tool success), so the map
+                      reads like ant trails laid down over time, not scattered
+                      dots. No padding when fewer than 5 exist — an honest gap
+                      beats a fabricated one. Each trail-head is clickable. */}
                   {items.map((item, si) => {
-                    const a = p.angle + (hash(pi * 13 + si) - 0.5) * 1.8
-                    const dist = 44 + hash(pi * 29 + si) * 26
+                    const decay = ageDecay(item.createdAt)
+                    // confidence null → neutral 0.5 weight (no fabricated strength)
+                    const conf = item.confidence ?? 0.5
+                    const a = p.angle + (hash(pi * 13 + si) - 0.5) * 1.5
+                    // Trail length grows with freshness; old trails pull back in.
+                    const dist = 46 + decay * 96 + hash(pi * 29 + si) * 20
                     const sx = p.x + Math.cos(a) * dist
                     const sy = p.y + Math.sin(a) * dist
+                    // Bowed control point so the trail curves like a real path.
+                    const cxp = p.x + Math.cos(a) * dist * 0.55 + Math.sin(a) * 18 * (hash(si) - 0.5)
+                    const cyp = p.y + Math.sin(a) * dist * 0.55 - Math.cos(a) * 18 * (hash(si) - 0.5)
                     const isActive = expandedSatellite?.nodeId === p.id && expandedSatellite.itemId === item.id
+                    const trailW = (isActive ? 3.5 : 1.2) + conf * 3.2
+                    const headR = (isActive ? 8 : 5) + conf * 3
+                    const trailOp = isActive ? 0.95 : 0.22 + decay * 0.5
                     return (
                       <g
                         key={item.id}
@@ -341,8 +406,15 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
                         onMouseEnter={() => setHoveredSatellite({ nodeId: p.id, itemId: item.id })}
                         onMouseLeave={() => setHoveredSatellite(cur => (cur?.itemId === item.id ? null : cur))}
                       >
-                        <line x1={p.x} y1={p.y} x2={sx} y2={sy} stroke={p.accent} strokeWidth={isActive ? 2 : 1} opacity={isActive ? 0.8 : 0.35} />
-                        <circle className="mycelium-satellite-dot" cx={sx} cy={sy} r={isActive ? 6 : 3 + hash(si * 7) * 2} fill={p.accent} opacity={isActive ? 1 : 0.75} />
+                        {/* soft under-glow trail (confidence halo) */}
+                        <path d={`M ${p.x} ${p.y} Q ${cxp} ${cyp} ${sx} ${sy}`} fill="none" stroke={p.accent} strokeWidth={trailW + 5} opacity={trailOp * 0.3} strokeLinecap="round" style={{ filter: 'blur(3px)' }} />
+                        {/* main pheromone trail */}
+                        <path d={`M ${p.x} ${p.y} Q ${cxp} ${cyp} ${sx} ${sy}`} fill="none" stroke={p.accent} strokeWidth={trailW} opacity={trailOp} strokeLinecap="round" />
+                        {/* generous invisible hit target so heads are easy to click */}
+                        <circle cx={sx} cy={sy} r={16} fill="transparent" />
+                        {/* confidence-glow ring on the head */}
+                        <circle cx={sx} cy={sy} r={headR + 4} fill={p.accent} opacity={(isActive ? 0.5 : 0.12) + conf * 0.18} style={{ filter: 'blur(2px)' }} />
+                        <circle className="mycelium-satellite-dot" cx={sx} cy={sy} r={headR} fill={p.accent} opacity={isActive ? 1 : 0.55 + decay * 0.4} stroke="#0a0f16" strokeWidth={isActive ? 1.5 : 0.8} />
                       </g>
                     )
                   })}

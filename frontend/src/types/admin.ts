@@ -17,6 +17,13 @@ export type AdminSection =
   // observable about Laura's own work — see registry.tsx's own placement
   // comment for the full reasoning.
   | 'anomalies'
+  // Forschungspipeline — the 5-stage research methodik (Interaction
+  // Observation → Behavior Analysis → Framework Extraction → Emergent
+  // System Design → Implementation/Handover). A single orchestrating
+  // overview that walks the pipeline with live data wired into each stage
+  // and deep-links into the module that owns the detail. Not a 6th tier —
+  // it sits beside the other top-level apps.
+  | 'forschungspipeline'
   // Changelog — the full, standalone hash-chained audit_log surface (see
   // backend/src/auditlog.rs + components/observatory/Changelog.tsx).
   // Verwaltung-tier, same category as Analytics/Monetarisierung/the

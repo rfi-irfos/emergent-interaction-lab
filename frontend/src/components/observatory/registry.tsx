@@ -127,5 +127,6 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   gesamtuebersicht: 'Gesamtübersicht',
   denkfragmente: 'Denkfragmente',
   anomalies: 'Anomalie-Log',
+  forschungspipeline: 'Forschungspipeline',
   changelog: 'Changelog',
 }
