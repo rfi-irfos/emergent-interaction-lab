@@ -73,6 +73,18 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Additive: second-language product copy. The public storefront
+    // (WebHubPricing.tsx) is bilingual (en/de) and its UI chrome already
+    // flips with the language toggle, but product descriptions lived only in
+    // `description` (always German in the seed). This column carries the
+    // other language so a switched-to-English visitor sees English tiers
+    // instead of German ones. Frontend falls back to `description` when a
+    // row has no `description_de` (pre-existing / admin-created rows).
+    sqlx::query("ALTER TABLE products ADD COLUMN description_de TEXT")
+        .execute(db)
+        .await
+        .ok();
+
     // Real sales/orders visibility: previously a completed Stripe purchase
     // left zero trace anywhere in this system — payment links existed, but
     // nothing ever recorded that one had actually been paid. This table is
@@ -114,108 +126,268 @@ pub async fn init_schema(db: &SqlitePool) {
         .ok();
 }
 
-/// One-time seed for the real WebHub service ladder — Laura's own product
-/// definition and pricing, with real Stripe Payment Links she created
-/// directly in the Stripe dashboard (handed over 2026-07-12, not minted by
-/// this app's own create_payment_link flow, which is why payment_link_url
-/// is set directly here instead of through that endpoint). Idempotent by
-/// name: runs on every startup, but only inserts a row the first time each
-/// product name is missing, so re-deploys never duplicate these or clobber
-/// anything an admin has since edited (price, description, link) through
-/// the Monetization panel.
+/// Canonical, Laura-approved WebHub + Systemaudit product ladder — the 22
+/// definitive tiers (8 WebHub + 14 Systemaudit) handed over 2026-07-13 with
+/// final prices and Stripe Payment Links. Runs on every startup as a FULL
+/// RESET: it deletes the entire previous `service`-category ladder and
+/// re-inserts these canonical rows (each with its real `payment_link_url`
+/// baked in via `default_link`), so the public storefront
+/// (WebHubPricing.tsx / list_public_products) and the Verwaltung
+/// Monetization panel show exactly this set, correctly priced and linked,
+/// with no manual panel pasting. Certification products (category NULL ->
+/// 'certification') are deliberately untouched.
+///
+/// Because every row is re-inserted with a fresh UUID, any order from a
+/// previous ladder (keyed to an old product_id) can't be re-resolved to a
+/// current product after a reset — it renders as "Unbekanntes Produkt" in the
+/// orders view (see list_orders / stripe_webhook). No order is lost; the
+/// link-back by name is just broken by the reset. Edit this seed, not a
+/// panel row, to change a tier permanently — the reset reasserts it on the
+/// next restart.
 ///
 /// Deliberately NOT called from `init_schema` — every test in this file
 /// spins up its own throwaway db via `init_schema` for pure schema setup,
-/// and pulling this seed in there would silently add 7 real product rows to
-/// every test's product list (see the test this broke:
-/// `public_products_excludes_drafts_and_hides_stripe_ids`, which asserts an
-/// exact public-product count). Call this once, separately, from the real
+/// and pulling this seed in there would silently add real product rows to
+/// every test's product list. Call this once, separately, from the real
 /// app's own startup path in main.rs, after `billing::init_schema`.
 pub async fn seed_webhub_products(db: &SqlitePool) {
+    // FULL RESET: drop the entire previous `service`-category ladder. Any
+    // lingering old tier (incl. renamed/retired ones like "Design", "Build",
+    // "Lizenz", "Betreuung", "Agentenbetrieb", "Monitoring", "Update",
+    // "Review") is removed so the new canonical set below is the ONLY thing
+    // that shows up on the public storefront + Monetization panel. Orders
+    // keyed to a deleted product_id simply stop resolving to a name — they
+    // are not deleted. (Certification products have category NULL/'certification'
+    // and are never touched here.)
+    let _ = sqlx::query("DELETE FROM products WHERE category = 'service'")
+        .execute(db)
+        .await;
+
     struct Seed {
         name: &'static str,
-        description: &'static str,
+        en_desc: &'static str,
+        de_desc: &'static str,
         price_cents: i64,
         mode: &'static str,
         recurring_interval: Option<&'static str>,
+        /// Real Stripe Payment Link — baked in on (re)insert so the tier is
+        /// immediately live on the public site, no manual panel pasting.
         payment_link_url: &'static str,
     }
     let seeds = [
-        Seed {
-            name: "Emergent Case Intelligence Sprint",
-            description: "Das Kernangebot: ein komplexer Fall, eine Dokumentation, Akteneinsicht oder ein Interaktionsverlauf wird rekonstruiert - was der Fall wirklich ist, welche Mängel, Widersprüche und Lücken sichtbar sind, welche Themenbereiche vorliegen und welche Logik sich daraus für Framework- und Agentenarchitektur ableiten lässt.",
-            price_cents: 79_000,
-            mode: "payment",
-            recurring_interval: None,
-            payment_link_url: "https://buy.stripe.com/dRmaEZ7SMbU30DH2367N60b",
-        },
+        // ── WebHub service ladder (definitive 2026-07-13) ─────────────
         Seed {
             name: "Case Intake Scan",
-            description: "Erster strukturierter Einstieg in einen Fall oder ein Projekt - schnelle Einordnung ohne Overhead: Fallbeschreibung, grobe Themenzuordnung, erste Mängelhinweise, offene Fragen, Prioritäten für die nächste Stufe.",
-            price_cents: 14_900,
+            en_desc: "The first structured entry into a case or project — quick orientation without overhead: case description, rough thematic assignment, first defect hints, open questions, priorities for the next stage.",
+            de_desc: "Erster strukturierter Einstieg in einen Fall oder ein Projekt - schnelle Einordnung ohne Overhead: Fallbeschreibung, grobe Themenzuordnung, erste Mängelhinweise, offene Fragen, Prioritäten für die nächste Stufe.",
+            price_cents: 70_000,
             mode: "payment",
             recurring_interval: None,
-            payment_link_url: "https://buy.stripe.com/bJecN72ys4rB9adbDG7N60c",
+            payment_link_url: "https://buy.stripe.com/9B6dRbdd6bU3euxazC7N60i",
         },
         Seed {
             name: "Mangelcluster Sprint",
-            description: "Aus Rohmaterial eine saubere Mängel- und Themenstruktur: Mängelliste, Themenbereiche, Widersprüche, Lücken, Priorisierung, nächste Schritte.",
-            price_cents: 49_000,
+            en_desc: "Turning raw material into a clean defect and theme structure: defect list, theme areas, contradictions, gaps, prioritisation, next steps.",
+            de_desc: "Aus Rohmaterial eine saubere Mängel- und Themenstruktur: Mängelliste, Themenbereiche, Widersprüche, Lücken, Priorisierung, nächste Schritte.",
+            price_cents: 220_000,
             mode: "payment",
             recurring_interval: None,
-            payment_link_url: "https://buy.stripe.com/bJe7sNa0U5vF3PT37a7N60d",
+            payment_link_url: "https://buy.stripe.com/bJefZjc92aPZ869bDG7N60j",
+        },
+        Seed {
+            name: "Market & Competitor Intelligence",
+            en_desc: "The same observational-analysis method turned outward: who else operates in this space, how they're positioned and priced, where the real gaps and openings are — a structured, evidence-based read of the actual competitive field, not a generic market report.",
+            de_desc: "Dieselbe beobachtende Analysemethode nach außen gerichtet: wer sonst in diesem Feld agiert, wie positioniert und bepreist ist, wo die echten Lücken und Chancen liegen - eine strukturierte, evidenzbasierte Lesart des tatsächlichen Wettbewerbsfelds, kein generischer Marktbericht.",
+            price_cents: 650_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/cNi3cxb4Y3nx9ad37a7N60k",
         },
         Seed {
             name: "Framework Magnification",
-            description: "Aus dem Fall die zugrundeliegenden Prinzipien ableiten: Frameworks, Begriffe, Regeln, Entscheidungslogik, Systemprinzipien.",
-            price_cents: 129_000,
+            en_desc: "Deriving the underlying principles from the case: frameworks, terms, rules, decision logic, system principles.",
+            de_desc: "Aus dem Fall die zugrundeliegenden Prinzipien ableiten: Frameworks, Begriffe, Regeln, Entscheidungslogik, Systemprinzipien.",
+            price_cents: 750_000,
             mode: "payment",
             recurring_interval: None,
-            payment_link_url: "https://buy.stripe.com/6oUfZj5KE7DN5Y18ru7N60e",
+            payment_link_url: "https://buy.stripe.com/9B600l8WQf6fgCF0Z27N60l",
+        },
+        Seed {
+            name: "Emergent Case Intelligence Sprint",
+            en_desc: "The core offer. A complex case, a set of documents, case-file access, or a conversation history is reconstructed into what it actually is — the defects, contradictions and gaps that are visible, the theme areas present, and the logic a framework or agent architecture gets built from. Not a vibe check. Structure.",
+            de_desc: "Das Kernangebot: ein komplexer Fall, eine Dokumentation, Akteneinsicht oder ein Interaktionsverlauf wird rekonstruiert - was der Fall wirklich ist, welche Mängel, Widersprüche und Lücken sichtbar sind, welche Themenbereiche vorliegen und welche Logik sich daraus für Framework- und Agentenarchitektur ableiten lässt.",
+            price_cents: 1_250_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/bJe9AVc927DNdqtePS7N60m",
         },
         Seed {
             name: "Multi-Agent System Design",
-            description: "Die Fall-Logik in ein Agentensystem übersetzen: Rollenmodell, Agentenaufgaben, Runtime-Logik, State und Memory, Audit und Drift, Monitoring, Kontrollmechanismen.",
-            price_cents: 250_000,
+            en_desc: "Translating the case logic into an agent system: role model, agent tasks, runtime logic, state and memory, audit and drift, monitoring, control mechanisms — with explicit safety and alignment mechanisms.",
+            de_desc: "Die Fall-Logik in ein Agentensystem übersetzen: Rollenmodell, Agentenaufgaben, Runtime-Logik, State und Memory, Audit und Drift, Monitoring, Kontrollmechanismen - mit expliziten Sicherheits- und Ausrichtungsmechanismen.",
+            price_cents: 2_450_000,
             mode: "payment",
             recurring_interval: None,
-            payment_link_url: "https://buy.stripe.com/9B6eVfc924rBcmp2367N60f",
+            payment_link_url: "https://buy.stripe.com/00w3cxc92bU30DH2367N60n",
         },
         Seed {
             name: "Implementation Build",
-            description: "Die Architektur praktisch aufsetzen: Automationen, Workflows, Intake, Routing, Analysepipeline, Delivery, Monitoring, Follow-up.",
-            price_cents: 490_000,
+            en_desc: "Setting up the architecture in practice: automations, workflows, intake, routing, analysis pipeline, delivery, monitoring, follow-up.",
+            de_desc: "Die Architektur praktisch aufsetzen: Automationen, Workflows, Intake, Routing, Analysepipeline, Delivery, Monitoring, Follow-up.",
+            price_cents: 3_500_000,
             mode: "payment",
             recurring_interval: None,
-            payment_link_url: "https://buy.stripe.com/aFabJ3eha0bl5Y18ru7N60g",
+            payment_link_url: "https://buy.stripe.com/7sY6oJdd60blfyB9vy7N60o",
         },
         Seed {
             name: "Retainer / Monitoring",
-            description: "Laufende Pflege, Auswertung und Erweiterung: neue Fälle, Review, Drift-Checks, Framework-Updates, Systemanpassungen, laufende Kontrolle.",
-            price_cents: 120_000,
+            en_desc: "Ongoing care, evaluation and extension: new cases, review, drift checks, framework updates, system adjustments, continuous control.",
+            de_desc: "Laufende Pflege, Auswertung und Erweiterung: neue Fälle, Review, Drift-Checks, Framework-Updates, Systemanpassungen, laufende Kontrolle.",
+            price_cents: 270_000,
             mode: "subscription",
             recurring_interval: Some("month"),
-            payment_link_url: "https://buy.stripe.com/fZuaEZeha5vF5Y18ru7N60h",
+            payment_link_url: "https://buy.stripe.com/aFa9AVb4YcY7fyB2367N60p",
+        },
+        Seed {
+            name: "Framework Update",
+            en_desc: "One-off update of frameworks, check routines and agent logic.",
+            de_desc: "Einmaliges Update der Frameworks, Prüfroutinen und Agentenlogik.",
+            price_cents: 110_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/4gM00lgpi9LV5Y19vy7N60q",
+        },
+        // ── Systemaudit ladder (definitive 2026-07-13) ────────────────
+        Seed {
+            name: "Systemaudit",
+            en_desc: "I examine how a system actually behaves in real use: diagnosis of system, organisation, process, product and interaction, plus an agent and automation model.",
+            de_desc: "Ich prüfe, wie ein System sich in der echten Nutzung verhält: Diagnose von System, Organisation, Prozess, Produkt und Interaktion plus ein Agenten- und Automatisierungsmodell.",
+            price_cents: 450_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/14AdRbgpi1fpdqt6jm7N60r",
+        },
+        Seed {
+            name: "Rollenreview",
+            en_desc: "Review of roles and responsibilities in the system.",
+            de_desc: "Prüfung der Rollen und Zuständigkeiten im System.",
+            price_cents: 300_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/7sY7sN2ysf6fdqt4be7N60s",
+        },
+        Seed {
+            name: "Prozessreview",
+            en_desc: "Review of processes for stability, transitions and decisiveness.",
+            de_desc: "Prüfung der Prozesse auf Stabilität, Übergänge und Entscheidbarkeit.",
+            price_cents: 450_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/4gMbJ3a0U3nxdqt8ru7N60t",
+        },
+        Seed {
+            name: "Root Level Review",
+            en_desc: "Root-level review of the system's foundations: the deepest structural, organisational and interaction layers, and where they load-bear or fail.",
+            de_desc: "Root-Level-Prüfung der Grundlagen des Systems: die tiefsten strukturellen, organisationellen und Interaktionsschichten und wo sie tragen oder versagen.",
+            price_cents: 550_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/fZu14p3Cwe2b869ePS7N60u",
+        },
+        Seed {
+            name: "Schnittstellenreview",
+            en_desc: "Review of the interfaces between system parts and the organisation.",
+            de_desc: "Prüfung der Schnittstellen zwischen Systemteilen und Organisation.",
+            price_cents: 450_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/7sY00lc92aPZ1HL0Z27N60v",
+        },
+        Seed {
+            name: "Betriebsreview",
+            en_desc: "Review of the operating model for viability and monitorability.",
+            de_desc: "Prüfung des Betriebsmodells auf Tragfähigkeit und Überwachbarkeit.",
+            price_cents: 500_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/aFabJ37SM1fp9adfTW7N60w",
+        },
+        Seed {
+            name: "Organisationsreview",
+            en_desc: "Review of the organisation: roles, responsibilities, interfaces, handovers.",
+            de_desc: "Prüfung der Organisation: Rollen, Zuständigkeiten, Schnittstellen, Übergaben.",
+            price_cents: 550_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/fZu3cx6OI8HRbil5fi7N60x",
+        },
+        Seed {
+            name: "Produktreview",
+            en_desc: "Review of the product for usage logic, friction points and correction needs.",
+            de_desc: "Prüfung des Produkts auf Nutzungslogik, Stolperstellen und Korrekturbedarf.",
+            price_cents: 550_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/dRm28tdd6gaj3PTcHK7N60y",
+        },
+        Seed {
+            name: "Framework Design from Analysis",
+            en_desc: "Translating the diagnosis into a concrete design: agent roles, check rules, control logic, interfaces — with safety and alignment built in.",
+            de_desc: "Übersetzung der Diagnose in ein konkretes Design: Agentenrollen, Prüfregeln, Kontrolllogik, Schnittstellen - mit eingebauter Sicherheit und Ausrichtung.",
+            price_cents: 1_950_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/6oU7sN3CwaPZ7256jm7N60z",
+        },
+        Seed {
+            name: "System Design & Deployment",
+            en_desc: "Practical build of the designed system: infrastructure, agent logic, monitoring, interfaces.",
+            de_desc: "Praktischer Aufbau des entworfenen Systems: Infrastruktur, Agentenlogik, Monitoring, Schnittstellen.",
+            price_cents: 5_500_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "https://buy.stripe.com/dRm9AVgpi7DNdqt37a7N60A",
+        },
+        Seed {
+            name: "Watchtower Retainment",
+            en_desc: "Monthly usage licence for the system, its agents and the automated check routines — ongoing care and further development of the system.",
+            de_desc: "Laufende Nutzungslizenz pro Monat für das System, die Agenten und die automatisierten Prüfroutinen - laufende Betreuung und Weiterentwicklung des Systems.",
+            price_cents: 300_000,
+            mode: "subscription",
+            recurring_interval: Some("month"),
+            payment_link_url: "https://buy.stripe.com/aFa28t1uogaj9ad6jm7N60B",
+        },
+        Seed {
+            name: "Multiagent System Coordination",
+            en_desc: "Continuous automated monitoring and evaluation of the system; operation of the agent family per running month.",
+            de_desc: "Laufende automatische Überwachung und Auswertung des Systems; Betrieb der Agentenfamilie im laufenden Monat.",
+            price_cents: 350_000,
+            mode: "subscription",
+            recurring_interval: Some("month"),
+            payment_link_url: "https://buy.stripe.com/3cI7sN4GA4rB5Y16jm7N60C",
+        },
+        Seed {
+            name: "Further Development",
+            en_desc: "Monthly care and further development of the system.",
+            de_desc: "Monatliche Betreuung und Weiterentwicklung des Systems.",
+            price_cents: 550_000,
+            mode: "subscription",
+            recurring_interval: Some("month"),
+            payment_link_url: "https://buy.stripe.com/8x28wRc925vFdqtcHK7N60D",
         },
     ];
 
     for s in seeds {
-        let exists: Option<String> = sqlx::query_scalar("SELECT id FROM products WHERE name = ?1")
-            .bind(s.name)
-            .fetch_optional(db)
-            .await
-            .unwrap_or(None);
-        if exists.is_some() {
-            continue;
-        }
         let id = Uuid::new_v4().to_string();
         let _ = sqlx::query(
-            "INSERT INTO products (id, name, description, price_cents, currency, mode, recurring_interval, category, payment_link_url) \
-             VALUES (?1,?2,?3,?4,'eur',?5,?6,'service',?7)",
+            "INSERT INTO products (id, name, description, description_de, price_cents, currency, \
+             mode, recurring_interval, category, payment_link_url) \
+             VALUES (?1,?2,?3,?4,?5,'eur',?6,?7,'service',?8)",
         )
         .bind(&id)
         .bind(s.name)
-        .bind(s.description)
+        .bind(s.en_desc)
+        .bind(s.de_desc)
         .bind(s.price_cents)
         .bind(s.mode)
         .bind(s.recurring_interval)
@@ -250,8 +422,8 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
     if !require_admin(&state, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    let rows: Vec<(String, String, String, i64, String, String, Option<String>, Option<String>, Option<String>, Option<String>, String, Option<String>)> = sqlx::query_as(
-        "SELECT id, name, description, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at, category FROM products ORDER BY created_at DESC",
+    let rows: Vec<(String, String, String, String, i64, String, String, Option<String>, Option<String>, Option<String>, Option<String>, String, Option<String>)> = sqlx::query_as(
+        "SELECT id, name, description, description_de, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at, category FROM products ORDER BY created_at DESC",
     )
     .fetch_all(&state.db)
     .await
@@ -259,11 +431,12 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
 
     Json(
         rows.into_iter()
-            .map(|(id, name, description, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at, category)| {
+            .map(|(id, name, description, description_de, price_cents, currency, mode, recurring_interval, stripe_product_id, stripe_price_id, payment_link_url, created_at, category)| {
                 json!({
                     "id": id,
                     "name": name,
                     "description": description,
+                    "description_de": description_de,
                     "price_cents": price_cents,
                     "currency": currency,
                     "mode": mode,
@@ -287,8 +460,8 @@ pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) ->
 /// public site, and the Stripe product/price IDs are internal bookkeeping
 /// with no reason to be exposed to a visitor's browser.
 pub async fn list_public_products(State(state): State<AppState>) -> impl IntoResponse {
-    let rows: Vec<(String, String, i64, String, String, Option<String>, String, Option<String>)> = sqlx::query_as(
-        "SELECT name, description, price_cents, currency, mode, recurring_interval, payment_link_url, category \
+    let rows: Vec<(String, String, String, i64, String, String, Option<String>, String, Option<String>)> = sqlx::query_as(
+        "SELECT name, description, description_de, price_cents, currency, mode, recurring_interval, payment_link_url, category \
          FROM products WHERE payment_link_url IS NOT NULL ORDER BY created_at DESC",
     )
     .fetch_all(&state.db)
@@ -297,10 +470,11 @@ pub async fn list_public_products(State(state): State<AppState>) -> impl IntoRes
 
     Json(
         rows.into_iter()
-            .map(|(name, description, price_cents, currency, mode, recurring_interval, payment_link_url, category)| {
+            .map(|(name, description, description_de, price_cents, currency, mode, recurring_interval, payment_link_url, category)| {
                 json!({
                     "name": name,
                     "description": description,
+                    "description_de": description_de,
                     "price_cents": price_cents,
                     "currency": currency,
                     "mode": mode,

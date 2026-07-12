@@ -14,6 +14,7 @@ import { useLang } from '../hooks/useLang'
 interface PublicProduct {
   name: string
   description: string
+  description_de: string | null
   price_cents: number
   currency: string
   mode: string
@@ -93,11 +94,13 @@ export function WebHubPricing() {
 
       {products !== null && products.length > 0 && (
         <div className="site-webhub-grid">
-          {products.map((p, i) => (
+          {products.map((p, i) => {
+            const desc = lang === 'de' ? (p.description_de || p.description) : p.description
+            return (
             <div key={i} className={`site-webhub-card${p.name === FLAGSHIP_NAME ? ' flagship' : ''}`}>
               {p.name === FLAGSHIP_NAME && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
               <h3>{p.name}</h3>
-              {p.description && <p className="site-webhub-desc">{p.description}</p>}
+              {desc && <p className="site-webhub-desc">{desc}</p>}
               <div className="site-webhub-foot">
                 <div className="site-webhub-price">
                   {formatPrice(p.price_cents, p.currency, lang)}
@@ -108,7 +111,7 @@ export function WebHubPricing() {
                 </a>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </section>
