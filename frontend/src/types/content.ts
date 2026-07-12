@@ -74,6 +74,14 @@ export interface CertificateItem {
   file: string
 }
 
+export interface PaperItem {
+  id: string
+  title: string
+  description: string
+  doi?: string    // full https://doi.org/... URL; omitted while a DOI isn't yet assigned
+  file: string     // local static asset path, e.g. /papers/paper-1-osf-preprint.pdf
+}
+
 export type SectionId = 'trust' | 'categories' | 'products' | 'usp' | 'news' | 'location'
 export const DEFAULT_SECTION_ORDER: SectionId[] = ['trust', 'categories', 'products', 'usp', 'news', 'location']
 
@@ -162,6 +170,7 @@ export interface SiteContent {
   jarvis?: {
     title: string
     body: string
+    nextBadge?: string
   }
   protocol?: {
     eyebrow?: string
@@ -173,5 +182,10 @@ export interface SiteContent {
   certificates?: {
     title?: string
     items: CertificateItem[]
+  }
+  papers?: {
+    title?: string
+    intro?: string
+    items: PaperItem[]
   }
 }

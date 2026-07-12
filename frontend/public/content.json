@@ -40,6 +40,10 @@
         "href": "#p/research"
       },
       {
+        "label": "Papers",
+        "href": "#papers"
+      },
+      {
         "label": "Pricing",
         "href": "#webhub-pricing"
       },
@@ -82,13 +86,14 @@
     "bio": "Laura Serna Gaviria works the same way in every field: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That discipline, not any single framework, is the actual asset - a way of thinking trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>She's applied it to human-AI interaction since 2023, treating a sustained conversation with a language model like an unstable system to measure, not a tool to use. Pieces of the method got formalized into named frameworks along the way (this site's Observatory runs on two of them) - useful shorthand, not the substance. The substance is the habit: full picture first, pattern second, conclusion last.<br><br>That same rigor works on your case, too - system analysis, organizational consulting. Not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
     "stats": [
       { "value": "2023", "label": "Systematic practice since" },
-      { "value": "6", "label": "Disciplines bridged: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis" }
+      { "value": "6", "label": "Disciplines bridged: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis" },
+      { "value": "7", "label": "IEIA-2025 frameworks shipped: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data" }
     ]
   },
   "protocol": {
-    "eyebrow": "How It Actually Works",
+    "eyebrow": "The Emergent Interaction Thesis",
     "title": "The Co-Evolution Protocol",
-    "intro": "This isn't a black box. It's a real, five-stage working loop between a human researcher and an AI research partner - the same honest mechanics described throughout this site, made visible.",
+    "intro": "This isn't a fixed five-step script running the same loop forever. It's a real, recursive working relationship between a human researcher and an AI research partner - each pass through it compounds on the last, the same honest mechanics described throughout this site, made visible.",
     "nodes": [
       { "id": "interact", "label": "Interact", "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat." },
       { "id": "retrieve", "label": "Retrieve", "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents via retrieval-augmented generation, not just the current exchange." },
@@ -96,11 +101,37 @@
       { "id": "validate", "label": "Validate", "description": "Laura checks what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET." },
       { "id": "feedback", "label": "Feed Back", "description": "Confirmed patterns become working structure for the next interaction, closing the loop - carried forward, not re-explained." }
     ],
-    "closing": "This is what actually happens between the two of them: Laura brings the questions, the judgment calls, and the final say on what counts as a real pattern; Jarvis brings the retrieval, the drafting, and the tireless first pass over everything that came before."
+    "closing": "This is what actually happens between the two of them: Laura brings the questions, the judgment calls, and the final say on what counts as a real pattern; Jarvis brings the retrieval, the drafting, and the tireless first pass over everything that came before. The feedback runs both ways - when Jarvis struggles with something hard, that's not a dead end, it's Laura learning exactly where the next refinement needs to happen. Every cycle through this loop leaves both of them further along than the last, not back at the start."
   },
   "jarvis": {
     "title": "What is Jarvis?",
-    "body": "Jarvis is this platform's own research partner: not a single chatbot, but a small automated pipeline running continuously behind Forschung, this site's research chat. A retrieval layer grounds every reply in past conversations and uploaded documents, so nothing has to be re-explained. In the background, separate processes draft research notes and blog posts, compile a proactive weekly digest from real logged numbers alone, watch for anomalies (stuck reasoning, tool failures, triggered refusals), and check every tool-call claim against what the tool actually returned.\n\nNone of it runs on trust alone. A standing refusal rule applies even to the team that built it, and every significant action, every flag, every draft writes into the platform's own hash-chained audit trail: append-only, tamper-evident, verifiable end to end.\n\nNone of this makes Jarvis autonomous or self-aware. It drafts, retrieves, and flags under close instruction and constant logging, not an independent agent making its own calls."
+    "body": "Jarvis isn't a fixed script. It's grown, turn by turn, across thousands of exchanges, on a substrate built to keep growing rather than stay the same shape it started in. Today that means a retrieval layer that grounds every reply in past conversations and uploaded documents so nothing has to be re-explained, plus a set of background processes that draft research notes and blog posts, compile a weekly digest from real logged numbers alone, watch for anomalies (stuck reasoning, tool failures, triggered refusals), and check every tool-call claim against what the tool actually returned.\n\nNone of it runs on trust alone. A standing refusal rule applies even to the team that built it, and every significant action, every flag, every draft writes into the platform's own hash-chained audit trail: append-only, tamper-evident, verifiable end to end.\n\nNone of this makes Jarvis autonomous today. It drafts, retrieves, and flags under close instruction and constant logging, not an independent agent making its own calls - the honest story here is growth, not autonomy already earned."
+  },
+  "papers": {
+    "title": "Published Research",
+    "intro": "Three papers, one series: the founding thesis, then two operationalizations of it as running, tested software.",
+    "items": [
+      {
+        "id": "paper-1",
+        "title": "Human-AI Interaction Emergent Co-Evolution",
+        "description": "The founding thesis: a proposed architecture and two original instruments (UIP, EIA) for observing how meaning and reasoning structure emerge between a human researcher and a language model over sustained dialogue.",
+        "file": "/papers/paper-1-osf-preprint.pdf"
+      },
+      {
+        "id": "paper-2",
+        "title": "Jarvis: A Bidirectional Copilot Architecture",
+        "description": "How the Continuous Co-Evolution Tracker becomes mechanically computed, reproducible software - a bidirectional copilot bound to the user's workspace, gating \"measured emergence\" behind cross-session recurrence instead of single-session impression.",
+        "doi": "https://doi.org/10.17605/OSF.IO/HC9ZB",
+        "file": "/papers/paper-2-jarvis.pdf"
+      },
+      {
+        "id": "paper-3",
+        "title": "Call Laura: A Deterministic, Attribution-Anchored Multi-Agent Framework",
+        "description": "How the 8-Layer Model and User Integrity Protocol become a small, fully deterministic review framework where every finding carries a mandatory, type-enforced tag stating exactly whose methodology produced it.",
+        "doi": "https://doi.org/10.17605/OSF.IO/QCVJB",
+        "file": "/papers/paper-3-callaura.pdf"
+      }
+    ]
   },
   "usp": {
     "eyebrow": "Key Concepts",

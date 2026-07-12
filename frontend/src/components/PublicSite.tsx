@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
-import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem } from '../types/content'
+import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem, PaperItem } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
@@ -7,6 +7,7 @@ import { API_BASE } from '../lib/apiBase'
 import { LiveStatsSection, ShippingFeedSection, CurrentFocusBadge, SignalLevelsSection, CcetTrendSection, SimulationStatusSection } from './PublicLiveActivity'
 import { CoEvolutionDiagram } from './CoEvolutionDiagram'
 import { WebHubPricing } from './WebHubPricing'
+import { PdfViewerModal } from './PdfViewerModal'
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -68,6 +69,51 @@ function HeroParallax({ children }: { children: React.ReactNode }) {
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId) }
   }, [])
   return <div ref={ref} className="site-hero-parallax" style={{ willChange: 'transform' }}>{children}</div>
+}
+
+// Eased "super smooth" wheel-scroll accelerator — ported from rfi-irfos-web's
+// own PublicSite.tsx (same technique, ~40 self-contained lines, no library).
+// Intercepts wheel deltas, boosts them, and lerps toward the target scroll
+// position every animation frame instead of jumping straight there — this is
+// what makes the page-build/explode feel driven by Reveal above read as
+// smooth scrubbing rather than a jittery native scroll. Respects
+// prefers-reduced-motion (bails out entirely) and skips any element marked
+// [data-native-scroll] (nested overflow-scroll panels) so the wheel hijack
+// never fights an internal scrollable list.
+function useFastScroll(enabled: boolean, mult = 1.55, ease = 0.16) {
+  useEffect(() => {
+    if (!enabled) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let target = window.scrollY
+    let current = window.scrollY
+    let rafId = 0
+    const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight
+
+    const tick = () => {
+      current += (target - current) * ease
+      if (Math.abs(target - current) < 0.5) { current = target; window.scrollTo(0, current); rafId = 0; return }
+      window.scrollTo(0, current)
+      rafId = requestAnimationFrame(tick)
+    }
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.deltaY === 0) return
+      if ((e.target as HTMLElement)?.closest?.('[data-native-scroll]')) return
+      e.preventDefault()
+      if (!rafId) { target = window.scrollY; current = window.scrollY }
+      target = Math.max(0, Math.min(maxScroll(), target + e.deltaY * mult))
+      if (!rafId) rafId = requestAnimationFrame(tick)
+    }
+    const onResize = () => { target = Math.min(target, maxScroll()) }
+
+    window.addEventListener('wheel', onWheel, { passive: false })
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('resize', onResize)
+      cancelAnimationFrame(rafId)
+    }
+  }, [enabled, mult, ease])
 }
 
 // ── Edit context ─────────────────────────────────────────────────────────────
@@ -671,7 +717,7 @@ export function PublicSite({
   content, editMode = false, rearrangeMode = false, initPositions = {},
   onTextChange, onImageClick, onUpdate,
 }: Props) {
-  const { meta, nav, hero, trust, categories, products, usp, news, contact, whatsapp, footer, pricing, certificates } = content
+  const { meta, nav, hero, trust, categories, products, usp, news, contact, whatsapp, footer, pricing, certificates, papers } = content
   const hiddenSections = content.hiddenSections ?? []
 
   const [focusedEl, setFocusedEl] = useState<HTMLElement | null>(null)
@@ -679,10 +725,14 @@ export function PublicSite({
   const [menuOpen, setMenuOpen] = useState(false)
   const [modalProduct, setModalProduct] = useState<ProductItem | null>(null)
   const [modalGalleryIdx, setModalGalleryIdx] = useState(0)
+  const [activePaper, setActivePaper] = useState<PaperItem | null>(null)
   const [browseCatIdx, setBrowseCatIdx] = useState<number | null>(null)
   const [activeNewsCategory, setActiveNewsCategory] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
   const { t, lang } = useLang()
+  // Only on the live public page — an editor dragging/rearranging sections
+  // in the builder shouldn't have their scroll wheel hijacked mid-edit.
+  useFastScroll(!editMode)
 
   // Tracking pixel — fires once per page load in production (skipped in edit
   // mode). Published articles now navigate to their own #p/blog/<id> route
@@ -738,6 +788,14 @@ export function PublicSite({
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [modalProduct])
+
+  // Close the paper PDF viewer on Escape
+  useEffect(() => {
+    if (!activePaper) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setActivePaper(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [activePaper])
   const [heroBgPos, setHeroBgPos] = useState({ x: hero.bgX ?? 50, y: hero.bgY ?? 50 })
   const [heroHeight, setHeroHeight] = useState(hero.minHeight ?? 680)
   const heroBgPosRef = useRef(heroBgPos)
@@ -1191,51 +1249,51 @@ export function PublicSite({
               )}
               <div className="site-about-content">
                 {content.about.eyebrow && <div className="site-about-eyebrow" data-cid="about.eyebrow">{content.about.eyebrow}</div>}
-                <E field="about.headline" value={content.about.headline} as="h2" className="site-about-headline" />
-                <E field="about.bio" value={content.about.bio} as="p" className="site-about-bio" />
-                {((content.about.stats?.length ?? 0) > 0 || !editMode) && (
-                  <div className="site-about-credentials">
-                    {(content.about.stats?.length ?? 0) > 0 && (
-                      <div className="site-about-stats-row">
-                        {content.about.stats!.map((s, i) => (
-                          <div key={i} className="site-about-stat">
-                            <strong data-cid={`about.stats.${i}.value`}>{s.value}</strong>
-                            <span data-cid={`about.stats.${i}.label`}>{s.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {!editMode && (
-                      <div className="site-about-badges-row">
-                        <a href="https://github.com/rfi-irfos/call-laura" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
-                          </svg>
-                          <span>{CALL_LAURA_COPY[lang].github}</span>
-                        </a>
-                        <a href="https://crates.io/crates/call-laura-core" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
-                            <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
-                            <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
-                          </svg>
-                          <span>{CALL_LAURA_COPY[lang].coreCrate}</span>
-                        </a>
-                        <a href="https://crates.io/crates/laura-mcp" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
-                            <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
-                            <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
-                          </svg>
-                          <span>{CALL_LAURA_COPY[lang].serverCrate}</span>
-                        </a>
-                        <a href="https://laura-api.fly.dev" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge site-about-proof-badge--live">
-                          <span className="site-about-proof-dot" aria-hidden="true" />
-                          <span>{CALL_LAURA_COPY[lang].api}</span>
-                        </a>
-                      </div>
-                    )}
+                <Reveal from="bottom"><E field="about.headline" value={content.about.headline} as="h2" className="site-about-headline" /></Reveal>
+                {(content.about.stats?.length ?? 0) > 0 && (
+                  <div className="site-about-stats-row">
+                    {content.about.stats!.map((s, i) => (
+                      <Reveal key={i} from="bottom" delay={i}>
+                        <div className="site-about-stat">
+                          <strong data-cid={`about.stats.${i}.value`}>{s.value}</strong>
+                          <span data-cid={`about.stats.${i}.label`}>{s.label}</span>
+                        </div>
+                      </Reveal>
+                    ))}
                   </div>
+                )}
+                <Reveal from="bottom" delay={1}><E field="about.bio" value={content.about.bio} as="p" className="site-about-bio" /></Reveal>
+                {!editMode && (
+                  <Reveal from="bottom" delay={2}>
+                  <div className="site-about-badges-row">
+                    <a href="https://github.com/rfi-irfos/call-laura" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+                      </svg>
+                      <span>{CALL_LAURA_COPY[lang].github}</span>
+                    </a>
+                    <a href="https://crates.io/crates/call-laura-core" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
+                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
+                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
+                      </svg>
+                      <span>{CALL_LAURA_COPY[lang].coreCrate}</span>
+                    </a>
+                    <a href="https://crates.io/crates/laura-mcp" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
+                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
+                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
+                      </svg>
+                      <span>{CALL_LAURA_COPY[lang].serverCrate}</span>
+                    </a>
+                    <a href="https://laura-api.fly.dev" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge site-about-proof-badge--live">
+                      <span className="site-about-proof-dot" aria-hidden="true" />
+                      <span>{CALL_LAURA_COPY[lang].api}</span>
+                    </a>
+                  </div>
+                  </Reveal>
                 )}
               </div>
             </div>
@@ -1246,20 +1304,23 @@ export function PublicSite({
         {content.protocol?.nodes?.length ? (
           <section className={reveal("site-section site-section-alt site-protocol")} id="protocol" data-cid="protocol.title">
             {content.protocol.eyebrow && <div className="site-eyebrow">{content.protocol.eyebrow}</div>}
-            <h2 className="site-section-title">{content.protocol.title}</h2>
-            {content.protocol.intro && <p className="site-protocol-intro">{content.protocol.intro}</p>}
-            <CoEvolutionDiagram nodes={content.protocol.nodes} />
-            {content.protocol.closing && <p className="site-protocol-closing">{content.protocol.closing}</p>}
+            <Reveal from="bottom"><h2 className="site-section-title">{content.protocol.title}</h2></Reveal>
+            {content.protocol.intro && <Reveal from="bottom" delay={1}><p className="site-protocol-intro">{content.protocol.intro}</p></Reveal>}
+            <Reveal from="scale" delay={2}><CoEvolutionDiagram nodes={content.protocol.nodes} /></Reveal>
+            {content.protocol.closing && <Reveal from="bottom" delay={3}><p className="site-protocol-closing">{content.protocol.closing}</p></Reveal>}
           </section>
         ) : null}
 
         {/* ── JARVIS ───────────────────────────────────────────────────── */}
         {content.jarvis?.body && (
           <section className={reveal("site-section site-section-alt site-jarvis")} id="jarvis" data-cid="jarvis.title">
-            <h2 className="site-section-title">{content.jarvis.title}</h2>
+            <Reveal from="bottom"><h2 className="site-section-title">{content.jarvis.title}</h2></Reveal>
+            {content.jarvis.nextBadge && (
+              <span className="site-about-proof-badge site-jarvis-next-badge">{content.jarvis.nextBadge}</span>
+            )}
             <div className="site-jarvis-body">
               {content.jarvis.body.split('\n\n').map((para, i) => (
-                <p key={i}>{para}</p>
+                <Reveal key={i} from="bottom" delay={i + 1}><p>{para}</p></Reveal>
               ))}
             </div>
           </section>
@@ -1524,13 +1585,47 @@ export function PublicSite({
             yet, so an empty backend never shows an empty heading here. */}
         {!editMode && <WebHubPricing />}
 
+        {/* ── PAPERS ───────────────────────────────────────────────────── */}
+        {(papers?.items?.length ?? 0) > 0 && (
+          <section className={reveal("site-section site-papers")} id="papers">
+            {papers!.title && <Reveal from="bottom"><h2 className="site-section-title">{papers!.title}</h2></Reveal>}
+            {papers!.intro && <Reveal from="bottom" delay={1}><p className="site-protocol-intro">{papers!.intro}</p></Reveal>}
+            <div className="site-cert-grid">
+              {papers!.items.map((paper: PaperItem, i) => (
+                <Reveal key={paper.id} from="bottom" delay={i + 2}>
+                <div className="site-cert-card hud-corner-frame">
+                  <div className="site-cert-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <line x1="10" y1="9" x2="8" y2="9"/>
+                    </svg>
+                  </div>
+                  <div className="site-cert-info">
+                    <strong className="site-cert-title">{paper.title}</strong>
+                    <span className="site-cert-subtitle">{paper.description}</span>
+                    <button type="button" className="site-about-proof-badge site-paper-read-btn" onClick={() => setActivePaper(paper)}>
+                      {lang === 'de' ? 'Paper lesen' : 'Read the paper'}
+                    </button>
+                  </div>
+                </div>
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        )}
+        {activePaper && !editMode && <PdfViewerModal paper={activePaper} onClose={() => setActivePaper(null)} />}
+
         {/* ── CERTIFICATES ─────────────────────────────────────────────── */}
         {(certificates?.items?.length ?? 0) > 0 && (
           <section className={reveal("site-section site-certificates")} id="certificates">
-            {certificates!.title && <h2 className="site-section-title">{certificates!.title}</h2>}
+            {certificates!.title && <Reveal from="bottom"><h2 className="site-section-title">{certificates!.title}</h2></Reveal>}
             <div className="site-cert-grid">
-              {certificates!.items.map((cert: CertificateItem) => (
-                <div key={cert.id} className="site-cert-card hud-corner-frame">
+              {certificates!.items.map((cert: CertificateItem, i) => (
+                <Reveal key={cert.id} from="bottom" delay={i + 1}>
+                <div className="site-cert-card hud-corner-frame">
                   <div className="site-cert-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -1544,6 +1639,7 @@ export function PublicSite({
                     {cert.subtitle && <span className="site-cert-subtitle">{cert.subtitle}</span>}
                   </div>
                 </div>
+                </Reveal>
               ))}
             </div>
           </section>
