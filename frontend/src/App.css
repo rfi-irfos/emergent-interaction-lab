@@ -1690,17 +1690,39 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-stat { display: flex; flex-direction: column; align-items: flex-start; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }
 .site-about-stat span { font-size: 13px; color: var(--text-soft, #666); margin-top: 2px; font-weight: 500; }
-/* call-laura credibility row — proof-of-framework links, not a CTA, so it
-   reads quieter than the button above it (small caps label + plain
-   underlined links, no button chrome). */
+/* call-laura credibility row — real, checkable credentials (a shipped
+   crate, a live API), so these get actual badge chrome instead of reading
+   like one more piece of body text: a bordered pill each, with its own
+   icon, that lifts and glows on hover the same way a verified-credential
+   badge would elsewhere on the web. */
 .site-about-proof { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
 .site-about-proof-label {
   display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--text-soft); margin-bottom: 8px;
+  text-transform: uppercase; color: var(--text-soft); margin-bottom: 10px;
 }
-.site-about-proof-links { display: flex; flex-wrap: wrap; gap: 6px 18px; }
-.site-about-proof-links a { font-size: 13px; font-weight: 600; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
-.site-about-proof-links a:hover { color: var(--accent); }
+.site-about-proof-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.site-about-proof-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 7px 14px; text-decoration: none; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.site-about-proof-badge svg { color: var(--primary); flex-shrink: 0; }
+.site-about-proof-badge:hover {
+  transform: translateY(-2px); border-color: var(--primary);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) { .site-about-proof-badge:hover { transform: none; } }
+.site-about-proof-badge--live:hover { border-color: #10b981; box-shadow: 0 6px 18px -6px rgba(16,185,129,.5); }
+.site-about-proof-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0;
+  animation: site-proof-pulse 2s ease-in-out infinite;
+}
+@keyframes site-proof-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,.5); }
+  50% { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+}
+@media (prefers-reduced-motion: reduce) { .site-about-proof-dot { animation: none; } }
 @media (max-width: 640px) {
   .site-about-inner { flex-direction: column; gap: 28px; align-items: center; text-align: center; }
   .site-about-stats { justify-content: center; }
