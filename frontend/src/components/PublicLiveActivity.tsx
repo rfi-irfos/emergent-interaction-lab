@@ -22,8 +22,8 @@ interface LiveStats {
 const STATS_COPY = {
   en: {
     eyebrow: 'Live from the Observatory',
-    title: 'Not a brochure — a running instrument',
-    intro: 'These numbers are read straight from the same database the research runs on, refreshed automatically — not staged for this page.',
+    title: 'Not a brochure. A running instrument.',
+    intro: 'These numbers are read straight from the same database the research runs on, refreshed automatically - not staged for this page.',
     emergence_signals: 'Emergence signals tracked',
     chat_conversations: 'Research conversations logged',
     simulation_runs: 'Simulations run',
@@ -33,8 +33,8 @@ const STATS_COPY = {
   },
   de: {
     eyebrow: 'Live aus dem Observatory',
-    title: 'Keine Broschüre — ein laufendes Instrument',
-    intro: 'Diese Zahlen kommen direkt aus derselben Datenbank, mit der auch geforscht wird, und werden automatisch aktualisiert — nicht für diese Seite inszeniert.',
+    title: 'Keine Broschüre. Ein laufendes Instrument.',
+    intro: 'Diese Zahlen kommen direkt aus derselben Datenbank, mit der auch geforscht wird, und werden automatisch aktualisiert - nicht für diese Seite inszeniert.',
     emergence_signals: 'Emergenz-Signale erfasst',
     chat_conversations: 'Forschungsgespräche protokolliert',
     simulation_runs: 'Simulationen durchgeführt',
@@ -229,14 +229,14 @@ const FOCUS_COPY = {
     withBoth: (level: string, category: string) => <>Observatory is most active at the <strong>{level}</strong> level &middot; latest note logged as <strong>{category}</strong></>,
     levelOnly: (level: string) => <>Observatory is most active at the <strong>{level}</strong> level right now</>,
     categoryOnly: (category: string) => <>Latest research note logged as <strong>{category}</strong></>,
-    quiet: 'Quiet right now — no new signals in the last window.',
+    quiet: 'Quiet right now - no new signals in the last window.',
   },
   de: {
     label: 'Gerade jetzt',
     withBoth: (level: string, category: string) => <>Observatory ist gerade am aktivsten auf Ebene <strong>{level}</strong> &middot; letzte Notiz kategorisiert als <strong>{category}</strong></>,
     levelOnly: (level: string) => <>Observatory ist gerade am aktivsten auf Ebene <strong>{level}</strong></>,
     categoryOnly: (category: string) => <>Letzte Forschungsnotiz kategorisiert als <strong>{category}</strong></>,
-    quiet: 'Gerade ruhig — keine neuen Signale im letzten Zeitfenster.',
+    quiet: 'Gerade ruhig - keine neuen Signale im letzten Zeitfenster.',
   },
 } as const
 
@@ -310,7 +310,7 @@ const SIGNAL_LEVELS_COPY = {
   en: {
     eyebrow: 'Observatory',
     title: 'What kind of emergence is showing up',
-    intro: 'Every detected signal is sorted into one of four levels — this is the live count in each, not what any single signal says.',
+    intro: 'Every detected signal is sorted into one of four levels - this is the live count in each, not what any single signal says.',
     loading: 'Loading signal counts…',
     unavailable: 'Signal counts are temporarily unavailable.',
     ariaPrefix: 'Emergence signal counts by level:',
@@ -318,7 +318,7 @@ const SIGNAL_LEVELS_COPY = {
   de: {
     eyebrow: 'Observatory',
     title: 'Welche Art von Emergenz sich zeigt',
-    intro: 'Jedes erkannte Signal wird einer von vier Ebenen zugeordnet — das ist die laufende Anzahl je Ebene, nicht der Inhalt eines einzelnen Signals.',
+    intro: 'Jedes erkannte Signal wird einer von vier Ebenen zugeordnet - das ist die laufende Anzahl je Ebene, nicht der Inhalt eines einzelnen Signals.',
     loading: 'Signal-Zahlen werden geladen…',
     unavailable: 'Signal-Zahlen sind gerade nicht verfügbar.',
     ariaPrefix: 'Emergenz-Signale nach Ebene:',
@@ -412,7 +412,7 @@ const CCET_TREND_COPY = {
   en: {
     eyebrow: 'Observatory',
     title: 'Co-evolution health, over time',
-    intro: (days: number) => `Daily average across the last ${days} days — how often the model's turns stay stable and reuse its own framework vocabulary, not any single conversation.`,
+    intro: (days: number) => `Daily average across the last ${days} days - how often the model's turns stay stable and reuse its own framework vocabulary, not any single conversation.`,
     cei: 'Continuous Evolution Index (CEI)',
     resonance: 'Resonance Frequency',
     loading: 'Loading the trend…',
@@ -423,7 +423,7 @@ const CCET_TREND_COPY = {
   de: {
     eyebrow: 'Observatory',
     title: 'Co-Evolution im Zeitverlauf',
-    intro: (days: number) => `Tagesdurchschnitt über die letzten ${days} Tage — wie oft die Antworten des Modells stabil bleiben und sein eigenes Framework-Vokabular wiederverwenden, nicht ein einzelnes Gespräch.`,
+    intro: (days: number) => `Tagesdurchschnitt über die letzten ${days} Tage - wie oft die Antworten des Modells stabil bleiben und sein eigenes Framework-Vokabular wiederverwenden, nicht ein einzelnes Gespräch.`,
     cei: 'Continuous Evolution Index (CEI)',
     resonance: 'Resonance Frequency',
     loading: 'Trend wird geladen…',
@@ -523,8 +523,8 @@ export function CcetTrendSection({ editMode, reveal }: { editMode: boolean; reve
             )}
           </svg>
           <div className="site-ccet-legend">
-            <span className="site-ccet-legend-item"><span className="site-ccet-swatch site-ccet-swatch-cei" />{c.cei}{last && !editMode ? ` — ${Math.round(last.cei * 100)}%` : ''}</span>
-            <span className="site-ccet-legend-item"><span className="site-ccet-swatch site-ccet-swatch-resonance" />{c.resonance}{last && !editMode ? ` — ${Math.round(last.resonance_frequency * 100)}%` : ''}</span>
+            <span className="site-ccet-legend-item"><span className="site-ccet-swatch site-ccet-swatch-cei" />{c.cei}{last && !editMode ? `: ${Math.round(last.cei * 100)}%` : ''}</span>
+            <span className="site-ccet-legend-item"><span className="site-ccet-swatch site-ccet-swatch-resonance" />{c.resonance}{last && !editMode ? `: ${Math.round(last.resonance_frequency * 100)}%` : ''}</span>
           </div>
         </div>
       )}
@@ -546,7 +546,7 @@ const SIMULATION_STATUS_COPY = {
   en: {
     eyebrow: 'Simulation Lab',
     title: 'Hypotheses being explored',
-    intro: 'Every simulation run the lab has kicked off, by where it currently stands — not what any hypothesis says.',
+    intro: 'Every simulation run the lab has kicked off, by where it currently stands - not what any hypothesis says.',
     pending: 'Running',
     complete: 'Complete',
     error: 'Errored',
@@ -556,7 +556,7 @@ const SIMULATION_STATUS_COPY = {
   de: {
     eyebrow: 'Simulation Lab',
     title: 'Untersuchte Hypothesen',
-    intro: 'Jeder gestartete Simulationslauf, nach aktuellem Stand — nicht der Inhalt einer Hypothese.',
+    intro: 'Jeder gestartete Simulationslauf, nach aktuellem Stand - nicht der Inhalt einer Hypothese.',
     pending: 'Läuft',
     complete: 'Abgeschlossen',
     error: 'Fehlgeschlagen',

@@ -30,13 +30,25 @@ export function zoomLevelOf(viewBox: ViewBox, base: ViewBox): number {
   return base.w / viewBox.w
 }
 
-/// Keeps the viewBox from being dragged arbitrarily far off the canvas —
-/// generous margin (a full base width/height in each direction) so panning
-/// still feels free, but you can always find your way back visually instead
-/// of drifting into empty space forever.
+/// Keeps the viewBox from being dragged arbitrarily far off the canvas.
+///
+/// The margin scales with how far zoomed IN the view currently is, rather
+/// than being a fixed `base.w`/`base.h` allowance regardless of zoom level.
+/// At exactly 100% zoom (`viewBox.w === base.w`), the margin is 0 — pan is
+/// fully locked to `base.x`/`base.y` — because the whole deterministically
+/// laid-out graph already fits in that one view; there is nothing further
+/// to reveal by panning. A fixed generous margin here previously let an
+/// accidental drag/trackpad-scroll push real content (e.g. KnowledgeGraph's
+/// leftmost nodes) off the edge of the viewBox with no zoom change to
+/// explain it — confirmed via a real screenshot showing left-side node
+/// labels cut off mid-word at 100% zoom. The margin grows proportionally
+/// once actually zoomed in, so panning around a zoomed-in view still works
+/// exactly as before.
 export function clampPanToBounds(viewBox: ViewBox, base: ViewBox): ViewBox {
-  const marginX = base.w
-  const marginY = base.h
+  const zoomedInFractionX = Math.max(0, 1 - viewBox.w / base.w)
+  const zoomedInFractionY = Math.max(0, 1 - viewBox.h / base.h)
+  const marginX = base.w * zoomedInFractionX
+  const marginY = base.h * zoomedInFractionY
   const minX = base.x - marginX
   const maxX = base.x + base.w + marginX - viewBox.w
   const minY = base.y - marginY

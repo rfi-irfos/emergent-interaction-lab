@@ -39,6 +39,25 @@ export function CoEvolutionDiagram({ nodes }: Props) {
 
   return (
     <div className="site-protocol-diagram hud-corner-frame">
+      {/* Real text legend FIRST, diagram SECOND — direct feedback: the
+          animated loop read as decoration with no explanation above it;
+          reading the five real stage descriptions before the visual gives
+          the diagram something to refer back to instead of asking a
+          visitor to decode an unlabeled loop first. The diagram's own
+          in-SVG labels are compact by necessity (fixed 32px node radius),
+          so the full per-stage description living here is never
+          color/position-only either way. */}
+      <div className="site-protocol-legend">
+        {points.map((p, i) => (
+          <div key={p.id} className="site-protocol-legend-item">
+            <span className="site-protocol-legend-index">{String(i + 1).padStart(2, '0')}</span>
+            <div>
+              <strong>{p.label}</strong>
+              <p>{p.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label="Co-Evolution Protocol: Interact, Retrieve, Surface, Validate, Feed Back, looping">
         <path d={loopPath} className="site-protocol-loop" />
         {!reducedMotion && loopPath && (
@@ -59,20 +78,6 @@ export function CoEvolutionDiagram({ nodes }: Props) {
           </g>
         ))}
       </svg>
-      {/* Real text legend below the SVG — the diagram's own labels are compact
-          by necessity (fixed 32px node radius), the full per-stage
-          description always lives here too, never color/position-only. */}
-      <div className="site-protocol-legend">
-        {points.map((p, i) => (
-          <div key={p.id} className="site-protocol-legend-item">
-            <span className="site-protocol-legend-index">{String(i + 1).padStart(2, '0')}</span>
-            <div>
-              <strong>{p.label}</strong>
-              <p>{p.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

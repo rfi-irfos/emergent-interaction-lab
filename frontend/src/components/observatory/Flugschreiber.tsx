@@ -130,55 +130,32 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
         <ExportButtons
           rows={snapshots.map(s => ({ ...s }))}
           filenameBase={`flugschreiber-snapshots-${range}`}
-          title="Flugschreiber — Snapshots"
+          title="Flugschreiber: Snapshots"
         />
       </div>
 
       {snapshots.length === 0 ? (
         <div className="obs-card">
           <div className="obs-empty">
-            Noch keine Snapshots in diesem Zeitraum — sie werden automatisch nach jedem Gesprächsturn aufgezeichnet.
+            Noch keine Snapshots in diesem Zeitraum - sie werden automatisch nach jedem Gesprächsturn aufgezeichnet.
             Ältere Gespräche, die vor dieser Funktion stattfanden, haben ehrlich keine Aufzeichnungshistorie, statt sie
             nachträglich zu erfinden.
           </div>
         </div>
       ) : (
         <>
-          <div className="obs-section-label">
-            Verlauf über die Zeit <span style={{ fontWeight: 400 }}>(geladen: {snapshots.length} von {total ?? '…'})</span>
-          </div>
-
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Signale gesamt</div>
-            <ObsChart data={chartData(totalSignals)} color="#8b5cf6" gradientId="fs-signals" />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>CEI (Co-Evolution Index)</div>
-            <ObsChart data={chartData(s => s.cei)} color="#10b981" gradientId="fs-cei" valueFormat={formatPercent} />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Resonance Frequency</div>
-            <ObsChart data={chartData(s => s.resonance_frequency)} color="#14b8a6" gradientId="fs-rf" valueFormat={formatPercent} />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Simulationen gesamt</div>
-            <ObsChart data={chartData(totalSimRuns)} color="#f59e0b" gradientId="fs-sims" />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Research Notes</div>
-            <ObsChart data={chartData(s => s.research_notes_total)} color="#3b6bf6" gradientId="fs-notes" />
-          </div>
-          <div className="obs-card">
-            <div className="obs-item-title" style={{ marginBottom: 6 }}>Jarvis-Werkzeugaufrufe (7 Tage)</div>
-            <ObsChart data={chartData(s => s.agent_tool_calls_7d)} color="#ef4444" gradientId="fs-tools" />
-          </div>
-
-          {/* The actual "flight recorder" scrub: exact values of whichever
-              snapshot is selected in the list below (defaults to the most
-              recently loaded one). */}
+          {/* Core KPI summary FIRST — direct feedback on this exact module's
+              earlier layout: at-a-glance current-state tiles belong above
+              the historical trend charts, not buried below them ("die core
+              kpis müssen oben drauf, über diesen verlauf der zeit"). Exact
+              values of whichever snapshot is selected in the scrub list
+              below (defaults to the most recently loaded one), so this
+              block doubles as "current state" (default) and "state at any
+              past point" (after a scrub-list click) without two separate
+              renderings of the same six stat rows. */}
           {selected && (
             <>
-              <div className="obs-section-label" style={{ marginTop: 22 }}>Snapshot-Detail — {selected.created_at}</div>
+              <div className="obs-section-label">Snapshot-Detail: {selected.created_at}</div>
               <div className="obs-grid" style={{ marginBottom: 8 }}>
                 <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.signals_human}</div><div className="obs-stat-label">Signale: Human</div></div>
                 <div className="obs-stat c-blue"><div className="obs-stat-value">{selected.signals_ai}</div><div className="obs-stat-label">Signale: AI</div></div>
@@ -221,6 +198,35 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
             </>
           )}
 
+          <div className="obs-section-label">
+            Verlauf über die Zeit <span style={{ fontWeight: 400 }}>(geladen: {snapshots.length} von {total ?? '…'})</span>
+          </div>
+
+          <div className="obs-card">
+            <div className="obs-item-title" style={{ marginBottom: 6 }}>Signale gesamt</div>
+            <ObsChart data={chartData(totalSignals)} color="#8b5cf6" gradientId="fs-signals" />
+          </div>
+          <div className="obs-card">
+            <div className="obs-item-title" style={{ marginBottom: 6 }}>CEI (Co-Evolution Index)</div>
+            <ObsChart data={chartData(s => s.cei)} color="#10b981" gradientId="fs-cei" valueFormat={formatPercent} />
+          </div>
+          <div className="obs-card">
+            <div className="obs-item-title" style={{ marginBottom: 6 }}>Resonance Frequency</div>
+            <ObsChart data={chartData(s => s.resonance_frequency)} color="#14b8a6" gradientId="fs-rf" valueFormat={formatPercent} />
+          </div>
+          <div className="obs-card">
+            <div className="obs-item-title" style={{ marginBottom: 6 }}>Simulationen gesamt</div>
+            <ObsChart data={chartData(totalSimRuns)} color="#f59e0b" gradientId="fs-sims" />
+          </div>
+          <div className="obs-card">
+            <div className="obs-item-title" style={{ marginBottom: 6 }}>Research Notes</div>
+            <ObsChart data={chartData(s => s.research_notes_total)} color="#3b6bf6" gradientId="fs-notes" />
+          </div>
+          <div className="obs-card">
+            <div className="obs-item-title" style={{ marginBottom: 6 }}>Jarvis-Werkzeugaufrufe (7 Tage)</div>
+            <ObsChart data={chartData(s => s.agent_tool_calls_7d)} color="#ef4444" gradientId="fs-tools" />
+          </div>
+
           <div className="obs-section-label">Snapshots durchblättern</div>
           {snapshots.map((s, i) => (
             <div
@@ -232,7 +238,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
               onClick={() => setSelectedId(s.id)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setSelectedId(s.id) }}
             >
-              <div className="obs-item-title">{s.created_at}{s.id === selected?.id && <span style={{ fontWeight: 400, color: '#3b6bf6' }}> — ausgewählt</span>}</div>
+              <div className="obs-item-title">{s.created_at}{s.id === selected?.id && <span style={{ fontWeight: 400, color: '#3b6bf6' }}> · ausgewählt</span>}</div>
               <div className="obs-item-meta">
                 Signale: {totalSignals(s)} · CEI {formatPercent(s.cei)} · Simulationen: {totalSimRuns(s)} · Notes: {s.research_notes_total} · Tools (7T): {s.agent_tool_calls_7d}
               </div>
