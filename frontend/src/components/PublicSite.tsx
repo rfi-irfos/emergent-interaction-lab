@@ -540,10 +540,13 @@ function HeroFieldGraphic() {
         )}
       </circle>
 
-      {/* Earth's limb: a gentle curve, the planet filled dark below it */}
+      {/* Earth's limb: a gentle curve, the planet filled dark below it.
+          Previously also drew two bright/blurred stroke lines tracing this
+          same curve (a glowing cyan line, then a crisp bright edge on top)
+          — that's the diagonal "shimmer" flagged as unwanted and removed
+          here; the plain dark fill below is kept, it reads as a subtle
+          gradient, not a glowing line. */}
       <path d="M -40,640 Q 340,430 760,190 L 760,680 L -40,680 Z" fill="url(#hero-earth-fill)" />
-      <path d="M -40,640 Q 340,430 760,190" fill="none" stroke="var(--brand-cyan)" strokeWidth="3" opacity="0.5" style={{ filter: 'blur(2px)' }} />
-      <path d="M -40,640 Q 340,430 760,190" fill="none" stroke="#d8f7ff" strokeWidth="1.1" opacity="0.85" />
     </svg>
   )
 }

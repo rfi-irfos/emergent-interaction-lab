@@ -142,7 +142,23 @@ export default function App() {
       return (
         <>
           <PublicSite content={content} />
-          <PageModal page={modalPage} content={content} onClose={() => { setPageModalSlug(null); if (window.location.hash.startsWith('#p/')) window.history.pushState('', document.title, window.location.pathname + window.location.search) }} />
+          <PageModal
+            page={modalPage}
+            content={content}
+            onClose={() => {
+              setPageModalSlug(null)
+              if (window.location.hash.startsWith('#p/')) {
+                // pushState does NOT fire 'hashchange', so `route` (only kept
+                // in sync by the hashchange listener below) was silently left
+                // stuck at pageSlug='research' after this ran - the very next
+                // render then hit the `if (route.pageSlug)` branch and showed
+                // the old white DynamicPage instead of falling through to the
+                // homepage. Clearing `route` here too, not just the URL.
+                window.history.pushState('', document.title, window.location.pathname + window.location.search)
+                setRoute(getRoute(window.location.hash))
+              }
+            }}
+          />
         </>
       )
     }
