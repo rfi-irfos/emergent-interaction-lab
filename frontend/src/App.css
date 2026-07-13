@@ -1899,38 +1899,34 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1140px; margin: 0 auto; padding: 40px 32px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
 }
-/* Radial layout: the chart is the visual anchor in the middle, with each
-   stage's descriptor arranged around it — top / left+right / bottom-left
-   +bottom-right — rather than stacked above the chart as a text wall.
-   Hardcoded for exactly 5 areas since this component's own layout only
-   builds this grid for a 5-node count (see CoEvolutionDiagram.tsx). */
+/* Square widget: the chart sits dead-center, each stage's descriptor
+   positioned on a circle around it at that stage's own angle (literal
+   percentage left/top set inline in CoEvolutionDiagram.tsx from the same
+   cos/sin the SVG nodes use — not a CSS-grid approximation of "around").
+   No duplicate labeling: the SVG carries only a color-matched index
+   number per node; the descriptor block is the only place the stage name
+   and its text live. */
 .site-protocol-radial {
-  display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(280px, 1.3fr) minmax(160px, 1fr);
-  grid-template-areas:
-    "top      top   top"
-    "left     chart right"
-    "botleft  chart botright";
-  align-items: center;
-  gap: 28px 32px;
+  position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 1; margin: 0 auto;
 }
-.site-protocol-desc--top { grid-area: top; text-align: center; }
-.site-protocol-desc--left { grid-area: left; }
-.site-protocol-desc--right { grid-area: right; }
-.site-protocol-desc--botleft { grid-area: botleft; }
-.site-protocol-desc--botright { grid-area: botright; }
-.site-protocol-desc { display: flex; gap: 10px; align-items: flex-start; }
-.site-protocol-desc--top { justify-content: center; }
-.site-protocol-chart { grid-area: chart; display: flex; justify-content: center; align-items: center; }
-@media (max-width: 860px) {
+.site-protocol-chart-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 46%; display: flex; align-items: center; justify-content: center;
+}
+.site-protocol-desc {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 200px; display: flex; flex-direction: column; gap: 2px;
+}
+@media (max-width: 760px) {
   .site-protocol-radial {
-    grid-template-columns: 1fr;
-    grid-template-areas: "chart" "top" "right" "botright" "botleft" "left";
+    position: static; aspect-ratio: auto; max-width: 480px;
+    display: flex; flex-direction: column; gap: 22px;
   }
-  .site-protocol-desc--top { text-align: left; justify-content: flex-start; }
+  .site-protocol-chart-center { position: static; transform: none; width: 70%; margin: 0 auto 6px; order: -1; }
+  .site-protocol-desc { position: static; transform: none; width: 100%; text-align: left !important; }
 }
 .site-protocol-svg { width: 100%; max-width: 380px; height: auto; display: block; margin: 0 auto; overflow: visible; }
-.site-protocol-loop { fill: none; stroke: var(--primary); stroke-width: 1.6; opacity: .4; }
+.site-protocol-loop { fill: none; stroke: var(--border); stroke-width: 1.4; opacity: .6; }
 /* Faint outer rings, fading with distance — visual echo of the "each pass
    compounds outward, this isn't a closed loop repeating in place" framing
    in protocol.intro/closing. No particles ride these; they're ambient. */
@@ -1940,14 +1936,16 @@ button { cursor: pointer; font-family: inherit; }
 .site-protocol-particle { filter: drop-shadow(0 0 4px currentColor); }
 .site-protocol-particle-a { fill: var(--primary); color: var(--primary); }
 .site-protocol-particle-b { fill: var(--accent); color: var(--accent); opacity: .85; }
+/* Each stage gets its own color (--stage-c, set inline per node) rather
+   than one uniform accent — the "make the stages colorful" ask. The
+   connecting loop above stays a neutral border color on purpose: it links
+   five different colors together, so it reads cleanest as connective
+   tissue, not a sixth color competing with the stations. */
 .site-protocol-node {
-  fill: var(--surface); stroke: var(--primary); stroke-width: 2;
-  filter: drop-shadow(0 0 4px var(--primary));
+  fill: var(--surface); stroke: var(--stage-c, var(--primary)); stroke-width: 2.5;
+  filter: drop-shadow(0 0 5px var(--stage-c, var(--primary)));
 }
-/* Labels sit outside the node circles now (see CoEvolutionDiagram.tsx's
-   LABEL_R) — only the index number lives inside the node itself. */
-.site-protocol-node-label { font-size: 12.5px; font-weight: 700; fill: var(--text); font-family: var(--mono); }
-.site-protocol-node-index { font-size: 13px; font-weight: 800; fill: var(--primary); font-family: var(--mono); }
+.site-protocol-node-index { font-size: 13px; font-weight: 800; fill: var(--stage-c, var(--primary)); font-family: var(--mono); }
 .site-protocol-legend {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 24px 28px; width: 100%;

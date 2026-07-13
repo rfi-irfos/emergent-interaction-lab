@@ -13,43 +13,45 @@ interface Props {
 // simplified to one shared closed-loop path instead of per-edge radial
 // spokes, since this has no pan/zoom infrastructure to reuse or need.
 //
-// Layout: the pentagon sits in the visual center, with each stage's full
-// descriptor arranged AROUND it (CSS grid areas: top / left / right /
-// bottom-left / bottom-right) rather than as a text list stacked above the
-// chart — the chart is the anchor, not an afterthought below a wall of
-// text. Grid areas are hardcoded for exactly 5 (this component's own
-// documented scope); a node count other than 5 falls back to a plain
-// stacked list above the chart instead of guessing at a matching layout.
+// Layout: a square widget, chart dead-center, each stage's descriptor
+// positioned on a circle AROUND it at that stage's own angle (not a CSS
+// grid approximation — literal percentage coordinates from the same
+// cos/sin the SVG nodes use, so a descriptor really does sit where its
+// node is, not just "somewhere near the top/side"). Falls back to a plain
+// stacked list above the chart for any node count the circular math
+// wasn't tuned to read cleanly at (this component's documented scope is
+// exactly 5).
 //
-// Node labels sit OUTSIDE the node circles (radially past them), not
-// layered on top — a plain index number is all that lives inside each node
-// now. Two faint, fading concentric copies of the same loop ring outside
-// the label ring exist purely to signal that this isn't a closed five-step
-// script running the same lap forever: each pass compounds outward rather
-// than just repeating in place (the copy in content.json's protocol.intro/
-// closing says this explicitly too — the rings are the visual echo of it,
-// not the only place it's said).
+// No duplicate labeling: earlier drafts had the stage name floating next
+// to the node in the SVG itself AND again as the descriptor's own
+// heading — the same word twice per stage. The SVG now carries only the
+// index number inside each node (color-matched to that node, so the
+// number is the cross-reference to its descriptor); the descriptor block
+// is the only place the stage name and its description live.
 //
-// Colors are all theme-aware CSS custom properties (var(--primary) / var(--accent)),
-// never the fixed var(--brand-cyan) the hero band uses — that constant stays
-// the same hex across all three themes by design, which is exactly what made
-// the HUD corner-frame decoration invisible on the light theme until PR #65
-// fixed it (see App.css's "HUD FRAMING — public-site theme adaptation"
-// comment). This diagram is themed from the start instead of repeating that.
+// Colors are all theme-aware CSS custom properties (var(--primary) / var(--accent))
+// EXCEPT the five per-stage hues below, which are deliberately fixed literal
+// colors rather than theme-derived — the whole point is that each stage
+// reads as its own distinct color, which a single theme-tinted accent can't
+// give five different values for. Never the fixed var(--brand-cyan) the
+// hero band uses for anything else here — see App.css's "HUD FRAMING —
+// public-site theme adaptation" comment for why a theme-independent color
+// caused trouble once already.
 const RADIAL_AREAS = ['top', 'right', 'botright', 'botleft', 'left']
+const STAGE_COLORS = ['#22d3ee', '#8b5cf6', '#14b8a6', '#f59e0b', '#ec4899']
 
 export function CoEvolutionDiagram({ nodes }: Props) {
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
 
-  const W = 460, H = 430, CX = W / 2, CY = H / 2 - 6
-  const R = 110        // node ring — the actual 5 stations
-  const LABEL_R = R + 56  // where the label text sits, clear of the node circle
-  const GROWTH_R1 = R + 80   // first faint outer ring — "this keeps going"
-  const GROWTH_R2 = R + 104  // second, fainter still — fading outward, not closing off
+  const W = 400, H = 400, CX = W / 2, CY = H / 2
+  const R = 100        // node ring — the actual 5 stations
+  const GROWTH_R1 = R + 28   // first faint outer ring — "this keeps going"
+  const GROWTH_R2 = R + 52   // second, fainter still — fading outward, not closing off
 
   const n = nodes.length || 1
   const anglesDeg = nodes.map((_, i) => -90 + i * (360 / n))
   const radial = nodes.length === 5
+  const colorFor = (i: number) => STAGE_COLORS[i % STAGE_COLORS.length]
 
   const ringPoints = (radius: number) => anglesDeg.map(deg => {
     const rad = deg * (Math.PI / 180)
@@ -75,7 +77,7 @@ export function CoEvolutionDiagram({ nodes }: Props) {
   const growthPath2 = ringPath(GROWTH_R2)
 
   const chart = (
-    <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label="Co-Evolution Protocol: Interact, Retrieve, Surface, Validate, Feed Back, looping and compounding outward">
+    <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label={`Co-Evolution Protocol: ${nodes.map(n => n.label).join(', ')}, looping and compounding outward`}>
       {!reducedMotion && growthPath2 && <path d={growthPath2} className="site-protocol-growth-ring site-protocol-growth-ring-2" />}
       {!reducedMotion && growthPath1 && <path d={growthPath1} className="site-protocol-growth-ring site-protocol-growth-ring-1" />}
       <path d={loopPath} className="site-protocol-loop" />
@@ -90,16 +92,11 @@ export function CoEvolutionDiagram({ nodes }: Props) {
         </>
       )}
       {points.map((p, i) => {
-        const dx = p.x - CX
-        const anchor = Math.abs(dx) < 14 ? 'middle' : dx < 0 ? 'end' : 'start'
-        const labelRad = anglesDeg[i] * (Math.PI / 180)
-        const lx = CX + LABEL_R * Math.cos(labelRad)
-        const ly = CY + LABEL_R * Math.sin(labelRad)
+        const stageColor = colorFor(i)
         return (
-          <g key={p.id}>
-            <circle cx={p.x} cy={p.y} r="24" className="site-protocol-node" />
+          <g key={p.id} style={{ ['--stage-c' as string]: stageColor }}>
+            <circle cx={p.x} cy={p.y} r="22" className="site-protocol-node" />
             <text x={p.x} y={p.y + 5} textAnchor="middle" className="site-protocol-node-index">{String(i + 1).padStart(2, '0')}</text>
-            <text x={lx} y={ly} textAnchor={anchor} className="site-protocol-node-label">{p.label}</text>
           </g>
         )
       })}
@@ -115,7 +112,7 @@ export function CoEvolutionDiagram({ nodes }: Props) {
         <div className="site-protocol-legend">
           {points.map((p, i) => (
             <div key={p.id} className="site-protocol-legend-item">
-              <span className="site-protocol-legend-index">{String(i + 1).padStart(2, '0')}</span>
+              <span className="site-protocol-legend-index" style={{ color: colorFor(i) }}>{String(i + 1).padStart(2, '0')}</span>
               <div><strong>{p.label}</strong><p>{p.description}</p></div>
             </div>
           ))}
@@ -125,16 +122,33 @@ export function CoEvolutionDiagram({ nodes }: Props) {
     )
   }
 
+  // Descriptor position on a circle around the square widget's own center,
+  // expressed as percentages so it's independent of the container's actual
+  // pixel size — same angle each node's SVG position already uses, just a
+  // wider radius so the text sits clear of the chart itself.
+  const DESC_R_PCT = 40
   return (
     <div className="site-protocol-diagram">
       <div className="site-protocol-radial">
-        {points.map((p, i) => (
-          <div key={p.id} className={`site-protocol-desc site-protocol-desc--${RADIAL_AREAS[i]}`}>
-            <span className="site-protocol-legend-index">{String(i + 1).padStart(2, '0')}</span>
-            <div><strong>{p.label}</strong><p>{p.description}</p></div>
-          </div>
-        ))}
-        <div className="site-protocol-chart">{chart}</div>
+        <div className="site-protocol-chart-center">{chart}</div>
+        {points.map((p, i) => {
+          const rad = anglesDeg[i] * (Math.PI / 180)
+          const dx = Math.cos(rad)
+          const leftPct = 50 + DESC_R_PCT * dx
+          const topPct = 50 + DESC_R_PCT * Math.sin(rad)
+          const align = Math.abs(dx) < 0.2 ? 'center' : dx < 0 ? 'right' : 'left'
+          return (
+            <div
+              key={p.id}
+              className={`site-protocol-desc site-protocol-desc--${RADIAL_AREAS[i]}`}
+              style={{ left: `${leftPct}%`, top: `${topPct}%`, textAlign: align }}
+            >
+              <span className="site-protocol-legend-index" style={{ color: colorFor(i) }}>{String(i + 1).padStart(2, '0')}</span>
+              <strong>{p.label}</strong>
+              <p>{p.description}</p>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
