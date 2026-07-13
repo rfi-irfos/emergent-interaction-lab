@@ -1911,7 +1911,7 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-protocol-chart-center {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 46%; display: flex; align-items: center; justify-content: center;
+  width: 52%; display: flex; align-items: center; justify-content: center;
 }
 .site-protocol-desc {
   position: absolute; transform: translate(-50%, -50%);
@@ -1927,6 +1927,7 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-protocol-svg { width: 100%; max-width: 380px; height: auto; display: block; margin: 0 auto; overflow: visible; }
 .site-protocol-loop { fill: none; stroke: var(--border); stroke-width: 1.4; opacity: .6; }
+.site[data-theme="dark"] .site-protocol-loop { stroke: #ffffff; opacity: .7; }
 /* Faint outer rings, fading with distance — visual echo of the "each pass
    compounds outward, this isn't a closed loop repeating in place" framing
    in protocol.intro/closing. No particles ride these; they're ambient. */
@@ -1934,8 +1935,21 @@ button { cursor: pointer; font-family: inherit; }
 .site-protocol-growth-ring-1 { stroke-width: 1.1; opacity: .16; stroke-dasharray: 3 7; }
 .site-protocol-growth-ring-2 { stroke-width: 1; opacity: .08; stroke-dasharray: 2 9; }
 .site-protocol-particle { filter: drop-shadow(0 0 4px currentColor); }
-.site-protocol-particle-a { fill: var(--primary); color: var(--primary); }
-.site-protocol-particle-b { fill: var(--accent); color: var(--accent); opacity: .85; }
+@keyframes site-protocol-particle-cycle {
+  0%, 100% { fill: #22d3ee; color: #22d3ee; }
+  20% { fill: #8b5cf6; color: #8b5cf6; }
+  40% { fill: #14b8a6; color: #14b8a6; }
+  60% { fill: #f59e0b; color: #f59e0b; }
+  80% { fill: #ec4899; color: #ec4899; }
+}
+.site-protocol-particle-a {
+  animation: site-protocol-particle-cycle 10s linear infinite;
+}
+.site-protocol-particle-b {
+  animation: site-protocol-particle-cycle 10s linear infinite;
+  animation-delay: -5s;
+  opacity: .85;
+}
 /* Each stage gets its own color (--stage-c, set inline per node) rather
    than one uniform accent — the "make the stages colorful" ask. The
    connecting loop above stays a neutral border color on purpose: it links
