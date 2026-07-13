@@ -17,15 +17,25 @@ if [ -n "$HERMES_MODEL" ]; then
   export HERMES_DEFAULT_MODEL="$HERMES_MODEL"
 fi
 
+# Hermes's own gateway reads its required auth key as API_SERVER_KEY, not
+# HERMES_API_KEY — found by actually running this image and reading its
+# refusal: "Refusing to start: API_SERVER_KEY is required for the API
+# server". HERMES_API_KEY is this repo's own naming (matches hermes.rs's
+# client-side config, this file's env contract, and the Fly secret) —
+# derive Hermes's expected variable from it here rather than rename
+# everything else to match Hermes's internal naming.
+export API_SERVER_KEY="$HERMES_API_KEY"
+
 # Binds to all interfaces here (unlike the bundled deployment's 127.0.0.1) —
 # this container's whole purpose is to be reachable from the Fly app over the
-# public internet. That means HERMES_API_KEY is the only thing standing
+# public internet. That means API_SERVER_KEY is the only thing standing
 # between this endpoint and anyone who finds it: run this behind the
 # Caddy reverse proxy in docker-compose.yml (TLS termination + the one
-# HERMES_API_KEY check), never bind the gateway port directly to a public
-# interface without it in front.
+# key check), never bind the gateway port directly to a public interface
+# without it in front.
 echo "Starting standalone Hermes research agent on 0.0.0.0:${API_SERVER_PORT:-8765}"
 exec env API_SERVER_ENABLED=1 \
   API_SERVER_HOST=0.0.0.0 \
   API_SERVER_PORT="${API_SERVER_PORT:-8765}" \
+  API_SERVER_KEY="$API_SERVER_KEY" \
   hermes gateway run

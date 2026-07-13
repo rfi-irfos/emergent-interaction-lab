@@ -133,19 +133,23 @@ export default function App() {
     return <CertificationPage content={content} />
   }
 
+  // A content-page hash (#p/<slug>) opens the in-house dark modal over the
+  // homepage — never the plain white DynamicPage. So when the modal is active,
+  // skip the white-page route below and render PublicSite + the modal instead.
+  if (pageModalSlug) {
+    const modalPage = (content.pages ?? []).find(p => p.slug === pageModalSlug)
+    if (modalPage) {
+      return (
+        <>
+          <PublicSite content={content} />
+          <PageModal page={modalPage} content={content} onClose={() => { setPageModalSlug(null); if (window.location.hash.startsWith('#p/')) window.history.pushState('', document.title, window.location.pathname + window.location.search) }} />
+        </>
+      )
+    }
+  }
+
   if (route.pageSlug) {
     const page = (content.pages ?? []).find(p => p.slug === route.pageSlug)
     if (page) return <DynamicPage page={page} content={content} />
   }
-
-  const modalPage = pageModalSlug
-    ? (content.pages ?? []).find(p => p.slug === pageModalSlug)
-    : undefined
-
-  return (
-    <>
-      <PublicSite content={content} />
-      {modalPage && <PageModal page={modalPage} content={content} onClose={() => { setPageModalSlug(null); if (window.location.hash.startsWith('#p/')) window.history.pushState('', document.title, window.location.pathname + window.location.search) }} />}
-    </>
-  )
 }
