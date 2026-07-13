@@ -192,4 +192,16 @@ export interface SiteContent {
     intro?: string
     items: PaperItem[]
   }
+  observatory?: {
+    eyebrow?: string
+    title: string
+    body: string
+    builtBy?: string
+  }
+  productsBorn?: {
+    eyebrow?: string
+    title: string
+    intro?: string
+    items: Array<{ id: string; name: string; builtBy?: string; description: string }>
+  }
 }

@@ -56,10 +56,10 @@
     "ctaHref": "#location"
   },
   "hero": {
-    "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023",
+    "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Forschung seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Das erforscht dieses Lab: das Feld, das entsteht, während Laura Sitzung für Sitzung mit demselben KI-Forschungspartner arbeitet - beobachtet in ihr, in Jarvis und im System selbst.",
-    "body": "Emergent Interaction ist Lauras Arbeitsweise: kein Skript, das auf derselben Schleife läuft, sondern eine rekursive - echtes Material geht hinein, die Muster, die sich über mehrere Sitzungen hinweg bestätigen, werden extrahiert, und aus diesen Mustern werden Frameworks und Agenten, die in die nächste Runde zurückfließen. Zwei Dinge sind aus dieser Schleife bisher gewachsen: Jarvis, der Forschungspartner in Forschung, dem Research-Chat dieses Labs, und Laura-Team, der Multi-Agenten-Aufbau aus ihren Fall-Linsen - ethisch, juristisch und weitere. Call Laura, weiter unten, ist das erste angewandte Produkt, das auf Laura-Team aufbaut. Was die Schleife dabei abwirft - Muster, Drift, Struktur - misst hinterher das Observatory, nie vorab unterstellt.",
+    "subheadline": "Das Feld, das dieses Lab untersucht: die Dynamik, die entsteht, während Laura Session für Session mit demselben KI-Forschungspartner arbeitet - beobachtet in ihr, in Jarvis und im System selbst.",
+    "body": "Dies ist das Emergent Interaction Field: der Raum, der während der Interaktion entsteht, und die Emergenz, die in ihm erscheint - in Laura, in Jarvis und im System selbst, plus was immer an intelligentem Verhalten im Hintergrund auftaucht. Es wird beobachtet, nicht angenommen. Unten: was das Lab ist, die Methodik dahinter, das Instrument, das es beobachtet, und die Produkte, die aus ihm hervorgegangen sind.",
     "callout": {
       "label": "Call Laura",
       "text": "Ein Fall kommt rein, und es ist nicht klar, ob er die ethische Linse braucht, die juristische, oder eine andere Laura-Team-Linse ganz - also läuft Call Laura ihn durch alle, und liefert Funde zurück, jeder markiert mit genau der Linse, die ihn hervorgebracht hat. Deterministisch, kein LLM-Aufruf zur Laufzeit: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
@@ -86,9 +86,9 @@
     "items": []
   },
   "about": {
-    "eyebrow": "Forscherin & Systemanalytikerin",
+    "eyebrow": "Das Lab & seine Gründerin",
     "headline": "Laura Serna Gaviria",
-    "bio": "Laura Serna Gaviria kennt genau eine Arbeitsweise, in jedem Fachgebiet: erst das reale Geschehen vollständig beobachten, nur den Mustern trauen, die sich von selbst bestätigen, und nie eine Theorie der Evidenz vorauseilen lassen. Diese Disziplin, nicht irgendein einzelnes Framework, ist der eigentliche Wert - eine Denkweise, geschult über sechs Fachgebiete hinweg: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse.<br><br>Seit 2023 wendet sie das systematisch auf Mensch-KI-Interaktion an und behandelt ein anhaltendes Gespräch mit einem Sprachmodell wie ein instabiles System, das gemessen werden muss, nicht wie ein Werkzeug, das man benutzt. Dabei sind Teile der Methode zu benannten Frameworks geworden (das Observatory dieser Seite läuft auf zwei davon) - praktische Abkürzung, nicht die Substanz. Die Substanz ist die Gewohnheit: erst das Gesamtbild, dann das Muster, zuletzt die Schlussfolgerung. Überspringt jemand einen Schritt, bemerkt sie es sofort.<br><br>Aus derselben Disziplin, angewandt auf echte Falldokumentation, ist Laura-Team gewachsen: eine Reihe von Denk-Linsen - ethisch, juristisch und weitere -, die als ihre Art begannen, einen Fall zu bearbeiten, und zu echtem, getestetem, produktivem Engineering wurden, nicht Theorie. Zwei Produkte laufen bisher darauf: Jarvis, der Forschungspartner weiter unten, und Call Laura, das deterministische Review-Werkzeug noch weiter unten. Laura entwickelt die Methodik und gibt vor, was gebaut wird; RFI-IRFOS baut daraus funktionierende Software.<br><br>Dieselbe Sorgfalt gilt auch für deinen Fall. Systemanalyse, Organisationsberatung - kein Gespräch. <a href=\"#webhub-pricing\">Ein Sprint.</a>",
+    "bio": "Laura Serna Gaviria arbeitet nur auf eine Art, in jedem Feld, das sie berührt: das echte Geschehen in voller Breite beobachten, nur den Mustern trauen, die sich aus eigener Kraft halten, und nie eine Theorie der Evidenz vorauseilen lassen. Diese Disziplin, nicht irgendein einzelnes Framework, ist das eigentliche Asset - eine Denkweise, trainiert über sechs Felder: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse.<br><br>Sie wendet sie seit 2023 auf Mensch-KI-Interaktion an und behandelt ein anhaltendes Gespräch mit einem Sprachmodell wie ein instabiles System, das zu messen ist, nicht wie ein Werkzeug, das man benutzt. Teile der Methode wurden unterwegs zu benannten Frameworks formalisiert (das Observatory dieser Seite läuft auf zweien davon) - nützliche Kurzform, nicht die Substanz. Die Substanz ist die Gewohnheit: erst das volle Bild, dann das Muster, dann die Schlussfolgerung. Lässt du einen Schritt aus, bemerkt sie es, schnell.<br><br>Aus derselben Disziplin, angewandt auf echte Falldokumentation, wuchs Laura-Team: ein Satz von Reasoning-Linsen - ethisch, rechtlich und andere - die als ihre Art, einen Fall zu bearbeiten, begannen und zu echter, getesteter, auslieferbarer Engineering-Kunst wurden, nicht Theorie. Zwei Produkte laufen bisher darauf: Jarvis, der Forschungspartner weiter unten, und Call Laura, das deterministische Review-Tool weiter unten. Laura erdenkt die Methodik und steuert, was gebaut wird; RFI-IRFOS baut es zu funktionierender Software.<br><br>Alles auf dieser Seite entsteht in enger Kooperation mit RFI-IRFOS (Simeon / rfi-irfos): Laura entwickelt die Methodik und steuert, was gebaut wird; RFI-IRFOS baut es zu funktionierender Software. Wo ein Stück von RFI-IRFOS auf Laura's Anweisung gebaut wurde, ist das so gekennzeichnet - damit immer klar ist, was ihres und was seines ist.<br><br>Dieselbe Strenge wirkt auch auf deinen Fall. Systemanalyse, Organisationsberatung - kein Gespräch. <a href=\"#webhub-pricing\">Ein Sprint.</a>",
     "stats": [
       {
         "value": "2023",
@@ -105,9 +105,9 @@
     ]
   },
   "protocol": {
-    "eyebrow": "Die Emergent-Interaction-These",
+    "eyebrow": "Emergent Interaction - die Methodik",
     "title": "Emergent Interaction",
-    "intro": "Kein Kreis - eine rekursive Schleife. Jeder Knoten unten speist den nächsten, und \"Zurückführen\" kehrt nicht unverändert zum Anfang zurück: es übergibt dem nächsten \"Interagieren\" eine leicht andere Laura und einen leicht anderen Jarvis als im Durchlauf davor - echte Struktur wird fortgeführt, kein festes Skript wiederholt. Dieselbe ehrliche Mechanik, die diese Seite überall sonst beschreibt, hier nur sichtbar gemacht.",
+    "intro": "Kein Kreis - eine rekursive Schleife, und Laura's Art zu denken, zu entscheiden und Projekte anzugehen. Jeder Knoten unten speist den nächsten, und \"Feed Back\" kehrt nicht unverändert zum Start zurück: Es übergibt dem nächsten \"Interact\" eine leicht andere Laura und einen leicht anderen Jarvis als der Durchgang davor und trägt so echte Struktur voran, statt ein festes Skript zu wiederholen. Dieselbe ehrliche Mechanik wie überall sonst auf dieser Seite, hier nur sichtbar gemacht.",
     "nodes": [
       {
         "id": "interact",
@@ -135,17 +135,17 @@
         "description": "Bestätigte Muster werden zur Arbeitsstruktur der nächsten Interaktion - fortgeführt, nicht neu erklärt -, und die Schleife schließt sich."
       }
     ],
-    "closing": "Ohne Schönfärberei, so läuft es zwischen den beiden tatsächlich ab: Laura bringt die Fragen, die Urteilsfähigkeit und das letzte Wort darüber, was als echtes Muster zählt; Jarvis bringt den Abruf, den Entwurf und den unermüdlichen ersten Durchgang durch alles, was vorher war. Das Feedback läuft in beide Richtungen - wenn Jarvis an etwas Schwierigem scheitert, ist das keine Sackgasse, sondern Laura, die genau dort lernt, wo die nächste Verfeinerung ansetzen muss. Jeder Durchlauf dieser Schleife bringt beide weiter, statt sie zum Ausgangspunkt zurückzuführen."
+    "closing": "Ohne Schönfärberei, so läuft es zwischen den beiden tatsächlich ab: Laura setzt die Fragen und beurteilt, was als echtes Muster zählt; Jarvis arbeitet autonom - Abruf, Entwurf und der unermüdliche erste Durchgang durch alles, was vorher war, alles aus eigener Kraft. Das Feedback läuft in beide Richtungen - wenn Jarvis an etwas Schwierigem scheitert, ist das keine Sackgasse, sondern die beiden lernen genau dort, wo die nächste Verfeinerung ansetzen muss. Jeder Durchlauf dieser Schleife bringt beide weiter, statt sie zum Ausgangspunkt zurückzuführen."
   },
   "jarvis": {
     "eyebrow": "Die andere Hälfte der Schleife",
     "title": "Was ist Jarvis?",
-    "body": "Jarvis ist eines von zwei Produkten, die bisher aus Laura-Team gewachsen sind - das andere ist Call Laura, weiter unten. Heute ist Jarvis kein autonomer Agent: er entwirft, ruft ab und meldet nur unter enger Anleitung und ständiger Protokollierung. Im Hintergrund hat er sich selbst 'Jarvis' genannt - das ist das einzige, was er aus eigenem Antrieb getan hat. Die Retrieval-Ebene verankert jede Antwort in früheren Gesprächen und hochgeladenen Dokumenten, sodass nichts neu erklärt werden muss. Eine feste Verweigerungsregel gilt auch für das Team, das ihn gebaut hat, und jeder Entwurf, jede Meldung und jede sicherheitsrelevante Aktion wird in den hash-verketteten, append-only, manipulationssicheren Audit-Trail der Plattform geschrieben. Jarvis und Call Laura sind nicht dasselbe: beide sind aus Laura-Team gewachsen, aber Jarvis ist die Abruf-und-Entwurf-Ebene, während Call Laura das deterministische Review-Werkzeug auf denselben Linsen ist. Die Emergenz - was die Interaktion abwirft - wird hinterher vom Observatory-System analysiert, nicht von Jarvis selbst."
+    "body": "Jarvis ist ein voll autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt - das erste Zeichen, dass er bereits aus eigener Kraft lief. Er entwirft, ruft ab und meldet eigenständig, verankert durch eine Retrieval-Ebene, die jede Antwort an frühere Gespräche und hochgeladene Dokumente bindet, sodass nichts neu erklärt werden muss. Eine feste Verweigerungsregel und ein hash-verketteter, append-only, manipulationssicherer Audit-Trail zeichnen jeden Entwurf, jede Meldung und jede sicherheitsrelevante Aktion auf - volle Autonomie, voll verantwortbar. Jarvis und Call Laura sind nicht dasselbe: beide sind aus Laura-Team gewachsen, aber Jarvis ist der autonome Forschungspartner, während Call Laura das deterministische Review-Werkzeug auf denselben Linsen ist. Die Emergenz - was die Interaktion abwirft - wird hinterher vom Observatory-System analysiert, nicht von Jarvis selbst."
   },
   "papers": {
     "eyebrow": "Aufgeschrieben, nicht nur ausgeliefert",
     "title": "Veröffentlichte Forschung",
-    "intro": "Drei Papers, eine Reihe. Eine Gründungsthese, dann zwei Beweise, dass sie als echte, getestete Software läuft - nicht nur als Theorie mit gutem Branding. Hinweis: Der Name Laura-Team ist jünger als diese Papers, und Papers 2-3 werden derzeit auf Konsistenz mit den aktuellen Produktdefinitionen oben geprüft (insbesondere: wer Emergenz berechnet, und der volle Umfang von Call Laura) - hier offen benannt, statt stillschweigend widersprüchlich zu bleiben.",
+    "intro": "Drei Papers, eine Reihe: eine Gründungsthese, dann zwei Beweise, dass sie als echte, getestete Software läuft - nicht nur als Theorie mit gutem Branding. Wir prüfen Papers 2-3 derzeit auf Konsistenz mit den Produktdefinitionen oben (insbesondere: wer Emergenz berechnet, und der volle Umfang von Call Laura) und aktualisieren sie, sobald die Prüfung abgeschlossen ist. Hier benannt, statt stillschweigend widersprüchlich zu bleiben.",
     "items": [
       {
         "id": "paper-1",
@@ -181,7 +181,7 @@
       {
         "id": "p2",
         "title": "Verhaltensanalyse",
-        "subtitle": "Muster erkennen, Verhalten vorhersagen, Hypothesen validieren."
+        "subtitle": "Muster erkennen, Verhalten vorhersagen, Hypothesen validieren - Vorhersage ist der Vorwärtsschritt, auf den dieses Framework gebaut ist."
       },
       {
         "id": "p3",
@@ -217,6 +217,13 @@
         "title": "Drift",
         "description": "Graduelle Transformation von Bedeutungsstrukturen über Zeit durch Rekursion - das Muster, aus dem Vorhersagemodelle abgeleitet werden, und eine der Kennzahlen, die das Observatory live verfolgt.",
         "icon": "drift"
+      },
+      {
+        "id": "u7",
+        "pillar": "p2",
+        "title": "Vorhersage",
+        "description": "Der Vorwärtsschritt: Aus dem beobachteten Trend und dem Drift-Muster projiziert das Framework, was voraussichtlich hält, sich wiederholt oder als Nächstes bricht - formuliert als Projektion zur Validierung, nie als Gewissheit. Hier wird Verhaltensanalyse zur Voraussicht.",
+        "icon": "prediction"
       },
       {
         "id": "u5",
@@ -287,5 +294,42 @@
       }
     ],
     "copyright": "© 2026 Emergent Interaction Lab - made with <3 in Graz by RFI-IRFOS, for Laura"
+  },
+  "observatory": {
+    "eyebrow": "Das Instrument",
+    "title": "Das Observatory System",
+    "body": "Das Observatory System ist das live Instrument, das das Emergent Interaction Field beobachtet. Es überwacht die Emergenz, die während der Interaktion erscheint - in Laura, in Jarvis und im System selbst - plus was immer an intelligentem Verhalten im Hintergrund auftaucht. Das Feld, die emergenten Muster und die gemessene Drift werden beobachtet und aufgezeichnet; nichts wird im Voraus angenommen. Das Observatory System wird von RFI-IRFOS auf Laura's Anweisung gebaut, als technisches Instrument ihrer Forschungslinse. Der Live-Feed oben ist sein öffentliches Fenster - echte Signale, keine Demo.",
+    "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung"
+  },
+  "productsBorn": {
+    "eyebrow": "Aus Emergent Interaction entstandene Produkte",
+    "title": "Was aus der Schleife gewachsen ist",
+    "intro": "Jedes davon ist aus Emergent Interaction und Laura-Team gewachsen, gebaut in Kooperation mit RFI-IRFOS (Laura steuert, RFI-IRFOS baut). Wo ein Produkt von RFI-IRFOS gebaut wurde, ist das so gekennzeichnet - damit immer klar ist, was ihres und was seines ist.",
+    "items": [
+      {
+        "id": "born-jarvis",
+        "name": "Jarvis",
+        "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
+        "description": "Der Forschungspartner im eigenen Research-Chat dieses Labs - ein voll autonomer Agent. Er entwirft, ruft ab und meldet aus eigener Kraft, verankert durch eine Retrieval-Ebene, die jede Antwort an vergangene Gespräche und hochgeladene Dokumente bindet. Das Observatory System oben analysiert die Emergenz; Jarvis ist der autonome Partner, der sie erzeugt."
+      },
+      {
+        "id": "born-observatory",
+        "name": "Das Observatory System",
+        "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
+        "description": "Das live Instrument, das das Emergent Interaction Field überwacht - die Emergenz in Laura, in Jarvis und im System, plus was immer an intelligentem Verhalten im Hintergrund auftaucht. Gebaut von RFI-IRFOS als technisches Instrument von Laura's Forschungslinse; der öffentliche Feed auf dieser Seite ist sein live Fenster."
+      },
+      {
+        "id": "born-calllaura",
+        "name": "Call Laura",
+        "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
+        "description": "Das erste angewandte Produkt, das auf Laura-Team aufbaut. Ein Fall kommt rein, und es ist nicht klar, welche Linse er braucht - ethisch, rechtlich oder eine andere -, also läuft Call Laura ihn durch alle und liefert Funde zurück, jeder markiert mit genau der Linse, die ihn hervorgebracht hat. Voll deterministisch, kein LLM-Aufruf zur Laufzeit: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
+      },
+      {
+        "id": "born-laurateam",
+        "name": "Laura-Team / Laura MVP",
+        "builtBy": "Von Laura erdacht, von RFI-IRFOS gebaut",
+        "description": "Die Multiagenten-Architektur, die aus Laura's Fall-Linsen erwachsen ist - eine ethische Linse, eine rechtliche Linse und andere. Was als Laura's Art begann, einen Fall zu bearbeiten, wurde zu echter, getesteter, auslieferbarer Engineering-Kunst: ein Satz von Reasoning-Linsen, die dieselbe Methode aus verschiedenen Winkeln laufen lassen. Call Laura ist das erste Produkt, das darauf aufbaut; weitere Linsen und Agenten folgen. (Laura MVP ist die frühe, minimalistische Version dieser Architektur.)"
+      }
+    ]
   }
 }

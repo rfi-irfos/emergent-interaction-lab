@@ -384,6 +384,26 @@ pub async fn seed_webhub_products(db: &SqlitePool) {
             recurring_interval: Some("month"),
             payment_link_url: "https://buy.stripe.com/8x28wRc925vFdqtcHK7N60D",
         },
+        // ── Behavior offers (added per Laura's review: "Behavior Analysis"
+        //    and behavior-model offers were missing from the ladder) ──────
+        Seed {
+            name: "Behavior Analysis",
+            en_desc: "A read on how behavior actually shifts under sustained interaction - measured as a trend, never dressed up as prediction.",
+            de_desc: "Ein Read, wie sich Verhalten unter anhaltender Interaktion tatsächlich verschiebt - als Trend gemessen, nie als Vorhersage verkauft.",
+            price_cents: 120_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "REPLACE_WITH_STRIPE_LINK", // TODO: paste real Stripe Payment Link
+        },
+        Seed {
+            name: "Behavior Model",
+            en_desc: "The behavioral pattern, formalized - a working model you can test, hand over, and build on, not a slide.",
+            de_desc: "Das Verhaltensmuster, formalisiert - ein lauffähiges Modell, das du testen, übergeben und weiterbauen kannst, keine Slide.",
+            price_cents: 220_000,
+            mode: "payment",
+            recurring_interval: None,
+            payment_link_url: "REPLACE_WITH_STRIPE_LINK", // TODO: paste real Stripe Payment Link
+        },
     ];
 
     for s in seeds {

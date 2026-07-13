@@ -50,6 +50,19 @@ RUN git clone https://github.com/NousResearch/hermes-agent.git /src/hermes \
     && git checkout "${HERMES_REF}" \
     && pip install --no-cache-dir . \
     && rm -rf /src/hermes/.git
+# The api_server platform adapter (what start.sh actually starts Hermes as,
+# below) needs aiohttp, which hermes-agent only pulls in under its
+# "messaging"/"slack"/"matrix"/etc. extras — none of which a plain
+# `pip install .` grabs. Without this, `hermes gateway run` starts (the
+# process doesn't crash, so this was invisible to every test that ran
+# against it) but logs "API Server: aiohttp not installed" / "No adapter
+# available for api_server" and never actually binds the port, meaning the
+# bundled Hermes engine was never truly reachable over HTTP. Found
+# 2026-07-13 by actually building and running this Docker image — PR #90's
+# own write-up flagged "we could not build the Docker image locally... the
+# image itself is unverified" as the one gap it couldn't close. Pinned to
+# the exact version hermes-agent's own extras specify.
+RUN pip install --no-cache-dir aiohttp==3.14.1
 
 # ── Stage 4: runtime ─────────────────────────────────────────────────────────
 # Python is in the runtime image because Hermes is a Python agent; the Rust

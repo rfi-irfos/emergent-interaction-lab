@@ -1929,7 +1929,7 @@ button { cursor: pointer; font-family: inherit; }
   .site-webhub-grid { grid-template-columns: 1fr; }
 }
 
-/* ── JARVIS ──────────────────────────────────────────────────────────────── */
+/* ── JARVIS (legacy, kept for reference) ─────────────────────────────────── */
 /* Amber, not the Live-API badge's green — this is a forward-looking "in
    progress" claim, deliberately styled to read as distinct from an
    already-shipped credential. */
@@ -1939,6 +1939,36 @@ button { cursor: pointer; font-family: inherit; }
 .site-jarvis-next-badge:hover { border-color: #f5a623; box-shadow: 0 6px 18px -6px rgba(245,166,35,.4); }
 .site-jarvis-body { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 .site-jarvis-body p { font-size: 17px; line-height: 1.8; color: var(--text); margin: 0; }
+
+/* ── OBSERVATORY SYSTEM (new) ───────────────────────────────────────────── */
+.site-observatory-body { max-width: 720px; margin: 0 auto; font-size: 17px; line-height: 1.8; color: var(--text); }
+.site-observatory-builtby {
+  display: table; margin: 10px auto 18px;
+  background: var(--surface-sunken); border: 1px solid var(--border);
+  color: var(--text-soft); font-size: 12px; font-weight: 700;
+  font-family: var(--mono); letter-spacing: .04em; padding: 5px 14px; border-radius: 999px;
+}
+
+/* ── PRODUCTS BORN FROM EMERGENT INTERACTION (new) ──────────────────────── */
+.site-productsborn-intro { max-width: 760px; margin: 0 auto 36px; font-size: 16px; line-height: 1.75; color: var(--text); opacity: .85; }
+.site-born-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; max-width: 1060px; margin: 0 auto;
+}
+.site-born-card {
+  background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--primary);
+  border-radius: 14px; padding: 30px 28px; display: flex; flex-direction: column;
+  transition: transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+}
+.site-born-card:hover { transform: translateY(-4px); border-color: var(--brand-cyan); box-shadow: 0 12px 32px rgba(99,240,255,.18); }
+@media (prefers-reduced-motion: reduce) { .site-born-card:hover { transform: none; } }
+.site-born-name { font-size: 19px; font-weight: 800; margin: 0 0 10px; color: var(--text); }
+.site-born-builtBy {
+  align-self: flex-start; margin-bottom: 14px;
+  background: var(--surface-sunken); border: 1px solid var(--border);
+  color: var(--text-soft); font-size: 11px; font-weight: 700;
+  font-family: var(--mono); letter-spacing: .04em; padding: 3px 11px; border-radius: 999px;
+}
+.site-born-desc { font-size: 14.5px; line-height: 1.7; color: var(--text); opacity: .82; margin: 0; }
 
 /* ── CO-EVOLUTION PROTOCOL ─────────────────────────────────────────────────
    The public site's own small animated loop diagram (see
@@ -3533,14 +3563,14 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-reasoning-toggle-btn.active:hover { border-color: #8b7bf0; color: #e9fbff; }
 
-/* Engine picker (Jarvis ↔ Hermes). Inactive it's an ordinary chat-export-btn,
-   like the reasoning toggle; active it takes a distinct teal rather than the
-   reasoning toggle's violet, so the two adjacent toggles are never mistaken for
-   each other at a glance. */
-.chat-engine-toggle-btn.active {
+/* Hermes status indicator, not a toggle (2026-07-13: the engine picker was
+   removed — Hermes is the one brain behind Jarvis now, nothing to switch).
+   Same teal the old active-picker state used, non-interactive: cursor default,
+   no hover state, just an honest "this is who's answering" readout. */
+.chat-engine-indicator {
   border-color: rgba(45,212,191,.55); color: #7fe7d8; background: rgba(45,212,191,.14);
+  cursor: default;
 }
-.chat-engine-toggle-btn.active:hover { border-color: #2dd4bf; color: #e9fbff; }
 
 .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .chat-empty { margin: auto; color: rgba(255,255,255,.35); font-size: 13px; text-align: center; max-width: 320px; }

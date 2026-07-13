@@ -1,0 +1,64 @@
+# Standalone Hermes, standing on its own host in Frankfurt. Two containers:
+#
+#   hermes — the agent itself, gateway bound to 0.0.0.0:8765 inside the
+#            compose network only (not published to the host) — it's reached
+#            exclusively through Caddy, never directly.
+#   caddy  — terminates TLS on the public domain and reverse-proxies to
+#            hermes. HERMES_API_KEY is the actual access control; TLS just
+#            keeps that key (and every prompt/response) off the wire in the
+#            clear. Caddy gets automatic Let's Encrypt certs for free from
+#            just a domain name — no manual cert wrangling.
+#
+# Run from the REPO ROOT (the Hermes Dockerfile COPYs deploy/hermes-config.yaml,
+# a path relative to repo root, not to this directory):
+#
+#   cd /path/to/emergent-interaction-lab
+#   cp deploy/hermes-standalone/.env.example deploy/hermes-standalone/.env
+#   # fill in .env — see that file's own comments for how to generate each secret
+#   docker compose -f deploy/hermes-standalone/docker-compose.yml --env-file deploy/hermes-standalone/.env up -d --build
+
+services:
+  hermes:
+    build:
+      context: ../..
+      dockerfile: deploy/hermes-standalone/Dockerfile
+    restart: unless-stopped
+    environment:
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:?}
+      HERMES_API_KEY: ${HERMES_API_KEY:?}
+      HERMES_MODEL: ${HERMES_MODEL:-}
+      EIL_MCP_URL: ${EIL_MCP_URL:?}
+      EIL_MCP_TOKEN: ${EIL_MCP_TOKEN:?}
+    volumes:
+      # Hermes's long-term memory (engram.db, sessions, profile) — a real
+      # Docker volume on this host's own disk, not a container writable
+      # layer. This is the entire point of moving off Fly: nothing here
+      # resets on restart, redeploy, or idle. It only grows.
+      - hermes_data:/app/data
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      HERMES_DOMAIN: ${HERMES_DOMAIN:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - hermes
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  hermes_data:
+  caddy_data:
+  caddy_config:

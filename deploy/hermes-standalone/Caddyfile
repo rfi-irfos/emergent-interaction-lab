@@ -1,0 +1,5 @@
+{$HERMES_DOMAIN} {
+	# Automatic HTTPS via Let's Encrypt — needs only a DNS A/AAAA record for
+	# this domain pointed at the server's public IP, and ports 80+443 open.
+	reverse_proxy hermes:8765
+}

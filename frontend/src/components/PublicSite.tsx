@@ -370,6 +370,9 @@ function IconBehavior() {
 function IconDrift() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="15" y2="12" strokeDasharray="2.2 3.4"/><polyline points="13 6.5 20 12 13 17.5"/></svg>
 }
+function IconPrediction() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l5-5 4 3 8-9"/><polyline points="15 6 21 6 21 12"/></svg>
+}
 function IconField() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="9.5" cy="12" r="6.5" opacity=".8"/><circle cx="14.5" cy="12" r="6.5" opacity=".8"/></svg>
 }
@@ -385,6 +388,7 @@ function UspIcon({ icon }: { icon?: string }) {
     case 'emergence':   return <IconEmergence />
     case 'behavior':     return <IconBehavior />
     case 'drift':        return <IconDrift />
+    case 'prediction':   return <IconPrediction />
     case 'field':        return <IconField />
     case 'layers':        return <IconLayers />
     case 'constraints':  return <IconConstraints />
@@ -1360,21 +1364,37 @@ export function PublicSite({
           </section>
         ) : null}
 
-        {/* ── JARVIS ───────────────────────────────────────────────────── */}
-        {content.jarvis?.body && (
-          <section className={reveal("site-section site-section-alt site-jarvis")} id="jarvis" data-cid="jarvis.title">
-            {content.jarvis.eyebrow && <div className="site-eyebrow">{content.jarvis.eyebrow}</div>}
-            <Reveal from="bottom"><h2 className="site-section-title">{content.jarvis.title}</h2></Reveal>
-            {content.jarvis.nextBadge && (
-              <span className="site-about-proof-badge site-jarvis-next-badge">{content.jarvis.nextBadge}</span>
+        {/* ── OBSERVATORY SYSTEM (new) ─────────────────────────────────── */}
+        {content.observatory?.body && (
+          <section className={reveal("site-section site-section-alt site-observatory")} id="observatory" data-cid="observatory.title">
+            {content.observatory.eyebrow && <div className="site-eyebrow">{content.observatory.eyebrow}</div>}
+            <Reveal from="bottom"><h2 className="site-section-title">{content.observatory.title}</h2></Reveal>
+            {content.observatory.builtBy && (
+              <span className="site-about-proof-badge site-observatory-builtby">{content.observatory.builtBy}</span>
             )}
-            <div className="site-jarvis-body">
-              {content.jarvis.body.split('\n\n').map((para, i) => (
-                <Reveal key={i} from="bottom" delay={i + 1}><p>{para}</p></Reveal>
+            <Reveal from="bottom" delay={1}><p className="site-observatory-body">{content.observatory.body}</p></Reveal>
+          </section>
+        )}
+
+        {/* ── PRODUCTS BORN FROM EMERGENT INTERACTION (replaces standalone Jarvis) ── */}
+        {content.productsBorn?.items?.length ? (
+          <section className={reveal("site-section site-productsborn")} id="products-born" data-cid="productsBorn.title">
+            {content.productsBorn.eyebrow && <div className="site-eyebrow">{content.productsBorn.eyebrow}</div>}
+            <Reveal from="bottom"><h2 className="site-section-title">{content.productsBorn.title}</h2></Reveal>
+            {content.productsBorn.intro && <Reveal from="bottom" delay={1}><p className="site-productsborn-intro">{content.productsBorn.intro}</p></Reveal>}
+            <div className="site-born-grid">
+              {content.productsBorn.items.map((p, i) => (
+                <Reveal key={p.id} from="bottom" delay={i + 1}>
+                  <article className="site-born-card">
+                    <h3 className="site-born-name">{p.name}</h3>
+                    {p.builtBy && <span className="site-born-builtBy">{p.builtBy}</span>}
+                    <p className="site-born-desc" dangerouslySetInnerHTML={{ __html: p.description }} />
+                  </article>
+                </Reveal>
               ))}
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* ── LIVE ACTIVITY (visitor-facing proof the hero's "live laufendes
              Forschungsinstrument" claim is real, not just copy) ──────────── */}

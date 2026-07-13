@@ -531,6 +531,48 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
       ],
     },
   },
+  'Behavior Analysis': {
+    phase: 'Review',
+    en: {
+      tagline: 'A read on how behavior actually shifts under sustained interaction - measured as a trend, never dressed up as prediction.',
+      points: [
+        'Tool-usage patterns and how they change over time, reconstructed from logged interaction',
+        'Tone, confidence, and decision shifts tracked against the real record',
+        'An honest trend read - increasing, decreasing, or steady - labeled as a trend, not a forecast',
+        'Where a shift is worth watching before it becomes a problem',
+      ],
+    },
+    de: {
+      tagline: 'Ein Read, wie sich Verhalten unter anhaltender Interaktion tatsächlich verschiebt - als Trend gemessen, nie als Vorhersage verkauft.',
+      points: [
+        'Werkzeugnutzungsmuster und wie sie sich über Zeit verändern, rekonstruiert aus protokollierter Interaktion',
+        'Tonfall-, Sicherheits- und Entscheidungsverschiebungen, verfolgt anhand des echten Records',
+        'Ein ehrlicher Trend-Read - steigend, fallend oder stabil - als Trend markiert, nicht als Prognose',
+        'Wo sich eine Verschiebung zu beobachten lohnt, bevor sie zum Problem wird',
+      ],
+    },
+  },
+  'Behavior Model': {
+    phase: 'Review',
+    en: {
+      tagline: 'The behavioral pattern, formalized - a working model you can test, hand over, and build on, not a slide.',
+      points: [
+        'The recurring behavior pattern extracted and written down explicitly',
+        'A runnable model you can test against new data',
+        'Edge cases and where the model breaks, stated up front',
+        'Something you can hand to a team or an agent system as a spec',
+      ],
+    },
+    de: {
+      tagline: 'Das Verhaltensmuster, formalisiert - ein lauffähiges Modell, das du testen, übergeben und weiterbauen kannst, keine Slide.',
+      points: [
+        'Das wiederkehrende Verhaltensmuster extrahiert und explizit aufgeschrieben',
+        'Ein lauffähiges Modell, das du gegen neue Daten testen kannst',
+        'Randfälle und wo das Modell bricht, von vornherein benannt',
+        'Etwas, das du einem Team oder einem Agentensystem als Spezifikation übergeben kannst',
+      ],
+    },
+  },
 }
 
 // Two genuinely different methodologies live in the same product list now
@@ -545,6 +587,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
 const SYSTEMAUDIT_NAMES = new Set([
   'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
   'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview', 'Framework Design from Analysis',
+  'Behavior Analysis', 'Behavior Model',
   'System Design & Deployment', 'Watchtower Retainment', 'Multiagent System Coordination', 'Further Development',
 ])
 
