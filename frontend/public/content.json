@@ -57,8 +57,9 @@
   },
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Est. 2023",
-    "headline": "Unsure which tool to call? Call Laura.",
-    "subheadline": "This isn't a brochure. It's a live instrument, running in public - every conversation, blog post, and research note here feeds the Observatory, which tracks how meaning, structure, and behavior emerge from sustained human-AI interaction as it happens, not after the fact.",
+    "headline": "Emergent Interaction Lab",
+    "subheadline": "Unsure which tool to call.. call Laura!",
+    "body": "The field isn't a brochure. In 2024, Laura became entangled in a criminal case — and the analyses and documentation she produced are what this multi-agent system grew from: 15 agents I built, drawn straight from my own head. It's a live instrument, running in public — every conversation, blog post, and research note here feeds the Observatory, which tracks how meaning, structure, and behavior emerge from sustained human-AI interaction as it happens, not after the fact.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",

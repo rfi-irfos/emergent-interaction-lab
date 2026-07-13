@@ -21,8 +21,9 @@ export const defaultContent: SiteContent = {
   },
   hero: {
     tag: 'Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023',
-    headline: 'Unsicher, welches Tool zu rufen? Ruf Laura an.',
-    subheadline: 'Das hier ist keine statische Broschüre, sondern ein live laufendes Forschungsinstrument. Jedes Gespräch, jeder Blogbeitrag und jede Forschungsnotiz speist das Observatory - das Instrument, das misst, wie Bedeutung, Struktur und Verhalten aus anhaltender Mensch-KI-Interaktion entstehen, während es passiert.',
+    headline: 'Emergent Interaction Lab',
+    subheadline: 'Unsicher, welches Tool zu rufen.. ruf Laura an!',
+    body: "Das Field ist keine Broschüre. 2024 geriet Laura in einen Kriminalfall — und die Analysen und die Dokumentation, die sie erstellt hat, sind das, woraus dieses Multiagent-System wuchs: 15 Agents, die ich aus meinem eigenen Kopf gebaut habe. Es ist ein live laufendes Instrument, öffentlich einsehbar — jedes Gespräch, jeder Blogbeitrag und jede Forschungsnotiz speist das Observatory, das misst, wie Bedeutung, Struktur und Verhalten aus anhaltender Mensch-KI-Interaktion entstehen, während es passiert, nicht erst danach.",
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
     ctaSecLabel: 'Über das Projekt',

@@ -967,6 +967,11 @@ export function PublicSite({
         <CanvasEl id="hero.subheadline" pos={pos('hero.subheadline', { x: 80, y: 390 })} onMove={p => moveEl('hero.subheadline', p)} minWidth={400} noPad label="Unterüberschrift">
           <p className="site-hero-sub" dangerouslySetInnerHTML={{ __html: hero.subheadline }} />
         </CanvasEl>
+        {hero.body && (
+          <CanvasEl id="hero.body" pos={pos('hero.body', { x: 80, y: 470 })} onMove={p => moveEl('hero.body', p)} minWidth={400} noPad label="Body">
+            <p className="site-hero-body" dangerouslySetInnerHTML={{ __html: hero.body }} />
+          </CanvasEl>
+        )}
         <CanvasEl id="hero.cta" pos={pos('hero.cta', { x: 80, y: 490 })} onMove={p => moveEl('hero.cta', p)} minWidth={280} label="Buttons">
           <div className="site-hero-btns">
             <a className="site-btn-lime-lg" dangerouslySetInnerHTML={{ __html: hero.ctaLabel }} />
@@ -1219,6 +1224,7 @@ export function PublicSite({
             )}
             <E field="hero.headline" value={hero.headline} as="h1" className="site-hero-h1" />
             <E field="hero.subheadline" value={hero.subheadline} as="p" className="site-hero-sub" />
+            {hero.body && <E field="hero.body" value={hero.body} as="p" className="site-hero-body" />}
             <div className="site-hero-btns">
               <E field="hero.ctaLabel" value={hero.ctaLabel} as="a" href={hero.ctaHref} className="site-btn-lime-lg" />
               {hero.ctaSecLabel && <E field="hero.ctaSecLabel" value={hero.ctaSecLabel} as="a" href={hero.ctaSecHref ?? '#'} className="site-btn-ghost-lg" />}

@@ -112,6 +112,7 @@ export interface SiteContent {
     tag?: string
     headline: string
     subheadline: string
+    body?: string
     ctaLabel: string
     ctaHref: string
     ctaSecLabel?: string

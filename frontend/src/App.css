@@ -396,6 +396,10 @@ button { cursor: pointer; font-family: inherit; }
   font-size: 18px; color: rgba(255,255,255,.82);
   line-height: 1.7; margin-bottom: 40px; max-width: 540px;
 }
+.site-hero-body {
+  font-size: 15px; color: rgba(255,255,255,.66);
+  line-height: 1.72; margin-bottom: 28px; max-width: 600px;
+}
 .site-hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
 .site-btn-lime-lg {
   /* hero CTA only — fixed brand cyan + dark text, matches the always-dark hero band */
