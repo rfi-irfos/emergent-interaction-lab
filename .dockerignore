@@ -1,0 +1,13 @@
+.git
+.github
+.claude
+node_modules/
+backend/target/
+backend/uploads/
+backend/visits.db
+frontend/node_modules/
+frontend/dist/
+*.db
+*.sqlite
+*.sqlite3
+*.log

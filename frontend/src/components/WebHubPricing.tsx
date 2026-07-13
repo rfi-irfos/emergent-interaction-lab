@@ -35,6 +35,10 @@ function formatPrice(cents: number, currency: string, lang: 'en' | 'de'): string
 // stops matching and no card gets the badge. Nothing breaks.
 const FLAGSHIP_NAME = 'Emergent Case Intelligence Sprint'
 
+// Bestseller highlight — same resilient pattern: if the name changes
+// upstream, the cyan box simply stops matching, nothing breaks.
+const BESTSELLER_NAME = 'Schnittstellenreview'
+
 // Minimalist inline SVGs — never emojis.
 const BASKET = (
   <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -199,6 +203,7 @@ const COPY = {
     title: "Your case isn't random. It has a logic. I find it.",
     intro: "Bring a complex case, a set of documents, case-file access, or a conversation history. I reconstruct what it actually is: the gaps, the contradictions, the recurring patterns - and the logic a framework or agent system gets built from. Not a vibe check. Structure.",
     flagshipBadge: 'Core offer',
+    bestsellerBadge: 'Bestseller',
     recurring: 'month',
     more: 'More',
     loading: 'Loading the offer ladder…',
@@ -221,6 +226,7 @@ const COPY = {
     title: 'Dein Fall ist kein Zufall - er hat eine Logik. Ich finde sie.',
     intro: 'Du bringst einen komplexen Fall, eine Dokumentation, Akteneinsicht oder einen Interaktionsverlauf. Ich rekonstruiere daraus, was er wirklich ist: Mängel, Widersprüche, Lücken - und die Logik, aus der sich ein Framework oder Agentensystem ableiten lässt. Kein Bauchgefühl. Struktur.',
     flagshipBadge: 'Kernangebot',
+    bestsellerBadge: 'Bestseller',
     recurring: 'Monat',
     more: 'Mehr',
     loading: 'Angebotsleiter wird geladen…',
@@ -319,9 +325,11 @@ export function WebHubPricing() {
         const auditGroup = products.filter(p => SYSTEMAUDIT_NAMES.has(p.name))
         const renderCard = (p: PublicProduct, i: number) => {
           const isFlagship = p.name === FLAGSHIP_NAME
+          const isBestseller = p.name === BESTSELLER_NAME
           return (
-            <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}`}>
+            <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}${isBestseller ? ' bestseller' : ''}`}>
               {isFlagship && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
+              {isBestseller && <div className="site-webhub-bestflag">{c.bestsellerBadge}</div>}
               <h3>{p.name}</h3>
               <div className="site-webhub-price">
                 {formatPrice(p.price_cents, p.currency, lang)}

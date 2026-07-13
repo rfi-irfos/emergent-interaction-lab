@@ -60,6 +60,13 @@ button { cursor: pointer; font-family: inherit; }
   --mid: var(--text-soft);
   --light: var(--surface-sunken);
 
+  /* Featured-tier highlight (bestseller cyan box + price green) — tuned per
+     theme so the cyan reads on light AND dark, and the price green is a muted
+     darker tint rather than neon "price green". */
+  --cyan-hi: #0e8a9c;
+  --on-cyan: #ffffff;
+  --price: #2e7d52;
+
   background: var(--bg);
   color: var(--text);
 }
@@ -81,6 +88,11 @@ button { cursor: pointer; font-family: inherit; }
   --shadow: rgba(0, 0, 0, .5);
   /* Dark bg has room for the Observatory's own purple, unmuted. */
   --accent-purple: #8b5cf6;
+  /* Featured-tier highlight tuned for the dark palette (bright cyan on navy,
+     muted-but-legible price green). */
+  --cyan-hi: #34e1ff;
+  --on-cyan: #03050a;
+  --price: #4cc38a;
   /* Glass-panel tokens: translucent surfaces over the shared emergence-field
      backdrop, instead of flat opaque section colors — see .site-emergence-field. */
   --glass-bg: rgba(16, 26, 44, .52);
@@ -1764,8 +1776,21 @@ button { cursor: pointer; font-family: inherit; }
   border-color: var(--primary);
   box-shadow: inset 0 0 0 1px var(--primary), 0 14px 34px -16px rgba(0, 0, 0, .55);
 }
-.site-webhub-card.flagship h3,
-.site-webhub-card.flagship .site-webhub-price { color: var(--text); }
+.site-webhub-card.flagship h3 { color: var(--text); }
+/* Bestseller highlight — Schnittstellenreview (Systemaudit ladder) gets a
+   cyan box mirroring the flagship's primary box, so the two "featured" cards
+   read as a deliberate pairing rather than two competing accents. */
+.site-webhub-card.bestseller {
+  background: var(--surface);
+  border-color: var(--cyan-hi);
+  box-shadow: inset 0 0 0 1px var(--cyan-hi), 0 14px 34px -16px rgba(0, 0, 0, .55);
+}
+.site-webhub-card.bestseller h3 { color: var(--text); }
+.site-webhub-bestflag {
+  position: absolute; top: -11px; right: 16px; background: var(--cyan-hi); color: var(--on-cyan);
+  font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 4px;
+}
 .site-webhub-flag {
   position: absolute; top: -11px; left: 16px; background: var(--primary); color: var(--on-primary);
   font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
@@ -1779,7 +1804,7 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; margin-bottom: 8px;
 }
 .site-webhub-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 2px; color: var(--text); line-height: 1.22; }
-.site-webhub-price { font-size: 18px; font-weight: 900; color: var(--text); margin-top: auto; }
+.site-webhub-price { font-size: 18px; font-weight: 900; color: var(--price); margin-top: auto; }
 .site-webhub-per { font-size: 10px; font-weight: 600; opacity: .7; }
 /* Bottom row: basket link (left) + More button (right). */
 .site-webhub-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
@@ -1818,7 +1843,7 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-webhub-modal .site-webhub-chip { margin-bottom: 10px; }
 .site-webhub-modal-name { font-size: 20px; font-weight: 800; margin: 0 0 4px; color: var(--text); }
-.site-webhub-modal-price { font-size: 18px; font-weight: 900; color: var(--text); margin: 0 0 16px; }
+.site-webhub-modal-price { font-size: 18px; font-weight: 900; color: var(--price); margin: 0 0 16px; }
 .site-webhub-blk { margin-bottom: 14px; }
 .site-webhub-lbl {
   font: 800 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
