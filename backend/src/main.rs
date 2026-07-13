@@ -144,6 +144,22 @@ pub struct AppState {
     /// is exactly the kind of scope creep a fine-grained, single-repo PAT
     /// is supposed to make impossible even if the model tries.
     pub eil_github_repo: String,
+    /// Google OAuth2 client id/secret + a long-lived refresh token, backing
+    /// ONE Gmail MCP tool: gmail_create_draft. Deliberately draft-only, not
+    /// send — an autonomous, self-modifying (skill-authoring), cron-
+    /// scheduled agent with an unconditional "send real email as Laura"
+    /// capability and no per-send human confirmation was refused outright
+    /// 2026-07-14 (a bad turn or prompt injection could reach a real person
+    /// with nobody able to catch it first). This matches an existing team
+    /// rule elsewhere: Gmail automation stays drafts-only, human-in-the-loop
+    /// always. A draft sits in Gmail until a human actually clicks send.
+    /// Getting the refresh token itself still requires the account owner
+    /// (Laura) to click through Google's OAuth consent screen once, live —
+    /// nothing here can substitute for that; these three stay empty (the
+    /// tool reports "not configured") until that's actually done.
+    pub gmail_client_id: String,
+    pub gmail_client_secret: String,
+    pub gmail_refresh_token: String,
     /// Serializes `auditlog::record`'s "read last row_hash → compute this
     /// row's hash → insert" sequence (see auditlog.rs). SQLite itself is
     /// single-writer, so two concurrent inserts can never actually corrupt
@@ -301,6 +317,9 @@ async fn main() {
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
         eil_github_token: std::env::var("EIL_GITHUB_TOKEN").unwrap_or_default(),
         eil_github_repo: std::env::var("EIL_GITHUB_REPO").unwrap_or_default(),
+        gmail_client_id: std::env::var("GMAIL_CLIENT_ID").unwrap_or_default(),
+        gmail_client_secret: std::env::var("GMAIL_CLIENT_SECRET").unwrap_or_default(),
+        gmail_refresh_token: std::env::var("GMAIL_REFRESH_TOKEN").unwrap_or_default(),
         audit_lock: Arc::new(tokio::sync::Mutex::new(())),
     };
 

@@ -186,6 +186,30 @@ own repository.",
         }));
     }
 
+    // Deliberately draft-only, no send counterpart — refused an unconditional
+    // "send real email as Laura" tool for an autonomous, self-modifying agent
+    // 2026-07-14 (see the gmail_client_id field's own doc comment on
+    // AppState for the full reasoning). A draft sits in Gmail until a human
+    // actually clicks send.
+    if !state.gmail_client_id.is_empty() && !state.gmail_client_secret.is_empty() && !state.gmail_refresh_token.is_empty() {
+        tools.push(json!({
+            "name": "gmail_create_draft",
+            "description": "Create a Gmail DRAFT — never sent automatically. A human \
+has to open Gmail and click send themselves. Use this when a conversation surfaces \
+something worth emailing someone about; you are drafting for a human to review, not \
+sending on your own.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "to": { "type": "string", "description": "Recipient email address." },
+                    "subject": { "type": "string", "description": "Email subject." },
+                    "body": { "type": "string", "description": "Email body, plain text." }
+                },
+                "required": ["to", "subject", "body"]
+            }
+        }));
+    }
+
     Value::Array(tools)
 }
 
@@ -275,6 +299,7 @@ async fn call_tool(state: &AppState, name: &str, args: &Value) -> Result<Value, 
         "github_list_issues" => Ok(github_list_issues(state, args).await),
         "github_create_issue" => Ok(github_create_issue(state, args).await),
         "github_add_comment" => Ok(github_add_comment(state, args).await),
+        "gmail_create_draft" => Ok(gmail_create_draft(state, args).await),
         other => Err(format!("Unknown tool: {other}")),
     }
 }
@@ -410,6 +435,73 @@ fn urlencoding_ref(s: &str) -> String {
         'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => c.to_string(),
         _ => format!("%{:02X}", c as u32),
     }).collect()
+}
+
+/// Exchanges the stored long-lived refresh token for a short-lived Gmail API
+/// access token. No caching: an occasional agent-drafted email is nowhere
+/// near the volume where refresh-token-exchange latency/rate limits matter,
+/// and not caching means there is no stale-token edge case to get wrong.
+async fn gmail_access_token(state: &AppState) -> Result<String, String> {
+    let res = state.http.post("https://oauth2.googleapis.com/token")
+        .form(&[
+            ("client_id", state.gmail_client_id.as_str()),
+            ("client_secret", state.gmail_client_secret.as_str()),
+            ("refresh_token", state.gmail_refresh_token.as_str()),
+            ("grant_type", "refresh_token"),
+        ])
+        .send()
+        .await
+        .map_err(|_| "Google OAuth nicht erreichbar.".to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("Google OAuth lehnt den Refresh-Token ab (HTTP {}).", res.status().as_u16()));
+    }
+    let body: Value = res.json().await.map_err(|_| "Google OAuth-Antwort unlesbar.".to_string())?;
+    body["access_token"].as_str().map(str::to_string)
+        .ok_or_else(|| "Google OAuth-Antwort enthält keinen access_token.".to_string())
+}
+
+/// Builds an RFC 2822 message and base64url-encodes it, exactly what the
+/// Gmail API's `drafts.create` expects in its `message.raw` field — no need
+/// for a full MIME-building crate for a plain-text-only draft this narrow.
+fn build_raw_email(to: &str, subject: &str, body: &str) -> String {
+    use base64::Engine;
+    let msg = format!("To: {to}\r\nSubject: {subject}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n{body}");
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(msg.as_bytes())
+}
+
+/// Creates a Gmail DRAFT — deliberately no send counterpart. See this
+/// tool's own entry in `tool_definitions` and `gmail_client_id`'s doc
+/// comment on `AppState` for why: an unconditional "send real email
+/// autonomously" tool on a self-modifying, cron-scheduled agent was refused
+/// outright. A draft sits in the account until a human opens Gmail and
+/// clicks send themselves.
+async fn gmail_create_draft(state: &AppState, args: &Value) -> Value {
+    if state.gmail_client_id.is_empty() || state.gmail_client_secret.is_empty() || state.gmail_refresh_token.is_empty() {
+        return text_result("Gmail-Tool ist auf diesem Deployment nicht konfiguriert (GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET/GMAIL_REFRESH_TOKEN fehlen).".to_string(), true);
+    }
+    let to = args["to"].as_str().unwrap_or("").trim();
+    let subject = args["subject"].as_str().unwrap_or("").trim();
+    let body = args["body"].as_str().unwrap_or("");
+    if to.is_empty() || subject.is_empty() {
+        return text_result("A draft needs at least `to` and `subject`.".to_string(), true);
+    }
+    let access_token = match gmail_access_token(state).await {
+        Ok(t) => t,
+        Err(msg) => return text_result(msg, true),
+    };
+    let raw = build_raw_email(to, subject, body);
+    let res = state.http.post("https://gmail.googleapis.com/gmail/v1/users/me/drafts")
+        .bearer_auth(&access_token)
+        .json(&json!({ "message": { "raw": raw } }))
+        .send()
+        .await;
+    match res {
+        Ok(r) if r.status().is_success() => {
+            text_result("Entwurf angelegt — liegt in Gmail, wartet auf einen Menschen, der ihn abschickt.".to_string(), false)
+        }
+        Ok(r) => text_result(format!("Entwurf anlegen fehlgeschlagen (HTTP {}).", r.status().as_u16()), true),
+        Err(_) => text_result("Gmail nicht erreichbar.".to_string(), true),
+    }
 }
 
 /// Web search, served from the backend's own DuckDuckGo-backed `agent::web_search`
@@ -578,6 +670,9 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             eil_github_token: String::new(),
             eil_github_repo: String::new(),
+            gmail_client_id: String::new(),
+            gmail_client_secret: String::new(),
+            gmail_refresh_token: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

@@ -1009,6 +1009,9 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             eil_github_token: String::new(),
             eil_github_repo: String::new(),
+            gmail_client_id: String::new(),
+            gmail_client_secret: String::new(),
+            gmail_refresh_token: String::new(),
         }
     }
 

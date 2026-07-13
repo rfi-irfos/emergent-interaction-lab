@@ -228,6 +228,18 @@ Die ID dieses Gesprächs ist `{conversation_id}`. Gib sie beim Anlegen einer Not
         ));
     }
 
+    if crate::mcp::enabled(state)
+        && !state.gmail_client_id.is_empty()
+        && !state.gmail_client_secret.is_empty()
+        && !state.gmail_refresh_token.is_empty()
+    {
+        s.push_str(
+            "\n\nDu hast außerdem `gmail_create_draft`: legt einen echten Gmail-ENTWURF an, \
+schickt aber nie automatisch ab — ein Mensch muss den Entwurf selbst öffnen und absenden. \
+Behaupte nie, du hättest eine E-Mail verschickt; du legst höchstens einen Entwurf an.",
+        );
+    }
+
     s
 }
 
@@ -614,6 +626,9 @@ mod tests {
             github_api_base: "https://api.github.com".to_string(),
             eil_github_token: String::new(),
             eil_github_repo: String::new(),
+            gmail_client_id: String::new(),
+            gmail_client_secret: String::new(),
+            gmail_refresh_token: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

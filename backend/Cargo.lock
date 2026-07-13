@@ -188,6 +188,7 @@ dependencies = [
  "async-stream",
  "axum",
  "axum-extra",
+ "base64",
  "chrono",
  "dotenvy",
  "futures",

@@ -30,4 +30,9 @@ pdf-extract = "0.7"
 hmac = "0.12"
 sha2 = "0.10"
 hex = "0.4"
+# Gmail draft creation (mcp.rs::gmail_create_draft) needs base64url for the
+# RFC 2822 message body the Gmail API's drafts.create expects — already
+# present in Cargo.lock as a transitive dep (reqwest's own tree), so this
+# should not pull in anything new on a disk-constrained build.
+base64 = "0.22"
 
