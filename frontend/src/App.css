@@ -468,41 +468,17 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1160px; margin: 0 auto;
 }
 .site-livestats-tile {
-  background: var(--surface); padding: 32px 20px; border-radius: 14px;
+  background: var(--surface); padding: 22px 16px; border-radius: 14px;
   border: 1px solid var(--border); border-top: 3px solid var(--primary);
-  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
   transition: transform .3s ease, box-shadow .3s ease;
-  /* Same corner-bracket-frame + radar/dial treatment as the admin
-     Observatory's .obs-stat (see the HUD FRAMING section above) — this is
-     the public site's own stat tile, the plan's explicit "e.g. behind stat
-     tiles" example, brought over verbatim rather than a second look. */
-  position: relative;
-  isolation: isolate;
-}
-.site-livestats-tile::after {
-  content: '';
-  position: absolute; inset: 5px; z-index: -1; pointer-events: none;
-  --corner-c: var(--brand-cyan);
-  background:
-    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(99,240,255,.18) 8px 9px, transparent 9px 15px, rgba(99,240,255,.11) 15px 16px, transparent 16px),
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
-  opacity: .5;
-  transition: opacity .2s ease;
 }
 .site-livestats-tile:hover { transform: translateY(-4px); box-shadow: 0 12px 32px var(--shadow); }
-.site-livestats-tile:hover::after { opacity: .85; }
 .site-livestats-tile strong {
-  font-size: 34px; font-weight: 900; font-family: var(--mono); color: var(--text);
+  font-size: 27px; font-weight: 900; font-family: var(--mono); color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.site-livestats-tile span { font-size: 13px; color: var(--text-soft); font-weight: 500; line-height: 1.4; }
+.site-livestats-tile span { font-size: 12.5px; color: var(--text-soft); font-weight: 500; line-height: 1.4; }
 .site-livestats-status, .site-shipping-status {
   text-align: center; font-size: 14px; color: var(--text-soft); padding: 12px 0;
 }
@@ -558,9 +534,12 @@ button { cursor: pointer; font-family: inherit; }
 .site-focus-badge strong { color: var(--text); font-weight: 700; }
 
 /* ── SIGNAL LEVEL BARS (public homepage) — 4 fixed, already-labeled
-   categories compared by magnitude, so one hue carries every bar; identity
-   comes from the text label beside it, not from color (see dataviz skill's
-   "sequential is the safe default unless the job is identity/polarity"). */
+   categories. Each level gets its own hue (same human=purple / ai=blue /
+   interaction=teal / system=amber semantic as the admin Observatory's own
+   LEVEL_DONUT_COLORS in EmergenceMonitor.tsx — literal hex here rather than
+   its --obs-* vars, which are scoped to .obs-accents/.obs-panel and not
+   available on the public page) so the four rows read as distinct
+   categories at a glance, not just four lengths of the same color. */
 .site-signal-bars {
   display: flex; flex-direction: column; gap: 16px;
   max-width: 720px; margin: 0 auto;
@@ -573,7 +552,7 @@ button { cursor: pointer; font-family: inherit; }
   flex: 1; height: 10px; border-radius: 6px; background: var(--surface-sunken); overflow: hidden;
 }
 .site-signal-bar-fill {
-  height: 100%; border-radius: 6px; background: var(--primary);
+  height: 100%; border-radius: 6px; background: var(--bar-color, var(--primary));
   transition: width .8s cubic-bezier(.16,1,.3,1);
 }
 .site-signal-bar-value {
@@ -581,14 +560,22 @@ button { cursor: pointer; font-family: inherit; }
   font-size: 14px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums;
 }
 
-/* ── CCET TREND (public homepage) — two-series line, CEI solid + Resonance
-   Frequency dashed. The dash pattern (not just var(--accent-purple)) carries
-   series identity so the two stay distinguishable in the high-contrast theme,
-   where --primary and --accent-purple both collapse to the same amber. */
-.site-ccet-chart-wrap { max-width: 720px; margin: 0 auto; }
+/* ── CCET TREND (public homepage) — MACD-style combo: a per-day turns
+   histogram (real volume, not decoration) sits under two trend lines, CEI
+   solid + Resonance Frequency dashed. The dash pattern (not just
+   var(--accent-purple)) carries series identity so the two stay
+   distinguishable in the high-contrast theme, where --primary and
+   --accent-purple both collapse to the same amber. */
+.site-ccet-chart-wrap {
+  max-width: 720px; margin: 0 auto; padding: 18px 16px 8px;
+  background: var(--surface-alt); border: 1px solid var(--border); border-radius: 12px;
+}
 .site-ccet-chart { width: 100%; height: auto; display: block; }
 .site-ccet-gridline { stroke: var(--border); stroke-width: 1; }
+.site-ccet-gridline-v { stroke: var(--border); stroke-width: 1; opacity: .45; }
 .site-ccet-placeholder-text { fill: var(--text-soft); font-size: 20px; font-family: var(--mono); }
+.site-ccet-hist-bar { fill: var(--accent); opacity: .22; }
+.site-ccet-area-cei { fill: url(#ccet-cei-fill); }
 .site-ccet-line-cei { stroke: var(--primary); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .site-ccet-line-resonance {
   stroke: var(--accent-purple); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
@@ -1909,11 +1896,40 @@ button { cursor: pointer; font-family: inherit; }
   font-size: 16px; line-height: 1.7; color: var(--text-soft);
 }
 .site-protocol-diagram {
-  max-width: 960px; margin: 0 auto; padding: 40px 32px;
+  max-width: 1140px; margin: 0 auto; padding: 40px 32px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-  display: flex; flex-direction: column; align-items: center; gap: 36px;
 }
-.site-protocol-svg { width: 100%; max-width: 500px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+/* Radial layout: the chart is the visual anchor in the middle, with each
+   stage's descriptor arranged around it — top / left+right / bottom-left
+   +bottom-right — rather than stacked above the chart as a text wall.
+   Hardcoded for exactly 5 areas since this component's own layout only
+   builds this grid for a 5-node count (see CoEvolutionDiagram.tsx). */
+.site-protocol-radial {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(280px, 1.3fr) minmax(160px, 1fr);
+  grid-template-areas:
+    "top      top   top"
+    "left     chart right"
+    "botleft  chart botright";
+  align-items: center;
+  gap: 28px 32px;
+}
+.site-protocol-desc--top { grid-area: top; text-align: center; }
+.site-protocol-desc--left { grid-area: left; }
+.site-protocol-desc--right { grid-area: right; }
+.site-protocol-desc--botleft { grid-area: botleft; }
+.site-protocol-desc--botright { grid-area: botright; }
+.site-protocol-desc { display: flex; gap: 10px; align-items: flex-start; }
+.site-protocol-desc--top { justify-content: center; }
+.site-protocol-chart { grid-area: chart; display: flex; justify-content: center; align-items: center; }
+@media (max-width: 860px) {
+  .site-protocol-radial {
+    grid-template-columns: 1fr;
+    grid-template-areas: "chart" "top" "right" "botright" "botleft" "left";
+  }
+  .site-protocol-desc--top { text-align: left; justify-content: flex-start; }
+}
+.site-protocol-svg { width: 100%; max-width: 380px; height: auto; display: block; margin: 0 auto; overflow: visible; }
 .site-protocol-loop { fill: none; stroke: var(--primary); stroke-width: 1.6; opacity: .4; }
 /* Faint outer rings, fading with distance — visual echo of the "each pass
    compounds outward, this isn't a closed loop repeating in place" framing
@@ -1940,8 +1956,8 @@ button { cursor: pointer; font-family: inherit; }
 .site-protocol-legend-index {
   flex-shrink: 0; font-family: var(--mono); font-size: 12px; font-weight: 800; color: var(--primary); padding-top: 1px;
 }
-.site-protocol-legend-item strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.site-protocol-legend-item p { font-size: 13px; line-height: 1.6; color: var(--text-soft); margin: 0; }
+.site-protocol-legend-item strong, .site-protocol-desc strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.site-protocol-legend-item p, .site-protocol-desc p { font-size: 13px; line-height: 1.6; color: var(--text-soft); margin: 0; }
 .site-protocol-closing {
   max-width: 700px; margin: 32px auto 0; text-align: center;
   font-size: 16.5px; line-height: 1.7; color: var(--text); font-weight: 500;
@@ -3115,50 +3131,18 @@ button { cursor: pointer; font-family: inherit; }
    keeping the WCAG AAA "one color, max contrast" rule the purple-pill
    override above already follows — a stray cyan here would break that
    same rule for a decorative element instead of just text). */
-.site[data-theme="light"] .hud-corner-frame::after,
-.site[data-theme="light"] .site-livestats-tile::after {
+.site[data-theme="light"] .hud-corner-frame::after {
   --corner-c: var(--primary);
   filter: none;
   opacity: .6;
 }
-.site[data-theme="light"] .hud-corner-frame:hover::after,
-.site[data-theme="light"] .site-livestats-tile:hover::after {
+.site[data-theme="light"] .hud-corner-frame:hover::after {
   opacity: 1;
 }
-.site[data-theme="hc"] .hud-corner-frame::after,
-.site[data-theme="hc"] .site-livestats-tile::after {
+.site[data-theme="hc"] .hud-corner-frame::after {
   --corner-c: var(--accent);
   filter: none;
   opacity: 1;
-}
-/* .site-livestats-tile::after's radar rings are literal rgba (see the base
-   rule above), not driven by --corner-c, so light/hc each need their own
-   full background redeclaration — same 8 corner layers, just the radar
-   ring color swapped to match: rgba(14,138,156,*) is light's --primary
-   (#0e8a9c), rgba(255,212,0,*) is hc's --accent (#ffd400). */
-.site[data-theme="light"] .site-livestats-tile::after {
-  background:
-    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(14,138,156,.16) 8px 9px, transparent 9px 15px, rgba(14,138,156,.1) 15px 16px, transparent 16px),
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
-}
-.site[data-theme="hc"] .site-livestats-tile::after {
-  background:
-    radial-gradient(circle at 90% 8%, transparent 0 8px, rgba(255,212,0,.22) 8px 9px, transparent 9px 15px, rgba(255,212,0,.14) 15px 16px, transparent 16px),
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) top left / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) top right / 10px 2px no-repeat,
-    linear-gradient(to bottom, var(--corner-c) 0 10px, transparent 10px) top right / 2px 10px no-repeat,
-    linear-gradient(to right, var(--corner-c) 0 10px, transparent 10px) bottom left / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom left / 2px 10px no-repeat,
-    linear-gradient(to left, var(--corner-c) 0 10px, transparent 10px) bottom right / 10px 2px no-repeat,
-    linear-gradient(to top, var(--corner-c) 0 10px, transparent 10px) bottom right / 2px 10px no-repeat;
 }
 
 /* ── HUD LOADING SKELETON ──────────────────────────────────────────────────

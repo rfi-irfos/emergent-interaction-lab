@@ -332,11 +332,21 @@ const SIGNAL_LEVEL_ORDER: Array<{ key: keyof SignalLevels; label: string }> = [
   { key: 'system', label: 'System' },
 ]
 
+// Same 4 keys, same human/ai/interaction/system color semantic as the admin
+// Observatory's LEVEL_DONUT_COLORS (EmergenceMonitor.tsx) — a second local
+// copy of the literal hex values, same reasoning as SIM_STATUS_ACCENT below:
+// the admin version's colors live behind --obs-* custom properties scoped
+// to .obs-accents/.obs-panel, not available on the public page.
+const SIGNAL_LEVEL_COLOR: Record<keyof SignalLevels, string> = {
+  human: '#8b5cf6', ai: '#3b6bf6', interaction: '#14b8a6', system: '#f59e0b',
+}
+
 /**
  * Horizontal bar row per signal level — magnitude comparison across 4 fixed,
- * already-labeled categories, so one hue (var(--primary), the same accent
- * already used for stat-tile borders elsewhere on this page) carries all
- * four bars; identity comes from the adjacent text label, not from color.
+ * already-labeled categories. Each level keeps its own color (matching the
+ * admin Observatory's donut) so the rows read as distinct categories at a
+ * glance; identity still comes from the adjacent text label too, not color
+ * alone.
  */
 export function SignalLevelsSection({ editMode, reveal }: { editMode: boolean; reveal: (cls: string) => string }) {
   const { lang } = useLang()
@@ -380,7 +390,7 @@ export function SignalLevelsSection({ editMode, reveal }: { editMode: boolean; r
               <div className="site-signal-bar-row" key={l.key}>
                 <span className="site-signal-bar-label">{l.label}</span>
                 <div className="site-signal-bar-track">
-                  <div className="site-signal-bar-fill" style={{ width: `${pct}%` }} />
+                  <div className="site-signal-bar-fill" style={{ width: `${pct}%`, ['--bar-color' as string]: SIGNAL_LEVEL_COLOR[l.key] }} />
                 </div>
                 <span className="site-signal-bar-value">{count.toLocaleString(lang === 'de' ? 'de-AT' : 'en-IE')}</span>
               </div>
@@ -434,8 +444,13 @@ const CCET_TREND_COPY = {
 } as const
 
 const CCET_CHART_W = 640
-const CCET_CHART_H = 160
+const CCET_CHART_H = 140
 const CCET_PAD = 10
+// Turns-per-day histogram sits UNDER the two trend lines (a MACD-style
+// combo: bars for volume, lines for the actual signal), scaled to its own
+// max independent of the 0-1 CEI/Resonance axis, capped at 42% of the
+// chart height so it reads as a backdrop, not a competing series.
+const CCET_HIST_MAX_FRAC = 0.42
 
 function ccetPath(values: number[]): string {
   if (values.length === 0) return ''
@@ -449,12 +464,27 @@ function ccetPath(values: number[]): string {
     .join(' ')
 }
 
+// Closed area-fill path under a line — the same points as ccetPath, plus a
+// run back along the baseline, so the line's gradient fill has real values
+// per day to represent instead of implying more precision than the point.
+function ccetAreaPath(values: number[]): string {
+  if (values.length < 2) return ''
+  const stepX = (CCET_CHART_W - CCET_PAD * 2) / (values.length - 1)
+  const line = ccetPath(values)
+  const lastX = CCET_PAD + (values.length - 1) * stepX
+  const baseY = CCET_CHART_H - CCET_PAD
+  return `${line} L${lastX.toFixed(1)},${baseY} L${CCET_PAD},${baseY} Z`
+}
+
 /**
- * Small two-series trend line (CEI solid, Resonance Frequency dashed — the
- * dash, not just color, carries identity so the two stay distinguishable
- * under the high-contrast theme where both would otherwise render the same
- * amber). Reuses var(--primary) and var(--accent-purple), the site's
- * existing primary/secondary accent pair, rather than a new palette.
+ * Two-series trend line (CEI solid, Resonance Frequency dashed — the dash,
+ * not just color, carries identity so the two stay distinguishable under
+ * the high-contrast theme where both would otherwise render the same
+ * amber) over a per-day turns-count histogram — real data already fetched
+ * for `last`'s tooltip-adjacent numbers but previously left unrendered, not
+ * a decorative addition. Reuses var(--primary) and var(--accent-purple),
+ * the site's existing primary/secondary accent pair, rather than a new
+ * palette.
  */
 export function CcetTrendSection({ editMode, reveal }: { editMode: boolean; reveal: (cls: string) => string }) {
   const { lang } = useLang()
@@ -480,7 +510,17 @@ export function CcetTrendSection({ editMode, reveal }: { editMode: boolean; reve
   const hasData = points.length >= 2
   const ceiPath = hasData ? ccetPath(points.map(p => p.cei)) : ''
   const resPath = hasData ? ccetPath(points.map(p => p.resonance_frequency)) : ''
+  const ceiAreaPath = hasData ? ccetAreaPath(points.map(p => p.cei)) : ''
   const last = points[points.length - 1]
+
+  // Turns-per-day histogram, scaled to its own max independent of the 0-1
+  // CEI/Resonance axis — real logged volume, not decoration (see the
+  // component doc comment above).
+  const maxTurns = Math.max(1, ...points.map(p => p.turns))
+  const histStepX = points.length > 1 ? (CCET_CHART_W - CCET_PAD * 2) / points.length : 0
+  const histBarW = Math.max(2, histStepX * 0.55)
+  const histBaseY = CCET_CHART_H - CCET_PAD
+  const histMaxH = (CCET_CHART_H - CCET_PAD * 2) * CCET_HIST_MAX_FRAC
 
   return (
     <section className={reveal('site-section site-ccet-trend')} id="ccet-trend">
@@ -501,12 +541,34 @@ export function CcetTrendSection({ editMode, reveal }: { editMode: boolean; reve
             role={hasData ? 'img' : undefined}
             aria-label={hasData && last ? c.ariaLabel(last.cei, last.resonance_frequency) : undefined}
           >
-            {/* recessive midline, one step off the surface */}
+            <defs>
+              <linearGradient id="ccet-cei-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.32" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {/* vertical rhythm lines (quarter-points) + the recessive midline —
+                the grid a real chart has, not just one bare horizontal rule */}
+            <line x1={CCET_CHART_W * 0.25} y1={CCET_PAD} x2={CCET_CHART_W * 0.25} y2={CCET_CHART_H - CCET_PAD} className="site-ccet-gridline site-ccet-gridline-v" />
+            <line x1={CCET_CHART_W * 0.5} y1={CCET_PAD} x2={CCET_CHART_W * 0.5} y2={CCET_CHART_H - CCET_PAD} className="site-ccet-gridline site-ccet-gridline-v" />
+            <line x1={CCET_CHART_W * 0.75} y1={CCET_PAD} x2={CCET_CHART_W * 0.75} y2={CCET_CHART_H - CCET_PAD} className="site-ccet-gridline site-ccet-gridline-v" />
             <line x1={CCET_PAD} y1={CCET_CHART_H / 2} x2={CCET_CHART_W - CCET_PAD} y2={CCET_CHART_H / 2} className="site-ccet-gridline" />
             {editMode ? (
               <text x={CCET_CHART_W / 2} y={CCET_CHART_H / 2} textAnchor="middle" className="site-ccet-placeholder-text">···</text>
             ) : (
               <>
+                {/* turns-per-day histogram — the MACD-style "volume" layer
+                    under the two signal lines, real logged counts */}
+                {points.map((p, i) => {
+                  const h = (p.turns / maxTurns) * histMaxH
+                  const x = CCET_PAD + i * histStepX + (histStepX - histBarW) / 2
+                  return h > 0 ? (
+                    <rect key={i} x={x.toFixed(1)} y={(histBaseY - h).toFixed(1)} width={histBarW.toFixed(1)} height={h.toFixed(1)} className="site-ccet-hist-bar">
+                      <title>{formatMergeDate(p.date, lang)}: {p.turns} turns</title>
+                    </rect>
+                  ) : null
+                })}
+                <path d={ceiAreaPath} className="site-ccet-area-cei" stroke="none" />
                 <path d={resPath} className="site-ccet-line-resonance" fill="none" />
                 <path d={ceiPath} className="site-ccet-line-cei" fill="none" />
                 {last && (
