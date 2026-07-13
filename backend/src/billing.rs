@@ -386,24 +386,36 @@ pub async fn seed_webhub_products(db: &SqlitePool) {
         },
         // ── Behavior offers (added per Laura's review: "Behavior Analysis"
         //    and behavior-model offers were missing from the ladder) ──────
-        Seed {
-            name: "Behavior Analysis",
-            en_desc: "A read on how behavior actually shifts under sustained interaction - measured as a trend, never dressed up as prediction.",
-            de_desc: "Ein Read, wie sich Verhalten unter anhaltender Interaktion tatsächlich verschiebt - als Trend gemessen, nie als Vorhersage verkauft.",
-            price_cents: 120_000,
-            mode: "payment",
-            recurring_interval: None,
-            payment_link_url: "REPLACE_WITH_STRIPE_LINK", // TODO: paste real Stripe Payment Link
-        },
-        Seed {
-            name: "Behavior Model",
-            en_desc: "The behavioral pattern, formalized - a working model you can test, hand over, and build on, not a slide.",
-            de_desc: "Das Verhaltensmuster, formalisiert - ein lauffähiges Modell, das du testen, übergeben und weiterbauen kannst, keine Slide.",
-            price_cents: 220_000,
-            mode: "payment",
-            recurring_interval: None,
-            payment_link_url: "REPLACE_WITH_STRIPE_LINK", // TODO: paste real Stripe Payment Link
-        },
+        //
+        // PULLED 2026-07-13, same day they landed: both shipped with the
+        // literal string "REPLACE_WITH_STRIPE_LINK" as payment_link_url —
+        // not NULL, so list_public_products' `WHERE payment_link_url IS NOT
+        // NULL` filter didn't catch it, and this seed's full-reset-on-every-
+        // startup behavior means it was live in production (confirmed:
+        // deploy-fly succeeded on the commit that added these). Two real
+        // "Buy" buttons pointing at a non-URL string were on the public
+        // pricing page. Re-add both, with real Stripe Payment Links this
+        // time, once they exist — copy below preserved as-is so nothing
+        // Laura wrote needs re-doing, only the payment_link_url filled in:
+        //
+        // Seed {
+        //     name: "Behavior Analysis",
+        //     en_desc: "A read on how behavior actually shifts under sustained interaction - measured as a trend, never dressed up as prediction.",
+        //     de_desc: "Ein Read, wie sich Verhalten unter anhaltender Interaktion tatsächlich verschiebt - als Trend gemessen, nie als Vorhersage verkauft.",
+        //     price_cents: 120_000,
+        //     mode: "payment",
+        //     recurring_interval: None,
+        //     payment_link_url: "<real Stripe Payment Link goes here>",
+        // },
+        // Seed {
+        //     name: "Behavior Model",
+        //     en_desc: "The behavioral pattern, formalized - a working model you can test, hand over, and build on, not a slide.",
+        //     de_desc: "Das Verhaltensmuster, formalisiert - ein lauffähiges Modell, das du testen, übergeben und weiterbauen kannst, keine Slide.",
+        //     price_cents: 220_000,
+        //     mode: "payment",
+        //     recurring_interval: None,
+        //     payment_link_url: "<real Stripe Payment Link goes here>",
+        // },
     ];
 
     for s in seeds {
