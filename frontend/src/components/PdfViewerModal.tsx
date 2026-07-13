@@ -22,6 +22,13 @@ const COPY = {
 export function PdfViewerModal({ paper, onClose }: Props) {
   const { lang } = useLang()
   const c = COPY[lang]
+  // paper.file is a bare relative path ("papers/foo.pdf") specifically so this
+  // works on both deployments: the Fly app serves from domain root, but the
+  // GitHub Pages mirror serves from a repo subpath (import.meta.env.BASE_URL),
+  // so a hardcoded leading "/papers/..." 404s there — same reason
+  // AdminPanel.tsx's favicon reference goes through BASE_URL instead of a bare
+  // "/favicon.svg".
+  const fileUrl = `${import.meta.env.BASE_URL}${paper.file}`
   return (
     <div
       className="site-webhub-overlay"
@@ -34,11 +41,11 @@ export function PdfViewerModal({ paper, onClose }: Props) {
         <button type="button" className="site-webhub-x" aria-label={c.close} onClick={onClose}>✕</button>
         <div className="site-webhub-modal-name">{paper.title}</div>
         <div className="site-pdf-links">
-          <a href={paper.file} download className="site-about-proof-badge">{c.download}</a>
+          <a href={fileUrl} download className="site-about-proof-badge">{c.download}</a>
           {paper.doi && <a href={paper.doi} target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">{c.openOsf}</a>}
         </div>
         <div className="site-pdf-frame-wrap">
-          <iframe src={paper.file} title={paper.title} className="site-pdf-frame" />
+          <iframe src={fileUrl} title={paper.title} className="site-pdf-frame" />
         </div>
         <p className="site-pdf-fallback">{c.fallback}</p>
       </div>

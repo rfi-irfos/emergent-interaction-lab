@@ -117,21 +117,21 @@
         "id": "paper-1",
         "title": "Human-AI Interaction Emergent Co-Evolution",
         "description": "Die Gründungsthese: eine vorgeschlagene Architektur und zwei eigene Instrumente (UIP, EIA), um zu beobachten, wie Bedeutung und Argumentationsstruktur zwischen einer menschlichen Forscherin und einem Sprachmodell über anhaltenden Dialog entstehen.",
-        "file": "/papers/paper-1-osf-preprint.pdf"
+        "file": "papers/paper-1-osf-preprint.pdf"
       },
       {
         "id": "paper-2",
         "title": "Jarvis: A Bidirectional Copilot Architecture",
         "description": "Wie der Continuous Co-Evolution Tracker zu mechanisch berechneter, reproduzierbarer Software wird - ein bidirektionaler Copilot, gebunden an den Arbeitsbereich der Nutzerin, der \"gemessene Emergenz\" erst nach Wiederholung über mehrere Sitzungen hinweg zulässt, nicht nach dem Eindruck einer einzelnen.",
         "doi": "https://doi.org/10.17605/OSF.IO/HC9ZB",
-        "file": "/papers/paper-2-jarvis.pdf"
+        "file": "papers/paper-2-jarvis.pdf"
       },
       {
         "id": "paper-3",
         "title": "Call Laura: A Deterministic, Attribution-Anchored Multi-Agent Framework",
         "description": "Wie das 8-Layer-Modell und das User Integrity Protocol zu einem kleinen, vollständig deterministischen Review-Framework werden, bei dem jeder Fund ein verpflichtendes, typsicher erzwungenes Tag trägt, das genau angibt, wessen Methodik ihn hervorgebracht hat.",
         "doi": "https://doi.org/10.17605/OSF.IO/QCVJB",
-        "file": "/papers/paper-3-callaura.pdf"
+        "file": "papers/paper-3-callaura.pdf"
       }
     ]
   },
