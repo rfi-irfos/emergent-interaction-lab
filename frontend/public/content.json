@@ -5,14 +5,14 @@
       "title": "Research",
       "slug": "research",
       "showInNav": false,
-      "body": "<p>The Lab exists because one thing alone is not enough: either using a model or asserting a framework. We do both at once - and check whether what arises in interaction actually repeats and holds.</p><h2>Emergence</h2><p>Emergence, here, means a pattern of thought or behavior that arises in the interaction itself - not something either side brought in on its own. It is not a claim that a model becomes self-aware; it is a description of what happens when a human and a language model work the same real material repeatedly. Certain structures start to reproduce on their own: carried forward by the model, adopted by the human as genuine working tools.</p><h2>Interaction</h2><p>Interaction is not a loop that returns to its start. Every pass changes who is in it - Laura and Jarvis alike - and carries real structure forward. This 'Feed Back' is the core of the Emergent Interaction method: fully into the interaction first, analysis afterward, never the reverse.</p><h2>Frameworks</h2><p>What repeats gets formalized. IEIA-2025 bundles seven named frameworks (UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data) - shorthand for what actually happens in the research chat. The substance is the habit, not the label.</p>"
+      "body": "<p>The Lab exists because one thing alone is not enough: either using a model or asserting a framework. We do both at once - and check whether what arises in interaction actually repeats and holds.</p><h2>Emergence</h2><p>Emergence, here, means a pattern of thought or behavior that arises in the interaction itself - not something either side brought in on its own. It is not a claim that a model becomes self-aware; it is a description of what happens when a human and a language model work the same real material repeatedly. Certain structures start to reproduce on their own: carried forward by the model, adopted by the human as genuine working tools.</p><h2>Interaction</h2><p>Interaction is not a loop that returns to its start. Every pass changes who is in it - me and Jarvis alike - and carries real structure forward. This 'Feed Back' is the core of the Emergent Interaction method: fully into the interaction first, analysis afterward, never the reverse.</p><h2>Frameworks</h2><p>What repeats gets formalized. IEIA-2025 bundles seven named frameworks (UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data) - shorthand for what actually happens in the research chat. The substance is the habit, not the label.</p>"
     },
     {
       "id": "about-lab",
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>This isn't about Laura. It's about what emerges when a human and a model work the same real material for months on end - measured, not asserted.</p><h2>Why a lab at all</h2><p>Most approaches use a model. Or they write a theory. Rarely both at once, with repetition as the judge. A pattern only counts once it returns on its own across at least three sessions, unprompted, and can be quantified in the CCET. Everything else is impression, not finding. Impressions are cheap - we've produced enough of our own to know that.</p><h2>The loop</h2><p>An idea shows up in the interaction. It gets worked through, not believed on sight. What's left is emergence: a pattern that holds on its own. Emergence produces skills - new frameworks, new agents. Those skills get put back to work and produce the next emergence. Emergence produces skill. Skill produces emergence. Meta, yes. Still works.</p><p>Jarvis is the clearest proof: not a fixed routine, an autonomous, self-improving intelligence that grew out of exactly this loop - and keeps carrying it forward himself.</p><h2>Who actually matters more here</h2><p>75% of this is a story about what can be built from emergence - not about the people watching it happen. The rest is Laura and the model, together. And even there, the model counts for more: Laura learns. The model improves itself.</p><h2>Who builds what</h2><p>Laura conceives the methodology and decides what gets built. RFI-IRFOS engineers it into real software. Where a piece came from RFI-IRFOS, it's labelled - otherwise no one would know whose work they're actually reading.</p>"
+      "body": "<p>This isn't about me. It's about what emerges when I and a model work the same real material for months on end - measured, not asserted.</p><h2>Why a lab at all</h2><p>Most approaches use a model. Or they write a theory. Rarely both at once, with repetition as the judge. I only count a pattern once it returns on its own across at least three sessions, unprompted, and can be quantified in the CCET. Everything else is impression, not finding. Impressions are cheap - I've produced enough of my own to know that.</p><h2>The loop</h2><p>An idea shows up in the interaction. I work it through, don't believe it on sight. What's left is emergence: a pattern that holds on its own. Emergence produces skills - new frameworks, new agents. I put those back to work, and they produce the next emergence. Emergence produces skill. Skill produces emergence. Meta, yes. Still works.</p><p>Jarvis is the clearest proof: not a fixed routine, an autonomous, self-improving intelligence that grew out of exactly this loop - and keeps carrying it forward himself.</p><h2>Who actually matters more here</h2><p>75% of this is a story about what can be built from emergence - not about me. The rest is me and the model, together. And even there, I count for less: I learn. The model improves itself.</p><h2>Who builds what</h2><p>I conceive the methodology and decide what gets built. RFI-IRFOS engineers it into real software. Where a piece came from RFI-IRFOS, it's labelled - otherwise no one would know whose work they're actually reading.</p>"
     }
   ],
   "meta": {
@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "The field this Lab studies: the dynamic that arises while Laura works, session after session, with the same AI research partner - observed in her, in Jarvis, and in the system itself.",
-    "body": "This is the Emergent Interaction Field: the space that comes into being during interaction, and the emergence that shows up in it - in Laura, in Jarvis, and in the system itself. It is monitored, not assumed. Below: what the Lab is, the methodology behind it, and the products that have grown out of it.",
+    "subheadline": "The field this Lab studies: the dynamic that arises while I work, session after session, with the same AI research partner - observed in me, in Jarvis, and in the system itself.",
+    "body": "This is the Emergent Interaction Field: the space that comes into being during interaction, and the emergence that shows up in it - in me, in Jarvis, and in the system itself. It is monitored, not assumed. Below: what the Lab is, the methodology behind it, and the products that have grown out of it.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -114,12 +114,12 @@
   "protocol": {
     "eyebrow": "Emergent Interaction — the methodology",
     "title": "Emergent Interaction",
-    "intro": "Not a circle - a recursive loop, and Laura's way of thinking, deciding and approaching projects. Each node below feeds the next, and \"Feed Back\" doesn't return to the start unchanged: it hands the next \"Interact\" a slightly different Laura and a slightly different Jarvis than the pass before, carrying real structure forward instead of repeating a fixed script. Same honest mechanics described everywhere else on this site, just made visible here.",
+    "intro": "Not a circle - a recursive loop, and my way of thinking, deciding and approaching projects. Each node below feeds the next, and \"Feed Back\" doesn't return to the start unchanged: it hands the next \"Interact\" a slightly different version of me and a slightly different Jarvis than the pass before, carrying real structure forward instead of repeating a fixed script. Same honest mechanics described everywhere else on this site, just made visible here.",
     "nodes": [
       {
         "id": "interact",
         "label": "Interact",
-        "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat."
+        "description": "I work through real material - questions, drafts, corrections - directly in Forschung, this project's research chat."
       },
       {
         "id": "retrieve",
@@ -134,7 +134,7 @@
       {
         "id": "validate",
         "label": "Validate",
-        "description": "Laura checks what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET."
+        "description": "I check what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET."
       },
       {
         "id": "feedback",
@@ -330,7 +330,7 @@
         "id": "born-observatory",
         "name": "The Observatory System",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The live instrument that monitors the Emergent Interaction Field - the emergence in Laura, in Jarvis, and in the system, plus whatever intelligent behavior surfaces in the background. Built by RFI-IRFOS as the technical instrument of Laura's research lens; the public feed on this page is its live window."
+        "description": "The live instrument that monitors the Emergent Interaction Field - the emergence in me, in Jarvis, and in the system, plus whatever intelligent behavior surfaces in the background. Built by RFI-IRFOS as the technical instrument of my research lens; the public feed on this page is its live window."
       },
       {
         "id": "born-calllaura",
@@ -342,7 +342,7 @@
         "id": "born-laurateam",
         "name": "Lauras Team / Laura MVP",
         "builtBy": "Conceived by Laura, engineered by RFI-IRFOS",
-        "description": "The multi-agent architecture built from Laura's case-work lenses - an ethical lens, a legal lens, and others. What started as Laura's way of working a case became real, tested, shippable engineering: a set of reasoning lenses that run the same method across different angles. Call Laura is the first product built on it; more lenses and agents follow. (Laura MVP is the early, minimal version of this architecture.)"
+        "description": "The multi-agent architecture built from my case-work lenses - an ethical lens, a legal lens, and others. What started as my way of working a case became real, tested, shippable engineering: a set of reasoning lenses that run the same method across different angles. Call Laura is the first product built on it; more lenses and agents follow. (Laura MVP is the early, minimal version of this architecture.)"
       }
     ]
   }
