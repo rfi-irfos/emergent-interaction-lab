@@ -11,6 +11,7 @@ import { DynamicPage } from './components/DynamicPage'
 import { PageModal } from './components/PageModal'
 import { CertificationPage } from './components/CertificationPage'
 import { BlogPostPage } from './components/BlogPostPage'
+import { WebHubPricing } from './components/WebHubPricing'
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
 const BLOG_PREFIX = '#p/blog/'
@@ -138,8 +139,14 @@ export default function App() {
   // Lab complaint this file already fixed once. Folded into the same modal
   // system here instead of being a third, differently-behaved route.
   const isCertModal = pageModalSlug === 'zertifizierung'
-  const modalPage = !isCertModal && pageModalSlug ? (content.pages ?? []).find(p => p.slug === pageModalSlug) : undefined
-  const modalActive = isCertModal || !!modalPage
+  // Pricing moved off the homepage into its own modal too - was a wall of
+  // 23 products scrolled past on every visit; now opt-in via the "Pricing"
+  // nav link, same dark-modal pattern as everything else here.
+  const isPricingModal = pageModalSlug === 'pricing'
+  const modalPage = !isCertModal && !isPricingModal && pageModalSlug
+    ? (content.pages ?? []).find(p => p.slug === pageModalSlug)
+    : undefined
+  const modalActive = isCertModal || isPricingModal || !!modalPage
 
   if (!modalActive && route.pageSlug) {
     const page = (content.pages ?? []).find(p => p.slug === route.pageSlug)
@@ -175,6 +182,8 @@ export default function App() {
       <PublicSite content={content} modalOpen={modalActive} />
       {isCertModal
         ? <CertificationPage content={content} onClose={closeModal} />
+        : isPricingModal
+        ? <WebHubPricing content={content} onClose={closeModal} />
         : modalPage && <PageModal page={modalPage} content={content} onClose={closeModal} />}
     </>
   )

@@ -717,7 +717,7 @@ const COPY = {
   },
 } as const
 
-export function WebHubPricing({ content }: { content: SiteContent }) {
+export function WebHubPricing({ content, onClose }: { content: SiteContent; onClose: () => void }) {
   const { lang } = useLang()
   const c = COPY[lang]
   const [products, setProducts] = useState<PublicProduct[] | null>(null)
@@ -769,26 +769,43 @@ export function WebHubPricing({ content }: { content: SiteContent }) {
     return () => { cancelled = true }
   }, [])
 
-  // Close modal(s) on Escape — checkout consent takes priority since it
-  // renders on top of the detail modal.
+  // Close on Escape — checkout consent takes priority over the detail
+  // modal, which takes priority over closing the whole pricing modal
+  // itself (was homepage-only before; now opened via its own #p/pricing
+  // route, same dark-modal shell as Research/About the Lab).
   useEffect(() => {
-    if (!active && !checkoutTarget) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       if (checkoutTarget) setCheckoutTarget(null)
-      else setActive(null)
+      else if (active) setActive(null)
+      else onClose()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [active, checkoutTarget])
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [active, checkoutTarget, onClose])
 
   if (!error && products !== null && products.length === 0) return null
 
   return (
-    <section className="site-section site-webhub-pricing" id="webhub-pricing" data-cid="webhub-pricing.title">
+    <div
+      className="page-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={c.title}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="page-modal-panel page-modal-panel--wide">
+        <button type="button" className="page-modal-x" aria-label="Schließen" onClick={onClose}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <div className="page-modal-scroll site-webhub-pricing" data-native-scroll data-cid="webhub-pricing.title">
       <div className="site-webhub-head">
         <div className="site-webhub-eyebrow">{c.eyebrow}</div>
-        <h2 className="site-section-title">{c.title}</h2>
+        <h2 className="page-modal-title">{c.title}</h2>
         <p className="site-webhub-intro">{c.intro}</p>
       </div>
 
@@ -798,10 +815,18 @@ export function WebHubPricing({ content }: { content: SiteContent }) {
       {products !== null && products.length > 0 && (() => {
         const renderCard = (p: PublicProduct, i: number) => {
           const isFlagship = p.name === FLAGSHIP_NAME
+          // The card previously showed only a name and a price - a customer
+          // had to open all 23 detail modals one at a time just to find out
+          // what any of them actually does ("ich hab als Kunde garkein Plan
+          // was das soll", flagged live). The tagline already exists (see
+          // DETAIL above, written specifically to be the differentiator,
+          // not a restatement of the name) - just wasn't shown until now.
+          const tagline = DETAIL[p.name]?.[lang]?.tagline
           return (
             <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}`}>
               {isFlagship && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
               <h3>{p.name}</h3>
+              {tagline && <p className="site-webhub-card-tagline">{tagline}</p>}
               <div className="site-webhub-price">
                 {formatPrice(p.price_cents, p.currency, lang)}
                 {p.mode === 'subscription' && <span className="site-webhub-per"> / {c.recurring}</span>}
@@ -990,6 +1015,8 @@ export function WebHubPricing({ content }: { content: SiteContent }) {
           </div>
         </div>
       )}
-    </section>
+        </div>
+      </div>
+    </div>
   )
 }

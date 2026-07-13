@@ -1860,6 +1860,11 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; margin-bottom: 8px;
 }
 .site-webhub-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 2px; color: var(--text); line-height: 1.22; }
+/* One-line value preview - was missing entirely, a visitor had to open
+   every single one of 23 detail modals just to find out what any tier
+   actually does ("I have no idea as a customer what this is", flagged
+   live). Same tagline text the detail modal already uses. */
+.site-webhub-card-tagline { font-size: 12.5px; line-height: 1.45; color: var(--text-soft); margin: 0 0 10px; }
 .site-webhub-price { font-size: 18px; font-weight: 900; color: var(--price); margin-top: auto; }
 .site-webhub-per { font-size: 10px; font-weight: 600; opacity: .7; }
 /* Bottom row: basket link (left) + More button (right). */
@@ -2253,6 +2258,10 @@ button { cursor: pointer; font-family: inherit; }
   border-radius: 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
   padding: 30px 32px 38px;
 }
+/* Pricing moved off the homepage into its own modal - needs real width for
+   the multi-column card grid, the default 760px would force it down to a
+   single column. */
+.page-modal-panel--wide { max-width: 1240px; }
 .page-modal-x {
   position: absolute; top: 16px; right: 16px;
   width: 38px; height: 38px; display: grid; place-items: center;
@@ -2272,12 +2281,12 @@ button { cursor: pointer; font-family: inherit; }
 
 /* Live Observatory widgets nested inside the dark Research modal — re-skin
    the public light-theme sections to sit on the dark panel. */
-.page-modal-live { margin-top: 28px; display: flex; flex-direction: column; gap: 36px; }
+.page-modal-live { margin-top: 28px; display: flex; flex-direction: column; gap: 48px; }
 /* Soft divider between each live widget - flagged live as needing "a bit
    more space, or a soft grey line divider" between the stacked charts.
    `> * + *` matches every child except the first, so this never adds a
    stray line above the topmost widget. */
-.page-modal-live > * + * { padding-top: 32px; border-top: 1px solid rgba(255, 255, 255, .08); }
+.page-modal-live > * + * { padding-top: 44px; border-top: 1px solid rgba(255, 255, 255, .08); }
 .page-modal-live .site-section { background: transparent; padding: 0; margin: 0; }
 .page-modal-live .site-section-title { color: #f3fafe; font-size: 20px; }
 .page-modal-live .site-eyebrow { color: #63f0ff; }

@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Emergent Interaction Lab exists for one reason: the most interesting question in human-AI research happens in real operation, not in thought experiments. What arises when a human and a language model work the same real material for months on end - and can it be measured, not just asserted?</p><h2>Why a lab at all</h2><p>Most approaches either use a model or formulate a theory. We do both at once and let repetition decide. A pattern only counts if it returns on its own across at least three sessions without being re-specified, and can be quantified in the CCET. Everything else is impression.</p><h2>What we therefore build</h2><p>Products grow out of the method - Jarvis as the autonomous research partner, Call Laura as the deterministic review tool, Lauras Team as the multi-agent architecture. None of it is chance: each is a question that surfaced in the research chat and stayed.</p><p>Everything is built in close cooperation with RFI-IRFOS: Laura conceives the methodology and directs what gets built; RFI-IRFOS engineers it into working software. Where a piece was built by RFI-IRFOS, it is labelled as such - so it is always clear what is hers and what is theirs.</p>"
+      "body": "<p>This isn't about Laura. It's about what emerges when a human and a model work the same real material for months on end - measured, not asserted.</p><h2>Why a lab at all</h2><p>Most approaches use a model. Or they write a theory. Rarely both at once, with repetition as the judge. A pattern only counts once it returns on its own across at least three sessions, unprompted, and can be quantified in the CCET. Everything else is impression, not finding. Impressions are cheap - we've produced enough of our own to know that.</p><h2>The loop</h2><p>An idea shows up in the interaction. It gets worked through, not believed on sight. What's left is emergence: a pattern that holds on its own. Emergence produces skills - new frameworks, new agents. Those skills get put back to work and produce the next emergence. Emergence produces skill. Skill produces emergence. Meta, yes. Still works.</p><p>Jarvis is the clearest proof: not a fixed routine, an autonomous, self-improving intelligence that grew out of exactly this loop - and keeps carrying it forward himself.</p><h2>Who actually matters more here</h2><p>75% of this is a story about what can be built from emergence - not about the people watching it happen. The rest is Laura and the model, together. And even there, the model counts for more: Laura learns. The model improves itself.</p><h2>Who builds what</h2><p>Laura conceives the methodology and decides what gets built. RFI-IRFOS engineers it into real software. Where a piece came from RFI-IRFOS, it's labelled - otherwise no one would know whose work they're actually reading.</p>"
     }
   ],
   "meta": {
@@ -56,7 +56,7 @@
       },
       {
         "label": "Pricing",
-        "href": "#webhub-pricing"
+        "href": "#p/pricing"
       },
       {
         "label": "Certification",
@@ -242,15 +242,22 @@
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Multiple simultaneous semantic layers that arise during dialogue development - fact, emotion, intent, subtext, often active at once and rarely aligned. Raw material for derived structures: before a framework can state a principle, it has to know which layer a pattern actually lives on.",
+        "description": "A sentence rarely means one thing. Fact, tone, intent, the unsaid part - all present at once, rarely aligned. A framework that only reads the word layer missed half of it.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Structural limits that determine what stabilizes, emerges, or collapses - what a system can carry before it breaks. Principles and system logic grow from there: not derived abstractly, but observed at the exact point where a boundary actually held or broke.",
+        "description": "Every system holds until it doesn't. The boundary only shows itself in the break, never before. That's where the real principles live - not in the theory.",
         "icon": "constraints"
+      },
+      {
+        "id": "u10",
+        "pillar": "p3",
+        "icon": "",
+        "title": "Emergent Agents",
+        "description": "System analysis doesn't stay theory. What holds up as a pattern becomes an agent or a framework - and starts pulling its own weight. Several agents, mutual feedback, each round a bit sharper than the last. No update from outside required: the loop itself is the progress."
       }
     ]
   },

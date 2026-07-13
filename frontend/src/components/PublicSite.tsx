@@ -5,7 +5,6 @@ import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
 import { API_BASE } from '../lib/apiBase'
 import { CoEvolutionDiagram } from './CoEvolutionDiagram'
-import { WebHubPricing } from './WebHubPricing'
 import { PdfViewerModal } from './PdfViewerModal'
 
 // Generic single-card carousel: one item shown at a time, flip left/right,
@@ -1696,13 +1695,9 @@ export function PublicSite({
           </section>
         )}
 
-        {/* ── WEBHUB OFFER LADDER ──────────────────────────────────────── */}
-        {/* Real, buyable service tiers - see WebHubPricing.tsx. Independent
-            of the free-text pricing.body block above (that's arbitrary
-            prose an editor can still set; this is the live Stripe-backed
-            product ladder) and renders nothing if no service products exist
-            yet, so an empty backend never shows an empty heading here. */}
-        {!editMode && <WebHubPricing content={content} />}
+        {/* WebHub offer ladder moved off the homepage into its own modal
+            (see App.tsx / WebHubPricing.tsx) - opened via the "Pricing" nav
+            link (#p/pricing), not rendered inline here anymore. */}
 
         {/* ── PAPERS ───────────────────────────────────────────────────── */}
         {(papers?.items?.length ?? 0) > 0 && (

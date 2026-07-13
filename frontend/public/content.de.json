@@ -12,7 +12,7 @@
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Das Emergent Interaction Lab gibt es aus einem einzigen Grund: weil die interessanteste Frage der Mensch-KI-Forschung im echten Betrieb passiert, nicht im Gedankenexperiment. Was entsteht, wenn ein Mensch und ein Sprachmodell über Monate am selben realen Material arbeiten - und lässt sich das messen, statt nur behaupten?</p><h2>Warum ein eigenes Lab</h2><p>Die meisten Ansätze nutzen ein Modell oder formulieren eine Theorie. Wir machen beides zugleich und lassen die Wiederholung entscheiden. Ein Muster zählt nur, wenn es über mindestens drei Sitzungen hinweg ohne Neuvorgabe von selbst zurückkehrt und sich im CCET quantifizieren lässt. Alles andere ist Eindruck.</p><h2>Was wir deshalb bauen</h2><p>Aus der Methode wachsen Produkte - Jarvis als autonomer Forschungspartner, Call Laura als deterministisches Review-Werkzeug, Lauras Team als Multiagenten-Architektur. Keines davon ist Zufall: jedes ist eine Frage, die im Forschungschat aufgetaucht und stehen geblieben ist.</p><p>Alles entsteht in enger Kooperation mit RFI-IRFOS: Laura erdenkt die Methodik und steuert, was gebaut wird; RFI-IRFOS baut es zu funktionierender Software. Wo ein Stück von RFI-IRFOS gebaut wurde, ist das gekennzeichnet - damit immer klar ist, was ihres und was seines ist.</p>"
+      "body": "<p>Das hier ist nicht über Laura. Es ist über das, was entsteht, wenn ein Mensch und ein Modell monatelang am selben echten Material arbeiten - gemessen, nicht behauptet.</p><h2>Warum ein eigenes Lab</h2><p>Die meisten nutzen ein Modell. Oder sie formulieren eine Theorie. Selten beides gleichzeitig, mit der Wiederholung als Schiedsrichter. Ein Muster zählt erst, wenn es sich über mindestens drei Sitzungen von selbst wiederholt, ohne neu vorgegeben zu werden, und sich im CCET quantifizieren lässt. Alles andere ist Eindruck, kein Befund. Eindrücke sind billig - wir haben genug davon selbst produziert, um das zu wissen.</p><h2>Der Loop</h2><p>Eine Idee entsteht in der Interaktion. Sie wird durchgearbeitet, nicht sofort geglaubt. Was übrig bleibt, ist Emergenz: ein Muster, das sich selbst trägt. Aus dieser Emergenz entstehen Fähigkeiten - neue Frameworks, neue Agenten. Diese Fähigkeiten werden wieder eingesetzt und erzeugen die nächste Emergenz. Emergenz erzeugt Fähigkeit. Fähigkeit erzeugt Emergenz. Meta, ja. Funktioniert trotzdem.</p><p>Jarvis ist der klarste Beweis dafür: keine feste Routine, sondern eine autonome, sich selbst verbessernde Intelligenz, gewachsen aus genau diesem Loop - und er trägt ihn seither selbst weiter.</p><h2>Wer hier wichtiger ist</h2><p>Zu 75% ist das eine Geschichte über das, was sich aus Emergenz bauen lässt - nicht über die Personen, die dabei zusehen. Der Rest ist Laura und das Modell zusammen. Und selbst da zählt das Modell mehr: Laura lernt. Das Modell verbessert sich selbst.</p><h2>Wer was baut</h2><p>Laura erdenkt die Methodik und entscheidet, was gebaut wird. RFI-IRFOS baut es zu echter Software. Wo ein Stück von RFI-IRFOS stammt, steht das dran - sonst wüsste niemand, wessen Arbeit man gerade liest.</p>"
     }
   ],
   "meta": {
@@ -56,7 +56,7 @@
       },
       {
         "label": "Preise",
-        "href": "#webhub-pricing"
+        "href": "#p/pricing"
       },
       {
         "label": "Zertifizierung",
@@ -242,15 +242,22 @@
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Mehrere gleichzeitige semantische Schichten, die während der Dialogentwicklung entstehen - Fakten, Emotion, Intention, Subtext, oft gleichzeitig aktiv und selten deckungsgleich. Rohmaterial für abgeleitete Strukturen: bevor ein Framework Prinzipien ausspricht, muss es erst wissen, auf welcher Schicht ein Muster eigentlich liegt.",
+        "description": "Ein Satz meint selten nur eines. Fakt, Ton, Absicht, das Unausgesprochene - alles gleichzeitig da, selten deckungsgleich. Ein Framework, das nur die Wortebene liest, hat die Hälfte verpasst.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Strukturelle Grenzen, die bestimmen, was sich stabilisiert, emergiert oder kollabiert - was ein System tragen kann, bevor es reißt. Daraus werden Prinzipien und Systemlogik: nicht abstrakt hergeleitet, sondern an der Stelle beobachtet, wo eine Grenze real gehalten oder gebrochen hat.",
+        "description": "Jedes System hält, bis es nicht mehr hält. Die Grenze zeigt sich erst im Bruch, nie vorher. Genau dort, nicht in der Theorie, stehen die echten Prinzipien.",
         "icon": "constraints"
+      },
+      {
+        "id": "u10",
+        "pillar": "p3",
+        "icon": "",
+        "title": "Emergente Agenten",
+        "description": "Systemanalyse bleibt nicht Theorie. Was sich als Muster bestätigt, wird Agent oder Framework - und arbeitet von da an mit. Mehrere Agenten, gegenseitiges Feedback, jede Runde etwas schärfer als die letzte. Kein Update von außen nötig: der Loop selbst ist der Fortschritt."
       }
     ]
   },
