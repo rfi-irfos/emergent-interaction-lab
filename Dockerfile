@@ -106,10 +106,17 @@ if [ -n "$NVIDIA_API_KEY" ] && [ "${HERMES_ENABLED:-1}" != "0" ]; then
   export HERMES_HOME=/app/data/hermes
   mkdir -p "$HERMES_HOME"
 
-  if [ ! -f "$HERMES_HOME/config.yaml" ]; then
-    cp /app/seed/hermes-config.yaml "$HERMES_HOME/config.yaml"
-    echo "Seeded Hermes config from seed (research-only toolset)"
-  fi
+  # Always overwritten from the git-managed seed, not just seeded once —
+  # this file's only source of truth is deploy/hermes-config.yaml in this
+  # repo. The earlier "only if missing" version let an already-seeded
+  # volume drift out of sync with a fixed config shipped in a later deploy
+  # (hit for real 2026-07-13: two toolset/model fixes each needed a manual
+  # SSH + delete + restart on the live volume before they took effect,
+  # since the stale copy just sat there through a normal redeploy). Config
+  # drift should only ever come from a commit, never a hand-edit on a
+  # volume no one else can see.
+  cp /app/seed/hermes-config.yaml "$HERMES_HOME/config.yaml"
+  echo "Hermes config refreshed from seed"
   if [ -n "$HERMES_MODEL" ]; then
     export HERMES_DEFAULT_MODEL="$HERMES_MODEL"
   fi

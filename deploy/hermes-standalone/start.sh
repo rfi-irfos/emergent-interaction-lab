@@ -9,10 +9,12 @@ set -e
 export HERMES_HOME=/app/data
 mkdir -p "$HERMES_HOME"
 
-if [ ! -f "$HERMES_HOME/config.yaml" ]; then
-  cp /app/seed/hermes-config.yaml "$HERMES_HOME/config.yaml"
-  echo "Seeded Hermes config from seed (research-only toolset)"
-fi
+# Always overwritten from the git-managed seed, not just seeded once — see
+# the matching comment in the repo root Dockerfile for why (a stale
+# once-seeded copy on a persistent volume silently outlives a fixed config
+# shipped in a later deploy, found for real 2026-07-13).
+cp /app/seed/hermes-config.yaml "$HERMES_HOME/config.yaml"
+echo "Hermes config refreshed from seed"
 if [ -n "$HERMES_MODEL" ]; then
   export HERMES_DEFAULT_MODEL="$HERMES_MODEL"
 fi
