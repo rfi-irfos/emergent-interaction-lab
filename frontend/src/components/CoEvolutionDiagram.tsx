@@ -69,20 +69,33 @@ export function CoEvolutionDiagram({ nodes }: Props) {
     return { ...node, x: CX + R * Math.cos(rad), y: CY + R * Math.sin(rad) }
   })
 
-  // Open spiral, not a closed ring: one lap through the same 5 node angles,
-  // radius growing from R to GROWTH_R2 along the way. This is the visible
+  // Open spiral, not a closed ring: just over one lap, radius growing
+  // smoothly from R to GROWTH_R2 the whole way round. This is the visible
   // stroke AND the <animateMotion> path. Laura's correction (2026-07-13): the
   // interaction is "not a circle, a recursive loop" - a closed ring reads as
   // the same fixed cycle running forever, which is exactly the framing this
-  // diagram is meant to avoid. Ending at a different radius than it started
-  // makes each lap land somewhere new instead of retracing itself - node
-  // markers stay at radius R (unchanged) so the descriptor layout math below
-  // still lines up with each node's angle.
+  // diagram is meant to avoid.
+  //
+  // Built from many small steps (not one straight segment per node), each
+  // barely different in angle/radius from the last, so it reads as a
+  // continuous curve. An earlier version connected only the 5 node angles
+  // directly (like ringPath below) and let the closing segment jump straight
+  // back to the start angle at the far larger end radius - visually that's
+  // one long diagonal spike slashed across the whole diagram, not a spiral
+  // (caught 2026-07-13 from a live screenshot after shipping it). Going
+  // 1.12 laps instead of exactly one also means the endpoint sits at a
+  // different angle than the start, not stacked back above node 0.
+  // Node markers stay fixed at radius R on their own angles (unchanged) so
+  // the descriptor layout math below still lines up with each node.
   const loopPath = (() => {
-    const pts = Array.from({ length: n + 1 }, (_, i) => {
-      const deg = -90 + i * (360 / n)
+    const steps = 96
+    const laps = 1.12
+    const totalDeg = 360 * laps
+    const pts = Array.from({ length: steps + 1 }, (_, i) => {
+      const t = i / steps
+      const deg = -90 + t * totalDeg
       const rad = deg * (Math.PI / 180)
-      const radius = R + (GROWTH_R2 - R) * (i / n)
+      const radius = R + (GROWTH_R2 - R) * t
       return { x: CX + radius * Math.cos(rad), y: CY + radius * Math.sin(rad) }
     })
     return pts.length > 1 ? `M ${pts[0].x} ${pts[0].y} ` + pts.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ') : ''
