@@ -152,4 +152,14 @@ export default function App() {
     const page = (content.pages ?? []).find(p => p.slug === route.pageSlug)
     if (page) return <DynamicPage page={page} content={content} />
   }
+
+  // Default: plain homepage, no modal, no page/legal/blog route matched
+  // above. This was accidentally deleted in 912a8f8 (which added the
+  // pageModalSlug branch above but removed the function's only fallback
+  // return without replacing it) - every plain visit to the homepage since
+  // then rendered nothing, because a component returning undefined renders
+  // blank. The #p/... modal routes still worked, which is why that fix's
+  // own verification (which only reloaded #p/research and #p/ueber-das-lab)
+  // didn't catch this - the plain homepage was never re-checked.
+  return <PublicSite content={content} />
 }
