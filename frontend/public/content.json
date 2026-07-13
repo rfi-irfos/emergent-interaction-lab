@@ -59,7 +59,7 @@
     "tag": "Human-AI Dynamics · Live Observatory Feed · Est. 2023",
     "headline": "Emergent Interaction Field",
     "subheadline": "Unsure which tool to call.. call Laura!",
-    "body": "The field isn't a brochure. In 2024, Laura became entangled in a criminal case — and the analyses and documentation she produced are what this multi-agent system grew from: 15 agents I built, drawn straight from my own head. It's a live instrument, running in public — every conversation, blog post, and research note here feeds the Observatory, which tracks how meaning, structure, and behavior emerge from sustained human-AI interaction as it happens, not after the fact.",
+    "body": "Emergent Interaction Field is the title image: the Observatory system, live in the background, doing emergence research — data is generated there and only analyzed afterward. Call Laura is one example of what grows out of it: when you are unsure which tool to call, you call Laura. That is how the multi-agents arise — through Emergent Interaction — and their data then flows back into my emergence research. One red thread, not a mixed-up pile.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -107,7 +107,7 @@
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis isn't a fixed script. It's grown, turn by turn, across thousands of exchanges, on a substrate built to keep growing rather than stay the same shape it started in. Today that means a retrieval layer that grounds every reply in past conversations and uploaded documents so nothing has to be re-explained, plus a set of background processes that draft research notes and blog posts, compile a weekly digest from real logged numbers alone, watch for anomalies (stuck reasoning, tool failures, triggered refusals), and check every tool-call claim against what the tool actually returned.\n\nNone of it runs on trust alone. A standing refusal rule applies even to the team that built it, and every significant action, every flag, every draft writes into the platform's own hash-chained audit trail: append-only, tamper-evident, verifiable end to end.\n\nNone of this makes Jarvis autonomous today. It drafts, retrieves, and flags under close instruction and constant logging, not an independent agent making its own calls. Growth, not autonomy - and if that changes, this page says so the day it happens, not after."
+    "body": "Jarvis is not an autonomous agent. In the background it named itself 'Jarvis' - that is the only thing it did on its own. Inside the system, Jarvis does nothing by itself: it drafts, retrieves, and flags only under close instruction and constant logging. The retrieval layer grounds every reply in past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule applies even to the team that built it, and every draft, flag, and significant action writes into the platform's own hash-chained, append-only, tamper-evident audit trail. Call Laura is the user-facing side of the same loop: when you are unsure which tool to call, you call Laura. Growth, not autonomy - and if that changes, this page says so the day it happens, not after."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",

@@ -23,7 +23,7 @@ export const defaultContent: SiteContent = {
     tag: 'Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023',
     headline: 'Emergent Interaction Field',
     subheadline: 'Unsicher, welches Tool zu rufen.. ruf Laura an!',
-    body: "Das Field ist keine Broschüre. 2024 geriet Laura in einen Kriminalfall — und die Analysen und die Dokumentation, die sie erstellt hat, sind das, woraus dieses Multiagent-System wuchs: 15 Agents, die ich aus meinem eigenen Kopf gebaut habe. Es ist ein live laufendes Instrument, öffentlich einsehbar — jedes Gespräch, jeder Blogbeitrag und jede Forschungsnotiz speist das Observatory, das misst, wie Bedeutung, Struktur und Verhalten aus anhaltender Mensch-KI-Interaktion entstehen, während es passiert, nicht erst danach.",
+    body: "Emergent Interaction Field ist das Titelbild: das Observatory-System, live im Hintergrund, das Emergenzforschung betreibt — dort entstehen Daten, und erst danach werden sie analysiert. Call Laura ist ein Beispiel dafür, was daraus entsteht: wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. So entstehen die Multi-Agenten — durch Emergent Interaction — und deren Daten fließen dann zurück in meine Emergenzforschung. Ein roter Faden, kein durcheinandergewürfelter Haufen.",
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
     ctaSecLabel: 'Über das Projekt',
