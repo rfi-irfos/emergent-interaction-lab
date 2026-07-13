@@ -1807,6 +1807,22 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1160px; margin: 0 auto 28px; height: 1px;
   background: linear-gradient(90deg, var(--border), transparent);
 }
+
+/* Agents strip — products of the method, separate from the buyable grid */
+.site-webhub-agents { max-width: 1160px; margin: 0 auto; }
+.site-webhub-agents-label { color: var(--accent-purple); }
+.site-webhub-agents-intro { max-width: 1160px; margin: 0 auto 16px; font-size: 14px; line-height: 1.6; color: var(--text-dim); }
+.site-webhub-agents-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.site-webhub-agent-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; display: flex; flex-direction: column; gap: 8px;
+}
+.site-webhub-agent-builtby { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-purple); }
+.site-webhub-agent-name { font-size: 16px; font-weight: 800; color: var(--text); margin: 0; }
+.site-webhub-agent-desc { font-size: 13px; line-height: 1.55; color: var(--text-dim); margin: 0; }
+@media (max-width: 720px) {
+  .site-webhub-agents-row { grid-template-columns: 1fr; }
+}
 .site-webhub-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 16px 16px 14px; display: flex; flex-direction: column; position: relative;
@@ -1970,6 +1986,25 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-born-desc { font-size: 14.5px; line-height: 1.7; color: var(--text); opacity: .82; margin: 0; }
 
+/* Products-Born as a single-card carousel (one at a time, flip L/R) */
+.site-born-carousel { max-width: 720px; margin: 0 auto; }
+.site-born-track { position: relative; min-height: 220px; display: flex; }
+.site-born-card--active { width: 100%; }
+.site-born-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 22px; }
+.site-born-arrow {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 50%;
+  color: var(--text); cursor: pointer; transition: border-color .2s, color .2s, background .2s;
+}
+.site-born-arrow:hover { border-color: var(--brand-cyan); color: var(--primary); background: rgba(99,240,255,.08); }
+.site-born-dots { display: flex; gap: 9px; }
+.site-born-dot {
+  width: 9px; height: 9px; border-radius: 50%; padding: 0; cursor: pointer;
+  background: var(--border); border: none; transition: background .2s, transform .2s;
+}
+.site-born-dot.active { background: var(--primary); transform: scale(1.25); }
+@media (max-width: 720px) { .site-born-track { min-height: 260px; } }
+
 /* ── CO-EVOLUTION PROTOCOL ─────────────────────────────────────────────────
    The public site's own small animated loop diagram (see
    components/CoEvolutionDiagram.tsx) — 5 fixed stages on a closed path, one
@@ -2129,6 +2164,55 @@ button { cursor: pointer; font-family: inherit; }
 .static-page-content strong { color: #0b1720; }
 .static-page-content a { color: #0e8a9c; text-decoration: underline; text-underline-offset: 2px; }
 .static-page-content a:hover { color: #0a6b79; }
+
+/* ── PAGE MODAL (dark, in-house; Research / About the Lab) ───────────────── */
+.page-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: rgba(4, 10, 14, .72); backdrop-filter: blur(6px);
+  padding: 6vh 20px 8vh; overflow-y: auto;
+  animation: pageModalFade .18s ease-out;
+}
+@keyframes pageModalFade { from { opacity: 0 } to { opacity: 1 } }
+.page-modal-panel {
+  position: relative; width: 100%; max-width: 760px;
+  background: linear-gradient(180deg, #0c1620 0%, #0a121a 100%);
+  color: #dce8ee; border: 1px solid rgba(99, 240, 255, .18);
+  border-radius: 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+  padding: 30px 32px 38px;
+}
+.page-modal-x {
+  position: absolute; top: 16px; right: 16px;
+  width: 38px; height: 38px; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .06); color: #9fb4be;
+  border: 1px solid rgba(255, 255, 255, .12); border-radius: 10px;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.page-modal-x:hover { background: rgba(99, 240, 255, .14); color: #63f0ff; }
+.page-modal-scroll { max-height: 78vh; overflow-y: auto; padding-right: 6px; }
+.page-modal-title { font-size: 30px; font-weight: 900; color: #f3fafe; margin: 0 0 18px; line-height: 1.2; }
+.page-modal-body { font-size: 16px; line-height: 1.8; color: #c4d3db; }
+.page-modal-body h2 { font-size: 19px; font-weight: 800; color: #63f0ff; margin: 30px 0 10px; }
+.page-modal-body p { margin: 0 0 14px; color: #c4d3db; }
+.page-modal-body strong { color: #f3fafe; }
+.page-modal-body a { color: #63f0ff; text-decoration: underline; text-underline-offset: 2px; }
+.page-modal-footnote { margin-top: 28px; font-size: 13px; color: #6f8590; border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; }
+
+/* Live Observatory widgets nested inside the dark Research modal — re-skin
+   the public light-theme sections to sit on the dark panel. */
+.page-modal-live { margin-top: 28px; display: flex; flex-direction: column; gap: 22px; }
+.page-modal-live .site-section { background: transparent; padding: 0; margin: 0; }
+.page-modal-live .site-section-title { color: #f3fafe; font-size: 20px; }
+.page-modal-live .site-eyebrow { color: #63f0ff; }
+.page-modal-live .site-livestats-intro,
+.page-modal-live .site-shipping-status,
+.page-modal-live .site-livestats-status { color: #8ea4ae; }
+.page-modal-live .site-signal-bar-label,
+.page-modal-live .site-signal-bar-value { color: #c4d3db; }
+.page-modal-live .site-focus-badge { background: rgba(99,240,255,.08); border-color: rgba(99,240,255,.2); color: #c4d3db; }
+.page-modal-live .site-shipping-link { color: #c4d3db; }
+.page-modal-live .site-shipping-link:hover { color: #63f0ff; }
+.page-modal-live .site-ccet-legend-item { color: #c4d3db; }
 
 /* ── CERTIFICATION (public storefront page, #p/zertifizierung) ──────────────
    Lives inside .static-page-content, same light theme as Legal/Dynamic

@@ -8,6 +8,7 @@ import { AdminPanel } from './components/AdminPanel'
 import { LoginPage } from './components/LoginPage'
 import { LegalPage } from './components/LegalPage'
 import { DynamicPage } from './components/DynamicPage'
+import { PageModal } from './components/PageModal'
 import { CertificationPage } from './components/CertificationPage'
 import { BlogPostPage } from './components/BlogPostPage'
 
@@ -41,9 +42,33 @@ export default function App() {
   const admin = useContent('de')
   const { user, login, logout } = useAuth()
   const [route, setRoute] = useState(() => getRoute(window.location.hash))
+  // Content pages (Research, About the Lab) open as an in-house dark modal,
+  // never a separate browser tab. A #p/<slug> hash opens the modal in place;
+  // the underlying page route is still rendered underneath for deep-links.
+  const [pageModalSlug, setPageModalSlug] = useState<string | null>(
+    window.location.hash.startsWith('#p/')
+      ? (() => {
+          const slug = window.location.hash.slice(3)
+          return ['impressum', 'datenschutz', 'agb'].includes(slug) ? null : slug
+        })()
+      : null,
+  )
 
   useEffect(() => {
-    const onHash = () => setRoute(getRoute(window.location.hash))
+    const onHash = () => {
+      const r = getRoute(window.location.hash)
+      setRoute(r)
+      // Opening a content page (#p/<slug>, not a legal slug / blog) opens the
+      // in-house modal instead of navigating to a separate page.
+      if (window.location.hash.startsWith('#p/')) {
+        const slug = window.location.hash.slice(3)
+        if (!['impressum', 'datenschutz', 'agb'].includes(slug)) {
+          setPageModalSlug(slug)
+        }
+      } else if (window.location.hash === '' || window.location.hash === '#') {
+        setPageModalSlug(null)
+      }
+    }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
@@ -113,5 +138,14 @@ export default function App() {
     if (page) return <DynamicPage page={page} content={content} />
   }
 
-  return <PublicSite content={content} />
+  const modalPage = pageModalSlug
+    ? (content.pages ?? []).find(p => p.slug === pageModalSlug)
+    : undefined
+
+  return (
+    <>
+      <PublicSite content={content} />
+      {modalPage && <PageModal page={modalPage} content={content} onClose={() => { setPageModalSlug(null); if (window.location.hash.startsWith('#p/')) window.history.pushState('', document.title, window.location.pathname + window.location.search) }} />}
+    </>
+  )
 }

@@ -575,21 +575,44 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   },
 }
 
-// Two genuinely different methodologies live in the same product list now
-// (the original case-intelligence ladder from WEBHUB(1).md, and the newer
-// system/organisation-diagnosis ladder from SYSTEMAUDIT_ANGEBOT.md) - a
-// flat price-sorted wall interleaves them, which is exactly what read as
-// cluttered. Split into two labelled groups (each still price-sorted
-// within itself) with a divider between, rather than inventing a third
-// arbitrary "tier" grouping neither source document describes. Anything
-// not in this set defaults to the first group - a new product an admin
-// adds later shows up somewhere sensible instead of silently vanishing.
+// Three "lenses" (Brille) Laura sees a case through — these are the grouping
+// the offer ladder is organized by, each price-sorted within itself. Anything
+// not in a set defaults to the last (Systemaudit) so a new admin-added
+// product still shows up somewhere sensible instead of silently vanishing.
+// The agent products (Call Laura / Laura-Team / Jarvis) are NOT in this grid —
+// they're rendered as a separate "emerging from the lenses" strip, since they
+// are products of the method, not a service you buy by the hour.
+const REKONSTRUKTION_NAMES = new Set([
+  'Vollständige Rekonstruktion', 'Fallrekonstruktion', 'Dokumentenrekonstruktion',
+])
+const ANALYSEN_NAMES = new Set([
+  'Emergent Case Intelligence Sprint', 'Case Intake & Triage', 'Case Intelligence',
+  'Intake, Routing & Analysepipeline', 'Cluster & Pattern Analysis', 'Derive Framework from Case',
+  'Custom Analysis', 'Research Embed',
+])
 const SYSTEMAUDIT_NAMES = new Set([
   'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
   'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview', 'Framework Design from Analysis',
   'Behavior Analysis', 'Behavior Model',
   'System Design & Deployment', 'Watchtower Retainment', 'Multiagent System Coordination', 'Further Development',
 ])
+
+// Order the groups render in: Rekonstruktion → Analysen → Systemaudit.
+type LensKey = 'rekonstruktion' | 'analysen' | 'systemaudit'
+const LENS_ORDER: LensKey[] = ['rekonstruktion', 'analysen', 'systemaudit']
+const LENS_SETS: Record<LensKey, Set<string>> = {
+  rekonstruktion: REKONSTRUKTION_NAMES,
+  analysen: ANALYSEN_NAMES,
+  systemaudit: SYSTEMAUDIT_NAMES,
+}
+// Rank a product into its lens group (0..n-1); unknown products fall into
+// the last group (Systemaudit) as a sensible default.
+function lensRank(name: string): number {
+  for (let i = 0; i < LENS_ORDER.length; i++) {
+    if (LENS_SETS[LENS_ORDER[i]].has(name)) return i
+  }
+  return LENS_ORDER.length - 1
+}
 
 const COPY = {
   en: {
@@ -605,8 +628,11 @@ const COPY = {
     youGetLabel: 'You get',
     buy: 'Buy',
     close: 'Close',
-    groupCase: 'Case Intelligence',
+    groupRekonstruktion: 'Rekonstruktion',
+    groupAnalysen: 'Analysen',
     groupSystemaudit: 'Systemaudit',
+    agentsEyebrow: 'Agents from the method',
+    agentsIntro: 'These are not services you book by the hour — they are what the lenses produce: working agents built from the same case-logic above.',
     consentTitle: 'Please confirm before checkout',
     consentB2b: 'I am acting as a business customer and confirm that this purchase is made in the course of my commercial or professional activity.',
     consentAgbBefore: 'I agree to the ',
@@ -628,8 +654,11 @@ const COPY = {
     youGetLabel: 'Das bekommst du',
     buy: 'Kaufen',
     close: 'Schließen',
-    groupCase: 'Case Intelligence',
+    groupRekonstruktion: 'Rekonstruktion',
+    groupAnalysen: 'Analysen',
     groupSystemaudit: 'Systemaudit',
+    agentsEyebrow: 'Agenten aus der Methode',
+    agentsIntro: 'Das sind keine Leistungen, die du stundenweise buchst - das ist, was die Brillen hervorbringen: lauffähige Agenten, gebaut aus derselben Fall-Logik wie oben.',
     consentTitle: 'Bitte vor dem Checkout bestätigen',
     consentB2b: 'Ich handle als Unternehmer und bestätige, dass dieser Kauf im Rahmen meiner gewerblichen oder beruflichen Tätigkeit erfolgt.',
     consentAgbBefore: 'Ich stimme den ',
@@ -640,12 +669,17 @@ const COPY = {
   },
 } as const
 
-export function WebHubPricing() {
+export function WebHubPricing({ content }: { content: SiteContent }) {
   const { lang } = useLang()
   const c = COPY[lang]
   const [products, setProducts] = useState<PublicProduct[] | null>(null)
   const [error, setError] = useState(false)
   const [active, setActive] = useState<PublicProduct | null>(null)
+  // Agents (Call Laura / Laura-Team / Jarvis) emerge from the method — shown
+  // as a separate strip, not in the buyable price grid.
+  const agents = (content.productsBorn?.items ?? []).filter(a =>
+    ['born-jarvis', 'born-calllaura', 'born-laurateam'].includes(a.id),
+  )
   // Legal consent gate before any Stripe redirect — mirrors rfi-irfos.com's
   // own B2B-checkout-confirmation modal (Abmahnung-proofing: self-declared
   // commercial customer excludes the KSchG consumer-protection Widerrufsrecht
@@ -674,13 +708,12 @@ export function WebHubPricing() {
       .then(res => { if (!res.ok) throw new Error(String(res.status)); return res.json() })
       .then((data: PublicProduct[]) => {
         if (cancelled) return
-        // Case Intelligence first (it's the flagship ladder), then Systemaudit
-        // — each group price-sorted within itself, see SYSTEMAUDIT_NAMES's own
-        // comment for why a flat price sort across both reads as cluttered.
+        // Group order: Rekonstruktion → Analysen → Systemaudit (see LENS_ORDER).
+        // Within each group, price-sorted. A product not in any lens set falls
+        // into the last group (Systemaudit) as a sensible default.
         const sorted = [...data.filter(p => p.category !== 'certification')].sort((a, b) => {
-          const groupA = SYSTEMAUDIT_NAMES.has(a.name) ? 1 : 0
-          const groupB = SYSTEMAUDIT_NAMES.has(b.name) ? 1 : 0
-          return groupA !== groupB ? groupA - groupB : a.price_cents - b.price_cents
+          const ra = lensRank(a.name); const rb = lensRank(b.name)
+          return ra !== rb ? ra - rb : a.price_cents - b.price_cents
         })
         setProducts(sorted)
       })
@@ -715,8 +748,6 @@ export function WebHubPricing() {
       {error && <p className="site-webhub-status">{c.error}</p>}
 
       {products !== null && products.length > 0 && (() => {
-        const caseGroup = products.filter(p => !SYSTEMAUDIT_NAMES.has(p.name))
-        const auditGroup = products.filter(p => SYSTEMAUDIT_NAMES.has(p.name))
         const renderCard = (p: PublicProduct, i: number) => {
           const isFlagship = p.name === FLAGSHIP_NAME
           return (
@@ -751,18 +782,35 @@ export function WebHubPricing() {
         }
         return (
           <>
-            {caseGroup.length > 0 && (
-              <>
-                <div className="site-webhub-group-label">{c.groupCase}</div>
-                <div className="site-webhub-grid">{caseGroup.map(renderCard)}</div>
-              </>
-            )}
-            {auditGroup.length > 0 && (
-              <>
+            {LENS_ORDER.map((lens, li) => {
+              const group = products.filter(p => lensRank(p.name) === li)
+              if (group.length === 0) return null
+              const label = lens === 'rekonstruktion' ? c.groupRekonstruktion
+                : lens === 'analysen' ? c.groupAnalysen
+                : c.groupSystemaudit
+              return (
+                <div key={lens}>
+                  {li > 0 && <div className="site-webhub-group-divider" />}
+                  <div className="site-webhub-group-label">{label}</div>
+                  <div className="site-webhub-grid">{group.map(renderCard)}</div>
+                </div>
+              )
+            })}
+            {agents.length > 0 && (
+              <div className="site-webhub-agents">
                 <div className="site-webhub-group-divider" />
-                <div className="site-webhub-group-label">{c.groupSystemaudit}</div>
-                <div className="site-webhub-grid">{auditGroup.map(renderCard)}</div>
-              </>
+                <div className="site-webhub-group-label site-webhub-agents-label">{c.agentsEyebrow}</div>
+                <p className="site-webhub-agents-intro">{c.agentsIntro}</p>
+                <div className="site-webhub-agents-row">
+                  {agents.map(a => (
+                    <div key={a.id} className="site-webhub-agent-card">
+                      <span className="site-webhub-agent-builtby">{a.builtBy}</span>
+                      <h4 className="site-webhub-agent-name">{a.name}</h4>
+                      <p className="site-webhub-agent-desc">{a.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </>
         )

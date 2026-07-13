@@ -4,10 +4,53 @@ import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
 import { API_BASE } from '../lib/apiBase'
-import { LiveStatsSection, ShippingFeedSection, CurrentFocusBadge, SignalLevelsSection, CcetTrendSection, SimulationStatusSection } from './PublicLiveActivity'
 import { CoEvolutionDiagram } from './CoEvolutionDiagram'
 import { WebHubPricing } from './WebHubPricing'
 import { PdfViewerModal } from './PdfViewerModal'
+
+// "What grew out of the loop" — single-card carousel: one product shown at a
+// time, flip left/right through the set. Each card carries its builtBy label
+// so attribution stays clear.
+function BornCarousel({ items }: { items: Array<{ id: string; name: string; builtBy?: string; description: string }> }) {
+  const { lang } = useLang()
+  const [idx, setIdx] = useState(0)
+  const n = items.length
+  if (n === 0) return null
+  const go = (dir: number) => setIdx((i) => (i + dir + n) % n)
+  const item = items[idx]
+  const prev = lang === 'de' ? 'Zurück' : 'Previous'
+  const next = lang === 'de' ? 'Weiter' : 'Next'
+  return (
+    <div className="site-born-carousel">
+      <div className="site-born-track">
+        <article className="site-born-card site-born-card--active" key={item.id}>
+          <h3 className="site-born-name">{item.name}</h3>
+          {item.builtBy && <span className="site-born-builtBy">{item.builtBy}</span>}
+          <p className="site-born-desc" dangerouslySetInnerHTML={{ __html: item.description }} />
+        </article>
+      </div>
+      <div className="site-born-controls">
+        <button type="button" className="site-born-arrow" aria-label={prev} onClick={() => go(-1)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+        </button>
+        <div className="site-born-dots">
+          {items.map((it, i) => (
+            <button
+              key={it.id}
+              type="button"
+              className={`site-born-dot${i === idx ? ' active' : ''}`}
+              aria-label={`${i + 1}`}
+              onClick={() => setIdx(i)}
+            />
+          ))}
+        </div>
+        <button type="button" className="site-born-arrow" aria-label={next} onClick={() => go(1)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
 function safeHref(href: string): string {
@@ -1370,28 +1413,9 @@ export function PublicSite({
             {content.productsBorn.eyebrow && <div className="site-eyebrow">{content.productsBorn.eyebrow}</div>}
             <Reveal from="bottom"><h2 className="site-section-title">{content.productsBorn.title}</h2></Reveal>
             {content.productsBorn.intro && <Reveal from="bottom" delay={1}><p className="site-productsborn-intro">{content.productsBorn.intro}</p></Reveal>}
-            <div className="site-born-grid">
-              {content.productsBorn.items.map((p, i) => (
-                <Reveal key={p.id} from="bottom" delay={i + 1}>
-                  <article className="site-born-card">
-                    <h3 className="site-born-name">{p.name}</h3>
-                    {p.builtBy && <span className="site-born-builtBy">{p.builtBy}</span>}
-                    <p className="site-born-desc" dangerouslySetInnerHTML={{ __html: p.description }} />
-                  </article>
-                </Reveal>
-              ))}
-            </div>
+            <BornCarousel items={content.productsBorn.items} />
           </section>
         ) : null}
-
-        {/* ── LIVE ACTIVITY (visitor-facing proof the hero's "live laufendes
-             Forschungsinstrument" claim is real, not just copy) ──────────── */}
-        <CurrentFocusBadge editMode={editMode} reveal={reveal} />
-        <LiveStatsSection editMode={editMode} reveal={reveal} />
-        <SignalLevelsSection editMode={editMode} reveal={reveal} />
-        <CcetTrendSection editMode={editMode} reveal={reveal} />
-        <SimulationStatusSection editMode={editMode} reveal={reveal} />
-        <ShippingFeedSection editMode={editMode} reveal={reveal} />
 
         {/* ── CATEGORIES / DRILL-DOWN BROWSER ──────────────────────────── */}
         {!hiddenSections.includes('categories') && (categories?.items?.length ?? 0) > 0 && (() => {
@@ -1643,7 +1667,7 @@ export function PublicSite({
             prose an editor can still set; this is the live Stripe-backed
             product ladder) and renders nothing if no service products exist
             yet, so an empty backend never shows an empty heading here. */}
-        {!editMode && <WebHubPricing />}
+        {!editMode && <WebHubPricing content={content} />}
 
         {/* ── PAPERS ───────────────────────────────────────────────────── */}
         {(papers?.items?.length ?? 0) > 0 && (
