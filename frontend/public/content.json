@@ -200,7 +200,7 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Same field named in the hero above (the Emergent Interaction Field), described here as a concept: a shared dynamic space where cognition and inference continuously co-shape outcomes - the observation layer the Observatory instrument watches in real time.",
+        "description": "The same field as the header above (the Emergent Interaction Field), described here as a concept: a shared dynamic space where cognition and inference continuously co-shape outcomes - the observation layer the Observatory watches in real time. Primarily built on active analysis, not assumption: every pattern here is measured before it's named.",
         "icon": "field"
       },
       {
@@ -214,7 +214,7 @@
         "id": "u2",
         "pillar": "p2",
         "title": "Behavior",
-        "description": "Context-dependent adaptation of responses across evolving interaction states.",
+        "description": "Context-dependent adaptation of responses across evolving interaction states - how tone, pace, and focus shift depending on what the interaction has already gone through. The raw signal that makes every later drift and prediction reading possible in the first place.",
         "icon": "behavior"
       },
       {
@@ -232,17 +232,24 @@
         "icon": "prediction"
       },
       {
+        "id": "u9",
+        "pillar": "p2",
+        "icon": "",
+        "title": "Monitoring & Validation",
+        "description": "Every prediction stays an open hypothesis until it's checked: ongoing monitoring compares the projected trend against what actually happens, confirms or discards it. Smart predictive algorithms that have to correct themselves - no forecast counts as true just because it sounded plausible."
+      },
+      {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Multiple simultaneous semantic layers that emerge over the course of a dialogue - raw material for derived structures.",
+        "description": "Multiple simultaneous semantic layers that arise during dialogue development - fact, emotion, intent, subtext, often active at once and rarely aligned. Raw material for derived structures: before a framework can state a principle, it has to know which layer a pattern actually lives on.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Structural boundaries that determine what stabilizes, emerges, or collapses - the source of principles and system logic.",
+        "description": "Structural limits that determine what stabilizes, emerges, or collapses - what a system can carry before it breaks. Principles and system logic grow from there: not derived abstractly, but observed at the exact point where a boundary actually held or broke.",
         "icon": "constraints"
       }
     ]

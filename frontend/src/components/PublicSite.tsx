@@ -8,26 +8,39 @@ import { CoEvolutionDiagram } from './CoEvolutionDiagram'
 import { WebHubPricing } from './WebHubPricing'
 import { PdfViewerModal } from './PdfViewerModal'
 
-// "What grew out of the loop" — single-card carousel: one product shown at a
-// time, flip left/right through the set. Each card carries its builtBy label
-// so attribution stays clear.
-function BornCarousel({ items }: { items: Array<{ id: string; name: string; builtBy?: string; description: string }> }) {
+// Generic single-card carousel: one item shown at a time, flip left/right,
+// a slide-in transition each time the active item changes (direction-aware
+// - forward advances slide in from the right, backward from the left).
+// Originally built just for "what grew out of the loop"; generalized
+// 2026-07-13 so the Framework/Verhaltensanalyse/Frameworks & Concepts card
+// groups can all reuse the same component instead of three near-duplicates
+// - `renderItem` is the only thing that differs between them.
+function GenericCarousel<T>({
+  items, renderItem, wrapClassName = 'site-born-carousel', getKey,
+}: {
+  items: T[]
+  renderItem: (item: T, i: number) => React.ReactNode
+  wrapClassName?: string
+  getKey: (item: T, i: number) => string
+}) {
   const { lang } = useLang()
   const [idx, setIdx] = useState(0)
+  const [dir, setDir] = useState(1)
   const n = items.length
   if (n === 0) return null
-  const go = (dir: number) => setIdx((i) => (i + dir + n) % n)
-  const item = items[idx]
+  const go = (d: number) => { setDir(d); setIdx((i) => (i + d + n) % n) }
+  const jump = (i: number) => { setDir(i >= idx ? 1 : -1); setIdx(i) }
   const prev = lang === 'de' ? 'Zurück' : 'Previous'
   const next = lang === 'de' ? 'Weiter' : 'Next'
   return (
-    <div className="site-born-carousel">
+    <div className={wrapClassName}>
       <div className="site-born-track">
-        <article className="site-born-card site-born-card--active" key={item.id}>
-          <h3 className="site-born-name">{item.name}</h3>
-          {item.builtBy && <span className="site-born-builtBy">{item.builtBy}</span>}
-          <p className="site-born-desc" dangerouslySetInnerHTML={{ __html: item.description }} />
-        </article>
+        {/* key={idx} forces a remount on every change, which is what
+            restarts the slide-in animation each time - a plain prop change
+            wouldn't replay a CSS `animation`. */}
+        <div key={idx} className={`site-born-slide site-born-slide--${dir > 0 ? 'fwd' : 'back'}`}>
+          {renderItem(items[idx], idx)}
+        </div>
       </div>
       <div className="site-born-controls">
         <button type="button" className="site-born-arrow" aria-label={prev} onClick={() => go(-1)}>
@@ -36,11 +49,11 @@ function BornCarousel({ items }: { items: Array<{ id: string; name: string; buil
         <div className="site-born-dots">
           {items.map((it, i) => (
             <button
-              key={it.id}
+              key={getKey(it, i)}
               type="button"
               className={`site-born-dot${i === idx ? ' active' : ''}`}
               aria-label={`${i + 1}`}
-              onClick={() => setIdx(i)}
+              onClick={() => jump(i)}
             />
           ))}
         </div>
@@ -49,6 +62,24 @@ function BornCarousel({ items }: { items: Array<{ id: string; name: string; buil
         </button>
       </div>
     </div>
+  )
+}
+
+// "What grew out of the loop" — each card carries its builtBy label so
+// attribution stays clear.
+function BornCarousel({ items }: { items: Array<{ id: string; name: string; builtBy?: string; description: string }> }) {
+  return (
+    <GenericCarousel
+      items={items}
+      getKey={(item) => item.id}
+      renderItem={(item) => (
+        <article className="site-born-card site-born-card--active">
+          <h3 className="site-born-name">{item.name}</h3>
+          {item.builtBy && <span className="site-born-builtBy">{item.builtBy}</span>}
+          <p className="site-born-desc" dangerouslySetInnerHTML={{ __html: item.description }} />
+        </article>
+      )}
+    />
   )
 }
 
@@ -1557,17 +1588,37 @@ export function PublicSite({
                         </div>
                       </div>
                     )}
-                    <div className="site-usp-grid">
-                      {groupItems.map(({ u, i }, gi) => (
-                        <Reveal key={u.id} from={gi % 2 === 1 ? 'right' : 'left'} delay={gi}>
-                        <div className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
-                          {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
-                          <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
-                          <E field={`usp.items.${i}.description`} value={u.description} as="p" />
-                        </div>
-                        </Reveal>
-                      ))}
-                    </div>
+                    {editMode ? (
+                      <div className="site-usp-grid">
+                        {groupItems.map(({ u, i }, gi) => (
+                          <Reveal key={u.id} from={gi % 2 === 1 ? 'right' : 'left'} delay={gi}>
+                          <div className={`site-usp-card ${i % 2 === 1 ? 'accent' : ''}`}>
+                            {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
+                            <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
+                            <E field={`usp.items.${i}.description`} value={u.description} as="p" />
+                          </div>
+                          </Reveal>
+                        ))}
+                      </div>
+                    ) : (
+                      // Carousel instead of a static grid - was a wall of
+                      // side-by-side cards with uneven lengths ("karte links
+                      // hat drei Sätze, karte rechts hat sieben") reading as
+                      // messy; one card at a time sidesteps that entirely
+                      // and doubles as the "let this be a carousel too" ask.
+                      <GenericCarousel
+                        wrapClassName="site-born-carousel site-usp-carousel"
+                        items={groupItems}
+                        getKey={({ u }) => u.id}
+                        renderItem={({ u, i }) => (
+                          <div className={`site-usp-card site-usp-card--carousel ${i % 2 === 1 ? 'accent' : ''}`}>
+                            {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
+                            <h3 dangerouslySetInnerHTML={{ __html: u.title }} />
+                            <p dangerouslySetInnerHTML={{ __html: u.description }} />
+                          </div>
+                        )}
+                      />
+                    )}
                   </div>
                 )
               })}

@@ -200,7 +200,7 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Dasselbe Feld wie im Header oben (das Emergent Interaction Field), hier als Konzept beschrieben: ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht.",
+        "description": "Dasselbe Feld wie im Header oben (das Emergent Interaction Field), hier als Konzept beschrieben: ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht. Primär baut das auf aktiven Analysen auf, nicht auf Annahmen: jedes Muster hier ist zuerst gemessen, bevor es benannt wird.",
         "icon": "field"
       },
       {
@@ -214,7 +214,7 @@
         "id": "u2",
         "pillar": "p2",
         "title": "Behavior",
-        "description": "Kontextabhängige Anpassung von Antworten über sich entwickelnde Interaktionszustände hinweg.",
+        "description": "Kontextabhängige Anpassung von Antworten über sich entwickelnde Interaktionszustände hinweg - wie Ton, Tempo und Fokus sich verschieben, je nachdem, was die Interaktion bereits durchlaufen hat. Das Rohsignal, das jede spätere Drift- und Vorhersage-Lesart überhaupt erst möglich macht.",
         "icon": "behavior"
       },
       {
@@ -232,17 +232,24 @@
         "icon": "prediction"
       },
       {
+        "id": "u9",
+        "pillar": "p2",
+        "icon": "",
+        "title": "Monitoring & Validierung",
+        "description": "Jede Vorhersage bleibt eine offene Hypothese, bis sie geprüft ist: laufendes Monitoring vergleicht den projizierten Trend gegen den tatsächlichen Verlauf, bestätigt oder verwirft. Smarte prädiktive Algorithmen, die sich selbst korrigieren müssen - keine Prognose gilt als wahr, nur weil sie plausibel klang."
+      },
+      {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Mehrere gleichzeitige semantische Schichten, die während der Dialogentwicklung entstehen - Rohmaterial für abgeleitete Strukturen.",
+        "description": "Mehrere gleichzeitige semantische Schichten, die während der Dialogentwicklung entstehen - Fakten, Emotion, Intention, Subtext, oft gleichzeitig aktiv und selten deckungsgleich. Rohmaterial für abgeleitete Strukturen: bevor ein Framework Prinzipien ausspricht, muss es erst wissen, auf welcher Schicht ein Muster eigentlich liegt.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Strukturelle Grenzen, die bestimmen, was sich stabilisiert, emergiert oder kollabiert - daraus werden Prinzipien und Systemlogik.",
+        "description": "Strukturelle Grenzen, die bestimmen, was sich stabilisiert, emergiert oder kollabiert - was ein System tragen kann, bevor es reißt. Daraus werden Prinzipien und Systemlogik: nicht abstrakt hergeleitet, sondern an der Stelle beobachtet, wo eine Grenze real gehalten oder gebrochen hat.",
         "icon": "constraints"
       }
     ]

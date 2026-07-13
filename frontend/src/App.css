@@ -1807,6 +1807,15 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1160px; margin: 0 auto 28px; height: 1px;
   background: linear-gradient(90deg, var(--border), transparent);
 }
+/* Systemaudit sub-bundles (reviews / system design & build / ongoing) -
+   smaller, muted secondary header so it reads as "inside Systemaudit",
+   not a fourth top-level domain competing with the other three. */
+.site-webhub-subgroup { max-width: 1160px; margin: 0 auto 32px; }
+.site-webhub-subgroup:last-child { margin-bottom: 0; }
+.site-webhub-subgroup-label {
+  margin: 0 0 12px; font-size: 12px; font-weight: 700;
+  color: var(--text-soft); padding-bottom: 6px; border-bottom: 1px dashed var(--border);
+}
 
 /* Agents strip — products of the method, separate from the buyable grid */
 .site-webhub-agents { max-width: 1160px; margin: 0 auto; }
@@ -1988,8 +1997,33 @@ button { cursor: pointer; font-family: inherit; }
 
 /* Products-Born as a single-card carousel (one at a time, flip L/R) */
 .site-born-carousel { max-width: 720px; margin: 0 auto; }
-.site-born-track { position: relative; min-height: 220px; display: flex; }
+.site-born-track { position: relative; min-height: 220px; display: flex; overflow: hidden; }
 .site-born-card--active { width: 100%; }
+/* Framework/Verhaltensanalyse/Frameworks & Concepts pillar carousels reuse
+   the whole GenericCarousel shell above - just a natural content height
+   instead of the fixed 220px (usp cards vary more in length than the
+   Born cards did) and no outer max-width clamp (each pillar's own grid
+   context already constrains width). */
+.site-usp-carousel { max-width: none; }
+.site-usp-carousel .site-born-track { min-height: 0; }
+.site-usp-card--carousel { width: 100%; }
+/* Slide-in transition, direction-aware (forward = next card enters from the
+   right, backward = from the left) - previously an instant swap ("fast da,
+   braucht animierten slideshow-effekt"). Re-triggers every time because the
+   carousel remounts this wrapper via key={idx} (see GenericCarousel). */
+.site-born-slide { width: 100%; animation: site-born-slide-fwd .38s cubic-bezier(.22,.61,.36,1); }
+.site-born-slide--back { animation-name: site-born-slide-back; }
+@keyframes site-born-slide-fwd {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes site-born-slide-back {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-born-slide { animation: none; }
+}
 .site-born-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 22px; }
 .site-born-arrow {
   width: 44px; height: 44px; display: grid; place-items: center;
@@ -2223,7 +2257,12 @@ button { cursor: pointer; font-family: inherit; }
 
 /* Live Observatory widgets nested inside the dark Research modal — re-skin
    the public light-theme sections to sit on the dark panel. */
-.page-modal-live { margin-top: 28px; display: flex; flex-direction: column; gap: 22px; }
+.page-modal-live { margin-top: 28px; display: flex; flex-direction: column; gap: 36px; }
+/* Soft divider between each live widget - flagged live as needing "a bit
+   more space, or a soft grey line divider" between the stacked charts.
+   `> * + *` matches every child except the first, so this never adds a
+   stray line above the topmost widget. */
+.page-modal-live > * + * { padding-top: 32px; border-top: 1px solid rgba(255, 255, 255, .08); }
 .page-modal-live .site-section { background: transparent; padding: 0; margin: 0; }
 .page-modal-live .site-section-title { color: #f3fafe; font-size: 20px; }
 .page-modal-live .site-eyebrow { color: #63f0ff; }
@@ -2241,34 +2280,40 @@ button { cursor: pointer; font-family: inherit; }
    Lives inside .static-page-content, same light theme as Legal/Dynamic
    pages — real pricing cards fed by GET /api/billing/public-products, never
    a fabricated price. */
-.cert-eyebrow { font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #0e8a9c; margin-bottom: 10px; }
-.cert-intro { max-width: 640px; }
-.cert-page-status { font-size: 15px; color: #5a7178; margin-top: 8px; }
+/* All hardcoded to the dark modal's own palette (matching PageModal's
+   #0c1620/#dce8ee/#63f0ff) - these rules predate CertificationPage becoming
+   a modal, when this content sat on a plain white .static-page, and were
+   never updated when it moved: a light "Coming soon" box and white pricing
+   cards were bleeding through against the dark overlay ("white element
+   bleed in darkmode", flagged live). */
+.cert-eyebrow { font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #63f0ff; margin-bottom: 10px; }
+.cert-intro { max-width: 640px; color: #c4d3db; }
+.cert-page-status { font-size: 15px; color: #8fa3ac; margin-top: 8px; }
 .cert-coming-soon {
-  background: #eef6f7; border: 1px solid #cfe4e6; border-radius: 14px;
+  background: rgba(99, 240, 255, .06); border: 1px solid rgba(99, 240, 255, .18); border-radius: 14px;
   padding: 28px 32px; margin-top: 16px;
 }
-.cert-coming-soon h2 { margin-top: 0; }
-.cert-coming-soon p { margin-bottom: 0; }
+.cert-coming-soon h2 { margin-top: 0; color: #f3fafe; }
+.cert-coming-soon p { margin-bottom: 0; color: #c4d3db; }
 .cert-pricing-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px; margin-top: 20px;
 }
 .cert-pricing-card {
   display: flex; flex-direction: column; gap: 12px;
-  background: #fff; border: 1px solid #e2e8ec; border-radius: 16px; padding: 28px;
+  background: rgba(255, 255, 255, .03); border: 1px solid rgba(99, 240, 255, .14); border-radius: 16px; padding: 28px;
 }
-.cert-pricing-card h2 { margin: 0; font-size: 20px; }
-.cert-pricing-desc { font-size: 15px; color: #46606b; margin: 0; }
-.cert-pricing-price { font-size: 28px; font-weight: 900; color: #0b1720; }
-.cert-pricing-price span { font-size: 14px; font-weight: 600; color: #5a7178; }
+.cert-pricing-card h2 { margin: 0; font-size: 20px; color: #f3fafe; }
+.cert-pricing-desc { font-size: 15px; color: #9bb3c2; margin: 0; }
+.cert-pricing-price { font-size: 28px; font-weight: 900; color: #f3fafe; }
+.cert-pricing-price span { font-size: 14px; font-weight: 600; color: #9bb3c2; }
 .cert-pricing-cta {
   margin-top: auto; align-self: flex-start;
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 12px 22px; border-radius: 10px; background: #0e8a9c; color: #fff;
+  padding: 12px 22px; border-radius: 10px; background: #63f0ff; color: #03050a;
   font-weight: 700; font-size: 15px; text-decoration: none; transition: background .15s;
 }
-.cert-pricing-cta:hover { background: #0a6b79; }
+.cert-pricing-cta:hover { background: #9df5ff; }
 @media (max-width: 600px) { .cert-pricing-grid { grid-template-columns: 1fr; } }
 
 /* ── BLOG POST PAGE (public article page, #p/blog/<id>) ──────────────────────

@@ -612,6 +612,33 @@ const SYSTEMAUDIT_NAMES = new Set([
   'Multiagent System Coordination', 'Further Development',
 ])
 
+// Systemaudit alone is 18 products - flagged live as still too much to take
+// in even under one clear label ("bündeln noch für mehr Visibility"). Split
+// into its own 3 sub-bundles, each with a smaller secondary header inside
+// the Systemaudit group (see SUBGROUP_ORDER below): the *review family
+// (diagnostic reads), system design/build (the bigger build-out tiers), and
+// ongoing/retainer work (ships as a recurring service, not a one-off).
+type SubgroupKey = 'reviews' | 'systemDesign' | 'ongoing'
+const SUBGROUP_ORDER: SubgroupKey[] = ['reviews', 'systemDesign', 'ongoing']
+const SUBGROUP_SETS: Record<SubgroupKey, Set<string>> = {
+  reviews: new Set([
+    'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
+    'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview',
+  ]),
+  systemDesign: new Set([
+    'Multi-Agent System Design', 'Framework Design from Analysis', 'Implementation Build', 'System Design & Deployment',
+  ]),
+  ongoing: new Set([
+    'Retainer / Monitoring', 'Framework Update', 'Watchtower Retainment', 'Multiagent System Coordination', 'Further Development',
+  ]),
+}
+function subgroupRank(name: string): number {
+  for (let i = 0; i < SUBGROUP_ORDER.length; i++) {
+    if (SUBGROUP_SETS[SUBGROUP_ORDER[i]].has(name)) return i
+  }
+  return SUBGROUP_ORDER.length - 1
+}
+
 // Order the groups render in: Rekonstruktion → Analysen → Systemaudit.
 type LensKey = 'rekonstruktion' | 'analysen' | 'systemaudit'
 const LENS_ORDER: LensKey[] = ['rekonstruktion', 'analysen', 'systemaudit']
@@ -646,6 +673,9 @@ const COPY = {
     groupRekonstruktion: 'Rekonstruktion',
     groupAnalysen: 'Analysen',
     groupSystemaudit: 'Systemaudit',
+    subgroupReviews: 'Reviews',
+    subgroupSystemDesign: 'System design & build',
+    subgroupOngoing: 'Ongoing',
     agentsEyebrow: 'Agents from the method',
     agentsIntro: 'These are not services you book by the hour — they are what the lenses produce: working agents built from the same case-logic above.',
     consentTitle: 'Please confirm before checkout',
@@ -672,6 +702,9 @@ const COPY = {
     groupRekonstruktion: 'Rekonstruktion',
     groupAnalysen: 'Analysen',
     groupSystemaudit: 'Systemaudit',
+    subgroupReviews: 'Reviews',
+    subgroupSystemDesign: 'Systemdesign & Aufbau',
+    subgroupOngoing: 'Laufend',
     agentsEyebrow: 'Agenten aus der Methode',
     agentsIntro: 'Das sind keine Leistungen, die du stundenweise buchst - das ist, was die Brillen hervorbringen: lauffähige Agenten, gebaut aus derselben Fall-Logik wie oben.',
     consentTitle: 'Bitte vor dem Checkout bestätigen',
@@ -803,6 +836,31 @@ export function WebHubPricing({ content }: { content: SiteContent }) {
               const label = lens === 'rekonstruktion' ? c.groupRekonstruktion
                 : lens === 'analysen' ? c.groupAnalysen
                 : c.groupSystemaudit
+              // Systemaudit alone is 18 products - one flat grid under one
+              // label still read as a wall even with the other two domains
+              // correctly separated out. Split into its own 3 sub-bundles
+              // (reviews / system design & build / ongoing), each with a
+              // smaller secondary header, instead of one undifferentiated grid.
+              if (lens === 'systemaudit') {
+                const subgroups = SUBGROUP_ORDER.map((sg, si) => ({
+                  sg,
+                  items: group.filter(p => subgroupRank(p.name) === si),
+                })).filter(g => g.items.length > 0)
+                const subLabel = (sg: SubgroupKey) =>
+                  sg === 'reviews' ? c.subgroupReviews : sg === 'systemDesign' ? c.subgroupSystemDesign : c.subgroupOngoing
+                return (
+                  <div key={lens}>
+                    {li > 0 && <div className="site-webhub-group-divider" />}
+                    <div className="site-webhub-group-label">{label}</div>
+                    {subgroups.map(({ sg, items }) => (
+                      <div key={sg} className="site-webhub-subgroup">
+                        <div className="site-webhub-subgroup-label">{subLabel(sg)}</div>
+                        <div className="site-webhub-grid">{items.map(renderCard)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
               return (
                 <div key={lens}>
                   {li > 0 && <div className="site-webhub-group-divider" />}

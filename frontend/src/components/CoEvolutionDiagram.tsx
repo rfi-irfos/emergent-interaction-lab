@@ -14,16 +14,16 @@ interface Props {
 // simplified to one shared closed-loop path instead of per-edge radial
 // spokes, since this has no pan/zoom infrastructure to reuse or need.
 //
-// Layout (rebuilt 2026-07-13, second pass): a compact square chart on the
-// LEFT, the intro text + a plain stacked descriptor list on the RIGHT.
-// Previous layout positioned each descriptor radially around a large
-// centered chart - correct geometrically, but 5 text blocks arranged in a
-// circle around a big square made the whole section far taller than its
-// actual content needed, forcing a lot of scroll to get past it (flagged
-// live: "nobody wants to scroll this far down"). A plain side-by-side
-// column layout is shorter, reads left-to-right/top-to-bottom naturally,
-// and needs no per-node angle math for text placement at all - simpler
-// code, not just a smaller widget.
+// Layout (2026-07-13, third pass): the per-stage descriptors stay radially
+// arranged AROUND the chart, same as originally - that visual was correct
+// and wanted, just too large (first pass at fixing "too much scroll" over-
+// corrected by flattening the descriptors into a plain list on the right,
+// which wasn't the actual ask). What actually needed to shrink is the
+// radius/spacing, and the whole radial widget needed to move to the LEFT
+// with only the general intro paragraph - not the per-stage descriptions -
+// sitting beside it on the right. So: compact radial chart+descriptors as
+// one left-hand unit (smaller chart, tighter descriptor radius/width/font
+// than the original), plain intro text as its own right-hand column.
 //
 // No duplicate labeling: earlier drafts had the stage name floating next
 // to the node in the SVG itself AND again as the descriptor's own
@@ -40,18 +40,20 @@ interface Props {
 // hero band uses for anything else here — see App.css's "HUD FRAMING —
 // public-site theme adaptation" comment for why a theme-independent color
 // caused trouble once already.
+const RADIAL_AREAS = ['top', 'right', 'botright', 'botleft', 'left']
 const STAGE_COLORS = ['#22d3ee', '#8b5cf6', '#14b8a6', '#f59e0b', '#ec4899']
 
 export function CoEvolutionDiagram({ nodes, intro }: Props) {
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
 
-  // Smaller viewBox than the previous 400x400 - this chart now sits in a
-  // fixed-width column next to the text instead of being the whole
-  // widget's centerpiece, so it doesn't need to be as large to read clearly.
-  const W = 300, H = 300, CX = W / 2, CY = H / 2
-  const R = 76         // node ring — the actual 5 stations
-  const GROWTH_R1 = R + 21   // first faint outer ring — "this keeps going"
-  const GROWTH_R2 = R + 39   // second, fainter still — fading outward, not closing off
+  // Smaller viewBox than the original 400x400, and a tighter node ring
+  // (R) - the whole radial unit is now a compact left-hand column instead
+  // of the full-width centerpiece it used to be, so both the chart and the
+  // ring the descriptors sit on shrink together.
+  const W = 280, H = 280, CX = W / 2, CY = H / 2
+  const R = 66          // node ring — the actual 5 stations
+  const GROWTH_R1 = R + 18   // first faint outer ring — "this keeps going"
+  const GROWTH_R2 = R + 33   // second, fainter still — fading outward, not closing off
 
   const n = nodes.length || 1
   const anglesDeg = nodes.map((_, i) => -90 + i * (360 / n))
@@ -126,7 +128,7 @@ export function CoEvolutionDiagram({ nodes, intro }: Props) {
         const stageColor = colorFor(i)
         return (
           <g key={p.id} style={{ ['--stage-c' as string]: stageColor }}>
-            <circle cx={p.x} cy={p.y} r="17" className="site-protocol-node" />
+            <circle cx={p.x} cy={p.y} r="14" className="site-protocol-node" />
             <text x={p.x} y={p.y + 5} textAnchor="middle" className="site-protocol-node-index">{String(i + 1).padStart(2, '0')}</text>
           </g>
         )
@@ -134,20 +136,43 @@ export function CoEvolutionDiagram({ nodes, intro }: Props) {
     </svg>
   )
 
+  // Descriptor position on a circle around the radial widget's own center,
+  // expressed as percentages so it's independent of the container's actual
+  // pixel size — same angle each node's SVG position already uses, just a
+  // wider radius so the text sits clear of the chart itself. Tighter radius
+  // and narrower text width than the original (was 40% / 200px) - this is
+  // now a compact left-hand unit, not the full-width centerpiece.
+  const DESC_R_PCT = 34
   return (
     <div className="site-protocol-diagram">
-      <div className="site-protocol-chart-col">{chart}</div>
-      <div className="site-protocol-text-col">
-        {intro && <p className="site-protocol-intro">{intro}</p>}
-        <div className="site-protocol-legend">
-          {points.map((p, i) => (
-            <div key={p.id} className="site-protocol-legend-item">
-              <span className="site-protocol-legend-index" style={{ color: colorFor(i) }}>{String(i + 1).padStart(2, '0')}</span>
-              <div><strong>{p.label}</strong><p>{p.description}</p></div>
-            </div>
-          ))}
+      <div className="site-protocol-radial-col">
+        <div className="site-protocol-radial">
+          <div className="site-protocol-chart-center">{chart}</div>
+          {points.map((p, i) => {
+            const rad = anglesDeg[i] * (Math.PI / 180)
+            const dx = Math.cos(rad)
+            const leftPct = 50 + DESC_R_PCT * dx
+            const topPct = 50 + DESC_R_PCT * Math.sin(rad)
+            const align = Math.abs(dx) < 0.2 ? 'center' : dx < 0 ? 'right' : 'left'
+            return (
+              <div
+                key={p.id}
+                className={`site-protocol-desc site-protocol-desc--${RADIAL_AREAS[i]}`}
+                style={{ left: `${leftPct}%`, top: `${topPct}%`, textAlign: align }}
+              >
+                <span className="site-protocol-legend-index" style={{ color: colorFor(i) }}>{String(i + 1).padStart(2, '0')}</span>
+                <strong>{p.label}</strong>
+                <p>{p.description}</p>
+              </div>
+            )
+          })}
         </div>
       </div>
+      {intro && (
+        <div className="site-protocol-text-col">
+          <p className="site-protocol-intro">{intro}</p>
+        </div>
+      )}
     </div>
   )
 }
