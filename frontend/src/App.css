@@ -2057,28 +2057,51 @@ button { cursor: pointer; font-family: inherit; }
    already gets that correction for free (light/hc overrides keyed off the
    class, not this section). */
 .site-protocol-intro {
-  margin: 0 0 24px; text-align: left;
+  margin: 0; text-align: left;
   font-size: 16px; line-height: 1.7; color: var(--text-soft);
 }
-/* Compact square chart on the left, intro text + descriptor list stacked on
-   the right - rebuilt 2026-07-13 from a radial layout (text positioned in a
-   circle around a large centered chart) that read fine geometrically but
-   made the whole section far taller than the content needed (5 text blocks
-   arranged around a big square forces a lot of vertical space even though
-   nothing about the content itself is that long). Side-by-side columns are
-   shorter and read in the natural left-to-right/top-to-bottom order. */
+/* Compact radial widget (chart + descriptors wrapped around it, same visual
+   as originally shipped) on the LEFT, the general intro paragraph alone on
+   the RIGHT - rebuilt 2026-07-13, third pass. First rebuild wrongly
+   flattened the per-stage descriptors into a plain list, which wasn't the
+   actual ask (see CoEvolutionDiagram.tsx's own comment); this is the
+   correct version: same radial layout, smaller/tighter than the original,
+   moved into a fixed-width left column instead of spanning full width. */
 .site-protocol-diagram {
   max-width: 1140px; margin: 0 auto; padding: 40px 32px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
   display: flex; align-items: center; gap: 48px;
 }
-.site-protocol-chart-col { flex: 0 0 300px; display: flex; justify-content: center; }
+.site-protocol-radial-col { flex: 0 0 460px; }
 .site-protocol-text-col { flex: 1; min-width: 0; }
-@media (max-width: 760px) {
-  .site-protocol-diagram { flex-direction: column; gap: 24px; }
-  .site-protocol-chart-col { flex: 0 0 auto; width: 70%; max-width: 280px; }
+.site-protocol-radial {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; margin: 0 auto;
 }
-.site-protocol-svg { width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+.site-protocol-chart-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 54%; display: flex; align-items: center; justify-content: center;
+}
+.site-protocol-desc {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 150px; display: flex; flex-direction: column; gap: 2px;
+}
+.site-protocol-desc strong { display: block; font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+.site-protocol-desc p { font-size: 11.5px; line-height: 1.5; color: var(--text-soft); margin: 0; }
+@media (max-width: 900px) {
+  .site-protocol-radial-col { flex: 0 0 380px; }
+  .site-protocol-desc { width: 125px; }
+}
+@media (max-width: 760px) {
+  .site-protocol-diagram { flex-direction: column; gap: 28px; }
+  .site-protocol-radial-col { flex: 0 0 auto; width: 100%; }
+  .site-protocol-radial {
+    position: static; aspect-ratio: auto;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .site-protocol-chart-center { position: static; transform: none; width: 60%; margin: 0 auto; order: -1; }
+  .site-protocol-desc { position: static; transform: none; width: 100%; text-align: left !important; }
+}
+.site-protocol-svg { width: 100%; max-width: 280px; height: auto; display: block; margin: 0 auto; overflow: visible; }
 .site-protocol-loop { fill: none; stroke: var(--border); stroke-width: 1.4; opacity: .6; }
 .site[data-theme="dark"] .site-protocol-loop { stroke: #ffffff; opacity: .7; }
 /* Faint outer rings, fading with distance — visual echo of the "each pass
@@ -2113,19 +2136,11 @@ button { cursor: pointer; font-family: inherit; }
   filter: drop-shadow(0 0 5px var(--stage-c, var(--primary)));
 }
 .site-protocol-node-index { font-size: 13px; font-weight: 800; fill: var(--stage-c, var(--primary)); font-family: var(--mono); }
-.site-protocol-legend {
-  /* Single column, not a multi-column grid - this now lives in a narrower
-     side column next to the chart (previously a full-width area below/
-     around it), and a single stacked list also means no side-by-side
-     uneven-card-height issue between short and long descriptions. */
-  display: flex; flex-direction: column; gap: 16px; width: 100%;
-}
-.site-protocol-legend-item { display: flex; gap: 10px; align-items: flex-start; }
+/* Index badge (01/02/...) reused by each radial descriptor - see
+   .site-protocol-desc above for the descriptor block itself. */
 .site-protocol-legend-index {
   flex-shrink: 0; font-family: var(--mono); font-size: 12px; font-weight: 800; color: var(--primary); padding-top: 1px;
 }
-.site-protocol-legend-item strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.site-protocol-legend-item p { font-size: 13px; line-height: 1.6; color: var(--text-soft); margin: 0; }
 .site-protocol-closing {
   max-width: 700px; margin: 32px auto 0; text-align: center;
   font-size: 16.5px; line-height: 1.7; color: var(--text); font-weight: 500;
