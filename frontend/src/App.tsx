@@ -129,53 +129,53 @@ export default function App() {
     if (item) return <BlogPostPage item={item} content={content} />
   }
 
-  if (route.pageSlug === 'zertifizierung') {
-    return <CertificationPage content={content} />
-  }
-
   // A content-page hash (#p/<slug>) opens the in-house dark modal over the
-  // homepage — never the plain white DynamicPage. So when the modal is active,
-  // skip the white-page route below and render PublicSite + the modal instead.
-  if (pageModalSlug) {
-    const modalPage = (content.pages ?? []).find(p => p.slug === pageModalSlug)
-    if (modalPage) {
-      return (
-        <>
-          <PublicSite content={content} />
-          <PageModal
-            page={modalPage}
-            content={content}
-            onClose={() => {
-              setPageModalSlug(null)
-              if (window.location.hash.startsWith('#p/')) {
-                // pushState does NOT fire 'hashchange', so `route` (only kept
-                // in sync by the hashchange listener below) was silently left
-                // stuck at pageSlug='research' after this ran - the very next
-                // render then hit the `if (route.pageSlug)` branch and showed
-                // the old white DynamicPage instead of falling through to the
-                // homepage. Clearing `route` here too, not just the URL.
-                window.history.pushState('', document.title, window.location.pathname + window.location.search)
-                setRoute(getRoute(window.location.hash))
-              }
-            }}
-          />
-        </>
-      )
-    }
-  }
+  // homepage — never a plain white page. The white DynamicPage route below
+  // only applies when no modal is active. 'zertifizierung' used to be its
+  // own separate full-page route (CertificationPage rendered standalone,
+  // no PublicSite/modal at all) - flagged live as "still a white page that
+  // leads somewhere, not a modal" alongside the original Research/About the
+  // Lab complaint this file already fixed once. Folded into the same modal
+  // system here instead of being a third, differently-behaved route.
+  const isCertModal = pageModalSlug === 'zertifizierung'
+  const modalPage = !isCertModal && pageModalSlug ? (content.pages ?? []).find(p => p.slug === pageModalSlug) : undefined
+  const modalActive = isCertModal || !!modalPage
 
-  if (route.pageSlug) {
+  if (!modalActive && route.pageSlug) {
     const page = (content.pages ?? []).find(p => p.slug === route.pageSlug)
     if (page) return <DynamicPage page={page} content={content} />
   }
 
-  // Default: plain homepage, no modal, no page/legal/blog route matched
-  // above. This was accidentally deleted in 912a8f8 (which added the
-  // pageModalSlug branch above but removed the function's only fallback
-  // return without replacing it) - every plain visit to the homepage since
-  // then rendered nothing, because a component returning undefined renders
-  // blank. The #p/... modal routes still worked, which is why that fix's
-  // own verification (which only reloaded #p/research and #p/ueber-das-lab)
-  // didn't catch this - the plain homepage was never re-checked.
-  return <PublicSite content={content} />
+  const closeModal = () => {
+    setPageModalSlug(null)
+    if (window.location.hash.startsWith('#p/')) {
+      // pushState does NOT fire 'hashchange', so `route` (only kept in sync
+      // by the hashchange listener below) was silently left stuck at
+      // pageSlug='research' after this ran - the very next render then hit
+      // the `if (route.pageSlug)` branch above and showed the old white
+      // DynamicPage instead of the homepage. Clearing `route` here too, not
+      // just the URL.
+      window.history.pushState('', document.title, window.location.pathname + window.location.search)
+      setRoute(getRoute(window.location.hash))
+    }
+  }
+
+  // Single return, PublicSite always in the same position in the same
+  // Fragment - only the modal mounts/unmounts alongside it. This used to be
+  // two separate `return` statements (one Fragment-wrapped for the modal
+  // case, one bare `<PublicSite/>` for the plain-homepage case) - different
+  // tree shapes at the same position made React remount PublicSite (and
+  // everything under it, including HeroFieldGraphic) every time the modal
+  // closed, which was silently restarting any one-time mount animation
+  // (confirmed: the hero's sunrise fade-in kept replaying, looking like a
+  // recurring glow/shimmer). Keeping the shape stable fixes that at the
+  // root instead of removing the animation.
+  return (
+    <>
+      <PublicSite content={content} modalOpen={modalActive} />
+      {isCertModal
+        ? <CertificationPage content={content} onClose={closeModal} />
+        : modalPage && <PageModal page={modalPage} content={content} onClose={closeModal} />}
+    </>
+  )
 }

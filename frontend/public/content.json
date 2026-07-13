@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Emergent Interaction Lab exists for one reason: the most interesting question in human-AI research happens in real operation, not in thought experiments. What arises when a human and a language model work the same real material for months on end - and can it be measured, not just asserted?</p><h2>Why a lab at all</h2><p>Most approaches either use a model or formulate a theory. We do both at once and let repetition decide. A pattern only counts if it returns on its own across at least three sessions without being re-specified, and can be quantified in the CCET. Everything else is impression.</p><h2>What we therefore build</h2><p>Products grow out of the method - Jarvis as the autonomous research partner, Call Laura as the deterministic review tool, Laura-Team as the multi-agent architecture. None of it is chance: each is a question that surfaced in the research chat and stayed.</p><p>Everything is built in close cooperation with RFI-IRFOS: Laura conceives the methodology and directs what gets built; RFI-IRFOS engineers it into working software. Where a piece was built by RFI-IRFOS, it is labelled as such - so it is always clear what is hers and what is theirs.</p>"
+      "body": "<p>Emergent Interaction Lab exists for one reason: the most interesting question in human-AI research happens in real operation, not in thought experiments. What arises when a human and a language model work the same real material for months on end - and can it be measured, not just asserted?</p><h2>Why a lab at all</h2><p>Most approaches either use a model or formulate a theory. We do both at once and let repetition decide. A pattern only counts if it returns on its own across at least three sessions without being re-specified, and can be quantified in the CCET. Everything else is impression.</p><h2>What we therefore build</h2><p>Products grow out of the method - Jarvis as the autonomous research partner, Call Laura as the deterministic review tool, Lauras Team as the multi-agent architecture. None of it is chance: each is a question that surfaced in the research chat and stayed.</p><p>Everything is built in close cooperation with RFI-IRFOS: Laura conceives the methodology and directs what gets built; RFI-IRFOS engineers it into working software. Where a piece was built by RFI-IRFOS, it is labelled as such - so it is always clear what is hers and what is theirs.</p>"
     }
   ],
   "meta": {
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "The Lab & its founder",
     "headline": "Laura Serna Gaviria",
-    "bio": "I work one way, in everything I touch: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That habit &mdash; full picture, then pattern, then conclusion &mdash; is the actual asset, trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>I've applied it to human-AI interaction since 2023, and out of the same discipline grew Laura-Team &mdash; the reasoning lenses (ethical, legal, others) now running as shippable engineering in Jarvis and Call Laura. I conceive the method and direct what gets built; RFI-IRFOS engineers it, and anything built on my direction is labelled as theirs, so it's always clear what's mine and what's theirs. The same rigor is yours to use: system analysis, organizational consulting &mdash; not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
+    "bio": "I work one way, in everything I touch: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That habit &mdash; full picture, then pattern, then conclusion &mdash; is the actual asset, trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>I've applied it to human-AI interaction since 2023, and out of the same discipline grew Lauras Team &mdash; the reasoning lenses (ethical, legal, others) now running as shippable engineering in Jarvis and Call Laura. I conceive the method and direct what gets built; RFI-IRFOS engineers it, and anything built on my direction is labelled as theirs, so it's always clear what's mine and what's theirs. The same rigor is yours to use: system analysis, organizational consulting &mdash; not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
     "stats": [
       {
         "value": "2023",
@@ -146,7 +146,7 @@
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis is one of the two products that have grown out of Laura-Team so far - the other is Call Laura, further down this page. Jarvis is a fully autonomous agent. In the background he named himself 'Jarvis' - the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, append-only, tamper-evident audit trail record every draft, flag, and significant action - full autonomy, fully accountable. Emergence - what the interaction throws off - is analysed afterwards by the Observatory system, not by Jarvis himself. Jarvis and Call Laura are not the same thing: both grew out of Laura-Team, but Jarvis is the autonomous research partner, while Call Laura is the deterministic review tool built on the same lenses."
+    "body": "Jarvis is one of the two products that have grown out of Lauras Team so far - the other is Call Laura, further down this page. Jarvis is a fully autonomous agent. In the background he named himself 'Jarvis' - the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, append-only, tamper-evident audit trail record every draft, flag, and significant action - full autonomy, fully accountable. Emergence - what the interaction throws off - is analysed afterwards by the Observatory system, not by Jarvis himself. Jarvis and Call Laura are not the same thing: both grew out of Lauras Team, but Jarvis is the autonomous research partner, while Call Laura is the deterministic review tool built on the same lenses."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",
@@ -304,7 +304,7 @@
   "productsBorn": {
     "eyebrow": "Products born from Emergent Interaction",
     "title": "What grew out of the loop",
-    "intro": "Each of these grew out of Emergent Interaction and Laura-Team, built in cooperation with RFI-IRFOS (Laura directs, RFI-IRFOS engineers). Where a product is built by RFI-IRFOS, it is labelled as such - so it is always clear what is hers and what is theirs.",
+    "intro": "Each of these grew out of Emergent Interaction and Lauras Team, built in cooperation with RFI-IRFOS (Laura directs, RFI-IRFOS engineers). Where a product is built by RFI-IRFOS, it is labelled as such - so it is always clear what is hers and what is theirs.",
     "items": [
       {
         "id": "born-jarvis",
@@ -322,11 +322,11 @@
         "id": "born-calllaura",
         "name": "Call Laura",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The first applied product built on Laura-Team. A case comes in and it is not obvious which lens it needs - ethical, legal, or another - so Call Laura runs it through all of them and returns findings, each tagged with exactly which lens produced it. Fully deterministic, no LLM call at inference time: the same case gets the same review every time."
+        "description": "The first applied product built on Lauras Team. A case comes in and it is not obvious which lens it needs - ethical, legal, or another - so Call Laura runs it through all of them and returns findings, each tagged with exactly which lens produced it. Fully deterministic, no LLM call at inference time: the same case gets the same review every time."
       },
       {
         "id": "born-laurateam",
-        "name": "Laura-Team / Laura MVP",
+        "name": "Lauras Team / Laura MVP",
         "builtBy": "Conceived by Laura, engineered by RFI-IRFOS",
         "description": "The multi-agent architecture built from Laura's case-work lenses - an ethical lens, a legal lens, and others. What started as Laura's way of working a case became real, tested, shippable engineering: a set of reasoning lenses that run the same method across different angles. Call Laura is the first product built on it; more lenses and agents follow. (Laura MVP is the early, minimal version of this architecture.)"
       }

@@ -54,14 +54,24 @@ const COPY = {
   },
 } as const
 
-export function CertificationPage({ content }: { content: SiteContent }) {
+export function CertificationPage({ content, onClose }: { content: SiteContent; onClose: () => void }) {
   const { lang } = useLang()
   const c = COPY[lang]
 
   const [products, setProducts] = useState<PublicProduct[] | null>(null)
   const [error, setError] = useState(false)
 
-  useEffect(() => { window.scrollTo(0, 0) }, [])
+  // Dark, in-house modal now (was a separate white page - same shell as
+  // Research/About the Lab's PageModal, see App.css's PAGE MODAL rules).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
 
   useEffect(() => {
     const prev = document.title
@@ -90,18 +100,20 @@ export function CertificationPage({ content }: { content: SiteContent }) {
   }, [])
 
   return (
-    <div className="static-page">
-      <header className="static-page-nav">
-        <a href="#" className="static-page-brand">{content.nav?.brand ?? 'Website'}</a>
-        <a href="#" className="static-page-back">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          {c.back}
-        </a>
-      </header>
-      <main className="static-page-main">
-        <div className="static-page-content">
+    <div
+      className="page-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={c.title}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="page-modal-panel">
+        <button type="button" className="page-modal-x" aria-label="Schließen" onClick={onClose}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <div className="page-modal-scroll" data-native-scroll>
           <div className="cert-eyebrow">{c.eyebrow}</div>
-          <h1>{c.title}</h1>
+          <h1 className="page-modal-title">{c.title}</h1>
           <p className="cert-intro">{c.intro}</p>
 
           {products === null && !error && (
@@ -144,7 +156,7 @@ export function CertificationPage({ content }: { content: SiteContent }) {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

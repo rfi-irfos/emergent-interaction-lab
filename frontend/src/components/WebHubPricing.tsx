@@ -580,22 +580,36 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
 // the offer ladder is organized by, each price-sorted within itself. Anything
 // not in a set defaults to the last (Systemaudit) so a new admin-added
 // product still shows up somewhere sensible instead of silently vanishing.
-// The agent products (Call Laura / Laura-Team / Jarvis) are NOT in this grid —
+// The agent products (Call Laura / Lauras Team / Jarvis) are NOT in this grid —
 // they're rendered as a separate "emerging from the lenses" strip, since they
 // are products of the method, not a service you buy by the hour.
+//
+// Corrected 2026-07-13 against the REAL live product names from
+// /api/billing/public-products (verified via curl, not guessed) - the
+// previous sets used placeholder names ('Vollständige Rekonstruktion',
+// 'Case Intake & Triage', etc.) that matched ZERO real products. Rekonstruktion
+// was rendering completely empty and Analysen barely populated, so nearly
+// every real product fell through to the Systemaudit default - the exact
+// "everything bundled into one mess" bug reported live. Domains now assigned
+// by what each product actually does: Rekonstruktion = turning raw/messy case
+// material into structure (the earliest stage), Analysen = deeper analytical
+// read (competitive intelligence, deriving frameworks, the core Case
+// Intelligence offer - explicitly "folds into Analysen" per Laura's own
+// framing), Systemaudit = everything about auditing, building, or
+// maintaining a system (still the largest group - that's a real reflection
+// of the catalog, not a classification bug).
 const REKONSTRUKTION_NAMES = new Set([
-  'Vollständige Rekonstruktion', 'Fallrekonstruktion', 'Dokumentenrekonstruktion',
+  'Case Intake Scan', 'Mangelcluster Sprint',
 ])
 const ANALYSEN_NAMES = new Set([
-  'Emergent Case Intelligence Sprint', 'Case Intake & Triage', 'Case Intelligence',
-  'Intake, Routing & Analysepipeline', 'Cluster & Pattern Analysis', 'Derive Framework from Case',
-  'Custom Analysis', 'Research Embed',
+  'Market & Competitor Intelligence', 'Framework Magnification', 'Emergent Case Intelligence Sprint',
 ])
 const SYSTEMAUDIT_NAMES = new Set([
+  'Multi-Agent System Design', 'Implementation Build', 'Retainer / Monitoring', 'Framework Update',
   'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
-  'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview', 'Framework Design from Analysis',
-  'Behavior Analysis', 'Behavior Model',
-  'System Design & Deployment', 'Watchtower Retainment', 'Multiagent System Coordination', 'Further Development',
+  'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview',
+  'Framework Design from Analysis', 'System Design & Deployment', 'Watchtower Retainment',
+  'Multiagent System Coordination', 'Further Development',
 ])
 
 // Order the groups render in: Rekonstruktion → Analysen → Systemaudit.
@@ -676,7 +690,7 @@ export function WebHubPricing({ content }: { content: SiteContent }) {
   const [products, setProducts] = useState<PublicProduct[] | null>(null)
   const [error, setError] = useState(false)
   const [active, setActive] = useState<PublicProduct | null>(null)
-  // Agents (Call Laura / Laura-Team / Jarvis) emerge from the method — shown
+  // Agents (Call Laura / Lauras Team / Jarvis) emerge from the method — shown
   // as a separate strip, not in the buyable price grid.
   const agents = (content.productsBorn?.items ?? []).filter(a =>
     ['born-jarvis', 'born-calllaura', 'born-laurateam'].includes(a.id),

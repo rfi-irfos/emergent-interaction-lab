@@ -3,6 +3,7 @@ import type { ProtocolNodeItem } from '../types/content'
 
 interface Props {
   nodes: ProtocolNodeItem[]
+  intro?: string
 }
 
 // Small, self-contained animated loop diagram for the public "Co-Evolution
@@ -13,14 +14,16 @@ interface Props {
 // simplified to one shared closed-loop path instead of per-edge radial
 // spokes, since this has no pan/zoom infrastructure to reuse or need.
 //
-// Layout: a square widget, chart dead-center, each stage's descriptor
-// positioned on a circle AROUND it at that stage's own angle (not a CSS
-// grid approximation — literal percentage coordinates from the same
-// cos/sin the SVG nodes use, so a descriptor really does sit where its
-// node is, not just "somewhere near the top/side"). Falls back to a plain
-// stacked list above the chart for any node count the circular math
-// wasn't tuned to read cleanly at (this component's documented scope is
-// exactly 5).
+// Layout (rebuilt 2026-07-13, second pass): a compact square chart on the
+// LEFT, the intro text + a plain stacked descriptor list on the RIGHT.
+// Previous layout positioned each descriptor radially around a large
+// centered chart - correct geometrically, but 5 text blocks arranged in a
+// circle around a big square made the whole section far taller than its
+// actual content needed, forcing a lot of scroll to get past it (flagged
+// live: "nobody wants to scroll this far down"). A plain side-by-side
+// column layout is shorter, reads left-to-right/top-to-bottom naturally,
+// and needs no per-node angle math for text placement at all - simpler
+// code, not just a smaller widget.
 //
 // No duplicate labeling: earlier drafts had the stage name floating next
 // to the node in the SVG itself AND again as the descriptor's own
@@ -37,20 +40,21 @@ interface Props {
 // hero band uses for anything else here — see App.css's "HUD FRAMING —
 // public-site theme adaptation" comment for why a theme-independent color
 // caused trouble once already.
-const RADIAL_AREAS = ['top', 'right', 'botright', 'botleft', 'left']
 const STAGE_COLORS = ['#22d3ee', '#8b5cf6', '#14b8a6', '#f59e0b', '#ec4899']
 
-export function CoEvolutionDiagram({ nodes }: Props) {
+export function CoEvolutionDiagram({ nodes, intro }: Props) {
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
 
-  const W = 400, H = 400, CX = W / 2, CY = H / 2
-  const R = 100        // node ring — the actual 5 stations
-  const GROWTH_R1 = R + 28   // first faint outer ring — "this keeps going"
-  const GROWTH_R2 = R + 52   // second, fainter still — fading outward, not closing off
+  // Smaller viewBox than the previous 400x400 - this chart now sits in a
+  // fixed-width column next to the text instead of being the whole
+  // widget's centerpiece, so it doesn't need to be as large to read clearly.
+  const W = 300, H = 300, CX = W / 2, CY = H / 2
+  const R = 76         // node ring — the actual 5 stations
+  const GROWTH_R1 = R + 21   // first faint outer ring — "this keeps going"
+  const GROWTH_R2 = R + 39   // second, fainter still — fading outward, not closing off
 
   const n = nodes.length || 1
   const anglesDeg = nodes.map((_, i) => -90 + i * (360 / n))
-  const radial = nodes.length === 5
   const colorFor = (i: number) => STAGE_COLORS[i % STAGE_COLORS.length]
 
   const ringPoints = (radius: number) => anglesDeg.map(deg => {
@@ -122,7 +126,7 @@ export function CoEvolutionDiagram({ nodes }: Props) {
         const stageColor = colorFor(i)
         return (
           <g key={p.id} style={{ ['--stage-c' as string]: stageColor }}>
-            <circle cx={p.x} cy={p.y} r="22" className="site-protocol-node" />
+            <circle cx={p.x} cy={p.y} r="17" className="site-protocol-node" />
             <text x={p.x} y={p.y + 5} textAnchor="middle" className="site-protocol-node-index">{String(i + 1).padStart(2, '0')}</text>
           </g>
         )
@@ -130,12 +134,11 @@ export function CoEvolutionDiagram({ nodes }: Props) {
     </svg>
   )
 
-  if (!radial) {
-    // Fallback for a node count this layout wasn't built for: the old
-    // stacked-list-then-chart arrangement, still fully labeled, just not
-    // arranged around the chart.
-    return (
-      <div className="site-protocol-diagram">
+  return (
+    <div className="site-protocol-diagram">
+      <div className="site-protocol-chart-col">{chart}</div>
+      <div className="site-protocol-text-col">
+        {intro && <p className="site-protocol-intro">{intro}</p>}
         <div className="site-protocol-legend">
           {points.map((p, i) => (
             <div key={p.id} className="site-protocol-legend-item">
@@ -144,38 +147,6 @@ export function CoEvolutionDiagram({ nodes }: Props) {
             </div>
           ))}
         </div>
-        {chart}
-      </div>
-    )
-  }
-
-  // Descriptor position on a circle around the square widget's own center,
-  // expressed as percentages so it's independent of the container's actual
-  // pixel size — same angle each node's SVG position already uses, just a
-  // wider radius so the text sits clear of the chart itself.
-  const DESC_R_PCT = 40
-  return (
-    <div className="site-protocol-diagram">
-      <div className="site-protocol-radial">
-        <div className="site-protocol-chart-center">{chart}</div>
-        {points.map((p, i) => {
-          const rad = anglesDeg[i] * (Math.PI / 180)
-          const dx = Math.cos(rad)
-          const leftPct = 50 + DESC_R_PCT * dx
-          const topPct = 50 + DESC_R_PCT * Math.sin(rad)
-          const align = Math.abs(dx) < 0.2 ? 'center' : dx < 0 ? 'right' : 'left'
-          return (
-            <div
-              key={p.id}
-              className={`site-protocol-desc site-protocol-desc--${RADIAL_AREAS[i]}`}
-              style={{ left: `${leftPct}%`, top: `${topPct}%`, textAlign: align }}
-            >
-              <span className="site-protocol-legend-index" style={{ color: colorFor(i) }}>{String(i + 1).padStart(2, '0')}</span>
-              <strong>{p.label}</strong>
-              <p>{p.description}</p>
-            </div>
-          )
-        })}
       </div>
     </div>
   )

@@ -47,7 +47,12 @@ export function PageModal({
         <button type="button" className="page-modal-x" aria-label="Schließen" onClick={onClose}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <div className="page-modal-scroll">
+        {/* data-native-scroll: opts this out of PublicSite's global
+            fast-scroll wheel hijack (useFastScroll) as defense-in-depth on
+            top of the modalOpen prop that suspends it entirely - belt and
+            suspenders, since the hijack listens on `window` regardless of
+            target and previously ate every wheel event over this modal. */}
+        <div className="page-modal-scroll" data-native-scroll>
           <h1 className="page-modal-title">{page.title}</h1>
           <div
             className="page-modal-body"

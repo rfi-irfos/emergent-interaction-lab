@@ -2000,9 +2000,16 @@ button { cursor: pointer; font-family: inherit; }
 .site-born-dots { display: flex; gap: 9px; }
 .site-born-dot {
   width: 9px; height: 9px; border-radius: 50%; padding: 0; cursor: pointer;
-  background: var(--border); border: none; transition: background .2s, transform .2s;
+  /* Was var(--border) - in dark theme that's #1c2f40 against a #0a0e1a/
+     #101a2c surface, nearly the same luminosity, so inactive dots were
+     essentially invisible ("you only ever see the current dot" - a real
+     visibility bug, not just low emphasis by design). var(--text-soft) at
+     reduced opacity reads clearly as "present but secondary" in every
+     theme instead. */
+  background: var(--text-soft); opacity: .4; border: none;
+  transition: background .2s, opacity .2s, transform .2s;
 }
-.site-born-dot.active { background: var(--primary); transform: scale(1.25); }
+.site-born-dot.active { background: var(--primary); opacity: 1; transform: scale(1.25); }
 @media (max-width: 720px) { .site-born-track { min-height: 260px; } }
 
 /* ── CO-EVOLUTION PROTOCOL ─────────────────────────────────────────────────
@@ -2016,40 +2023,28 @@ button { cursor: pointer; font-family: inherit; }
    already gets that correction for free (light/hc overrides keyed off the
    class, not this section). */
 .site-protocol-intro {
-  max-width: 640px; margin: 0 auto 40px; text-align: center;
+  margin: 0 0 24px; text-align: left;
   font-size: 16px; line-height: 1.7; color: var(--text-soft);
 }
+/* Compact square chart on the left, intro text + descriptor list stacked on
+   the right - rebuilt 2026-07-13 from a radial layout (text positioned in a
+   circle around a large centered chart) that read fine geometrically but
+   made the whole section far taller than the content needed (5 text blocks
+   arranged around a big square forces a lot of vertical space even though
+   nothing about the content itself is that long). Side-by-side columns are
+   shorter and read in the natural left-to-right/top-to-bottom order. */
 .site-protocol-diagram {
   max-width: 1140px; margin: 0 auto; padding: 40px 32px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  display: flex; align-items: center; gap: 48px;
 }
-/* Square widget: the chart sits dead-center, each stage's descriptor
-   positioned on a circle around it at that stage's own angle (literal
-   percentage left/top set inline in CoEvolutionDiagram.tsx from the same
-   cos/sin the SVG nodes use — not a CSS-grid approximation of "around").
-   No duplicate labeling: the SVG carries only a color-matched index
-   number per node; the descriptor block is the only place the stage name
-   and its text live. */
-.site-protocol-radial {
-  position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 1; margin: 0 auto;
-}
-.site-protocol-chart-center {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 52%; display: flex; align-items: center; justify-content: center;
-}
-.site-protocol-desc {
-  position: absolute; transform: translate(-50%, -50%);
-  width: 200px; display: flex; flex-direction: column; gap: 2px;
-}
+.site-protocol-chart-col { flex: 0 0 300px; display: flex; justify-content: center; }
+.site-protocol-text-col { flex: 1; min-width: 0; }
 @media (max-width: 760px) {
-  .site-protocol-radial {
-    position: static; aspect-ratio: auto; max-width: 480px;
-    display: flex; flex-direction: column; gap: 22px;
-  }
-  .site-protocol-chart-center { position: static; transform: none; width: 70%; margin: 0 auto 6px; order: -1; }
-  .site-protocol-desc { position: static; transform: none; width: 100%; text-align: left !important; }
+  .site-protocol-diagram { flex-direction: column; gap: 24px; }
+  .site-protocol-chart-col { flex: 0 0 auto; width: 70%; max-width: 280px; }
 }
-.site-protocol-svg { width: 100%; max-width: 380px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+.site-protocol-svg { width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; overflow: visible; }
 .site-protocol-loop { fill: none; stroke: var(--border); stroke-width: 1.4; opacity: .6; }
 .site[data-theme="dark"] .site-protocol-loop { stroke: #ffffff; opacity: .7; }
 /* Faint outer rings, fading with distance — visual echo of the "each pass
@@ -2085,15 +2080,18 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-protocol-node-index { font-size: 13px; font-weight: 800; fill: var(--stage-c, var(--primary)); font-family: var(--mono); }
 .site-protocol-legend {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 24px 28px; width: 100%;
+  /* Single column, not a multi-column grid - this now lives in a narrower
+     side column next to the chart (previously a full-width area below/
+     around it), and a single stacked list also means no side-by-side
+     uneven-card-height issue between short and long descriptions. */
+  display: flex; flex-direction: column; gap: 16px; width: 100%;
 }
 .site-protocol-legend-item { display: flex; gap: 10px; align-items: flex-start; }
 .site-protocol-legend-index {
   flex-shrink: 0; font-family: var(--mono); font-size: 12px; font-weight: 800; color: var(--primary); padding-top: 1px;
 }
-.site-protocol-legend-item strong, .site-protocol-desc strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.site-protocol-legend-item p, .site-protocol-desc p { font-size: 13px; line-height: 1.6; color: var(--text-soft); margin: 0; }
+.site-protocol-legend-item strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.site-protocol-legend-item p { font-size: 13px; line-height: 1.6; color: var(--text-soft); margin: 0; }
 .site-protocol-closing {
   max-width: 700px; margin: 32px auto 0; text-align: center;
   font-size: 16.5px; line-height: 1.7; color: var(--text); font-weight: 500;
@@ -3690,6 +3688,12 @@ button { cursor: pointer; font-family: inherit; }
 .chat-bubble-content {
   position: relative;
   white-space: pre-wrap; word-break: break-word; font-size: 13.5px; line-height: 1.55; padding: 10px 14px; border-radius: 12px;
+  /* A long reply (Hermes's own answers run longer than the built-in engine's
+     on average) otherwise grows the bubble without limit, forcing the whole
+     page to scroll past one message instead of the message scrolling in
+     place. Capped well above normal reply length so short/medium messages
+     never visibly clip - this only engages on genuinely long ones. */
+  max-height: 70vh; overflow-y: auto;
 }
 .chat-bubble-content p { margin: 0 0 10px; }
 .chat-bubble-content p:last-child { margin-bottom: 0; }

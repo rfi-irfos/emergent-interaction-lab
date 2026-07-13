@@ -428,16 +428,16 @@ function TrustIcon({ icon }: { icon: string }) {
   }
 }
 
-// ── Hero graphic: Earth's limb at sunrise, as seen from orbit - aurora
-// drifting on the dark side of the sky, a few quietly twinkling stars, the
-// planet's curve filled dark below. Deliberately kept restrained after two
-// rounds of "get rid of the shimmer" feedback: no bright glow-line stroke
-// on the curve (removed - that was the original diagonal shimmer), and no
-// animated sunrise circle (removed - its opacity 0->1 fade-in restarted
-// every time this component remounted, e.g. on closing a modal, which
-// looked like the shimmer reappearing). The aurora/star animations left in
-// are ambient drift/twinkle only - resetting mid-drift on a remount is
-// imperceptible, unlike a glow fading in from nothing.
+// ── Hero graphic: Earth's limb at sunrise, as seen from orbit - a sun that
+// rises very slowly over 60s, aurora drifting on the dark side of the sky, a
+// few quietly twinkling stars, the planet's curve filled dark below. The
+// sunrise fade-in previously looked like a recurring shimmer because
+// HeroFieldGraphic used to remount every time the Research/About-the-Lab
+// modal closed (App.tsx returned a different tree shape open vs closed) -
+// fixed at the root now (single stable return, PublicSite never remounts),
+// so the animation genuinely only plays once per real page load, same as
+// intended. No bright glow-line stroke on the earth curve itself though -
+// that one really was just an unwanted diagonal shimmer, stays removed.
 function HeroFieldGraphic() {
   const W = 720, H = 640
   const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
@@ -461,6 +461,12 @@ function HeroFieldGraphic() {
   return (
     <svg className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>
+        <radialGradient id="hero-sunrise-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fff6e0" stopOpacity="0.95" />
+          <stop offset="26%" stopColor="#ffd88a" stopOpacity="0.55" />
+          <stop offset="58%" stopColor="var(--brand-cyan)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
+        </radialGradient>
         <linearGradient id="hero-earth-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0d1f2e" />
           <stop offset="100%" stopColor="#050a12" />
@@ -499,6 +505,18 @@ function HeroFieldGraphic() {
           )}
         </circle>
       ))}
+
+      {/* sun, rising very slowly (60s) from behind the horizon - the Earth
+          fill below occludes whatever hasn't "risen" above the curve yet.
+          Plays once per real mount now that the remount bug is fixed. */}
+      <circle cx="630" cy={reducedMotion ? 255 : 440} r="230" fill="url(#hero-sunrise-glow)" opacity={reducedMotion ? 1 : 0}>
+        {!reducedMotion && (
+          <>
+            <animate attributeName="cy" values="440;255" dur="60s" fill="freeze" calcMode="spline" keySplines="0.22 0.1 0.2 1" />
+            <animate attributeName="opacity" values="0;1" dur="20s" fill="freeze" />
+          </>
+        )}
+      </circle>
 
       {/* Earth's limb: a gentle curve, the planet filled dark below it -
           fill only, no stroke (see comment above the function). */}
@@ -700,6 +718,12 @@ interface Props {
   onImageClick?: (field: string) => void
   onUpdate?: (field: string, value: unknown) => void
   onSectionReorder?: (order: SectionId[]) => void
+  // The Research/About-the-Lab modal renders as a sibling of this component
+  // (see App.tsx), not a child - it can't just stop propagation on its own
+  // wheel events to pause the background's fast-scroll hijack, since that
+  // hijack listens on `window` regardless of target. This flag is how App
+  // tells PublicSite to suspend it while a modal is open.
+  modalOpen?: boolean
 }
 
 // call-laura — a real, deployed instrument built on two of Laura's own
@@ -733,7 +757,7 @@ const CALL_LAURA_COPY = {
 
 export function PublicSite({
   content, editMode = false, rearrangeMode = false, initPositions = {},
-  onTextChange, onImageClick, onUpdate,
+  onTextChange, onImageClick, onUpdate, modalOpen = false,
 }: Props) {
   const { meta, nav, hero, trust, categories, products, usp, news, contact, whatsapp, footer, pricing, certificates, papers } = content
   const hiddenSections = content.hiddenSections ?? []
@@ -750,7 +774,13 @@ export function PublicSite({
   const { t, lang } = useLang()
   // Only on the live public page — an editor dragging/rearranging sections
   // in the builder shouldn't have their scroll wheel hijacked mid-edit.
-  useFastScroll(!editMode)
+  // Also suspended while a content-page modal is open (modalOpen prop) - the
+  // hijack listens on `window` and calls preventDefault() on every wheel
+  // event regardless of target, which was silently swallowing scroll
+  // attempts over the modal (body is scroll-locked while it's open, so the
+  // hijacked scroll had nothing to actually move) instead of letting the
+  // modal's own native internal scroll handle it.
+  useFastScroll(!editMode && !modalOpen)
 
   // Tracking pixel — fires once per page load in production (skipped in edit
   // mode). Published articles now navigate to their own #p/blog/<id> route
@@ -1356,8 +1386,7 @@ export function PublicSite({
           <section className={reveal("site-section site-section-alt site-protocol")} id="protocol" data-cid="protocol.title">
             {content.protocol.eyebrow && <div className="site-eyebrow">{content.protocol.eyebrow}</div>}
             <Reveal from="bottom"><h2 className="site-section-title">{content.protocol.title}</h2></Reveal>
-            {content.protocol.intro && <Reveal from="bottom" delay={1}><p className="site-protocol-intro">{content.protocol.intro}</p></Reveal>}
-            <Reveal from="scale" delay={2}><CoEvolutionDiagram nodes={content.protocol.nodes} /></Reveal>
+            <Reveal from="scale" delay={2}><CoEvolutionDiagram nodes={content.protocol.nodes} intro={content.protocol.intro} /></Reveal>
             {content.protocol.closing && <Reveal from="bottom" delay={3}><p className="site-protocol-closing">{content.protocol.closing}</p></Reveal>}
           </section>
         ) : null}
