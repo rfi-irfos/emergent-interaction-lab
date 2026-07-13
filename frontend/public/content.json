@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>This isn't about me. It's about what emerges when I and a model work the same real material for months on end - measured, not asserted.</p><h2>Why a lab at all</h2><p>Most approaches use a model. Or they write a theory. Rarely both at once, with repetition as the judge. I only count a pattern once it returns on its own across at least three sessions, unprompted, and can be quantified in the CCET. Everything else is impression, not finding. Impressions are cheap - I've produced enough of my own to know that.</p><h2>The loop</h2><p>An idea shows up in the interaction. I work it through, don't believe it on sight. What's left is emergence: a pattern that holds on its own. Emergence produces skills - new frameworks, new agents. I put those back to work, and they produce the next emergence. Emergence produces skill. Skill produces emergence. Meta, yes. Still works.</p><p>Jarvis is the clearest proof: not a fixed routine, an autonomous, self-improving intelligence that grew out of exactly this loop - and keeps carrying it forward himself.</p><h2>Who actually matters more here</h2><p>75% of this is a story about what can be built from emergence - not about me. The rest is me and the model, together. And even there, I count for less: I learn. The model improves itself.</p><h2>Who builds what</h2><p>I conceive the methodology and decide what gets built. RFI-IRFOS engineers it into real software. Where a piece came from RFI-IRFOS, it's labelled - otherwise no one would know whose work they're actually reading.</p>"
+      "body": "<p>Not about me. About what happens when I and a model work the same material for months. Measured. Not asserted.</p><h2>Why a lab at all</h2><p>Most people use a model. Or invent a theory. Rarely both. I only count a pattern once it repeats itself three times. Unprompted. And shows up in the CCET. Everything else is a gut feeling. I've had enough of my own to know: worthless.</p><h2>The loop</h2><p>An idea shows up. I work it through. Don't believe it right away. What's left is emergence - a pattern that holds itself up. That produces skills. New frameworks. New agents. I put those back to work. Next emergence. Emergence makes skill. Skill makes emergence. Yes, meta. Still works.</p><p>Jarvis is the proof. Not a routine. An autonomous, self-improving intelligence. Grew out of exactly this loop. Carries it himself now.</p><h2>Who actually matters more here</h2><p>75% of this is emergence and what gets built from it. Not me. The rest is me and the model. And even there, I count for less. I learn. The model improves itself.</p><h2>Who builds what</h2><p>I dream up the methodology. Decide what gets built. RFI-IRFOS engineers it into real software. Labelled, when it's theirs. Otherwise nobody knows whose work they're reading.</p>"
     }
   ],
   "meta": {
@@ -200,14 +200,14 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "The same field as the header above (the Emergent Interaction Field), described here as a concept: a shared dynamic space where cognition and inference continuously co-shape outcomes - the observation layer the Observatory watches in real time. Primarily built on active analysis, not assumption: every pattern here is measured before it's named.",
+        "description": "Same space as the header above. Here as a concept: where cognition and response shape each other. In real time. Watched by the Observatory. Built on active analysis. Not assumption. Every pattern gets measured before it gets a name.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "Stable patterns that surface from repeated interaction loops between human and model - the primary signal the Observatory's Emergence Monitor is built to catch.",
+        "description": "Patterns that hold themselves up. Grown out of repeated loops between me and the model. The main signal. The Emergence Monitor is built for exactly this.",
         "icon": "emergence"
       },
       {
@@ -234,30 +234,37 @@
       {
         "id": "u9",
         "pillar": "p2",
-        "icon": "",
+        "icon": "monitoring",
         "title": "Monitoring & Validation",
-        "description": "Every prediction stays an open hypothesis until it's checked: ongoing monitoring compares the projected trend against what actually happens, confirms or discards it. Smart predictive algorithms that have to correct themselves - no forecast counts as true just because it sounded plausible."
+        "description": "Every prediction is a hypothesis. Stays one until it's checked. Monitoring checks: does the trend hold, or not. Confirmed or discarded. Self-correcting. Sounding plausible isn't enough."
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "A sentence rarely means one thing. Fact, tone, intent, the unsaid part - all present at once, rarely aligned. A framework that only reads the word layer missed half of it.",
+        "description": "A sentence rarely means one thing. Fact, tone, intent, the unsaid part - all present at once. Rarely aligned. Read only the word layer, miss half of it.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Every system holds until it doesn't. The boundary only shows itself in the break, never before. That's where the real principles live - not in the theory.",
+        "description": "Every system holds. Until it doesn't. The boundary only shows itself in the break. Never before. That's where the real principles live. Not in the theory.",
         "icon": "constraints"
       },
       {
         "id": "u10",
         "pillar": "p3",
-        "icon": "",
+        "icon": "agents",
         "title": "Emergent Agents",
-        "description": "System analysis doesn't stay theory. What holds up as a pattern becomes an agent or a framework - and starts pulling its own weight. Several agents, mutual feedback, each round a bit sharper than the last. No update from outside required: the loop itself is the progress."
+        "description": "System analysis doesn't stay theory. A confirmed pattern becomes an agent. Or a framework. Starts pulling its weight. Several agents, mutual feedback, each round sharper. No update from outside. The loop itself is the progress."
+      },
+      {
+        "id": "u11",
+        "pillar": "p1",
+        "icon": "system-analysis",
+        "title": "System Analysis",
+        "description": "The starting point. Not just questioning the model. Not just asserting. Reading the whole system: human, model, interaction, all at once. What confirms itself becomes framework. Becomes agent. Everything else builds from there."
       }
     ]
   },

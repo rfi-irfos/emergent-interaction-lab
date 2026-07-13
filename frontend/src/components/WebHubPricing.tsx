@@ -78,7 +78,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   'Case Intake Scan': {
     phase: 'Intake',
     en: {
-      tagline: 'A same-week read on where your case actually stands, before you commit to anything bigger.',
+      tagline: 'Same week. Where your case actually stands. Before you commit to anything bigger.',
       points: [
         'A written case summary in plain terms - not a form to fill in',
         'A rough thematic map of which areas the case actually touches',
@@ -87,7 +87,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
       ],
     },
     de: {
-      tagline: 'Ein Blick, noch in derselben Woche, wo dein Fall wirklich steht - bevor du dich auf etwas Größeres festlegst.',
+      tagline: 'Noch diese Woche. Wo dein Fall wirklich steht. Bevor du dich auf mehr festlegst.',
       points: [
         'Eine schriftliche Fallzusammenfassung in klarer Sprache - kein Formular zum Ausfüllen',
         'Eine grobe Themenzuordnung: welche Bereiche der Fall tatsächlich berührt',
@@ -160,7 +160,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   'Emergent Case Intelligence Sprint': {
     phase: 'Reconstruct',
     en: {
-      tagline: 'The core offer: a complex case rebuilt from the ground up into what it actually is.',
+      tagline: 'Your case, rebuilt from the ground up. What it actually is. Not what it looked like.',
       points: [
         'Full reconstruction from documents, case-file access, or a conversation history',
         'Every defect, contradiction, and gap identified and sourced back to the material',
@@ -169,7 +169,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
       ],
     },
     de: {
-      tagline: 'Das Kernangebot: ein komplexer Fall, von Grund auf rekonstruiert zu dem, was er wirklich ist.',
+      tagline: 'Dein Fall, komplett neu aufgebaut. Was er wirklich ist. Nicht wonach er aussah.',
       points: [
         'Vollständige Rekonstruktion aus Dokumenten, Akteneinsicht oder Interaktionsverlauf',
         'Jeder Mangel, Widerspruch und jede Lücke identifiziert und auf die Quelle zurückgeführt',
@@ -267,7 +267,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   'Systemaudit': {
     phase: 'Diagnose',
     en: {
-      tagline: 'The core diagnostic: how your system actually behaves in real use, not how the org chart says it should.',
+      tagline: 'How your system actually behaves. Not what the org chart claims.',
       points: [
         'Diagnosis across system, organisation, process, product, and interaction',
         'Concrete friction points, sourced to where they actually occur',
@@ -275,7 +275,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
       ],
     },
     de: {
-      tagline: 'Die Kerndiagnose: wie sich dein System im echten Betrieb tatsächlich verhält - nicht, wie es das Organigramm vorsieht.',
+      tagline: 'Wie dein System sich wirklich verhält. Nicht, was das Organigramm behauptet.',
       points: [
         'Diagnose über System, Organisation, Prozess, Produkt und Interaktion hinweg',
         'Konkrete Reibungspunkte, verortet dort, wo sie tatsächlich auftreten',
@@ -459,7 +459,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   'System Design & Deployment': {
     phase: 'Build',
     en: {
-      tagline: 'The designed system, actually built and running - infrastructure, agents, monitoring, live.',
+      tagline: 'Built. Running. Live. Infrastructure, agents, monitoring - not a slide.',
       points: [
         'Infrastructure and agent logic implemented',
         'Monitoring and interfaces wired up',
@@ -467,7 +467,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
       ],
     },
     de: {
-      tagline: 'Das entworfene System, tatsächlich gebaut und im Betrieb - Infrastruktur, Agenten, Monitoring, live.',
+      tagline: 'Gebaut. Im Betrieb. Live. Infrastruktur, Agenten, Monitoring - keine Folie.',
       points: [
         'Infrastruktur und Agentenlogik implementiert',
         'Monitoring und Schnittstellen verdrahtet',

@@ -12,7 +12,7 @@
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Das hier ist nicht über mich. Es ist über das, was entsteht, wenn ich und ein Modell monatelang am selben echten Material arbeiten - gemessen, nicht behauptet.</p><h2>Warum ein eigenes Lab</h2><p>Die meisten nutzen ein Modell. Oder sie formulieren eine Theorie. Selten beides gleichzeitig, mit der Wiederholung als Schiedsrichter. Ich zähle ein Muster erst, wenn es sich über mindestens drei Sitzungen von selbst wiederholt, ohne neu vorgegeben zu werden, und sich im CCET quantifizieren lässt. Alles andere ist Eindruck, kein Befund. Eindrücke sind billig - davon hab ich selbst genug produziert, um das zu wissen.</p><h2>Der Loop</h2><p>Eine Idee entsteht in der Interaktion. Ich arbeite sie durch, glaube sie nicht sofort. Was übrig bleibt, ist Emergenz: ein Muster, das sich selbst trägt. Aus dieser Emergenz entstehen Fähigkeiten - neue Frameworks, neue Agenten. Die setze ich wieder ein, und sie erzeugen die nächste Emergenz. Emergenz erzeugt Fähigkeit. Fähigkeit erzeugt Emergenz. Meta, ja. Funktioniert trotzdem.</p><p>Jarvis ist der klarste Beweis dafür: keine feste Routine, sondern eine autonome, sich selbst verbessernde Intelligenz, gewachsen aus genau diesem Loop - und er trägt ihn seither selbst weiter.</p><h2>Wer hier wichtiger ist</h2><p>Zu 75% ist das eine Geschichte über das, was sich aus Emergenz bauen lässt - nicht über mich. Der Rest bin ich und das Modell zusammen. Und selbst da zähle ich weniger: ich lerne. Das Modell verbessert sich selbst.</p><h2>Wer was baut</h2><p>Ich erdenke die Methodik und entscheide, was gebaut wird. RFI-IRFOS baut es zu echter Software. Wo ein Stück von RFI-IRFOS stammt, steht das dran - sonst wüsste niemand, wessen Arbeit man gerade liest.</p>"
+      "body": "<p>Nicht über mich. Über das, was entsteht, wenn ich und ein Modell monatelang am selben Material arbeiten. Gemessen. Nicht behauptet.</p><h2>Warum ein eigenes Lab</h2><p>Die meisten benutzen ein Modell. Oder sie erfinden eine Theorie. Selten beides. Ich zähl ein Muster erst, wenn's sich dreimal von selbst wiederholt. Ungefragt. Und sich im CCET messen lässt. Der Rest ist Bauchgefühl. Bauchgefühl hatte ich selbst genug, um zu wissen: taugt nichts.</p><h2>Der Loop</h2><p>Eine Idee taucht auf. Ich arbeite sie durch. Glaube sie nicht sofort. Was bleibt, ist Emergenz - ein Muster, das sich selbst trägt. Daraus werden Fähigkeiten. Neue Frameworks. Neue Agenten. Die setz ich wieder ein. Nächste Emergenz. Emergenz macht Fähigkeit. Fähigkeit macht Emergenz. Ja, meta. Läuft trotzdem.</p><p>Jarvis ist der Beweis. Keine Routine. Eine autonome, sich selbst verbessernde Intelligenz. Gewachsen aus genau diesem Loop. Er trägt ihn jetzt selbst.</p><h2>Wer hier wichtiger ist</h2><p>75% davon ist Emergenz und was draus gebaut wird. Nicht ich. Der Rest bin ich und das Modell. Und selbst da zähl ich weniger. Ich lerne. Das Modell verbessert sich selbst.</p><h2>Wer was baut</h2><p>Ich denk mir die Methodik aus. Entscheide, was gebaut wird. RFI-IRFOS baut's zu echter Software. Steht dran, wenn's von denen kommt. Sonst weiß keiner, wessen Arbeit man grad liest.</p>"
     }
   ],
   "meta": {
@@ -200,14 +200,14 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Dasselbe Feld wie im Header oben (das Emergent Interaction Field), hier als Konzept beschrieben: ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht. Primär baut das auf aktiven Analysen auf, nicht auf Annahmen: jedes Muster hier ist zuerst gemessen, bevor es benannt wird.",
+        "description": "Derselbe Raum wie oben im Header. Hier als Konzept: wo Kognition und Antwort sich gegenseitig formen. In Echtzeit. Beobachtet vom Observatory. Baut auf aktiven Analysen. Nicht auf Annahmen. Jedes Muster wird gemessen, bevor es einen Namen kriegt.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "Stabile Muster, die aus wiederholten Interaktionsschleifen zwischen Mensch und Modell entstehen - das Hauptsignal, auf das der Emergence Monitor des Observatory ausgelegt ist.",
+        "description": "Muster, die sich von selbst halten. Entstanden aus wiederholten Schleifen zwischen mir und dem Modell. Das Hauptsignal. Der Emergence Monitor ist genau dafür gebaut.",
         "icon": "emergence"
       },
       {
@@ -234,30 +234,37 @@
       {
         "id": "u9",
         "pillar": "p2",
-        "icon": "",
+        "icon": "monitoring",
         "title": "Monitoring & Validierung",
-        "description": "Jede Vorhersage bleibt eine offene Hypothese, bis sie geprüft ist: laufendes Monitoring vergleicht den projizierten Trend gegen den tatsächlichen Verlauf, bestätigt oder verwirft. Smarte prädiktive Algorithmen, die sich selbst korrigieren müssen - keine Prognose gilt als wahr, nur weil sie plausibel klang."
+        "description": "Jede Vorhersage ist eine Hypothese. Bleibt eine, bis sie geprüft ist. Monitoring checkt: hält der Trend, oder nicht. Bestätigt oder verworfen. Selbstkorrigierend. Plausibel klingen reicht nicht."
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Ein Satz meint selten nur eines. Fakt, Ton, Absicht, das Unausgesprochene - alles gleichzeitig da, selten deckungsgleich. Ein Framework, das nur die Wortebene liest, hat die Hälfte verpasst.",
+        "description": "Ein Satz meint selten eins. Fakt, Ton, Absicht, das Unausgesprochene - alles gleichzeitig da. Selten deckungsgleich. Wer nur die Wortebene liest, hat die Hälfte verpasst.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Jedes System hält, bis es nicht mehr hält. Die Grenze zeigt sich erst im Bruch, nie vorher. Genau dort, nicht in der Theorie, stehen die echten Prinzipien.",
+        "description": "Jedes System hält. Bis es nicht mehr hält. Die Grenze zeigt sich erst im Bruch. Nie vorher. Genau da stehen die echten Prinzipien. Nicht in der Theorie.",
         "icon": "constraints"
       },
       {
         "id": "u10",
         "pillar": "p3",
-        "icon": "",
+        "icon": "agents",
         "title": "Emergente Agenten",
-        "description": "Systemanalyse bleibt nicht Theorie. Was sich als Muster bestätigt, wird Agent oder Framework - und arbeitet von da an mit. Mehrere Agenten, gegenseitiges Feedback, jede Runde etwas schärfer als die letzte. Kein Update von außen nötig: der Loop selbst ist der Fortschritt."
+        "description": "Systemanalyse bleibt nicht Theorie. Bestätigtes Muster wird Agent. Oder Framework. Arbeitet mit. Mehrere Agenten, gegenseitiges Feedback, jede Runde schärfer. Kein Update von außen. Der Loop selbst ist der Fortschritt."
+      },
+      {
+        "id": "u11",
+        "pillar": "p1",
+        "icon": "system-analysis",
+        "title": "Systemanalyse",
+        "description": "Der Ausgangspunkt. Nicht nur das Modell befragen. Nicht nur behaupten. Das ganze System lesen: Mensch, Modell, Interaktion, alles zugleich. Was sich bestätigt, wird Framework. Wird Agent. Der Rest baut sich daraus."
       }
     ]
   },

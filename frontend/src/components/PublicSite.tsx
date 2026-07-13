@@ -434,6 +434,15 @@ function IconLayers() {
 function IconConstraints() {
   return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M8 3.5H5.5a2 2 0 0 0-2 2V8"/><path d="M16 3.5h2.5a2 2 0 0 1 2 2V8"/><path d="M8 20.5H5.5a2 2 0 0 1-2-2V16"/><path d="M16 20.5h2.5a2 2 0 0 0 2-2V16"/></svg>
 }
+function IconSystemAnalysis() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.3" y1="15.3" x2="21" y2="21"/></svg>
+}
+function IconMonitoring() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s4-6.5 10-6.5S22 12 22 12s-4 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+}
+function IconAgents() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="6" cy="7" r="2.3"/><circle cx="18" cy="7" r="2.3"/><circle cx="12" cy="18" r="2.3"/><line x1="7.8" y1="8.6" x2="10.3" y2="16.2"/><line x1="16.2" y1="8.6" x2="13.7" y2="16.2"/><line x1="8.3" y1="7" x2="15.7" y2="7"/></svg>
+}
 
 function UspIcon({ icon }: { icon?: string }) {
   switch (icon) {
@@ -444,6 +453,9 @@ function UspIcon({ icon }: { icon?: string }) {
     case 'field':        return <IconField />
     case 'layers':        return <IconLayers />
     case 'constraints':  return <IconConstraints />
+    case 'system-analysis': return <IconSystemAnalysis />
+    case 'monitoring':   return <IconMonitoring />
+    case 'agents':       return <IconAgents />
     default: return null
   }
 }
