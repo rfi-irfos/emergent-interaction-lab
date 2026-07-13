@@ -38,7 +38,6 @@ model:
 #
 # So the api_server platform is pinned to a research-only toolset:
 #
-#   web    — web_search + web_extract: how the agent actually researches
 #   memory — persistent memory across sessions: the entire point of running
 #            Hermes rather than the built-in engine
 #
@@ -47,10 +46,22 @@ model:
 #
 # If you ever need one of those, give the agent its own container with its own
 # volume and no production secrets — do not widen this list in place.
+#
+# `web` (Hermes's own web_search/web_extract) is deliberately NOT listed here
+# either, despite earlier comments in this file assuming it would silently
+# drop out when unconfigured. Confirmed live 2026-07-13: it doesn't just drop
+# out — `check_web_api_key` fails the gate, logs "dependent tools will be
+# unavailable this turn", and the model still tries to reach for it, reasons
+# about the missing capability, and then returns completely empty (Hermes's
+# own log: "Model produced reasoning but no visible response after all
+# retries"). The whole turn dies instead of falling back. Real web search is
+# already covered by the `eil.web_search` MCP tool below (this lab's own
+# keyless DuckDuckGo search) — never re-add `web` here without a real
+# provider key AND confirming the model actually falls back cleanly when a
+# toolset member is absent, which it currently does not.
 # ─────────────────────────────────────────────────────────────────────────────
 platform_toolsets:
   api_server:
-    - web
     - memory
 
 # The lab's own MCP server — served by the Rust backend itself (backend/src/mcp.rs),
@@ -63,11 +74,13 @@ platform_toolsets:
 # to remove rather than destroying work.
 #
 # web_search comes from HERE rather than from Hermes's own `web` toolset because
-# that toolset needs a search-provider API key of its own (check_web_api_key) and
-# silently drops its tools without one — driven for real, the bundled agent was
-# offered `memory` and nothing else. The backend's search is keyless
-# (DuckDuckGo), so one NVIDIA key really is all an operator needs. The `web`
-# toolset stays listed above for anyone who DOES configure a Hermes web key.
+# that toolset needs a search-provider API key of its own (check_web_api_key),
+# and — this was the original assumption, corrected 2026-07-13 above — it does
+# NOT gracefully fall back without one: the model still reaches for it, and
+# the whole turn dies with no visible response instead of using this MCP tool
+# instead. So `web` is not listed in platform_toolsets at all above; this is
+# the agent's only web search. The backend's search is keyless (DuckDuckGo),
+# so one NVIDIA key really is all an operator needs.
 #
 # ${...} placeholders are resolved from the environment by Hermes's MCP client.
 # start.sh generates EIL_MCP_TOKEN fresh per boot and gives the same value to both
