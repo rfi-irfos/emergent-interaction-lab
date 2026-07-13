@@ -17,7 +17,19 @@ model:
   # a strong tool-caller, which is what a research agent lives or dies by — a
   # smaller/faster model that can't reliably emit tool calls makes the agent
   # look broken rather than fast.
-  default: nvidia/nemotron-3-super-120b-a12b
+  #
+  # Was nvidia/nemotron-3-super-120b-a12b — confirmed broken 2026-07-13: real
+  # turns that used the web_search MCP tool came back with a genuinely empty
+  # completion (Hermes's own log: "Empty response (no content or reasoning) —
+  # retry 1/3", then "Model produced reasoning but no visible response after
+  # all retries"), reproduced twice. chat.rs's own model ladder (see its
+  # top-of-file comment) already individually verified
+  # nvidia/llama-3.3-nemotron-super-49b-v1 on this exact NVIDIA account —
+  # 200 response, actual completion, follows a JSON tool-call instruction
+  # correctly — and it's the built-in engine's fixed, always-tried-first
+  # default for exactly that reason. Switching Hermes to the same proven
+  # model rather than debug a second one blind.
+  default: nvidia/llama-3.3-nemotron-super-49b-v1
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SECURITY: what the bundled agent is allowed to do.
