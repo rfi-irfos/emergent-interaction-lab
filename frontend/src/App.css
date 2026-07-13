@@ -3714,7 +3714,7 @@ button { cursor: pointer; font-family: inherit; }
 .chat-conv-empty { color: rgba(255,255,255,.3); font-size: 12px; padding: 8px 10px; }
 
 .chat-docs { border-top: 1px solid rgba(148,197,214,.14); padding: 12px 14px 16px; flex-shrink: 0; }
-.chat-docs-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.35); margin-bottom: 8px; }
+.chat-docs-title { display: flex; align-items: center; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.35); margin-bottom: 8px; }
 .chat-doc-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(233,251,255,.7); padding: 4px 0; }
 .chat-doc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-upload-btn {
@@ -3723,6 +3723,22 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-upload-btn:hover { border-color: #63f0ff; color: #63f0ff; }
 .chat-upload-btn:disabled { opacity: .5; cursor: default; }
+
+.chat-memory-panel { border-top: 1px solid rgba(148,197,214,.14); padding: 12px 14px 16px; flex-shrink: 0; max-height: 240px; overflow-y: auto; }
+.chat-memory-refresh {
+  margin-left: auto; border: none; background: none; color: rgba(233,251,255,.5); cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+}
+.chat-memory-refresh:hover { color: #63f0ff; }
+.chat-memory-refresh:disabled { opacity: .5; cursor: default; }
+.chat-memory-empty { color: rgba(255,255,255,.3); font-size: 11.5px; padding: 4px 0; }
+.chat-memory-list { display: flex; flex-direction: column; gap: 6px; }
+.chat-memory-item {
+  display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: rgba(233,251,255,.75);
+  padding: 6px 8px; background: rgba(139,123,240,.08); border: 1px solid rgba(139,123,240,.16); border-radius: 6px;
+}
+.chat-memory-text { white-space: pre-wrap; word-break: break-word; }
+.chat-memory-date { font-size: 10px; color: rgba(233,251,255,.4); }
 
 .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .chat-topbar {

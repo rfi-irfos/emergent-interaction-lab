@@ -38,6 +38,26 @@ RUN git clone https://github.com/NousResearch/hermes-agent.git /src/hermes \
 # of pulling in a whole messaging-platform extras group we don't need.
 RUN pip install --no-cache-dir aiohttp==3.14.1
 
+# This app's own toolset is deliberately wider than the bundled deployment's
+# (see hermes-config-full.yaml's own doc comment for why that's safe here and
+# isn't elsewhere): memory/web/skills/cron/delegation, using Hermes's own
+# DEFAULT memory (proven live 2026-07-13 — a fact planted in one conversation
+# was correctly recalled from a completely unrelated one, memory intact
+# across a redeploy too), not a vector-DB-backed alternative.
+#
+# A vector-DB memory backend (mem0 OSS mode) was attempted and deliberately
+# reverted the same day: mem0ai + qdrant-client installed fine, but
+# _setup.py's build_oss_config() only ever writes a custom base_url
+# ("ollama_base_url") for the "ollama" provider — the "openai" provider this
+# deployment would otherwise reuse (same NVIDIA endpoint/key as everything
+# else here) has no equivalent override in this wrapper. The only fully
+# self-contained fix left is bundling a local Ollama server + two models
+# (~1.6GB) into this image, which hit repeated build instability under this
+# environment's resource constraints without ever reaching a verified boot.
+# Shipping proven, working default memory now rather than blocking on an
+# unverified integration; the Ollama-bundling path is real and documented
+# here for whoever picks this back up — it just needs a calmer build
+# environment (or a real OpenAI/Mem0-Cloud key) to actually finish.
 FROM python:3.11-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
@@ -45,13 +65,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=hermes-build /opt/hermes-venv /opt/hermes-venv
 ENV PATH="/opt/hermes-venv/bin:$PATH"
 
-# Same seed config the bundled deployment used — same research-only toolset
-# (web + memory, no terminal/process/file/browser/computer_use/skills), same
-# MCP wiring back to the lab. Copied in at build time; the entrypoint below
-# only writes it to $HERMES_HOME on first boot, exactly like start.sh did, so
-# an operator can hand-edit the live file afterwards without a redeploy
-# clobbering it.
-COPY deploy/hermes-config.yaml /app/seed/hermes-config.yaml
+# The FULL toolset config — not deploy/hermes-config.yaml (that one stays
+# locked down for the bundled deployment, which shares a container with
+# production secrets this app doesn't have). Copied in at build time; the
+# entrypoint refreshes it from this seed on every boot (see start.sh).
+COPY deploy/hermes-standalone/hermes-config-full.yaml /app/seed/hermes-config.yaml
 
 RUN mkdir -p /app/data
 

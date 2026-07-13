@@ -34,5 +34,9 @@ primary_region = "fra"
   destination = "/app/data"
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
+  # 512mb (the original estimate) undersells this app once it bundles Ollama
+  # + two local models (nomic-embed-text + llama3.2:1b) for mem0's vector
+  # memory — Ollama's own inference RAM needs, on top of Hermes/Python and
+  # qdrant's embedded index, made 512mb the wrong number to start from.
+  size = "shared-cpu-2x"
+  memory = "2gb"

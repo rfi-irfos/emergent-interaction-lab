@@ -8,4 +8,7 @@ export const TOOL_LABELS: Record<string, string> = {
   revise_blog_post: 'Blogpost-Entwurf überarbeitet',
   update_content_field: 'Website-Kit-Entwurf aktualisiert',
   web_search: 'Web-Suche durchgeführt',
+  mem0_search: 'Erinnerungen durchsucht',
+  mem0_add: 'In Erinnerung behalten',
+  memory: 'Gedächtnis-Werkzeug',
 }

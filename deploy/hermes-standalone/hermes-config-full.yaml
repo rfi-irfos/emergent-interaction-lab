@@ -1,0 +1,102 @@
+# Full-capability seed config for eil-hermes — the ISOLATED standalone app,
+# not the bundled deployment. This is deliberately a SEPARATE file from
+# ../hermes-config.yaml: that one stays locked down (memory + web only)
+# because it runs inside the same container as STRIPE_SECRET_KEY,
+# CHAT_API_SECRET and the live DB. eil-hermes has none of those, which is
+# the whole reason this wider toolset is safe to grant HERE and not there.
+#
+# Copied into $HERMES_HOME on every boot (see start.sh) — this file in git is
+# the only source of truth, same reasoning as the locked-down config.
+
+model:
+  base_url: https://integrate.api.nvidia.com/v1
+  provider: nvidia
+  # Same proven model the bundled deployment now uses (nemotron-3-super-120b-a12b
+  # returned genuinely empty completions under tool use — see ../hermes-config.yaml's
+  # own note on this, 2026-07-13).
+  default: nvidia/llama-3.3-nemotron-super-49b-v1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# What's granted here and why, since this is deliberately wider than the
+# bundled deployment's locked-down set:
+#
+#   memory     — persistent memory (Hermes's own default backend — see the
+#                memory: block below and its own comment on why not vector-DB-backed yet)
+#   web        — Hermes's own web_search/web_extract. Safe to grant HERE
+#                (unlike the bundled deployment) because this container's
+#                own web-search toolset isn't gating a research-only surface
+#                next to production secrets — worst case is a search result
+#                shaping a research note, not a credential leak. Left the
+#                lab's own eil.web_search MCP tool available too (below) so
+#                there's a working fallback either way.
+#   skills     — skill_manage: the agent can write, edit and load its own
+#                skills. This is "the crucial feature" (2026-07-13 ask):
+#                autonomous, unprompted skill authoring based on what it
+#                learns doing real work, not a fixed toolset forever.
+#   cron       — the agent can schedule its own recurring jobs.
+#   delegation — the agent can spin up sub-agents for a task rather than
+#                doing everything in one long tool loop.
+#
+# Deliberately STILL NOT granted, even here: terminal, process,
+# code_execution, file, browser, computer_use. Hermes's own warning on
+# network-exposed api_server + an unsandboxed terminal backend is explicit:
+# "Agent work dispatched through this endpoint runs as the host user with
+# full terminal/file access" (seen live 2026-07-13). Combined with this same
+# container soon holding a GitHub token with admin:org scope (see
+# mcp_servers.eil below), raw shell access here is a genuinely different risk
+# tier than "the agent writes its own YAML-defined skills" — a compromised
+# turn with terminal access could read every secret this container holds and
+# act with that GitHub token directly, not just misuse the tools we handed
+# it. Revisit only alongside `terminal.backend: docker` (sandboxed, per
+# Hermes's own recommendation) in its own follow-up, not bundled into this
+# pass.
+# ─────────────────────────────────────────────────────────────────────────────
+platform_toolsets:
+  api_server:
+    - memory
+    - web
+    - skills
+    - cron
+    - delegation
+
+# The lab's own MCP server (backend/src/mcp.rs on the main emergent-interaction-lab
+# app) — now with GitHub and Gmail tools alongside the original three. See that
+# file for the up-to-date tool list; this plugin's own web toolset (above)
+# covers general search, so eil.web_search here is redundant-but-harmless
+# backup, not the primary path anymore.
+mcp_servers:
+  eil:
+    url: "${EIL_MCP_URL}"
+    headers:
+      Authorization: "Bearer ${EIL_MCP_TOKEN}"
+    skip_preflight: true
+    timeout: 60
+
+# Vector-DB memory (mem0 OSS) was attempted 2026-07-13 and reverted — see the
+# Dockerfile in this same directory for the full story (this wrapper's
+# build_oss_config() only writes a custom base_url override for the "ollama"
+# provider, not "openai"/NVIDIA's endpoint; bundling a local Ollama server to
+# work around that hit repeated build instability without a verified boot).
+# Using Hermes's own default memory below instead — proven live the same
+# day: a fact planted in one conversation was correctly recalled from a
+# completely unrelated one, and survived a redeploy.
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+
+agent:
+  max_turns: 40
+  verbose: false
+
+tool_loop_guardrails:
+  warnings_enabled: true
+  hard_stop_enabled: true
+  hard_stop_after:
+    exact_failure: 4
+    same_tool_failure: 6
+    idempotent_no_progress: 4
+
+compression:
+  enabled: true
+  threshold: 0.5
+  target_ratio: 0.2

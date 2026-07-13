@@ -40,6 +40,21 @@ interface DocumentItem { id: string; filename: string; created_at: string }
 
 interface ToolCallEvent { tool: string; result: string }
 
+// One stored Hermes memory (mem0), as surfaced via the tool's own result
+// JSON. mem0's actual field names aren't pinned down against a live
+// deployment yet (this panel was built before eil-hermes' vector memory
+// could be tested end to end) - every field optional and rendering falls
+// back to the raw JSON string, so an unexpected shape degrades to "shows the
+// data, just not prettied up" rather than a blank panel or a crash.
+interface MemoryEntry {
+  id?: string
+  memory?: string
+  text?: string
+  content?: string
+  created_at?: string
+  raw: string
+}
+
 // Client-side date bucketing for the sidebar (no new backend endpoint
 // needed — grouping is derived purely from each conversation's existing
 // `updated_at`), via the shared groupByDate helper in lib/dateGroups.ts
@@ -490,6 +505,16 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>([])
+  const [memoryLoading, setMemoryLoading] = useState(false)
+  const [memoryError, setMemoryError] = useState<string | null>(null)
+  const [memoryLoaded, setMemoryLoaded] = useState(false)
+  // A dedicated conversation Hermes's memory queries run in, created once and
+  // reused — kind: 'memory-browser' (not 'chat') so list_conversations'
+  // default filter (chat.rs's `kind.unwrap_or("chat")`) never surfaces it in
+  // the ordinary sidebar list. Cached in a ref, not state: creating it is a
+  // one-time side effect the panel shouldn't re-trigger on every render.
+  const memoryConversationIdRef = useRef<string | null>(null)
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -580,6 +605,81 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       .then(r => r.ok ? r.json() : [])
       .then(setDocuments)
       .catch(() => {})
+  }
+
+  // Parses whatever shape mem0_search's tool result comes back as into a flat
+  // list — mem0's actual API commonly returns either a bare array or an
+  // object with a `results`/`memories` wrapper key, so both are tried before
+  // falling back to "one raw entry, unprettied" rather than dropping data an
+  // unexpected shape happens to carry.
+  function parseMemoryResult(raw: string): MemoryEntry[] {
+    let parsed: unknown
+    try { parsed = JSON.parse(raw) } catch { return [{ raw }] }
+    const list = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray((parsed as Record<string, unknown>)?.results) ? (parsed as Record<string, unknown>).results
+      : Array.isArray((parsed as Record<string, unknown>)?.memories) ? (parsed as Record<string, unknown>).memories
+      : null
+    if (!Array.isArray(list)) return [{ raw }]
+    return (list as Record<string, unknown>[]).map(e => ({
+      id: typeof e.id === 'string' ? e.id : undefined,
+      memory: typeof e.memory === 'string' ? e.memory : undefined,
+      text: typeof e.text === 'string' ? e.text : undefined,
+      content: typeof e.content === 'string' ? e.content : undefined,
+      created_at: typeof e.created_at === 'string' ? e.created_at : undefined,
+      raw: JSON.stringify(e),
+    }))
+  }
+
+  // Runs a fixed, hidden turn against Hermes asking it to search its own
+  // memory broadly, then reads the resulting mem0_search tool_call event(s)
+  // straight off the SSE stream — no new backend endpoint, Hermes's gateway
+  // has no dedicated "list memories" HTTP route (checked 2026-07-13), so this
+  // reuses the exact same /api/chat/stream path an ordinary chat turn takes.
+  // Runs in its own conversation (kind: 'memory-browser', never shown in the
+  // sidebar) so opening this panel never pollutes real conversation history.
+  const loadMemories = async () => {
+    setMemoryLoading(true)
+    setMemoryError(null)
+    try {
+      if (!memoryConversationIdRef.current) {
+        const res = await fetch(`${API_BASE}/api/chat/conversations`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ title: '🧠 Memory-Browser', kind: 'memory-browser' }),
+        })
+        if (!res.ok) throw new Error('conversation')
+        const data = await res.json()
+        memoryConversationIdRef.current = data.id
+      }
+      const collected: MemoryEntry[] = []
+      let gotAnyToolCall = false
+      await streamChat(
+        memoryConversationIdRef.current!,
+        'Durchsuche dein Gedächtnis (mem0) nach allen gespeicherten Erinnerungen und gib die Rohergebnisse zurück - keine Zusammenfassung in Prosa, nur der Werkzeugaufruf.',
+        undefined,
+        false,
+        'hermes',
+        new AbortController().signal,
+        () => {},
+        () => {},
+        call => {
+          if (call.tool === 'mem0_search' || call.tool === 'mem0_add' || call.tool.startsWith('mem0')) {
+            gotAnyToolCall = true
+            collected.push(...parseMemoryResult(call.result))
+          }
+        },
+        () => {},
+        () => {},
+      )
+      setMemoryEntries(collected)
+      if (!gotAnyToolCall) setMemoryError('Hermes hat kein Gedächtnis-Werkzeug aufgerufen — Memory ist auf diesem Deployment evtl. noch nicht aktiv.')
+    } catch {
+      setMemoryError('Erinnerungen konnten nicht geladen werden.')
+    } finally {
+      setMemoryLoading(false)
+      setMemoryLoaded(true)
+    }
   }
 
   // Debounce: only re-query the backend once typing pauses for ~280ms,
@@ -1017,6 +1117,34 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
                   ? (uploadProgress ? `Lädt hoch… (${uploadProgress.current}/${uploadProgress.total})` : 'Lädt hoch…')
                   : '+ PDF / MD hochladen'}
               </button>
+            </div>
+
+            <div className="chat-memory-panel">
+              <div className="chat-docs-title">
+                🧠 Erinnerungen (mem0)
+                <button
+                  className="chat-memory-refresh"
+                  disabled={memoryLoading}
+                  onClick={loadMemories}
+                  title="Erinnerungen von Hermes abrufen"
+                >
+                  {memoryLoading ? '…' : '↻'}
+                </button>
+              </div>
+              {!memoryLoaded && !memoryLoading && (
+                <div className="chat-memory-empty">Noch nicht geladen — ↻ zum Abrufen.</div>
+              )}
+              {memoryError && <div className="chat-memory-empty">{memoryError}</div>}
+              {memoryEntries.length > 0 && (
+                <div className="chat-memory-list">
+                  {memoryEntries.map((m, i) => (
+                    <div key={m.id ?? i} className="chat-memory-item">
+                      <span className="chat-memory-text">{m.memory ?? m.text ?? m.content ?? m.raw}</span>
+                      {m.created_at && <span className="chat-memory-date">{m.created_at}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}
