@@ -58,7 +58,7 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Est. 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "This isn't a static brochure - it's a live research instrument. Every conversation, blog post, and research note here feeds the Observatory, the instrument that tracks how meaning, structure, and behavior emerge from sustained human-AI interaction as it happens.",
+    "subheadline": "This isn't a brochure. It's a live instrument, running in public - every conversation, blog post, and research note here feeds the Observatory, which tracks how meaning, structure, and behavior emerge from sustained human-AI interaction as it happens, not after the fact.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -83,7 +83,7 @@
   "about": {
     "eyebrow": "Researcher & Systems Analyst",
     "headline": "Laura Serna Gaviria",
-    "bio": "Laura Serna Gaviria works the same way in every field: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That discipline, not any single framework, is the actual asset - a way of thinking trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>She's applied it to human-AI interaction since 2023, treating a sustained conversation with a language model like an unstable system to measure, not a tool to use. Pieces of the method got formalized into named frameworks along the way (this site's Observatory runs on two of them) - useful shorthand, not the substance. The substance is the habit: full picture first, pattern second, conclusion last.<br><br>That same rigor works on your case, too - system analysis, organizational consulting. Not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
+    "bio": "Laura Serna Gaviria only works one way, in every field she touches: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That discipline, not any single framework, is the actual asset - a way of thinking trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>She's applied it to human-AI interaction since 2023, treating a sustained conversation with a language model like an unstable system to measure, not a tool to use. Pieces of the method got formalized into named frameworks along the way (this site's Observatory runs on two of them) - useful shorthand, not the substance. The substance is the habit: full picture first, pattern second, conclusion last. Skip a step and she will catch it, fast.<br><br>That same rigor works on your case, too. System analysis, organizational consulting - not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
     "stats": [
       { "value": "2023", "label": "Systematic practice since" },
       { "value": "6", "label": "Disciplines bridged: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis" },
@@ -93,7 +93,7 @@
   "protocol": {
     "eyebrow": "The Emergent Interaction Thesis",
     "title": "The Co-Evolution Protocol",
-    "intro": "This isn't a fixed five-step script running the same loop forever. It's a real, recursive working relationship between a human researcher and an AI research partner - each pass through it compounds on the last, the same honest mechanics described throughout this site, made visible.",
+    "intro": "Not a fixed five-step script running the same loop forever. A real, recursive working relationship between a human researcher and an AI research partner - each pass compounds on the last. Same honest mechanics described everywhere else on this site, just made visible here.",
     "nodes": [
       { "id": "interact", "label": "Interact", "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat." },
       { "id": "retrieve", "label": "Retrieve", "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents via retrieval-augmented generation, not just the current exchange." },
@@ -101,15 +101,17 @@
       { "id": "validate", "label": "Validate", "description": "Laura checks what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET." },
       { "id": "feedback", "label": "Feed Back", "description": "Confirmed patterns become working structure for the next interaction, closing the loop - carried forward, not re-explained." }
     ],
-    "closing": "This is what actually happens between the two of them: Laura brings the questions, the judgment calls, and the final say on what counts as a real pattern; Jarvis brings the retrieval, the drafting, and the tireless first pass over everything that came before. The feedback runs both ways - when Jarvis struggles with something hard, that's not a dead end, it's Laura learning exactly where the next refinement needs to happen. Every cycle through this loop leaves both of them further along than the last, not back at the start."
+    "closing": "Here's what actually happens, no dressing it up: Laura brings the questions, the judgment calls, and the final say on what counts as a real pattern; Jarvis brings the retrieval, the drafting, and the tireless first pass over everything that came before. The feedback runs both ways - when Jarvis struggles with something hard, that's not a dead end, it's Laura learning exactly where the next refinement needs to happen. Every cycle through this loop leaves both of them further along than the last, not back at the start."
   },
   "jarvis": {
+    "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis isn't a fixed script. It's grown, turn by turn, across thousands of exchanges, on a substrate built to keep growing rather than stay the same shape it started in. Today that means a retrieval layer that grounds every reply in past conversations and uploaded documents so nothing has to be re-explained, plus a set of background processes that draft research notes and blog posts, compile a weekly digest from real logged numbers alone, watch for anomalies (stuck reasoning, tool failures, triggered refusals), and check every tool-call claim against what the tool actually returned.\n\nNone of it runs on trust alone. A standing refusal rule applies even to the team that built it, and every significant action, every flag, every draft writes into the platform's own hash-chained audit trail: append-only, tamper-evident, verifiable end to end.\n\nNone of this makes Jarvis autonomous today. It drafts, retrieves, and flags under close instruction and constant logging, not an independent agent making its own calls - the honest story here is growth, not autonomy already earned."
+    "body": "Jarvis isn't a fixed script. It's grown, turn by turn, across thousands of exchanges, on a substrate built to keep growing rather than stay the same shape it started in. Today that means a retrieval layer that grounds every reply in past conversations and uploaded documents so nothing has to be re-explained, plus a set of background processes that draft research notes and blog posts, compile a weekly digest from real logged numbers alone, watch for anomalies (stuck reasoning, tool failures, triggered refusals), and check every tool-call claim against what the tool actually returned.\n\nNone of it runs on trust alone. A standing refusal rule applies even to the team that built it, and every significant action, every flag, every draft writes into the platform's own hash-chained audit trail: append-only, tamper-evident, verifiable end to end.\n\nNone of this makes Jarvis autonomous today. It drafts, retrieves, and flags under close instruction and constant logging, not an independent agent making its own calls. Growth, not autonomy - and if that changes, this page says so the day it happens, not after."
   },
   "papers": {
+    "eyebrow": "Written Down, Not Just Shipped",
     "title": "Published Research",
-    "intro": "Three papers, one series: the founding thesis, then two operationalizations of it as running, tested software.",
+    "intro": "Three papers, one series. A founding thesis, then two proofs that it runs as real, tested software - not just theory with good branding.",
     "items": [
       {
         "id": "paper-1",
