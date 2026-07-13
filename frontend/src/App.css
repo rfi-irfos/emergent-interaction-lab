@@ -2072,7 +2072,7 @@ button { cursor: pointer; font-family: inherit; }
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
   display: flex; align-items: center; gap: 48px;
 }
-.site-protocol-radial-col { flex: 0 0 460px; }
+.site-protocol-radial-col { flex: 0 0 520px; }
 .site-protocol-text-col { flex: 1; min-width: 0; }
 .site-protocol-radial {
   position: relative; width: 100%; aspect-ratio: 1 / 1; margin: 0 auto;
