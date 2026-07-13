@@ -67,9 +67,9 @@ fn authorized(state: &AppState, headers: &HeaderMap) -> bool {
 /// The tools the agent is allowed to reach. Kept next to the dispatcher in
 /// `call_tool` so a tool can never be advertised without being implemented, or
 /// implemented without being declared.
-fn tool_definitions() -> Value {
-    json!([
-        {
+fn tool_definitions(state: &AppState) -> Value {
+    let mut tools = vec![
+        json!({
             "name": "log_research_note",
             "description": "Log a research note into the Emergent Interaction Lab's Research Pulse, \
 where it is visible to the team and outlives this conversation. Use it when the conversation \
@@ -95,8 +95,8 @@ It is given to you in your instructions for this turn — pass it so the note li
                 },
                 "required": ["category", "title", "body"]
             }
-        },
-        {
+        }),
+        json!({
             "name": "web_search",
             "description": "Search the web for current information. Use it before answering anything \
 you are not certain of, and to ground research notes in sources rather than recollection.",
@@ -107,8 +107,8 @@ you are not certain of, and to ground research notes in sources rather than reco
                 },
                 "required": ["query"]
             }
-        },
-        {
+        }),
+        json!({
             "name": "search_research_notes",
             "description": "Search the lab's existing research notes before writing a new one, or to \
 ground an answer in what the lab already knows. Returns the most recently updated matches.",
@@ -124,8 +124,69 @@ ground an answer in what the lab already knows. Returns the most recently update
                     "limit": { "type": "integer", "description": "Max notes to return (default 10, max 25)." }
                 }
             }
-        }
-    ])
+        }),
+    ];
+
+    // Only advertised when actually configured — same reasoning as
+    // hermes.rs's turn_instructions only mentioning the notes tools when
+    // MCP is reachable: a tool a model is told it has but that fails on
+    // every call just teaches it to apologize for something it was never
+    // able to do.
+    if !state.eil_github_token.is_empty() && !state.eil_github_repo.is_empty() {
+        tools.push(json!({
+            "name": "github_read_file",
+            "description": "Read a file's contents from the lab's own repository \
+(read-only). Use it to check what a piece of code or config actually says before \
+reasoning about it.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string", "description": "File path from the repo root, e.g. backend/src/mcp.rs" },
+                    "ref": { "type": "string", "description": "Branch, tag or commit SHA. Omitted = the default branch." }
+                },
+                "required": ["path"]
+            }
+        }));
+        tools.push(json!({
+            "name": "github_list_issues",
+            "description": "List open issues on the lab's own repository.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "state": { "type": "string", "enum": ["open", "closed", "all"], "description": "Defaults to open." }
+                }
+            }
+        }));
+        tools.push(json!({
+            "name": "github_create_issue",
+            "description": "Open a new issue on the lab's own repository. Use it to \
+record a bug, an idea for follow-up work, or something that needs a human's \
+attention beyond a research note.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "title": { "type": "string", "description": "A short, specific title." },
+                    "body": { "type": "string", "description": "The issue body, in Markdown." }
+                },
+                "required": ["title", "body"]
+            }
+        }));
+        tools.push(json!({
+            "name": "github_add_comment",
+            "description": "Comment on an existing issue or pull request on the lab's \
+own repository.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "issue_number": { "type": "integer", "description": "The issue or PR number." },
+                    "body": { "type": "string", "description": "The comment body, in Markdown." }
+                },
+                "required": ["issue_number", "body"]
+            }
+        }));
+    }
+
+    Value::Array(tools)
 }
 
 /// `POST /api/mcp` — the whole MCP surface, over StreamableHTTP.
@@ -180,7 +241,7 @@ pub async fn handle(
             }))
         }
         "ping" => Ok(json!({})),
-        "tools/list" => Ok(json!({ "tools": tool_definitions() })),
+        "tools/list" => Ok(json!({ "tools": tool_definitions(&state) })),
         "tools/call" => {
             let name = req["params"]["name"].as_str().unwrap_or("");
             let args = req["params"]["arguments"].clone();
@@ -210,8 +271,145 @@ async fn call_tool(state: &AppState, name: &str, args: &Value) -> Result<Value, 
         "log_research_note" => Ok(log_research_note(state, args).await),
         "search_research_notes" => Ok(search_research_notes(state, args).await),
         "web_search" => Ok(web_search(state, args).await),
+        "github_read_file" => Ok(github_read_file(state, args).await),
+        "github_list_issues" => Ok(github_list_issues(state, args).await),
+        "github_create_issue" => Ok(github_create_issue(state, args).await),
+        "github_add_comment" => Ok(github_add_comment(state, args).await),
         other => Err(format!("Unknown tool: {other}")),
     }
+}
+
+const MCP_GITHUB_USER_AGENT: &str = "emergent-interaction-lab-mcp";
+
+/// True for every github_* tool: the fine-grained PAT is scoped to one repo, but
+/// checking here too means a misconfigured deployment (token set, repo not, or
+/// vice versa) fails with a clear message instead of a confusing GitHub 404/401.
+fn github_configured(state: &AppState) -> bool {
+    !state.eil_github_token.is_empty() && !state.eil_github_repo.is_empty()
+}
+
+fn github_not_configured_result() -> Value {
+    text_result("GitHub-Tools sind auf diesem Deployment nicht konfiguriert (EIL_GITHUB_TOKEN/EIL_GITHUB_REPO fehlen).".to_string(), true)
+}
+
+/// Read-only: fetches a file's raw content via the Contents API. Deliberately
+/// no write/update/delete counterpart in this file — see mcp.rs's own module
+/// doc comment on why this MCP surface stays small on purpose.
+async fn github_read_file(state: &AppState, args: &Value) -> Value {
+    if !github_configured(state) { return github_not_configured_result() }
+    let path = args["path"].as_str().unwrap_or("").trim();
+    if path.is_empty() {
+        return text_result("A file read needs a path.".to_string(), true);
+    }
+    let git_ref = args["ref"].as_str().unwrap_or("");
+    let mut url = format!("{}/repos/{}/contents/{}", state.github_api_base, state.eil_github_repo, path);
+    if !git_ref.is_empty() {
+        url.push_str(&format!("?ref={}", urlencoding_ref(git_ref)));
+    }
+    let res = state.http.get(&url)
+        .bearer_auth(&state.eil_github_token)
+        .header("User-Agent", MCP_GITHUB_USER_AGENT)
+        .header("Accept", "application/vnd.github.raw+json")
+        .send()
+        .await;
+    match res {
+        Ok(r) if r.status().is_success() => {
+            match r.text().await {
+                Ok(body) => text_result(body, false),
+                Err(_) => text_result("GitHub antwortete, aber der Inhalt konnte nicht gelesen werden.".to_string(), true),
+            }
+        }
+        Ok(r) => text_result(format!("GitHub-Anfrage fehlgeschlagen (HTTP {}).", r.status().as_u16()), true),
+        Err(_) => text_result("GitHub nicht erreichbar.".to_string(), true),
+    }
+}
+
+async fn github_list_issues(state: &AppState, args: &Value) -> Value {
+    if !github_configured(state) { return github_not_configured_result() }
+    let issue_state = args["state"].as_str().unwrap_or("open");
+    let url = format!(
+        "{}/repos/{}/issues?state={}&per_page=20",
+        state.github_api_base, state.eil_github_repo, issue_state
+    );
+    let res = state.http.get(&url)
+        .bearer_auth(&state.eil_github_token)
+        .header("User-Agent", MCP_GITHUB_USER_AGENT)
+        .send()
+        .await;
+    match res {
+        Ok(r) if r.status().is_success() => {
+            match r.json::<Value>().await {
+                Ok(body) => text_result(body.to_string(), false),
+                Err(_) => text_result("GitHub antwortete, aber die Issues konnten nicht gelesen werden.".to_string(), true),
+            }
+        }
+        Ok(r) => text_result(format!("GitHub-Anfrage fehlgeschlagen (HTTP {}).", r.status().as_u16()), true),
+        Err(_) => text_result("GitHub nicht erreichbar.".to_string(), true),
+    }
+}
+
+async fn github_create_issue(state: &AppState, args: &Value) -> Value {
+    if !github_configured(state) { return github_not_configured_result() }
+    let title = args["title"].as_str().unwrap_or("").trim();
+    let body = args["body"].as_str().unwrap_or("").trim();
+    if title.is_empty() {
+        return text_result("An issue needs a title.".to_string(), true);
+    }
+    let url = format!("{}/repos/{}/issues", state.github_api_base, state.eil_github_repo);
+    let res = state.http.post(&url)
+        .bearer_auth(&state.eil_github_token)
+        .header("User-Agent", MCP_GITHUB_USER_AGENT)
+        .json(&json!({ "title": title, "body": body }))
+        .send()
+        .await;
+    match res {
+        Ok(r) if r.status().is_success() => {
+            match r.json::<Value>().await {
+                Ok(body) => text_result(body.to_string(), false),
+                Err(_) => text_result("Issue angelegt, aber die Antwort konnte nicht gelesen werden.".to_string(), true),
+            }
+        }
+        Ok(r) => text_result(format!("Issue anlegen fehlgeschlagen (HTTP {}).", r.status().as_u16()), true),
+        Err(_) => text_result("GitHub nicht erreichbar.".to_string(), true),
+    }
+}
+
+async fn github_add_comment(state: &AppState, args: &Value) -> Value {
+    if !github_configured(state) { return github_not_configured_result() }
+    let issue_number = args["issue_number"].as_i64();
+    let body = args["body"].as_str().unwrap_or("").trim();
+    let Some(issue_number) = issue_number else {
+        return text_result("A comment needs an issue_number.".to_string(), true);
+    };
+    if body.is_empty() {
+        return text_result("A comment needs a body.".to_string(), true);
+    }
+    let url = format!("{}/repos/{}/issues/{}/comments", state.github_api_base, state.eil_github_repo, issue_number);
+    let res = state.http.post(&url)
+        .bearer_auth(&state.eil_github_token)
+        .header("User-Agent", MCP_GITHUB_USER_AGENT)
+        .json(&json!({ "body": body }))
+        .send()
+        .await;
+    match res {
+        Ok(r) if r.status().is_success() => {
+            match r.json::<Value>().await {
+                Ok(body) => text_result(body.to_string(), false),
+                Err(_) => text_result("Kommentar angelegt, aber die Antwort konnte nicht gelesen werden.".to_string(), true),
+            }
+        }
+        Ok(r) => text_result(format!("Kommentar fehlgeschlagen (HTTP {}).", r.status().as_u16()), true),
+        Err(_) => text_result("GitHub nicht erreichbar.".to_string(), true),
+    }
+}
+
+/// Minimal percent-encoding for a `ref` query param (branch/tag names can
+/// contain `/`, e.g. `feature/foo`) — no new dependency for one query param.
+fn urlencoding_ref(s: &str) -> String {
+    s.chars().map(|c| match c {
+        'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => c.to_string(),
+        _ => format!("%{:02X}", c as u32),
+    }).collect()
 }
 
 /// Web search, served from the backend's own DuckDuckGo-backed `agent::web_search`
@@ -378,6 +576,8 @@ mod tests {
             mcp_token: token.to_string(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
+            eil_github_token: String::new(),
+            eil_github_repo: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

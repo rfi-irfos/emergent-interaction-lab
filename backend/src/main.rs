@@ -125,6 +125,25 @@ pub struct AppState {
     /// GitHub REST API — never overridden in production, where it's always
     /// "https://api.github.com".
     pub github_api_base: String,
+    /// A SEPARATE token from `github_token` above — that one is read-only
+    /// (Agent-Aktivität's own transparency feed) and must stay that way.
+    /// This one, `EIL_GITHUB_TOKEN`, backs the MCP tools an autonomous agent
+    /// (Hermes) can actually call (mcp.rs's github_* tools): read a file,
+    /// list issues, open an issue, comment. Deliberately a fine-grained PAT
+    /// scoped to ONE repo (`eil_github_repo` below), never the broad
+    /// account-admin token this repo's own git/gh session already has —
+    /// handing that one to a self-modifying, skill-authoring agent was
+    /// refused outright 2026-07-13 (admin:org/delete_repo scopes on a
+    /// personal account is a different risk tier entirely from "comment on
+    /// an issue in this one repo"). Empty = the github_* tools report
+    /// "not configured" rather than failing confusingly.
+    pub eil_github_token: String,
+    /// `owner/repo`, e.g. `rfi-irfos/emergent-interaction-lab` — the ONLY
+    /// repo the github_* MCP tools operate on. Deliberately not
+    /// agent-specified per call: a model choosing which repo to write to
+    /// is exactly the kind of scope creep a fine-grained, single-repo PAT
+    /// is supposed to make impossible even if the model tries.
+    pub eil_github_repo: String,
     /// Serializes `auditlog::record`'s "read last row_hash → compute this
     /// row's hash → insert" sequence (see auditlog.rs). SQLite itself is
     /// single-writer, so two concurrent inserts can never actually corrupt
@@ -280,6 +299,8 @@ async fn main() {
             .unwrap_or(hermes::HERMES_BOOT_GRACE),
         github_token,
         github_api_base: std::env::var("GITHUB_API_BASE").unwrap_or("https://api.github.com".into()),
+        eil_github_token: std::env::var("EIL_GITHUB_TOKEN").unwrap_or_default(),
+        eil_github_repo: std::env::var("EIL_GITHUB_REPO").unwrap_or_default(),
         audit_lock: Arc::new(tokio::sync::Mutex::new(())),
     };
 

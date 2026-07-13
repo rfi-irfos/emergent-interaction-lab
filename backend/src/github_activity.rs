@@ -488,6 +488,8 @@ mod tests {
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
             github_token,
             github_api_base,
+            eil_github_token: String::new(),
+            eil_github_repo: String::new(),
         }
     }
 

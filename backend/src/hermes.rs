@@ -213,6 +213,21 @@ Die ID dieses Gesprächs ist `{conversation_id}`. Gib sie beim Anlegen einer Not
         ));
     }
 
+    // Same "only mention what's actually reachable" rule as the MCP block
+    // above — a fine-grained PAT scoped to exactly this one repo, never the
+    // model's choice of owner/repo (see mcp.rs's own doc comment on
+    // github_configured).
+    if crate::mcp::enabled(state) && !state.eil_github_token.is_empty() && !state.eil_github_repo.is_empty() {
+        s.push_str(&format!(
+            "\n\nDu hast außerdem echten Lese-/Schreibzugriff auf genau dieses eine Repository \
+({}) über vier weitere Werkzeuge: `github_read_file` (eine Datei lesen), `github_list_issues` \
+(offene Issues sehen), `github_create_issue` (ein neues Issue anlegen) und `github_add_comment` \
+(einen bestehenden Issue/PR kommentieren). Kein anderes Repository, kein Löschen, kein \
+Überschreiben — nur diese vier, echt aufrufbar, nicht bloß beschrieben.",
+            state.eil_github_repo
+        ));
+    }
+
     s
 }
 
@@ -597,6 +612,8 @@ mod tests {
             mcp_token: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
+            eil_github_token: String::new(),
+            eil_github_repo: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }

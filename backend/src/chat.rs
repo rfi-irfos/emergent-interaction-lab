@@ -2216,6 +2216,8 @@ mod tests {
             mcp_token: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
+            eil_github_token: String::new(),
+            eil_github_repo: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         }
     }
@@ -3048,6 +3050,8 @@ mod tests {
             mcp_token: String::new(),
             github_token: String::new(),
             github_api_base: "https://api.github.com".to_string(),
+            eil_github_token: String::new(),
+            eil_github_repo: String::new(),
             audit_lock: std::sync::Arc::new(tokio::sync::Mutex::new(())),
         };
         crate::observatory::capture_system_snapshot(&state, "conv-bare", None).await;
