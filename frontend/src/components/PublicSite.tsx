@@ -972,6 +972,14 @@ export function PublicSite({
             <p className="site-hero-body" dangerouslySetInnerHTML={{ __html: hero.body }} />
           </CanvasEl>
         )}
+        {hero.callout && (
+          <CanvasEl id="hero.callout" pos={pos('hero.callout', { x: 80, y: 560 })} onMove={p => moveEl('hero.callout', p)} minWidth={400} noPad label="Callout">
+            <div className="site-hero-callout">
+              <span className="site-hero-callout-label">{hero.callout.label}</span>
+              <p className="site-hero-callout-text" dangerouslySetInnerHTML={{ __html: hero.callout.text }} />
+            </div>
+          </CanvasEl>
+        )}
         <CanvasEl id="hero.cta" pos={pos('hero.cta', { x: 80, y: 490 })} onMove={p => moveEl('hero.cta', p)} minWidth={280} label="Buttons">
           <div className="site-hero-btns">
             <a className="site-btn-lime-lg" dangerouslySetInnerHTML={{ __html: hero.ctaLabel }} />
@@ -1225,6 +1233,12 @@ export function PublicSite({
             <E field="hero.headline" value={hero.headline} as="h1" className="site-hero-h1" />
             <E field="hero.subheadline" value={hero.subheadline} as="p" className="site-hero-sub" />
             {hero.body && <E field="hero.body" value={hero.body} as="p" className="site-hero-body" />}
+            {hero.callout && (
+              <div className="site-hero-callout">
+                <span className="site-hero-callout-label">{hero.callout.label}</span>
+                <E field="hero.callout.text" value={hero.callout.text} as="p" className="site-hero-callout-text" />
+              </div>
+            )}
             <div className="site-hero-btns">
               <E field="hero.ctaLabel" value={hero.ctaLabel} as="a" href={hero.ctaHref} className="site-btn-lime-lg" />
               {hero.ctaSecLabel && <E field="hero.ctaSecLabel" value={hero.ctaSecLabel} as="a" href={hero.ctaSecHref ?? '#'} className="site-btn-ghost-lg" />}

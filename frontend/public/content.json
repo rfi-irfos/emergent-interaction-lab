@@ -58,8 +58,12 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Est. 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Unsure which tool to call.. call Laura!",
-    "body": "Emergent Interaction Field is the title image: the Observatory system, live in the background, doing emergence research — data is generated there and only analyzed afterward. Call Laura is one example of what grows out of it: when you are unsure which tool to call, you call Laura. That is how the multi-agents arise — through Emergent Interaction — and their data then flows back into my emergence research. One red thread, not a mixed-up pile.",
+    "subheadline": "Emergence research. The interaction builds the agents; the Observatory analyses what emerges.",
+    "body": "Emergent Interaction is the field. Emergence happens through the interaction itself - that is the part worth studying. Out of my way of interacting, two different things grew: Jarvis, and the multi-agent setup behind Call Laura. They are not the same. The interaction alone builds the agents. What the interaction throws off on top of that is emergence - and the Observatory system analyses it: pattern, drift, structure. System analysis, basically. Whatever the material - a project, a case - it runs through me, gets taken apart, and from that come agents built precisely to fit, then watched. And at the same time I go back afterwards and analyse the emergence that actually showed up.",
+    "callout": {
+      "label": "Call Laura",
+      "text": "When you are unsure which tool to call, you call Laura. That is the applied side - the multi-agent setup grown out of the same interaction, not the research."
+    },
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -86,9 +90,18 @@
     "headline": "Laura Serna Gaviria",
     "bio": "Laura Serna Gaviria only works one way, in every field she touches: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That discipline, not any single framework, is the actual asset - a way of thinking trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>She's applied it to human-AI interaction since 2023, treating a sustained conversation with a language model like an unstable system to measure, not a tool to use. Pieces of the method got formalized into named frameworks along the way (this site's Observatory runs on two of them) - useful shorthand, not the substance. The substance is the habit: full picture first, pattern second, conclusion last. Skip a step and she will catch it, fast.<br><br>That same rigor works on your case, too. System analysis, organizational consulting - not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
     "stats": [
-      { "value": "2023", "label": "Systematic practice since" },
-      { "value": "6", "label": "Disciplines bridged: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis" },
-      { "value": "7", "label": "IEIA-2025 frameworks shipped: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data" }
+      {
+        "value": "2023",
+        "label": "Systematic practice since"
+      },
+      {
+        "value": "6",
+        "label": "Disciplines bridged: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis"
+      },
+      {
+        "value": "7",
+        "label": "IEIA-2025 frameworks shipped: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data"
+      }
     ]
   },
   "protocol": {
@@ -96,18 +109,38 @@
     "title": "Emergent Interaction",
     "intro": "Not a fixed five-step script running the same loop forever. A real, recursive working relationship between a human researcher and an AI research partner - each pass compounds on the last. Same honest mechanics described everywhere else on this site, just made visible here.",
     "nodes": [
-      { "id": "interact", "label": "Interact", "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat." },
-      { "id": "retrieve", "label": "Retrieve", "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents via retrieval-augmented generation, not just the current exchange." },
-      { "id": "surface", "label": "Surface", "description": "Recurring patterns get drafted as research notes and logged as emergence signals in the Observatory - never assumed, only surfaced." },
-      { "id": "validate", "label": "Validate", "description": "Laura checks what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET." },
-      { "id": "feedback", "label": "Feed Back", "description": "Confirmed patterns become working structure for the next interaction, closing the loop - carried forward, not re-explained." }
+      {
+        "id": "interact",
+        "label": "Interact",
+        "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat."
+      },
+      {
+        "id": "retrieve",
+        "label": "Retrieve",
+        "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents via retrieval-augmented generation, not just the current exchange."
+      },
+      {
+        "id": "surface",
+        "label": "Surface",
+        "description": "Recurring patterns get drafted as research notes and logged as emergence signals in the Observatory - never assumed, only surfaced."
+      },
+      {
+        "id": "validate",
+        "label": "Validate",
+        "description": "Laura checks what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET."
+      },
+      {
+        "id": "feedback",
+        "label": "Feed Back",
+        "description": "Confirmed patterns become working structure for the next interaction, closing the loop - carried forward, not re-explained."
+      }
     ],
     "closing": "Here's what actually happens, no dressing it up: Laura brings the questions, the judgment calls, and the final say on what counts as a real pattern; Jarvis brings the retrieval, the drafting, and the tireless first pass over everything that came before. The feedback runs both ways - when Jarvis struggles with something hard, that's not a dead end, it's Laura learning exactly where the next refinement needs to happen. Every cycle through this loop leaves both of them further along than the last, not back at the start."
   },
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis is not an autonomous agent. In the background it named itself 'Jarvis' - that is the only thing it did on its own. Inside the system, Jarvis does nothing by itself: it drafts, retrieves, and flags only under close instruction and constant logging. The retrieval layer grounds every reply in past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule applies even to the team that built it, and every draft, flag, and significant action writes into the platform's own hash-chained, append-only, tamper-evident audit trail. Call Laura is the user-facing side of the same loop: when you are unsure which tool to call, you call Laura. Growth, not autonomy - and if that changes, this page says so the day it happens, not after."
+    "body": "Jarvis is not an autonomous agent. In the background it named itself 'Jarvis' - that is the only thing it did on its own. Inside the system, Jarvis does nothing by itself: it drafts, retrieves, and flags only under close instruction and constant logging. The retrieval layer grounds every reply in past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule applies even to the team that built it, and every draft, flag, and significant action writes into the platform's own hash-chained, append-only, tamper-evident audit trail. Jarvis and Call Laura are not the same thing: both grew out of my way of interacting, but Jarvis is the retrieval-and-draft layer, while Call Laura is the multi-agent setup built on top of it. Emergence - what the interaction throws off - is analysed afterwards by the Observatory system."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",

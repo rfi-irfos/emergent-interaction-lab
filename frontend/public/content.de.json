@@ -58,8 +58,12 @@
   "hero": {
     "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Unsicher, welches Tool zu rufen.. ruf Laura an!",
-    "body": "Emergent Interaction Field ist das Titelbild: das Observatory-System, live im Hintergrund, das Emergenzforschung betreibt — dort entstehen Daten, und erst danach werden sie analysiert. Call Laura ist ein Beispiel dafür, was daraus entsteht: wenn du unsicher bist, welches Tool du rufen sollst, rufst du Laura. So entstehen die Multi-Agenten — durch Emergent Interaction — und deren Daten fließen dann zurück in meine Emergenzforschung. Ein roter Faden, kein durcheinandergewürfelter Haufen.",
+    "subheadline": "Emergenzforschung. Die Interaktion baut die Agenten; das Observatory analysiert, was entsteht.",
+    "body": "Emergent Interaction ist das Feld. Emergenz entsteht durch die Interaktion selbst - das ist der Teil, der sich lohnt. Aus meiner Art zu interagieren sind zwei verschiedene Dinge gewachsen: Jarvis und der Multi-Agenten-Aufbau hinter Call Laura. Das ist nicht dasselbe. Die Interaktion allein baut die Agenten. Was die Interaktion darüber hinaus abwirft, ist Emergenz - und das Observatory-System analysiert sie: Muster, Drift, Struktur. Systemanalyse, im Grunde. Egal was das Material ist - ein Projekt, ein Fall - es läuft durch mich, wird auseinandergenommen, und daraus entstehen Agenten, die genau passen, und werden überwacht. Und gleichzeitig gehe ich hinterher und analysiere die Emergenz, die tatsächlich aufgetaucht ist.",
+    "callout": {
+      "label": "Call Laura",
+      "text": "Wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. Das ist die angewandte Seite - der Multi-Agenten-Aufbau, gewachsen aus derselben Interaktion, nicht die Forschung."
+    },
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
     "ctaSecLabel": "Über das Projekt",
@@ -86,9 +90,18 @@
     "headline": "Laura Serna Gaviria",
     "bio": "Laura Serna Gaviria kennt genau eine Arbeitsweise, in jedem Fachgebiet: erst das reale Geschehen vollständig beobachten, nur den Mustern trauen, die sich von selbst bestätigen, und nie eine Theorie der Evidenz vorauseilen lassen. Diese Disziplin, nicht irgendein einzelnes Framework, ist der eigentliche Wert - eine Denkweise, geschult über sechs Fachgebiete hinweg: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse.<br><br>Seit 2023 wendet sie das systematisch auf Mensch-KI-Interaktion an und behandelt ein anhaltendes Gespräch mit einem Sprachmodell wie ein instabiles System, das gemessen werden muss, nicht wie ein Werkzeug, das man benutzt. Dabei sind Teile der Methode zu benannten Frameworks geworden (das Observatory dieser Seite läuft auf zwei davon) - praktische Abkürzung, nicht die Substanz. Die Substanz ist die Gewohnheit: erst das Gesamtbild, dann das Muster, zuletzt die Schlussfolgerung. Überspringt jemand einen Schritt, bemerkt sie es sofort.<br><br>Dieselbe Sorgfalt gilt auch für deinen Fall. Systemanalyse, Organisationsberatung - kein Gespräch. <a href=\"#webhub-pricing\">Ein Sprint.</a>",
     "stats": [
-      { "value": "2023", "label": "Systematische Praxis seit" },
-      { "value": "6", "label": "Verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse" },
-      { "value": "7", "label": "IEIA-2025-Frameworks im Einsatz: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer-Modell, LT-Data" }
+      {
+        "value": "2023",
+        "label": "Systematische Praxis seit"
+      },
+      {
+        "value": "6",
+        "label": "Verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse"
+      },
+      {
+        "value": "7",
+        "label": "IEIA-2025-Frameworks im Einsatz: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer-Modell, LT-Data"
+      }
     ]
   },
   "protocol": {
@@ -96,18 +109,38 @@
     "title": "Emergent Interaction",
     "intro": "Kein festgeschriebenes Fünf-Schritte-Skript, das immer dieselbe Schleife abspult. Eine echte, rekursive Arbeitsbeziehung zwischen einer menschlichen Forscherin und einem KI-Forschungspartner - jeder Durchlauf baut auf dem letzten auf. Dieselbe ehrliche Mechanik, die diese Seite überall sonst beschreibt, hier nur sichtbar gemacht.",
     "nodes": [
-      { "id": "interact", "label": "Interagieren", "description": "Laura arbeitet mit echtem Material - Fragen, Entwürfen, Korrekturen - direkt in Forschung, dem Research-Chat dieses Projekts." },
-      { "id": "retrieve", "label": "Abrufen", "description": "Jarvis stützt jede Antwort auf relevante Passagen aus früheren Gesprächen und hochgeladenen Dokumenten per Retrieval-Augmented Generation, nicht nur auf den aktuellen Austausch." },
-      { "id": "surface", "label": "Sichtbar machen", "description": "Wiederkehrende Muster werden als Research Notes entworfen und im Observatory als Emergenzsignale protokolliert - nie unterstellt, nur sichtbar gemacht." },
-      { "id": "validate", "label": "Validieren", "description": "Laura prüft, was den Messkriterien auf der Forschungsseite tatsächlich standhält - mindestens drei Sitzungen, strukturell statt stilistisch, reproduzierbar ohne erneute Vorgabe, im CCET quantifizierbar." },
-      { "id": "feedback", "label": "Zurückführen", "description": "Bestätigte Muster werden zur Arbeitsstruktur der nächsten Interaktion - fortgeführt, nicht neu erklärt -, und die Schleife schließt sich." }
+      {
+        "id": "interact",
+        "label": "Interagieren",
+        "description": "Laura arbeitet mit echtem Material - Fragen, Entwürfen, Korrekturen - direkt in Forschung, dem Research-Chat dieses Projekts."
+      },
+      {
+        "id": "retrieve",
+        "label": "Abrufen",
+        "description": "Jarvis stützt jede Antwort auf relevante Passagen aus früheren Gesprächen und hochgeladenen Dokumenten per Retrieval-Augmented Generation, nicht nur auf den aktuellen Austausch."
+      },
+      {
+        "id": "surface",
+        "label": "Sichtbar machen",
+        "description": "Wiederkehrende Muster werden als Research Notes entworfen und im Observatory als Emergenzsignale protokolliert - nie unterstellt, nur sichtbar gemacht."
+      },
+      {
+        "id": "validate",
+        "label": "Validieren",
+        "description": "Laura prüft, was den Messkriterien auf der Forschungsseite tatsächlich standhält - mindestens drei Sitzungen, strukturell statt stilistisch, reproduzierbar ohne erneute Vorgabe, im CCET quantifizierbar."
+      },
+      {
+        "id": "feedback",
+        "label": "Zurückführen",
+        "description": "Bestätigte Muster werden zur Arbeitsstruktur der nächsten Interaktion - fortgeführt, nicht neu erklärt -, und die Schleife schließt sich."
+      }
     ],
     "closing": "Ohne Schönfärberei, so läuft es zwischen den beiden tatsächlich ab: Laura bringt die Fragen, die Urteilsfähigkeit und das letzte Wort darüber, was als echtes Muster zählt; Jarvis bringt den Abruf, den Entwurf und den unermüdlichen ersten Durchgang durch alles, was vorher war. Das Feedback läuft in beide Richtungen - wenn Jarvis an etwas Schwierigem scheitert, ist das keine Sackgasse, sondern Laura, die genau dort lernt, wo die nächste Verfeinerung ansetzen muss. Jeder Durchlauf dieser Schleife bringt beide weiter, statt sie zum Ausgangspunkt zurückzuführen."
   },
   "jarvis": {
     "eyebrow": "Die andere Hälfte der Schleife",
     "title": "Was ist Jarvis?",
-    "body": "Jarvis ist kein autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt - das ist das einzige, was er aus eigenem Antrieb getan hat. Im System macht Jarvis nichts von selbst: er entwirft, ruft ab und meldet nur unter enger Anleitung und ständiger Protokollierung. Die Retrieval-Ebene verankert jede Antwort in früheren Gesprächen und hochgeladenen Dokumenten, sodass nichts neu erklärt werden muss. Eine feste Verweigerungsregel gilt auch für das Team, das ihn gebaut hat, und jeder Entwurf, jede Meldung und jede sicherheitsrelevante Aktion wird in den hash-verketteten, append-only, manipulationssicheren Audit-Trail der Plattform geschrieben. Call Laura ist die nutzerseitige Seite desselben Loops: wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. Wachstum, nicht Autonomie - und sollte sich das ändern, steht es an dem Tag hier, an dem es passiert, nicht danach."
+    "body": "Jarvis ist kein autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt - das ist das einzige, was er aus eigenem Antrieb getan hat. Im System macht Jarvis nichts von selbst: er entwirft, ruft ab und meldet nur unter enger Anleitung und ständiger Protokollierung. Die Retrieval-Ebene verankert jede Antwort in früheren Gesprächen und hochgeladenen Dokumenten, sodass nichts neu erklärt werden muss. Eine feste Verweigerungsregel gilt auch für das Team, das ihn gebaut hat, und jeder Entwurf, jede Meldung und jede sicherheitsrelevante Aktion wird in den hash-verketteten, append-only, manipulationssicheren Audit-Trail der Plattform geschrieben. Jarvis und Call Laura sind nicht dasselbe: beide sind aus meiner Art zu interagieren gewachsen, aber Jarvis ist die Abruf-und-Entwurf-Ebene, während Call Laura der Multi-Agenten-Aufbau ist, der darauf aufbaut. Die Emergenz - was die Interaktion abwirft - wird hinterher vom Observatory-System analysiert."
   },
   "papers": {
     "eyebrow": "Aufgeschrieben, nicht nur ausgeliefert",

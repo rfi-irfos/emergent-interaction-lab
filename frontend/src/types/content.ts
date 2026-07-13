@@ -113,6 +113,7 @@ export interface SiteContent {
     headline: string
     subheadline: string
     body?: string
+    callout?: { label: string; text: string }
     ctaLabel: string
     ctaHref: string
     ctaSecLabel?: string

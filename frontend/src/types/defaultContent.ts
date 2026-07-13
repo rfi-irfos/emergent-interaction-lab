@@ -22,8 +22,12 @@ export const defaultContent: SiteContent = {
   hero: {
     tag: 'Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023',
     headline: 'Emergent Interaction Field',
-    subheadline: 'Unsicher, welches Tool zu rufen.. ruf Laura an!',
-    body: "Emergent Interaction Field ist das Titelbild: das Observatory-System, live im Hintergrund, das Emergenzforschung betreibt — dort entstehen Daten, und erst danach werden sie analysiert. Call Laura ist ein Beispiel dafür, was daraus entsteht: wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. So entstehen die Multi-Agenten — durch Emergent Interaction — und deren Daten fließen dann zurück in meine Emergenzforschung. Ein roter Faden, kein durcheinandergewürfelter Haufen.",
+    subheadline: 'Emergenzforschung. Die Interaktion baut die Agenten; das Observatory analysiert, was entsteht.',
+    body: "Emergent Interaction ist das Feld. Emergenz entsteht durch die Interaktion selbst - das ist der Teil, der sich lohnt. Aus meiner Art zu interagieren sind zwei verschiedene Dinge gewachsen: Jarvis und der Multi-Agenten-Aufbau hinter Call Laura. Das ist nicht dasselbe. Die Interaktion allein baut die Agenten. Was die Interaktion darüber hinaus abwirft, ist Emergenz - und das Observatory-System analysiert sie: Muster, Drift, Struktur. Systemanalyse, im Grunde. Egal was das Material ist - ein Projekt, ein Fall - es läuft durch mich, wird auseinandergenommen, und daraus entstehen Agenten, die genau passen, und werden überwacht. Und gleichzeitig gehe ich hinterher und analysiere die Emergenz, die tatsächlich aufgetaucht ist.",
+    callout: {
+      label: 'Call Laura',
+      text: 'Wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. Das ist die angewandte Seite - der Multi-Agenten-Aufbau, gewachsen aus derselben Interaktion, nicht die Forschung.'
+    },
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
     ctaSecLabel: 'Über das Projekt',
