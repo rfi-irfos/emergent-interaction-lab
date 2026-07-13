@@ -21,7 +21,7 @@ export const defaultContent: SiteContent = {
   },
   hero: {
     tag: 'Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023',
-    headline: 'Emergent Interaction Field',
+    headline: 'Unsicher, welches Tool zu rufen? Ruf Laura an.',
     subheadline: 'Das hier ist keine statische Broschüre, sondern ein live laufendes Forschungsinstrument. Jedes Gespräch, jeder Blogbeitrag und jede Forschungsnotiz speist das Observatory - das Instrument, das misst, wie Bedeutung, Struktur und Verhalten aus anhaltender Mensch-KI-Interaktion entstehen, während es passiert.',
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
