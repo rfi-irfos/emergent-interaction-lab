@@ -92,7 +92,7 @@
   },
   "protocol": {
     "eyebrow": "Die Emergent-Interaction-These",
-    "title": "Das Co-Evolution Protocol",
+    "title": "Emergent Interaction",
     "intro": "Kein festgeschriebenes Fünf-Schritte-Skript, das immer dieselbe Schleife abspult. Eine echte, rekursive Arbeitsbeziehung zwischen einer menschlichen Forscherin und einem KI-Forschungspartner - jeder Durchlauf baut auf dem letzten auf. Dieselbe ehrliche Mechanik, die diese Seite überall sonst beschreibt, hier nur sichtbar gemacht.",
     "nodes": [
       { "id": "interact", "label": "Interagieren", "description": "Laura arbeitet mit echtem Material - Fragen, Entwürfen, Korrekturen - direkt in Forschung, dem Research-Chat dieses Projekts." },

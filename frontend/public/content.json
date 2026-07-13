@@ -92,7 +92,7 @@
   },
   "protocol": {
     "eyebrow": "The Emergent Interaction Thesis",
-    "title": "The Co-Evolution Protocol",
+    "title": "Emergent Interaction",
     "intro": "Not a fixed five-step script running the same loop forever. A real, recursive working relationship between a human researcher and an AI research partner - each pass compounds on the last. Same honest mechanics described everywhere else on this site, just made visible here.",
     "nodes": [
       { "id": "interact", "label": "Interact", "description": "Laura works through real material - questions, drafts, corrections - directly in Forschung, this project's research chat." },

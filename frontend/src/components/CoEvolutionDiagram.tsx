@@ -77,7 +77,7 @@ export function CoEvolutionDiagram({ nodes }: Props) {
   const growthPath2 = ringPath(GROWTH_R2)
 
   const chart = (
-    <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label={`Co-Evolution Protocol: ${nodes.map(n => n.label).join(', ')}, looping and compounding outward`}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label={`Emergent Interaction: ${nodes.map(n => n.label).join(', ')}, looping and compounding outward`}>
       {!reducedMotion && growthPath2 && <path d={growthPath2} className="site-protocol-growth-ring site-protocol-growth-ring-2" />}
       {!reducedMotion && growthPath1 && <path d={growthPath1} className="site-protocol-growth-ring site-protocol-growth-ring-1" />}
       <path d={loopPath} className="site-protocol-loop" />
