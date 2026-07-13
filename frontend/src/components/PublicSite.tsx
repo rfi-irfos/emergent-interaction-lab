@@ -33,13 +33,19 @@ export function Reveal({
       if (_revealSuppressed) { el.style.opacity = '1'; el.style.transform = 'none'; return }
       const rect = el.getBoundingClientRect(), vh = window.innerHeight
       const startFrac = 0.96 - delay * 0.05
-      const raw = (vh * startFrac - rect.top) / (vh * 0.22)
+      // Window widened from an earlier 0.22*vh to 0.7*vh: at the old width,
+      // the eased/accelerated wheel-scroll (see useFastScroll) covers the
+      // whole transition in 2-3 animation frames on a normal scroll gesture
+      // — technically animating, but too fast to ever actually see. This
+      // spans most of a screen's height of scroll distance instead, so the
+      // fade-and-slide is visible at any realistic scroll speed.
+      const raw = (vh * startFrac - rect.top) / (vh * 0.7)
       const p = Math.max(0, Math.min(1, raw))
       el.style.opacity = String(p)
-      const d = (1 - p) * 28
+      const d = (1 - p) * 64
       el.style.transform = from === 'left'  ? `translateX(${-d}px)` :
                            from === 'right' ? `translateX(${d}px)`  :
-                           from === 'scale' ? `scale(${0.88 + p * 0.12})` :
+                           from === 'scale' ? `scale(${0.82 + p * 0.18})` :
                            `translateY(${d}px)`
     }
     const onScroll = () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(update) }
@@ -1493,12 +1499,14 @@ export function PublicSite({
                       </div>
                     )}
                     <div className="site-usp-grid">
-                      {groupItems.map(({ u, i }) => (
-                        <div key={u.id} className={`site-usp-card hud-corner-frame ${i % 2 === 1 ? 'accent' : ''}`}>
+                      {groupItems.map(({ u, i }, gi) => (
+                        <Reveal key={u.id} from={gi % 2 === 1 ? 'right' : 'left'} delay={gi}>
+                        <div className={`site-usp-card hud-corner-frame ${i % 2 === 1 ? 'accent' : ''}`}>
                           {u.icon && <div className="site-usp-icon"><UspIcon icon={u.icon} /></div>}
                           <E field={`usp.items.${i}.title`} value={u.title} as="h3" />
                           <E field={`usp.items.${i}.description`} value={u.description} as="p" />
                         </div>
+                        </Reveal>
                       ))}
                     </div>
                   </div>
@@ -1664,8 +1672,8 @@ export function PublicSite({
                 <EImg field="contact.photo" src={contact.photo} alt="Niki" />
               </div>
             )}
-            <E field="contact.title" value={contact?.title ?? ''} as="h2" className="site-location-h2" />
-            {contact?.subtitle && <E field="contact.subtitle" value={contact.subtitle} as="p" className="site-location-sub" />}
+            <Reveal from="bottom"><E field="contact.title" value={contact?.title ?? ''} as="h2" className="site-location-h2" /></Reveal>
+            {contact?.subtitle && <Reveal from="bottom" delay={1}><E field="contact.subtitle" value={contact.subtitle} as="p" className="site-location-sub" /></Reveal>}
             <div className="site-cinfo-list">
               {contact?.phone && (
                 <div className="site-cinfo-item">
