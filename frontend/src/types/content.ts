@@ -168,6 +168,7 @@ export interface SiteContent {
     body: string
   }
   jarvis?: {
+    eyebrow?: string
     title: string
     body: string
     nextBadge?: string
@@ -184,6 +185,7 @@ export interface SiteContent {
     items: CertificateItem[]
   }
   papers?: {
+    eyebrow?: string
     title?: string
     intro?: string
     items: PaperItem[]

@@ -1314,6 +1314,7 @@ export function PublicSite({
         {/* ── JARVIS ───────────────────────────────────────────────────── */}
         {content.jarvis?.body && (
           <section className={reveal("site-section site-section-alt site-jarvis")} id="jarvis" data-cid="jarvis.title">
+            {content.jarvis.eyebrow && <div className="site-eyebrow">{content.jarvis.eyebrow}</div>}
             <Reveal from="bottom"><h2 className="site-section-title">{content.jarvis.title}</h2></Reveal>
             {content.jarvis.nextBadge && (
               <span className="site-about-proof-badge site-jarvis-next-badge">{content.jarvis.nextBadge}</span>
@@ -1588,6 +1589,7 @@ export function PublicSite({
         {/* ── PAPERS ───────────────────────────────────────────────────── */}
         {(papers?.items?.length ?? 0) > 0 && (
           <section className={reveal("site-section site-papers")} id="papers">
+            {papers!.eyebrow && <div className="site-eyebrow">{papers!.eyebrow}</div>}
             {papers!.title && <Reveal from="bottom"><h2 className="site-section-title">{papers!.title}</h2></Reveal>}
             {papers!.intro && <Reveal from="bottom" delay={1}><p className="site-protocol-intro">{papers!.intro}</p></Reveal>}
             <div className="site-cert-grid">
