@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem, PaperItem } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
@@ -97,27 +97,6 @@ export function Reveal({
     return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId) }
   }, [delay, from])
   return <div ref={ref} style={{ opacity: 0, willChange: 'transform, opacity', ...extra }}>{children}</div>
-}
-
-// Scroll-linked parallax for the hero graphic: drifts slightly slower than the
-// foreground headline as the page scrolls, so the sky reads as further away —
-// same rAF-batched scroll pattern as Reveal above, no new dependency.
-function HeroParallax({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let rafId = 0
-    const update = () => {
-      const y = Math.min(window.scrollY, 900) * 0.12
-      el.style.transform = `translateY(${y}px)`
-    }
-    const onScroll = () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(update) }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    update()
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId) }
-  }, [])
-  return <div ref={ref} className="site-hero-parallax" style={{ willChange: 'transform' }}>{children}</div>
 }
 
 // Eased "super smooth" wheel-scroll accelerator — ported from rfi-irfos-web's
@@ -447,108 +426,6 @@ function TrustIcon({ icon }: { icon: string }) {
     case 'location': return <IconLocation />
     default:         return <IconShield />
   }
-}
-
-// ── Hero graphic: a comet — a horizontal light trail sweeping in from the
-// left, converging on a bright four-point star, with a scatter of debris
-// particles trailing off beyond it. The star eases toward the cursor while
-// it hovers the hero, and drifts back to its resting spot once the pointer
-// leaves — smoothed via rAF so it feels fluid rather than snapping straight
-// to the mouse. Particle offsets are generated once (fixed shape) and the
-// whole cluster is translated to the eased point, so the animation loop
-// never has to recompute geometry.
-// ── Hero graphic: Earth's limb at sunrise, as seen from orbit — a warm glow
-// breaking over the planet's curved horizon into a dark, star-scattered sky.
-// Deliberately restrained: no mouse-chasing, no particle burst — a still,
-// scenic frame with just a couple of stars quietly twinkling.
-function HeroFieldGraphic() {
-  const W = 720, H = 640
-  const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
-
-  const stars = useMemo(() => {
-    const n = 16
-    const arr: { x: number; y: number; r: number; o: number; twinkle: boolean; dur: number }[] = []
-    for (let i = 0; i < n; i++) {
-      arr.push({
-        x: Math.random() * W * 0.7,
-        y: Math.random() * H * 0.5,
-        r: 0.6 + Math.random() * 1.3,
-        o: 0.25 + Math.random() * 0.45,
-        twinkle: i % 4 === 0,
-        dur: 4 + Math.random() * 3,
-      })
-    }
-    return arr
-  }, [])
-
-  return (
-    <svg className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <radialGradient id="hero-sunrise-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#fff6e0" stopOpacity="0.95" />
-          <stop offset="26%" stopColor="#ffd88a" stopOpacity="0.55" />
-          <stop offset="58%" stopColor="var(--brand-cyan)" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="hero-earth-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#0d1f2e" />
-          <stop offset="100%" stopColor="#050a12" />
-        </linearGradient>
-        <radialGradient id="hero-aurora-a" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="hero-aurora-b" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#8b7bf0" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#8b7bf0" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id="hero-aurora-c" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#2fd9c4" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="#2fd9c4" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      {/* soft aurora, drifting on the dark side of the sky */}
-      <g style={{ mixBlendMode: 'screen' }}>
-        <ellipse cx="70" cy="160" rx="55" ry="230" fill="url(#hero-aurora-a)">
-          {!reducedMotion && <animate attributeName="cx" values="70;95;70" dur="16s" repeatCount="indefinite" />}
-        </ellipse>
-        <ellipse cx="160" cy="260" rx="45" ry="210" fill="url(#hero-aurora-b)">
-          {!reducedMotion && <animate attributeName="cx" values="160;130;160" dur="19s" repeatCount="indefinite" />}
-        </ellipse>
-        <ellipse cx="30" cy="340" rx="40" ry="190" fill="url(#hero-aurora-c)">
-          {!reducedMotion && <animate attributeName="cy" values="340;300;340" dur="22s" repeatCount="indefinite" />}
-        </ellipse>
-      </g>
-
-      {stars.map((s, i) => (
-        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#e9fbff" opacity={s.o}>
-          {!reducedMotion && s.twinkle && (
-            <animate attributeName="opacity" values={`${s.o};${s.o * 0.2};${s.o}`} dur={`${s.dur}s`} repeatCount="indefinite" />
-          )}
-        </circle>
-      ))}
-
-      {/* sun, rising slowly from behind the horizon on first load — the Earth
-          fill below occludes whatever hasn't "risen" above the curve yet */}
-      <circle cx="630" cy={reducedMotion ? 255 : 440} r="230" fill="url(#hero-sunrise-glow)" opacity={reducedMotion ? 1 : 0}>
-        {!reducedMotion && (
-          <>
-            <animate attributeName="cy" values="440;255" dur="13s" fill="freeze" calcMode="spline" keySplines="0.22 0.1 0.2 1" />
-            <animate attributeName="opacity" values="0;1" dur="5s" fill="freeze" />
-          </>
-        )}
-      </circle>
-
-      {/* Earth's limb: a gentle curve, the planet filled dark below it.
-          Previously also drew two bright/blurred stroke lines tracing this
-          same curve (a glowing cyan line, then a crisp bright edge on top)
-          — that's the diagonal "shimmer" flagged as unwanted and removed
-          here; the plain dark fill below is kept, it reads as a subtle
-          gradient, not a glowing line. */}
-      <path d="M -40,640 Q 340,430 760,190 L 760,680 L -40,680 Z" fill="url(#hero-earth-fill)" />
-    </svg>
-  )
 }
 
 // ── Contact form ──────────────────────────────────────────────────────────────
@@ -1267,11 +1144,6 @@ export function PublicSite({
             heroDragRef.current = { startX: e.clientX, startY: e.clientY, startBgX: heroBgPos.x, startBgY: heroBgPos.y }
           }}
         >
-          {!hero.image && (
-            <HeroParallax>
-              <HeroFieldGraphic />
-            </HeroParallax>
-          )}
           {editMode && (
             <div className="site-hero-controls">
               <button className="site-hero-swap-btn" onClick={() => onImageClick?.('hero.image')}>
