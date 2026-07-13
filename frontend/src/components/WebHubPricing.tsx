@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { useLang } from '../hooks/useLang'
+import type { SiteContent } from '../types/content'
 
 // The real WebHub service ladder — Laura's own product line, sold through
 // real Stripe Payment Links (see backend/src/billing.rs's
