@@ -4,6 +4,19 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+# useContent.ts fetches the live site copy at runtime from
+# raw.githubusercontent.com/${VITE_GH_OWNER}/${VITE_GH_REPO}/main/... — these
+# two are baked in at Vite build time via import.meta.env, and the GitHub
+# Actions workflow that builds the GH Pages mirror sets them correctly. This
+# Docker build (what Fly actually serves) never did, so OWNER/REPO came out
+# as literal "undefined" in the bundle, every content fetch 404'd, and the
+# site silently fell back to the hardcoded stub in defaultContent.ts — 3 nav
+# links, no protocol/Jarvis/papers sections. Confirmed 2026-07-13 by pulling
+# the live Fly bundle and finding ".../undefined/undefined/main/...". Not
+# secrets — this repo's own public name, already linked from the site's own
+# footer — so safe to bake in directly rather than needing a Fly secret.
+ENV VITE_GH_OWNER=rfi-irfos
+ENV VITE_GH_REPO=emergent-interaction-lab
 RUN npm run build
 
 # ── Stage 2: build backend ────────────────────────────────────────────────────
