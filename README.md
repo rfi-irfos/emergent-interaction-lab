@@ -51,7 +51,7 @@ Copy `.env.example` → `.env` in `backend/` and fill in what you need — most 
 
 - **Backend:** Rust, Axum 0.7, Tokio, SQLite (`sqlx`) — content API, chat/RAG, Observatory endpoints, billing, OAuth2, file uploads, serves the built SPA.
 - **Frontend:** React 19, TypeScript, Vite — public site renderer + admin/Observatory UI.
-- **AI:** NVIDIA-hosted LLMs (chat + embeddings), with a fallback ladder across candidate models.
+- **AI:** NVIDIA-hosted LLMs (chat + embeddings), with a fallback ladder across candidate models. The Forschung tab can optionally run on a [Hermes](https://github.com/NousResearch/hermes-agent) agent instead — see *Hermes research engine* below.
 - **Auth:** Google OAuth2 for the admin login, plus a shared-secret header for API calls from the admin UI.
 - **Payments:** Stripe (Products → Prices → Payment Links).
 - **Deploy:** Fly.io (backend + SQLite on a persistent volume) and GitHub Pages (public frontend build).
@@ -69,6 +69,8 @@ emergent-interaction-lab/
 │       ├── authz.rs          shared-secret admin auth check
 │       ├── chat.rs           Jarvis: RAG, streaming, model ladder, tool loop
 │       ├── agent.rs           tool definitions (notes, simulations, blog, web search)
+│       ├── hermes.rs          optional 2nd research engine: a Hermes agent as a service
+│       ├── mcp.rs             MCP server: lets the Hermes agent write research notes back
 │       ├── emergence.rs       emergence signal detection
 │       ├── observatory.rs     Observatory dashboard endpoints
 │       ├── research.rs        Research Workspace / Innovation Lab notes
@@ -93,6 +95,112 @@ emergent-interaction-lab/
 │       └── lib/                      shared frontend helpers (github.ts, adminApi.ts, ...)
 └── .env.example
 ```
+
+---
+
+## Hermes research engine (optional)
+
+The Forschung tab can be answered by one of two engines:
+
+- **Jarvis** (default) — the built-in loop in `chat.rs`: one NVIDIA chat-completions
+  call per round, tool calls parsed out of the model's own text. Stateless between
+  turns; everything it "remembers" is what `chat.rs` reassembles from SQLite and
+  the RAG chunks on the next request.
+- **Hermes** (opt-in) — [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+  (MIT), a full agent runtime with its own tool loop, its own skills, and its own
+  long-term memory that persists across turns and grows.
+
+Hermes runs as a **service**, not in the browser. It needs a long-lived process, a
+filesystem for its memory, and an inference key — in a browser tab (WASM/Pyodide)
+the key would ship to every visitor, the tools wouldn't run, and the memory would
+die with the tab, which is the one property the agent exists to have. So Hermes
+runs server-side and the tab streams from it.
+
+Nothing about Hermes is vendored into this repo: `hermes.rs` drives the HTTP API
+server Hermes already ships, so it stays on its own release cycle.
+
+### Deployed (Docker/Fly): nothing to configure
+
+Hermes is **bundled into the image** and started by `start.sh`. It uses the same
+`NVIDIA_API_KEY` the backend already has — Hermes's `nvidia` provider reads that
+exact variable — so there is no second key and no second service to run:
+
+```bash
+NVIDIA_API_KEY=<your key>     # that's it
+```
+
+The engine picker then appears in the Forschung tab. Optional knobs:
+`HERMES_ENABLED=0` (don't start it at all), `HERMES_MODEL=<model>` (override the
+default).
+
+Two things `start.sh` handles that are easy to get wrong:
+
+- **Memory lives on the volume** (`HERMES_HOME=/app/data/hermes`). The container's
+  writable layer is erased on every deploy *and* whenever the machine idles out
+  (`min_machines_running = 0`) — the same trap that silently ate uploaded images
+  before 2026-07-11. An agent whose long-term memory resets when the machine
+  sleeps isn't a growing agent.
+- **The agent runs with a research-only toolset** (`deploy/hermes-config.yaml`).
+  Hermes's *default* API-server toolset includes `terminal`, `process` and
+  `read_file`/`write_file` — a shell and filesystem, over HTTP, in a container
+  holding `STRIPE_SECRET_KEY`, `CHAT_API_SECRET` and the live database, driven by
+  whatever someone types into a chat box. The bundled agent is pinned to `web` +
+  `memory` and nothing else. **Don't widen that list in place** — if you need
+  those tools, give Hermes its own container with no production secrets.
+
+**Cold start:** the machine scales to zero, and Hermes (Python) takes ~20s to come
+up after a wake while the Rust binary is serving immediately. The engine picker
+health-probes Hermes, so it appears once Hermes can actually answer; a turn sent
+during that window waits it out rather than failing.
+
+### What the Hermes agent can do
+
+Hermes runs its *own* tool loop, so it never calls the tools in `agent.rs`. To let
+it take part in the lab rather than just talk in it, the backend exposes an **MCP
+server** at `POST /api/mcp` (`backend/src/mcp.rs`) — no bridge process; the Rust
+backend *is* the MCP server. Hermes gets exactly three tools:
+
+| tool | what it does |
+|---|---|
+| `log_research_note` | writes into the same `research_notes` table the human UI and Jarvis write to — the note shows up in Research Pulse tagged **🜂 Hermes**, linked to the conversation it grew out of |
+| `search_research_notes` | reads what the lab already knows, so it builds on existing notes instead of re-deriving them |
+| `web_search` | the backend's own keyless DuckDuckGo search |
+
+`web_search` is served from here rather than from Hermes's own `web` toolset
+because that toolset needs a *separate* search-provider API key and silently drops
+its tools without one — driven for real, the bundled agent was offered `memory`
+and nothing else. Routing search through the lab's keyless tool is what keeps
+"one NVIDIA key and it works" actually true.
+
+Note there is **no update and no delete**. The agent can add to the lab's
+knowledge and read it back; it cannot rewrite or destroy it. A bad turn (or a
+prompt injection in a page it read) can leave a junk note for a human to remove —
+it cannot take anything away.
+
+The endpoint is guarded by `EIL_MCP_TOKEN`, generated per boot and given to both
+processes. Without it the route does not exist at all.
+
+### Local dev: point at your own Hermes
+
+```bash
+API_SERVER_ENABLED=1 API_SERVER_KEY=<secret> API_SERVER_PORT=8765 \
+API_SERVER_HOST=127.0.0.1 hermes gateway run
+
+# then, for this backend:
+HERMES_URL=http://127.0.0.1:8765
+HERMES_API_KEY=<the same secret>
+```
+
+With `HERMES_URL` unset and no `NVIDIA_API_KEY` in a bundled image, `hermes.rs` is
+inert: the picker never renders and every turn takes the built-in path exactly as
+before.
+
+**How a Hermes turn stays a first-class citizen.** One Hermes session per EIL
+conversation, keyed by the same id. A Hermes turn ends in the same
+`chat::finalize_turn` a built-in turn does, so it lands in the same tables and
+feeds the same machinery: the transcript, the cross-chat RAG memory, the tool-call
+log the Observatory reads, and the emergence / CCET / anomaly instrumentation.
+The engine choice changes *who thinks*, not what the system learns from it.
 
 ---
 

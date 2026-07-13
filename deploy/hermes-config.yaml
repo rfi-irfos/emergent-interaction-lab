@@ -1,0 +1,109 @@
+# Seed config for the bundled Hermes research agent.
+#
+# Copied into $HERMES_HOME on first boot (see start.sh) and never overwritten
+# afterwards — so an operator can edit the live file on the volume without a
+# deploy undoing it, exactly like content.json.
+#
+# The API key is NOT in here. Hermes's nvidia provider reads NVIDIA_API_KEY from
+# the environment, which is the same single key the Rust backend already uses —
+# that's what makes this deployment one-key.
+
+model:
+  # NVIDIA's OpenAI-compatible endpoint, so the one NVIDIA_API_KEY an operator
+  # sets powers both engines.
+  base_url: https://integrate.api.nvidia.com/v1
+  provider: nvidia
+  # Overridable at deploy time with HERMES_MODEL (see start.sh). This default is
+  # a strong tool-caller, which is what a research agent lives or dies by — a
+  # smaller/faster model that can't reliably emit tool calls makes the agent
+  # look broken rather than fast.
+  default: nvidia/nemotron-3-super-120b-a12b
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SECURITY: what the bundled agent is allowed to do.
+#
+# This block is the whole reason a seed config exists, and it must not be
+# loosened without understanding what it's holding back.
+#
+# Hermes's DEFAULT toolset for the api_server platform ("hermes-api-server" in
+# its toolsets.py) includes `terminal`, `process`, `read_file`, `write_file` and
+# `patch` — a full shell and filesystem, reachable over HTTP.
+#
+# This agent runs INSIDE the production backend container. That container holds
+# STRIPE_SECRET_KEY, CHAT_API_SECRET, the Google OAuth secrets and the live
+# SQLite database, and the agent's input is whatever someone types into the
+# Forschung tab. With the default toolset, a prompt injection in that text box
+# is arbitrary code execution in production and a straight path to every secret
+# the app owns.
+#
+# So the api_server platform is pinned to a research-only toolset:
+#
+#   web    — web_search + web_extract: how the agent actually researches
+#   memory — persistent memory across sessions: the entire point of running
+#            Hermes rather than the built-in engine
+#
+# Deliberately NOT granted: terminal, process, code_execution, file, browser,
+# computer_use, skills (skill_manage writes executable files), delegation.
+#
+# If you ever need one of those, give the agent its own container with its own
+# volume and no production secrets — do not widen this list in place.
+# ─────────────────────────────────────────────────────────────────────────────
+platform_toolsets:
+  api_server:
+    - web
+    - memory
+
+# The lab's own MCP server — served by the Rust backend itself (backend/src/mcp.rs),
+# not a separate process. This is what lets the agent write research notes back
+# into Research Pulse instead of only being able to talk and remember.
+#
+# Three tools, deliberately: log_research_note, search_research_notes and
+# web_search. The agent can add to the lab's knowledge, read it back, and look
+# things up; it cannot update or delete, so a bad turn leaves a note for a human
+# to remove rather than destroying work.
+#
+# web_search comes from HERE rather than from Hermes's own `web` toolset because
+# that toolset needs a search-provider API key of its own (check_web_api_key) and
+# silently drops its tools without one — driven for real, the bundled agent was
+# offered `memory` and nothing else. The backend's search is keyless
+# (DuckDuckGo), so one NVIDIA key really is all an operator needs. The `web`
+# toolset stays listed above for anyone who DOES configure a Hermes web key.
+#
+# ${...} placeholders are resolved from the environment by Hermes's MCP client.
+# start.sh generates EIL_MCP_TOKEN fresh per boot and gives the same value to both
+# processes, so the token here is never a stale literal on the volume.
+mcp_servers:
+  eil:
+    url: "${EIL_MCP_URL}"
+    headers:
+      Authorization: "Bearer ${EIL_MCP_TOKEN}"
+    # The backend answers MCP over POST but does not serve the content-type probe
+    # the client's preflight expects on HEAD/GET (that path is the SPA).
+    skip_preflight: true
+    timeout: 60
+
+memory:
+  # The agent's long-term memory. Persisted under HERMES_HOME, which start.sh
+  # points at the mounted volume so it survives deploys and machine restarts.
+  memory_enabled: true
+  user_profile_enabled: true
+
+agent:
+  # Bounded so one research question can't spin the tool loop indefinitely on a
+  # shared-CPU machine.
+  max_turns: 40
+  verbose: false
+
+tool_loop_guardrails:
+  warnings_enabled: true
+  hard_stop_enabled: true
+  hard_stop_after:
+    exact_failure: 4
+    same_tool_failure: 6
+    idempotent_no_progress: 4
+
+compression:
+  # Long research conversations otherwise grow the context until a turn fails.
+  enabled: true
+  threshold: 0.5
+  target_ratio: 0.2

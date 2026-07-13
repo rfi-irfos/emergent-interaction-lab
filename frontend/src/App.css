@@ -3478,6 +3478,15 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-reasoning-toggle-btn.active:hover { border-color: #8b7bf0; color: #e9fbff; }
 
+/* Engine picker (Jarvis ↔ Hermes). Inactive it's an ordinary chat-export-btn,
+   like the reasoning toggle; active it takes a distinct teal rather than the
+   reasoning toggle's violet, so the two adjacent toggles are never mistaken for
+   each other at a glance. */
+.chat-engine-toggle-btn.active {
+  border-color: rgba(45,212,191,.55); color: #7fe7d8; background: rgba(45,212,191,.14);
+}
+.chat-engine-toggle-btn.active:hover { border-color: #2dd4bf; color: #e9fbff; }
+
 .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 .chat-empty { margin: auto; color: rgba(255,255,255,.35); font-size: 13px; text-align: center; max-width: 320px; }
 
