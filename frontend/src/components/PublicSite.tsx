@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
 import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem, PaperItem } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
@@ -426,6 +426,85 @@ function TrustIcon({ icon }: { icon: string }) {
     case 'location': return <IconLocation />
     default:         return <IconShield />
   }
+}
+
+// ── Hero graphic: Earth's limb at sunrise, as seen from orbit - aurora
+// drifting on the dark side of the sky, a few quietly twinkling stars, the
+// planet's curve filled dark below. Deliberately kept restrained after two
+// rounds of "get rid of the shimmer" feedback: no bright glow-line stroke
+// on the curve (removed - that was the original diagonal shimmer), and no
+// animated sunrise circle (removed - its opacity 0->1 fade-in restarted
+// every time this component remounted, e.g. on closing a modal, which
+// looked like the shimmer reappearing). The aurora/star animations left in
+// are ambient drift/twinkle only - resetting mid-drift on a remount is
+// imperceptible, unlike a glow fading in from nothing.
+function HeroFieldGraphic() {
+  const W = 720, H = 640
+  const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, [])
+
+  const stars = useMemo(() => {
+    const n = 16
+    const arr: { x: number; y: number; r: number; o: number; twinkle: boolean; dur: number }[] = []
+    for (let i = 0; i < n; i++) {
+      arr.push({
+        x: Math.random() * W * 0.7,
+        y: Math.random() * H * 0.5,
+        r: 0.6 + Math.random() * 1.3,
+        o: 0.25 + Math.random() * 0.45,
+        twinkle: i % 4 === 0,
+        dur: 4 + Math.random() * 3,
+      })
+    }
+    return arr
+  }, [])
+
+  return (
+    <svg className="site-hero-graphic" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="hero-earth-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#0d1f2e" />
+          <stop offset="100%" stopColor="#050a12" />
+        </linearGradient>
+        <radialGradient id="hero-aurora-a" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--brand-cyan)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--brand-cyan)" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-aurora-b" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#8b7bf0" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#8b7bf0" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hero-aurora-c" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#2fd9c4" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#2fd9c4" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* soft aurora, drifting on the dark side of the sky */}
+      <g style={{ mixBlendMode: 'screen' }}>
+        <ellipse cx="70" cy="160" rx="55" ry="230" fill="url(#hero-aurora-a)">
+          {!reducedMotion && <animate attributeName="cx" values="70;95;70" dur="16s" repeatCount="indefinite" />}
+        </ellipse>
+        <ellipse cx="160" cy="260" rx="45" ry="210" fill="url(#hero-aurora-b)">
+          {!reducedMotion && <animate attributeName="cx" values="160;130;160" dur="19s" repeatCount="indefinite" />}
+        </ellipse>
+        <ellipse cx="30" cy="340" rx="40" ry="190" fill="url(#hero-aurora-c)">
+          {!reducedMotion && <animate attributeName="cy" values="340;300;340" dur="22s" repeatCount="indefinite" />}
+        </ellipse>
+      </g>
+
+      {stars.map((s, i) => (
+        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#e9fbff" opacity={s.o}>
+          {!reducedMotion && s.twinkle && (
+            <animate attributeName="opacity" values={`${s.o};${s.o * 0.2};${s.o}`} dur={`${s.dur}s`} repeatCount="indefinite" />
+          )}
+        </circle>
+      ))}
+
+      {/* Earth's limb: a gentle curve, the planet filled dark below it -
+          fill only, no stroke (see comment above the function). */}
+      <path d="M -40,640 Q 340,430 760,190 L 760,680 L -40,680 Z" fill="url(#hero-earth-fill)" />
+    </svg>
+  )
 }
 
 // ── Contact form ──────────────────────────────────────────────────────────────
@@ -1144,6 +1223,7 @@ export function PublicSite({
             heroDragRef.current = { startX: e.clientX, startY: e.clientY, startBgX: heroBgPos.x, startBgY: heroBgPos.y }
           }}
         >
+          {!hero.image && <HeroFieldGraphic />}
           {editMode && (
             <div className="site-hero-controls">
               <button className="site-hero-swap-btn" onClick={() => onImageClick?.('hero.image')}>
