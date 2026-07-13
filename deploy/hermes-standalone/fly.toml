@@ -1,0 +1,38 @@
+# Standalone Hermes, deployed as its own Fly app rather than a generic VPS —
+# Fly already gives us everything the docker-compose+Caddy setup in this same
+# directory was built to provide (automatic TLS on a public *.fly.dev domain,
+# a persistent volume, secrets management, the Frankfurt region), so there's
+# no reverse proxy to run here. Deploy from the REPO ROOT (the Dockerfile
+# COPYs deploy/hermes-config.yaml, a path relative to repo root):
+#
+#   fly apps create eil-hermes --org personal
+#   fly volumes create hermes_data -a eil-hermes -r fra --size 1
+#   fly secrets set -a eil-hermes NVIDIA_API_KEY=... HERMES_API_KEY=... EIL_MCP_URL=... EIL_MCP_TOKEN=...
+#   fly deploy -a eil-hermes --config deploy/hermes-standalone/fly.toml --dockerfile deploy/hermes-standalone/Dockerfile
+#
+# min_machines_running = 1 (not 0, unlike the main app) is the entire point:
+# this is what makes Hermes genuinely always-on instead of cold-starting
+# after idle.
+app = "eil-hermes"
+primary_region = "fra"
+
+[build]
+
+[env]
+  API_SERVER_PORT = "8765"
+
+[http_service]
+  internal_port = 8765
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[mounts]]
+  source = "hermes_data"
+  destination = "/app/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

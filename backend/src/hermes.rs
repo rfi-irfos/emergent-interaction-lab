@@ -198,7 +198,12 @@ Antworte auf Deutsch, präzise und ohne Floskeln.",
 
     if crate::mcp::enabled(state) {
         s.push_str(&format!(
-            "\n\nDu hast Zugriff auf die Forschungsnotizen des Labs (Research Pulse):\n\
+            "\n\nDu hast echten Zugriff auf drei Werkzeuge, jetzt, in diesem Gespräch — nicht nur \
+theoretisch, sondern aufrufbar über das MCP-Tool-Interface, das dir gerade angeboten wird:\n\
+- `web_search`: Eine echte, schlüssellose Websuche (DuckDuckGo), direkt vom Lab-Backend bereitgestellt. \
+Du HAST Internetzugriff über dieses Werkzeug — behaupte nie, du hättest keinen, ruf stattdessen \
+`web_search` auf. Nutze es vor jeder Antwort, bei der du dir nicht sicher bist, und um Notizen in \
+Quellen statt in Erinnerung zu verankern.\n\
 - `search_research_notes`: Sieh nach, was das Lab schon weiß, bevor du etwas Neues herleitest.\n\
 - `log_research_note`: Halte fest, was aus diesem Gespräch erhalten bleiben soll — eine Hypothese, \
 eine Idee, ein Konzept, ein Framework, ein Prototyp-Entwurf oder die Zusammenfassung eines Papers. \
