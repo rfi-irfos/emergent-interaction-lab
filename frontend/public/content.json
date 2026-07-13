@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "The field this Lab studies: the dynamic that arises while I work, session after session, with the same AI research partner - observed in me, in Jarvis, and in the system itself.",
-    "body": "This is the Emergent Interaction Field: the space that comes into being during interaction, and the emergence that shows up in it - in me, in Jarvis, and in the system itself. It is monitored, not assumed. Below: what the Lab is, the methodology behind it, and the products that have grown out of it.",
+    "subheadline": "What this Lab studies: the dynamic that shows up when I work the same problem, session after session, with the same AI. Not a theory. Watched.",
+    "body": "This is the Emergent Interaction Field. The space that forms during interaction - not assumed, measured. Below: what the Lab is, how it works, what's grown out of it.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "The Lab & its founder",
     "headline": "Laura Serna Gaviria",
-    "bio": "I work one way, in everything I touch: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That habit &mdash; full picture, then pattern, then conclusion &mdash; is the actual asset, trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>I've applied it to human-AI interaction since 2023, and out of the same discipline grew Lauras Team &mdash; the reasoning lenses (ethical, legal, others) now running as shippable engineering in Jarvis and Call Laura. I conceive the method and direct what gets built; RFI-IRFOS engineers it, and anything built on my direction is labelled as theirs, so it's always clear what's mine and what's theirs. The same rigor is yours to use: system analysis, organizational consulting &mdash; not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
+    "bio": "I don't touch things. I break them open, see what's actually inside, and build it back - correctly this time. That's the whole method. Watch what's real. Trust only what holds up on its own. Never let a theory get ahead of the evidence. Six fields taught me that, the hard way: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis.<br><br>I've been doing it to human-AI interaction since 2023. Same discipline, new target. Out of it grew Lauras Team - reasoning lenses, ethical, legal, others, now running as real engineering inside Jarvis and Call Laura. I decide what gets built. RFI-IRFOS builds it. Theirs is labelled theirs, so nobody's confused about who did what. Same rigor, available to you: system analysis, organizational consulting - not a conversation. <a href=\"#p/pricing\">A sprint.</a>",
     "stats": [
       {
         "value": "2023",
@@ -275,8 +275,22 @@
       {
         "id": "n1",
         "date": "2026-07-03",
-        "title": "Welcome to the blog",
-        "body": "Here I share observations, screenshots, and notes from ongoing human-AI interactions - raw material for the Interaction Field project.",
+        "title": "Why I'm doing this",
+        "body": "Not a marketing blog. Not a \"welcome, glad you're here.\" This is where what actually happens in the Interaction Field lands - screenshots, raw data, failures included.\n\nIf a pattern doesn't repeat itself three times on its own, it doesn't get in. If it does, you see it here first.",
+        "image": ""
+      },
+      {
+        "id": "n3",
+        "date": "2026-07-10",
+        "title": "Why three sessions",
+        "body": "A pattern, seen once, is an anecdote. Twice is chance repeating itself. Only on the third time, unprompted, without me re-specifying it, do I count it as real.\n\nThat's not arbitrary. Most \"breakthroughs\" people show me are a single conversation, scaled up into a universal theory. A model that sounds impressive once has proven nothing. It sounded impressive once.\n\nThree sessions force honesty. Either the pattern holds, or it was language that felt good. Both happen. Only one gets into the CCET.",
+        "image": ""
+      },
+      {
+        "id": "n4",
+        "date": "2026-07-12",
+        "title": "Prediction isn't certainty",
+        "body": "The framework projects what's likely to hold, repeat, or break next. Sounds like certainty about the future. It isn't.\n\nA prediction here is a bet with the cards face up: here's the trend, here's where it's likely headed, and here's exactly how I'll check it when the time comes. Doesn't hold up, it gets discarded. Not reinterpreted. Not made to fit after the fact.\n\nMost people selling \"AI predictions\" are selling certainty they don't have. I sell the bet. And the willingness to be wrong in public.",
         "image": ""
       },
       {

@@ -1,22 +1,24 @@
-import { useEffect, type CSSProperties } from 'react'
+import { useEffect } from 'react'
 import type { SiteContent, NewsItem } from '../types/content'
-import { useLang } from '../hooks/useLang'
 import { renderMarkdown } from '../lib/markdown'
 import { trackPageView } from '../lib/tracking'
 
-// Real, shareable, bookmarkable page for a single published article
-// (#p/blog/<id>, see App.tsx's getRoute()) — previously a published post
-// only ever opened in a PublicSite.tsx modal with no route/URL change, so it
-// couldn't be linked, reloaded, or indexed. Reuses the exact visual
-// presentation the modal used to have (the site-modal-article family of
-// classes, see App.css) rather than redesigning it — only the page chrome
-// (nav/back link instead of a scrim + close button) is new, following the
-// same static-page shell CertificationPage.tsx/DynamicPage.tsx already use
-// for dedicated routes. Like those sibling pages, this one renders in a
-// fixed light presentation rather than the visitor's chosen site theme —
-// same established trade-off, not a new one introduced here.
-export function BlogPostPage({ item, content }: { item: NewsItem; content: SiteContent }) {
-  const { t } = useLang()
+// A published article, opened in place as the same dark in-house modal as
+// Research/About the Lab/Certification/Pricing - previously its own
+// standalone light-themed page (#p/blog/<id> navigated away entirely,
+// flagged live as "leads to this external white page"). Folded into the
+// same modal system as everything else instead of being a fifth,
+// differently-behaved route.
+export function BlogPostPage({ item, content, onClose }: { item: NewsItem; content: SiteContent; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
 
   useEffect(() => { window.scrollTo(0, 0) }, [item.id])
 
@@ -37,38 +39,28 @@ export function BlogPostPage({ item, content }: { item: NewsItem; content: SiteC
   }, [item.id])
 
   return (
-    <div className="static-page">
-      <header className="static-page-nav">
-        <a href="#" className="static-page-brand">{content.nav?.brand ?? 'Website'}</a>
-        <a href="#" className="static-page-back">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          {t.back}
-        </a>
-      </header>
-      <main className="static-page-main">
-        <article
-          className="site-modal site-modal-article site-blogpost-card"
-          style={{
-            '--primary': content.meta?.primaryColor || '#C4956A',
-            '--text': '#111111',
-            '--text-soft': '#555555',
-            '--surface': '#FFF9F4',
-            '--surface-sunken': '#EDE3D9',
-            '--shadow': 'rgba(0, 0, 0, .10)',
-          } as CSSProperties}
-        >
+    <div
+      className="page-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title.replace(/<[^>]+>/g, '')}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="page-modal-panel">
+        <button type="button" className="page-modal-x" aria-label="Schließen" onClick={onClose}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <div className="page-modal-scroll" data-native-scroll>
           {item.image && (
             <div className="site-modal-img"><img src={item.image} alt={item.title} /></div>
           )}
-          <div className="site-modal-body">
-            <div className="site-news-date">
-              {new Date(item.date).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}
-            </div>
-            <h1 className="site-modal-title" dangerouslySetInnerHTML={{ __html: item.title }} />
-            <div className="site-modal-article-body">{renderMarkdown(item.body)}</div>
+          <div className="site-news-date">
+            {new Date(item.date).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
-        </article>
-      </main>
+          <h1 className="page-modal-title" dangerouslySetInnerHTML={{ __html: item.title }} />
+          <div className="page-modal-body site-modal-article-body">{renderMarkdown(item.body)}</div>
+        </div>
+      </div>
     </div>
   )
 }

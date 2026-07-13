@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Forschung seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Das Feld, das dieses Lab untersucht: die Dynamik, die entsteht, während ich Session für Session mit demselben KI-Forschungspartner arbeite - beobachtet in mir, in Jarvis und im System selbst.",
-    "body": "Dies ist das Emergent Interaction Field: der Raum, der während der Interaktion entsteht, und die Emergenz, die in ihm erscheint - in mir, in Jarvis und im System selbst. Es wird beobachtet, nicht angenommen. Unten: was das Lab ist, die Methodik dahinter, und die Produkte, die aus ihm hervorgegangen sind.",
+    "subheadline": "Was dieses Lab untersucht: die Dynamik, die entsteht, wenn ich dasselbe Problem bearbeite, Session für Session, mit derselben KI. Keine Theorie. Beobachtet.",
+    "body": "Das hier ist das Emergent Interaction Field. Der Raum, der während der Interaktion entsteht - nicht angenommen, gemessen. Unten: was das Lab ist, wie es funktioniert, was daraus gewachsen ist.",
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
     "ctaSecLabel": "Über das Projekt",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "Das Lab & seine Gründerin",
     "headline": "Laura Serna Gaviria",
-    "bio": "Ich arbeite nur auf eine Art, in allem, das ich berühre: das echte Geschehen in voller Breite beobachten, nur den Mustern trauen, die sich aus eigener Kraft halten, und nie eine Theorie der Evidenz vorauseilen lassen. Diese Gewohnheit &mdash; erst das volle Bild, dann das Muster, dann die Schlussfolgerung &mdash; ist das eigentliche Asset, trainiert über sechs Felder: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse.<br><br>Ich wende sie seit 2023 auf Mensch-KI-Interaktion an, und aus derselben Disziplin wuchs Lauras Team &mdash; die Reasoning-Linsen (ethisch, rechtlich, andere), die heute als auslieferbare Software in Jarvis und Call Laura laufen. Ich erdenke die Methodik und steuere, was gebaut wird; RFI-IRFOS baut es zu funktionierender Software, und alles, was auf meiner Anweisung gebaut wurde, ist als deren Werk gekennzeichnet &mdash; damit immer klar ist, was meins und was ihres ist. Dieselbe Strenge kannst du nutzen: Systemanalyse, Organisationsberatung &mdash; kein Gespräch. <a href=\"#webhub-pricing\">Ein Sprint.</a>",
+    "bio": "Ich fasse Dinge nicht an. Ich brech sie auf, seh mir an, was wirklich drinsteckt, und bau sie neu zusammen - diesmal richtig. Das ist die ganze Methode. Sehen, was echt ist. Nur dem trauen, was sich aus eigener Kraft hält. Nie eine Theorie der Evidenz vorauseilen lassen. Sechs Felder haben mir das beigebracht, auf die harte Tour: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse.<br><br>Seit 2023 mach ich das mit Mensch-KI-Interaktion. Gleiche Disziplin, neues Ziel. Daraus wuchs Lauras Team - Reasoning-Linsen, ethisch, rechtlich, weitere, heute echte Engineering-Arbeit in Jarvis und Call Laura. Ich entscheide, was gebaut wird. RFI-IRFOS baut's. Deren Arbeit ist als deren gekennzeichnet, damit keiner durcheinanderkommt, wer was gemacht hat. Dieselbe Strenge kannst du nutzen: Systemanalyse, Organisationsberatung - kein Gespräch. <a href=\"#p/pricing\">Ein Sprint.</a>",
     "stats": [
       {
         "value": "2023",
@@ -275,8 +275,22 @@
       {
         "id": "n1",
         "date": "2026-07-03",
-        "title": "Willkommen im Blog",
-        "body": "Hier teile ich Beobachtungen, Screenshots und Notizen aus laufenden Mensch-KI-Interaktionen - Rohmaterial für das Interaction Field Projekt.",
+        "title": "Warum ich das hier mache",
+        "body": "Kein Marketing-Blog. Kein \"willkommen, schön dass du da bist\". Hier landet, was im Interaction Field tatsächlich passiert - Screenshots, Rohdaten, Fehlschläge inklusive.\n\nWenn ein Muster sich nicht dreimal von selbst wiederholt, kommt es nicht rein. Wenn's das tut, seht ihr's zuerst hier.",
+        "image": ""
+      },
+      {
+        "id": "n3",
+        "date": "2026-07-10",
+        "title": "Warum drei Sitzungen",
+        "body": "Ein Muster, einmal gesehen, ist eine Anekdote. Zweimal ist Zufall, der sich wiederholt. Erst beim dritten Mal, unangefordert, ohne dass ich's neu vorgegeben hab, zähl ich's als echt.\n\nDas ist keine Willkür. Die meisten \"Durchbrüche\", die mir Leute zeigen, sind ein einziges Gespräch, hochskaliert zur Universaltheorie. Ein Modell, das einmal beeindruckend klingt, hat nichts bewiesen. Es hat genau einmal beeindruckend geklungen.\n\nDrei Sitzungen zwingen zur Ehrlichkeit. Entweder das Muster hält, oder es war Sprache, die sich gut angefühlt hat. Beides passiert. Nur eins davon kommt ins CCET.",
+        "image": ""
+      },
+      {
+        "id": "n4",
+        "date": "2026-07-12",
+        "title": "Vorhersage ist keine Gewissheit",
+        "body": "Das Framework projiziert, was als Nächstes wahrscheinlich hält, sich wiederholt oder bricht. Klingt nach Zukunftssicherheit. Ist es nicht.\n\nEine Vorhersage hier ist eine Wette mit offenen Karten: hier ist der Trend, hier ist, wo er wahrscheinlich hinläuft, und hier ist genau, wie ich das prüfe, wenn's so weit ist. Trifft sie nicht zu, wird sie verworfen. Nicht umgedeutet. Nicht nachträglich passend gemacht.\n\nDie meisten, die \"KI-Vorhersagen\" verkaufen, verkaufen Sicherheit, die sie nicht haben. Ich verkauf die Wette. Und die Bereitschaft, öffentlich falsch zu liegen.",
         "image": ""
       },
       {

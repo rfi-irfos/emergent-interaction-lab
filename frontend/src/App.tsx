@@ -121,15 +121,6 @@ export default function App() {
     )
   }
 
-  if (route.blogId) {
-    const item = (content.news?.items ?? []).find(n => n.id === route.blogId)
-    // Found → its own dedicated page. Not found (stale/removed link, or a
-    // draft id that was never promoted to content.news.items) → fall through
-    // to the normal homepage below, same graceful-degradation the pageSlug
-    // branch already uses for an unknown static page.
-    if (item) return <BlogPostPage item={item} content={content} />
-  }
-
   // A content-page hash (#p/<slug>) opens the in-house dark modal over the
   // homepage — never a plain white page. The white DynamicPage route below
   // only applies when no modal is active. 'zertifizierung' used to be its
@@ -143,10 +134,18 @@ export default function App() {
   // 23 products scrolled past on every visit; now opt-in via the "Pricing"
   // nav link, same dark-modal pattern as everything else here.
   const isPricingModal = pageModalSlug === 'pricing'
-  const modalPage = !isCertModal && !isPricingModal && pageModalSlug
+  // Blog posts (#p/blog/<id>, tracked via route.blogId - a separate hash
+  // prefix from the #p/<slug> pages above, see getRoute()) used to be their
+  // own standalone light-themed page too ("leads to this external white
+  // page", flagged live). Same fold-in. Falls through to the homepage below
+  // if the id doesn't match anything (stale/removed link), same graceful
+  // degradation the DynamicPage branch already has for an unknown slug.
+  const blogItem = route.blogId ? (content.news?.items ?? []).find(n => n.id === route.blogId) : undefined
+  const isBlogModal = !!blogItem
+  const modalPage = !isCertModal && !isPricingModal && !isBlogModal && pageModalSlug
     ? (content.pages ?? []).find(p => p.slug === pageModalSlug)
     : undefined
-  const modalActive = isCertModal || isPricingModal || !!modalPage
+  const modalActive = isCertModal || isPricingModal || isBlogModal || !!modalPage
 
   if (!modalActive && route.pageSlug) {
     const page = (content.pages ?? []).find(p => p.slug === route.pageSlug)
@@ -184,6 +183,8 @@ export default function App() {
         ? <CertificationPage content={content} onClose={closeModal} />
         : isPricingModal
         ? <WebHubPricing content={content} onClose={closeModal} />
+        : isBlogModal && blogItem
+        ? <BlogPostPage item={blogItem} content={content} onClose={closeModal} />
         : modalPage && <PageModal page={modalPage} content={content} onClose={closeModal} />}
     </>
   )

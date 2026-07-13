@@ -1921,7 +1921,12 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-webhub-x:hover { color: var(--text); border-color: var(--text); }
 .site-webhub-buy.big {
-  display: inline-flex; align-items: center; gap: 8px; width: auto; height: auto;
+  /* display:flex (block-level) + margin-left:auto, not inline-flex - an
+     inline-level box ignores auto margins, which is why this sat on the
+     left by default instead of the right ("buy button rechts in der Ecke
+     nicht links", flagged live). */
+  display: flex; align-items: center; gap: 8px; width: auto; height: auto;
+  margin-left: auto;
   padding: 11px 16px; border-radius: 10px; margin-top: 4px;
   font: 800 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   letter-spacing: .06em; text-transform: uppercase; color: var(--on-primary);
@@ -2061,9 +2066,17 @@ button { cursor: pointer; font-family: inherit; }
    on the light theme until PR #65. .hud-corner-frame on the panel itself
    already gets that correction for free (light/hc overrides keyed off the
    class, not this section). */
+/* Base rule (centered) is what the Papers section subtitle also uses via
+   this same class - the protocol diagram's own override below only applies
+   inside .site-protocol-text-col. A previous pass made this left-aligned
+   globally to fit the diagram's new left-shifted layout and broke Papers'
+   subtitle in the process (full-width, no longer centered - flagged live). */
 .site-protocol-intro {
-  margin: 0; text-align: left;
+  max-width: 640px; margin: 0 auto 40px; text-align: center;
   font-size: 16px; line-height: 1.7; color: var(--text-soft);
+}
+.site-protocol-text-col .site-protocol-intro {
+  max-width: none; margin: 0; text-align: left;
 }
 /* Compact radial widget (chart + descriptors wrapped around it, same visual
    as originally shipped) on the LEFT, the general intro paragraph alone on
