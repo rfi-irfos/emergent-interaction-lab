@@ -1364,18 +1364,6 @@ export function PublicSite({
           </section>
         ) : null}
 
-        {/* ── OBSERVATORY SYSTEM (new) ─────────────────────────────────── */}
-        {content.observatory?.body && (
-          <section className={reveal("site-section site-section-alt site-observatory")} id="observatory" data-cid="observatory.title">
-            {content.observatory.eyebrow && <div className="site-eyebrow">{content.observatory.eyebrow}</div>}
-            <Reveal from="bottom"><h2 className="site-section-title">{content.observatory.title}</h2></Reveal>
-            {content.observatory.builtBy && (
-              <span className="site-about-proof-badge site-observatory-builtby">{content.observatory.builtBy}</span>
-            )}
-            <Reveal from="bottom" delay={1}><p className="site-observatory-body">{content.observatory.body}</p></Reveal>
-          </section>
-        )}
-
         {/* ── PRODUCTS BORN FROM EMERGENT INTERACTION (replaces standalone Jarvis) ── */}
         {content.productsBorn?.items?.length ? (
           <section className={reveal("site-section site-productsborn")} id="products-born" data-cid="productsBorn.title">
