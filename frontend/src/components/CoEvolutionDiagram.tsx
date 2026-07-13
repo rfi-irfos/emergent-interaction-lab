@@ -69,15 +69,29 @@ export function CoEvolutionDiagram({ nodes }: Props) {
     return { ...node, x: CX + R * Math.cos(rad), y: CY + R * Math.sin(rad) }
   })
 
-  // Single closed loop visiting every node in sequence, back to the first —
-  // used both as the visible stroke and as the <animateMotion> path, so the
-  // particles travel exactly the line the eye follows, not a separate one.
-  const loopPath = ringPath(R)
+  // Open spiral, not a closed ring: one lap through the same 5 node angles,
+  // radius growing from R to GROWTH_R2 along the way. This is the visible
+  // stroke AND the <animateMotion> path. Laura's correction (2026-07-13): the
+  // interaction is "not a circle, a recursive loop" - a closed ring reads as
+  // the same fixed cycle running forever, which is exactly the framing this
+  // diagram is meant to avoid. Ending at a different radius than it started
+  // makes each lap land somewhere new instead of retracing itself - node
+  // markers stay at radius R (unchanged) so the descriptor layout math below
+  // still lines up with each node's angle.
+  const loopPath = (() => {
+    const pts = Array.from({ length: n + 1 }, (_, i) => {
+      const deg = -90 + i * (360 / n)
+      const rad = deg * (Math.PI / 180)
+      const radius = R + (GROWTH_R2 - R) * (i / n)
+      return { x: CX + radius * Math.cos(rad), y: CY + radius * Math.sin(rad) }
+    })
+    return pts.length > 1 ? `M ${pts[0].x} ${pts[0].y} ` + pts.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ') : ''
+  })()
   const growthPath1 = ringPath(GROWTH_R1)
   const growthPath2 = ringPath(GROWTH_R2)
 
   const chart = (
-    <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label={`Emergent Interaction: ${nodes.map(n => n.label).join(', ')}, looping and compounding outward`}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="site-protocol-svg" role="img" aria-label={`Emergent Interaction: ${nodes.map(n => n.label).join(', ')}, a recursive loop that spirals outward each pass, not a closed circle`}>
       {!reducedMotion && growthPath2 && <path d={growthPath2} className="site-protocol-growth-ring site-protocol-growth-ring-2" />}
       {!reducedMotion && growthPath1 && <path d={growthPath1} className="site-protocol-growth-ring site-protocol-growth-ring-1" />}
       <path d={loopPath} className="site-protocol-loop" />

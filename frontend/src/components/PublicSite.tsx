@@ -706,15 +706,21 @@ interface Props {
 // deliberately not linked yet, to avoid a dead/premature link.
 const CALL_LAURA_COPY = {
   en: {
+    proofCaption: 'Engineered by RFI-IRFOS, directed by Laura — proof it runs in production:',
     github: 'GitHub',
-    coreCrate: 'crates.io (core)',
-    serverCrate: 'crates.io (server)',
+    coreCrate: 'crates.io (core) v0.2.0',
+    teamCrate: 'crates.io (team) v0.2.0 — on request',
+    mcpCrate: 'crates.io (mcp) v0.2.0',
+    apiCrate: 'crates.io (api) v0.2.0',
     api: 'Live API',
   },
   de: {
+    proofCaption: 'Von RFI-IRFOS gebaut, von Laura angeleitet — Beweis, dass es produktiv läuft:',
     github: 'GitHub',
-    coreCrate: 'crates.io (Core)',
-    serverCrate: 'crates.io (Server)',
+    coreCrate: 'crates.io (Core) v0.2.0',
+    teamCrate: 'crates.io (Team) v0.2.0 — auf Anfrage',
+    mcpCrate: 'crates.io (MCP) v0.2.0',
+    apiCrate: 'crates.io (API) v0.2.0',
     api: 'Live-API',
   },
 } as const
@@ -1291,6 +1297,7 @@ export function PublicSite({
                 <Reveal from="bottom" delay={1}><E field="about.bio" value={content.about.bio} as="p" className="site-about-bio" /></Reveal>
                 {!editMode && (
                   <Reveal from="bottom" delay={2}>
+                  <div className="site-about-proof-caption">{CALL_LAURA_COPY[lang].proofCaption}</div>
                   <div className="site-about-badges-row">
                     <a href="https://github.com/rfi-irfos/call-laura" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
                       <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -1298,7 +1305,7 @@ export function PublicSite({
                       </svg>
                       <span>{CALL_LAURA_COPY[lang].github}</span>
                     </a>
-                    <a href="https://crates.io/crates/call-laura-core" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                    <a href="https://crates.io/crates/lauras-core" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
                         <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
@@ -1306,13 +1313,29 @@ export function PublicSite({
                       </svg>
                       <span>{CALL_LAURA_COPY[lang].coreCrate}</span>
                     </a>
-                    <a href="https://crates.io/crates/laura-mcp" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                    <a href="https://crates.io/crates/lauras-team" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge" title={lang === 'de' ? 'Zugang nur auf Anfrage' : 'Access on request only'}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
                         <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
                         <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
                       </svg>
-                      <span>{CALL_LAURA_COPY[lang].serverCrate}</span>
+                      <span>{CALL_LAURA_COPY[lang].teamCrate}</span>
+                    </a>
+                    <a href="https://crates.io/crates/lauras-mcp" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
+                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
+                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
+                      </svg>
+                      <span>{CALL_LAURA_COPY[lang].mcpCrate}</span>
+                    </a>
+                    <a href="https://crates.io/crates/lauras-api" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
+                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
+                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
+                      </svg>
+                      <span>{CALL_LAURA_COPY[lang].apiCrate}</span>
                     </a>
                     <a href="https://laura-api.fly.dev" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge site-about-proof-badge--live">
                       <span className="site-about-proof-dot" aria-hidden="true" />

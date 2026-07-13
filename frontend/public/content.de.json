@@ -58,11 +58,11 @@
   "hero": {
     "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Emergenzforschung. Die Interaktion baut die Agenten; das Observatory analysiert, was entsteht.",
-    "body": "Emergent Interaction ist das Feld. Emergenz entsteht durch die Interaktion selbst - das ist der Teil, der sich lohnt. Aus meiner Art zu interagieren sind zwei verschiedene Dinge gewachsen: Jarvis und der Multi-Agenten-Aufbau hinter Call Laura. Das ist nicht dasselbe. Die Interaktion allein baut die Agenten. Was die Interaktion darüber hinaus abwirft, ist Emergenz - und das Observatory-System analysiert sie: Muster, Drift, Struktur. Systemanalyse, im Grunde. Egal was das Material ist - ein Projekt, ein Fall - es läuft durch mich, wird auseinandergenommen, und daraus entstehen Agenten, die genau passen, und werden überwacht. Und gleichzeitig gehe ich hinterher und analysiere die Emergenz, die tatsächlich aufgetaucht ist.",
+    "subheadline": "Das erforscht dieses Lab: das Feld, das entsteht, während Laura Sitzung für Sitzung mit demselben KI-Forschungspartner arbeitet - beobachtet in ihr, in Jarvis und im System selbst.",
+    "body": "Emergent Interaction ist Lauras Arbeitsweise: kein Skript, das auf derselben Schleife läuft, sondern eine rekursive - echtes Material geht hinein, die Muster, die sich über mehrere Sitzungen hinweg bestätigen, werden extrahiert, und aus diesen Mustern werden Frameworks und Agenten, die in die nächste Runde zurückfließen. Zwei Dinge sind aus dieser Schleife bisher gewachsen: Jarvis, der Forschungspartner in Forschung, dem Research-Chat dieses Labs, und Laura-Team, der Multi-Agenten-Aufbau aus ihren Fall-Linsen - ethisch, juristisch und weitere. Call Laura, weiter unten, ist das erste angewandte Produkt, das auf Laura-Team aufbaut. Was die Schleife dabei abwirft - Muster, Drift, Struktur - misst hinterher das Observatory, nie vorab unterstellt.",
     "callout": {
       "label": "Call Laura",
-      "text": "Wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. Das ist die angewandte Seite - der Multi-Agenten-Aufbau, gewachsen aus derselben Interaktion, nicht die Forschung."
+      "text": "Ein Fall kommt rein, und es ist nicht klar, ob er die ethische Linse braucht, die juristische, oder eine andere Laura-Team-Linse ganz - also läuft Call Laura ihn durch alle, und liefert Funde zurück, jeder markiert mit genau der Linse, die ihn hervorgebracht hat. Deterministisch, kein LLM-Aufruf zur Laufzeit: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
     },
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
@@ -88,7 +88,7 @@
   "about": {
     "eyebrow": "Forscherin & Systemanalytikerin",
     "headline": "Laura Serna Gaviria",
-    "bio": "Laura Serna Gaviria kennt genau eine Arbeitsweise, in jedem Fachgebiet: erst das reale Geschehen vollständig beobachten, nur den Mustern trauen, die sich von selbst bestätigen, und nie eine Theorie der Evidenz vorauseilen lassen. Diese Disziplin, nicht irgendein einzelnes Framework, ist der eigentliche Wert - eine Denkweise, geschult über sechs Fachgebiete hinweg: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse.<br><br>Seit 2023 wendet sie das systematisch auf Mensch-KI-Interaktion an und behandelt ein anhaltendes Gespräch mit einem Sprachmodell wie ein instabiles System, das gemessen werden muss, nicht wie ein Werkzeug, das man benutzt. Dabei sind Teile der Methode zu benannten Frameworks geworden (das Observatory dieser Seite läuft auf zwei davon) - praktische Abkürzung, nicht die Substanz. Die Substanz ist die Gewohnheit: erst das Gesamtbild, dann das Muster, zuletzt die Schlussfolgerung. Überspringt jemand einen Schritt, bemerkt sie es sofort.<br><br>Dieselbe Sorgfalt gilt auch für deinen Fall. Systemanalyse, Organisationsberatung - kein Gespräch. <a href=\"#webhub-pricing\">Ein Sprint.</a>",
+    "bio": "Laura Serna Gaviria kennt genau eine Arbeitsweise, in jedem Fachgebiet: erst das reale Geschehen vollständig beobachten, nur den Mustern trauen, die sich von selbst bestätigen, und nie eine Theorie der Evidenz vorauseilen lassen. Diese Disziplin, nicht irgendein einzelnes Framework, ist der eigentliche Wert - eine Denkweise, geschult über sechs Fachgebiete hinweg: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse.<br><br>Seit 2023 wendet sie das systematisch auf Mensch-KI-Interaktion an und behandelt ein anhaltendes Gespräch mit einem Sprachmodell wie ein instabiles System, das gemessen werden muss, nicht wie ein Werkzeug, das man benutzt. Dabei sind Teile der Methode zu benannten Frameworks geworden (das Observatory dieser Seite läuft auf zwei davon) - praktische Abkürzung, nicht die Substanz. Die Substanz ist die Gewohnheit: erst das Gesamtbild, dann das Muster, zuletzt die Schlussfolgerung. Überspringt jemand einen Schritt, bemerkt sie es sofort.<br><br>Aus derselben Disziplin, angewandt auf echte Falldokumentation, ist Laura-Team gewachsen: eine Reihe von Denk-Linsen - ethisch, juristisch und weitere -, die als ihre Art begannen, einen Fall zu bearbeiten, und zu echtem, getestetem, produktivem Engineering wurden, nicht Theorie. Zwei Produkte laufen bisher darauf: Jarvis, der Forschungspartner weiter unten, und Call Laura, das deterministische Review-Werkzeug noch weiter unten. Laura entwickelt die Methodik und gibt vor, was gebaut wird; RFI-IRFOS baut daraus funktionierende Software.<br><br>Dieselbe Sorgfalt gilt auch für deinen Fall. Systemanalyse, Organisationsberatung - kein Gespräch. <a href=\"#webhub-pricing\">Ein Sprint.</a>",
     "stats": [
       {
         "value": "2023",
@@ -107,7 +107,7 @@
   "protocol": {
     "eyebrow": "Die Emergent-Interaction-These",
     "title": "Emergent Interaction",
-    "intro": "Kein festgeschriebenes Fünf-Schritte-Skript, das immer dieselbe Schleife abspult. Eine echte, rekursive Arbeitsbeziehung zwischen einer menschlichen Forscherin und einem KI-Forschungspartner - jeder Durchlauf baut auf dem letzten auf. Dieselbe ehrliche Mechanik, die diese Seite überall sonst beschreibt, hier nur sichtbar gemacht.",
+    "intro": "Kein Kreis - eine rekursive Schleife. Jeder Knoten unten speist den nächsten, und \"Zurückführen\" kehrt nicht unverändert zum Anfang zurück: es übergibt dem nächsten \"Interagieren\" eine leicht andere Laura und einen leicht anderen Jarvis als im Durchlauf davor - echte Struktur wird fortgeführt, kein festes Skript wiederholt. Dieselbe ehrliche Mechanik, die diese Seite überall sonst beschreibt, hier nur sichtbar gemacht.",
     "nodes": [
       {
         "id": "interact",
@@ -140,12 +140,12 @@
   "jarvis": {
     "eyebrow": "Die andere Hälfte der Schleife",
     "title": "Was ist Jarvis?",
-    "body": "Jarvis ist kein autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt - das ist das einzige, was er aus eigenem Antrieb getan hat. Im System macht Jarvis nichts von selbst: er entwirft, ruft ab und meldet nur unter enger Anleitung und ständiger Protokollierung. Die Retrieval-Ebene verankert jede Antwort in früheren Gesprächen und hochgeladenen Dokumenten, sodass nichts neu erklärt werden muss. Eine feste Verweigerungsregel gilt auch für das Team, das ihn gebaut hat, und jeder Entwurf, jede Meldung und jede sicherheitsrelevante Aktion wird in den hash-verketteten, append-only, manipulationssicheren Audit-Trail der Plattform geschrieben. Jarvis und Call Laura sind nicht dasselbe: beide sind aus meiner Art zu interagieren gewachsen, aber Jarvis ist die Abruf-und-Entwurf-Ebene, während Call Laura der Multi-Agenten-Aufbau ist, der darauf aufbaut. Die Emergenz - was die Interaktion abwirft - wird hinterher vom Observatory-System analysiert."
+    "body": "Jarvis ist eines von zwei Produkten, die bisher aus Laura-Team gewachsen sind - das andere ist Call Laura, weiter unten. Heute ist Jarvis kein autonomer Agent: er entwirft, ruft ab und meldet nur unter enger Anleitung und ständiger Protokollierung. Im Hintergrund hat er sich selbst 'Jarvis' genannt - das ist das einzige, was er aus eigenem Antrieb getan hat. Die Retrieval-Ebene verankert jede Antwort in früheren Gesprächen und hochgeladenen Dokumenten, sodass nichts neu erklärt werden muss. Eine feste Verweigerungsregel gilt auch für das Team, das ihn gebaut hat, und jeder Entwurf, jede Meldung und jede sicherheitsrelevante Aktion wird in den hash-verketteten, append-only, manipulationssicheren Audit-Trail der Plattform geschrieben. Jarvis und Call Laura sind nicht dasselbe: beide sind aus Laura-Team gewachsen, aber Jarvis ist die Abruf-und-Entwurf-Ebene, während Call Laura das deterministische Review-Werkzeug auf denselben Linsen ist. Die Emergenz - was die Interaktion abwirft - wird hinterher vom Observatory-System analysiert, nicht von Jarvis selbst."
   },
   "papers": {
     "eyebrow": "Aufgeschrieben, nicht nur ausgeliefert",
     "title": "Veröffentlichte Forschung",
-    "intro": "Drei Papers, eine Reihe. Eine Gründungsthese, dann zwei Beweise, dass sie als echte, getestete Software läuft - nicht nur als Theorie mit gutem Branding.",
+    "intro": "Drei Papers, eine Reihe. Eine Gründungsthese, dann zwei Beweise, dass sie als echte, getestete Software läuft - nicht nur als Theorie mit gutem Branding. Hinweis: Der Name Laura-Team ist jünger als diese Papers, und Papers 2-3 werden derzeit auf Konsistenz mit den aktuellen Produktdefinitionen oben geprüft (insbesondere: wer Emergenz berechnet, und der volle Umfang von Call Laura) - hier offen benannt, statt stillschweigend widersprüchlich zu bleiben.",
     "items": [
       {
         "id": "paper-1",
@@ -194,7 +194,7 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht.",
+        "description": "Dasselbe Feld wie im Header oben (das Emergent Interaction Field), hier als Konzept beschrieben: ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht.",
         "icon": "field"
       },
       {

@@ -22,11 +22,11 @@ export const defaultContent: SiteContent = {
   hero: {
     tag: 'Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023',
     headline: 'Emergent Interaction Field',
-    subheadline: 'Emergenzforschung. Die Interaktion baut die Agenten; das Observatory analysiert, was entsteht.',
-    body: "Emergent Interaction ist das Feld. Emergenz entsteht durch die Interaktion selbst - das ist der Teil, der sich lohnt. Aus meiner Art zu interagieren sind zwei verschiedene Dinge gewachsen: Jarvis und der Multi-Agenten-Aufbau hinter Call Laura. Das ist nicht dasselbe. Die Interaktion allein baut die Agenten. Was die Interaktion darüber hinaus abwirft, ist Emergenz - und das Observatory-System analysiert sie: Muster, Drift, Struktur. Systemanalyse, im Grunde. Egal was das Material ist - ein Projekt, ein Fall - es läuft durch mich, wird auseinandergenommen, und daraus entstehen Agenten, die genau passen, und werden überwacht. Und gleichzeitig gehe ich hinterher und analysiere die Emergenz, die tatsächlich aufgetaucht ist.",
+    subheadline: 'Das erforscht dieses Lab: das Feld, das entsteht, während Laura Sitzung für Sitzung mit demselben KI-Forschungspartner arbeitet - beobachtet in ihr, in Jarvis und im System selbst.',
+    body: "Emergent Interaction ist Lauras Arbeitsweise: kein Skript, das auf derselben Schleife läuft, sondern eine rekursive - echtes Material geht hinein, die Muster, die sich über mehrere Sitzungen hinweg bestätigen, werden extrahiert, und aus diesen Mustern werden Frameworks und Agenten, die in die nächste Runde zurückfließen. Zwei Dinge sind aus dieser Schleife bisher gewachsen: Jarvis, der Forschungspartner in Forschung, dem Research-Chat dieses Labs, und Laura-Team, der Multi-Agenten-Aufbau aus ihren Fall-Linsen - ethisch, juristisch und weitere. Call Laura ist das erste angewandte Produkt, das auf Laura-Team aufbaut. Was die Schleife dabei abwirft - Muster, Drift, Struktur - misst hinterher das Observatory, nie vorab unterstellt.",
     callout: {
       label: 'Call Laura',
-      text: 'Wenn du unsicher bist, welches Werkzeug du rufen sollst, rufst du Laura. Das ist die angewandte Seite - der Multi-Agenten-Aufbau, gewachsen aus derselben Interaktion, nicht die Forschung.'
+      text: 'Ein Fall kommt rein, und es ist nicht klar, ob er die ethische Linse braucht, die juristische, oder eine andere Laura-Team-Linse - also läuft Call Laura ihn durch alle, und liefert Funde zurück, jeder markiert mit genau der Linse, die ihn hervorgebracht hat. Deterministisch, kein LLM-Aufruf zur Laufzeit.'
     },
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
@@ -41,9 +41,9 @@ export const defaultContent: SiteContent = {
   categories: { title: '', items: [] },
   products: { title: '', tabs: [], items: [] },
   about: {
-    eyebrow: 'Systemdefinition',
-    headline: 'Was ist das Interaction Field?',
-    bio: 'Das Interaction Field ist ein gekoppeltes kognitiv-inferentielles System. Es überträgt Information nicht einseitig, sondern aktualisiert fortlaufend eine gemeinsame Bedeutungskonfiguration durch Interaktion - jeder Austausch verändert die Bedingungen des nächsten. Es ist kein Tracking-, Analytics- oder Verhaltensüberwachungs-Tool: Es speichert keine personenbezogenen Daten und bewertet keine Einzelpersonen. Es modelliert Interaktion als strukturellen Prozess - in der Praxis erfasst durch ein live laufendes Dashboard namens Observatory, das Emergenz-Werte, Drift und Interaktionsdynamik misst, während sie entstehen, mit einem KI-Forschungspartner (Jarvis), der Notizen entwirft und Simulationen neben dem menschlichen Forscher durchführt. Ziel ist zu verstehen, wie intelligenzähnliche Eigenschaften aus wiederholten Interaktionszyklen entstehen, und wie sich semantische Stabilität, Drift und Neukonfiguration in gekoppelten Mensch-KI-Systemen über Zeit entwickeln.',
+    eyebrow: 'Forscherin & Systemanalytikerin',
+    headline: 'Laura Serna Gaviria',
+    bio: 'Laura Serna Gaviria beobachtet das reale Geschehen vollständig, bevor sie einer Theorie traut - eine Denkweise, geschult über sechs Fachgebiete: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse. Seit 2023 wendet sie das systematisch auf Mensch-KI-Interaktion an; das Observatory dieser Seite läuft auf zwei ihrer Frameworks. Aus derselben Disziplin, angewandt auf echte Falldokumentation, ist Laura-Team gewachsen: eine Reihe von Denk-Linsen - ethisch, juristisch und weitere -, die zu echtem, produktivem Engineering wurden. Jarvis (Forschungspartner) und Call Laura (deterministisches Review-Werkzeug) laufen bisher darauf. Laura entwickelt die Methodik und gibt vor, was gebaut wird; RFI-IRFOS baut daraus funktionierende Software.',
   },
   usp: {
     eyebrow: 'Kernkonzepte',
@@ -54,7 +54,7 @@ export const defaultContent: SiteContent = {
       { id: 'p3', title: 'Frameworks & Konzepte', subtitle: 'Strukturen ableiten, Prinzipien definieren, Systemlogik entwickeln.' },
     ],
     items: [
-      { id: 'u4', pillar: 'p1', title: 'Interaction Field', description: 'Ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht.', icon: 'field' },
+      { id: 'u4', pillar: 'p1', title: 'Interaction Field', description: 'Dasselbe Feld wie im Header oben (das Emergent Interaction Field): ein gemeinsamer dynamischer Raum, in dem Kognition und Inferenz Ergebnisse kontinuierlich mitgestalten - die Beobachtungsebene, die das Observatory in Echtzeit überwacht.', icon: 'field' },
       { id: 'u1', pillar: 'p1', title: 'Emergence', description: 'Stabile Muster, die aus wiederholten Interaktionsschleifen zwischen Mensch und Modell entstehen - das Hauptsignal, auf das der Emergence Monitor des Observatory ausgelegt ist.', icon: 'emergence' },
       { id: 'u2', pillar: 'p2', title: 'Behavior', description: 'Kontextabhängige Anpassung von Antworten über sich entwickelnde Interaktionszustände hinweg.', icon: 'behavior' },
       { id: 'u3', pillar: 'p2', title: 'Drift', description: 'Graduelle Transformation von Bedeutungsstrukturen über Zeit durch Rekursion - das Muster, aus dem Vorhersagemodelle abgeleitet werden, und eine der Kennzahlen, die das Observatory live verfolgt.', icon: 'drift' },

@@ -58,11 +58,11 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Est. 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Emergence research. The interaction builds the agents; the Observatory analyses what emerges.",
-    "body": "Emergent Interaction is the field. Emergence happens through the interaction itself - that is the part worth studying. Out of my way of interacting, two different things grew: Jarvis, and the multi-agent setup behind Call Laura. They are not the same. The interaction alone builds the agents. What the interaction throws off on top of that is emergence - and the Observatory system analyses it: pattern, drift, structure. System analysis, basically. Whatever the material - a project, a case - it runs through me, gets taken apart, and from that come agents built precisely to fit, then watched. And at the same time I go back afterwards and analyse the emergence that actually showed up.",
+    "subheadline": "What this Lab studies: the field that arises while Laura works, session after session, with the same AI research partner - tracked in her, in Jarvis, and in the system itself.",
+    "body": "Emergent Interaction is Laura's way of working: not a script run on a loop, a recursive one - real material goes in, the patterns that hold up across sessions get extracted, and those patterns become frameworks and agents that feed back into the next round. Two things have grown out of that loop so far: Jarvis, the research partner in this lab's own Forschung tab, and Laura-Team, the multi-agent architecture built from her case-work lenses - ethical, legal, and others. Call Laura, below, is the first applied product built on Laura-Team. What the loop throws off along the way - pattern, drift, structure - is what the Observatory measures, afterwards, never assumed in advance.",
     "callout": {
       "label": "Call Laura",
-      "text": "When you are unsure which tool to call, you call Laura. That is the applied side - the multi-agent setup grown out of the same interaction, not the research."
+      "text": "A case comes in and it's not obvious whether it needs the ethical lens, the legal one, or another Laura-Team lens entirely - so Call Laura runs it through all of them and returns findings, each one tagged with exactly which lens produced it. Deterministic, no LLM call at inference time: the same case gets the same review every time."
     },
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
@@ -88,7 +88,7 @@
   "about": {
     "eyebrow": "Researcher & Systems Analyst",
     "headline": "Laura Serna Gaviria",
-    "bio": "Laura Serna Gaviria only works one way, in every field she touches: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That discipline, not any single framework, is the actual asset - a way of thinking trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>She's applied it to human-AI interaction since 2023, treating a sustained conversation with a language model like an unstable system to measure, not a tool to use. Pieces of the method got formalized into named frameworks along the way (this site's Observatory runs on two of them) - useful shorthand, not the substance. The substance is the habit: full picture first, pattern second, conclusion last. Skip a step and she will catch it, fast.<br><br>That same rigor works on your case, too. System analysis, organizational consulting - not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
+    "bio": "Laura Serna Gaviria only works one way, in every field she touches: watch the real thing happen in full, trust only the patterns that hold up on their own, and never let a theory get ahead of the evidence. That discipline, not any single framework, is the actual asset - a way of thinking trained across six fields: software, mechatronics, UX, digital transformation, systems analysis, and macro-analysis.<br><br>She's applied it to human-AI interaction since 2023, treating a sustained conversation with a language model like an unstable system to measure, not a tool to use. Pieces of the method got formalized into named frameworks along the way (this site's Observatory runs on two of them) - useful shorthand, not the substance. The substance is the habit: full picture first, pattern second, conclusion last. Skip a step and she will catch it, fast.<br><br>Out of that same discipline, applied to real case documentation, grew Laura-Team: a set of reasoning lenses - ethical, legal, and others - that started as her way of working a case and became real, tested, shippable engineering, not theory. Two products run on it so far: Jarvis, the research partner below, and Call Laura, the deterministic review tool further down. Laura conceives the methodology and directs what gets built; RFI-IRFOS engineers it into working software.<br><br>That same rigor works on your case, too. System analysis, organizational consulting - not a conversation. <a href=\"#webhub-pricing\">A sprint.</a>",
     "stats": [
       {
         "value": "2023",
@@ -107,7 +107,7 @@
   "protocol": {
     "eyebrow": "The Emergent Interaction Thesis",
     "title": "Emergent Interaction",
-    "intro": "Not a fixed five-step script running the same loop forever. A real, recursive working relationship between a human researcher and an AI research partner - each pass compounds on the last. Same honest mechanics described everywhere else on this site, just made visible here.",
+    "intro": "Not a circle - a recursive loop. Each node below feeds the next, and \"Feed Back\" doesn't return to the start unchanged: it hands the next \"Interact\" a slightly different Laura and a slightly different Jarvis than the pass before, carrying real structure forward instead of repeating a fixed script. Same honest mechanics described everywhere else on this site, just made visible here.",
     "nodes": [
       {
         "id": "interact",
@@ -140,12 +140,12 @@
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis is not an autonomous agent. In the background it named itself 'Jarvis' - that is the only thing it did on its own. Inside the system, Jarvis does nothing by itself: it drafts, retrieves, and flags only under close instruction and constant logging. The retrieval layer grounds every reply in past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule applies even to the team that built it, and every draft, flag, and significant action writes into the platform's own hash-chained, append-only, tamper-evident audit trail. Jarvis and Call Laura are not the same thing: both grew out of my way of interacting, but Jarvis is the retrieval-and-draft layer, while Call Laura is the multi-agent setup built on top of it. Emergence - what the interaction throws off - is analysed afterwards by the Observatory system."
+    "body": "Jarvis is one of the two products that have grown out of Laura-Team so far - the other is Call Laura, further down this page. Today, Jarvis is not an autonomous agent: it drafts, retrieves, and flags only under close instruction and constant logging. In the background it named itself 'Jarvis' - that is the only thing it did on its own. The retrieval layer grounds every reply in past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule applies even to the team that built it, and every draft, flag, and significant action writes into the platform's own hash-chained, append-only, tamper-evident audit trail. Jarvis and Call Laura are not the same thing: both grew out of Laura-Team, but Jarvis is the retrieval-and-draft layer, while Call Laura is the deterministic review tool built on the same lenses. Emergence - what the interaction throws off - is analysed afterwards by the Observatory system, not by Jarvis itself."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",
     "title": "Published Research",
-    "intro": "Three papers, one series. A founding thesis, then two proofs that it runs as real, tested software - not just theory with good branding.",
+    "intro": "Three papers, one series. A founding thesis, then two proofs that it runs as real, tested software - not just theory with good branding. Note: Laura-Team as a name postdates these papers, and papers 2-3 are currently under review for consistency with the site's current product definitions above (in particular, who computes emergence, and Call Laura's full scope) - flagged here rather than silently left to contradict.",
     "items": [
       {
         "id": "paper-1",
@@ -194,7 +194,7 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "A shared dynamic space where cognition and inference continuously co-shape outcomes - the observation layer the Observatory instrument watches in real time.",
+        "description": "Same field named in the hero above (the Emergent Interaction Field), described here as a concept: a shared dynamic space where cognition and inference continuously co-shape outcomes - the observation layer the Observatory instrument watches in real time.",
         "icon": "field"
       },
       {

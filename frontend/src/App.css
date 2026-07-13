@@ -472,6 +472,33 @@ button { cursor: pointer; font-family: inherit; }
 /* ── SHARED SECTION ──────────────────────────────────────────────────────── */
 .site-section { padding: 90px 60px; }
 .site-section-alt { background: var(--surface-alt); }
+
+/* Compact the live-activity strip (Observatory proof widgets): Laura's
+   07-13 feedback was that this stretch of the page - protocol diagram plus
+   five full-height sections, each with its own 90px-padded eyebrow/title/
+   intro - forces too much scrolling before a visitor ever reaches the
+   products/pricing the lab actually offers. These five keep their content
+   (nothing removed) but run at roughly half the vertical padding, smaller
+   headings, and a tighter intro line so the whole strip reads as one
+   compact "live proof" band instead of five separate screens. */
+.site-livestats, .site-shipping, .site-signal-levels, .site-ccet-trend, .site-simulation-status {
+  padding: 40px 60px;
+}
+.site-livestats .site-section-title, .site-shipping .site-section-title,
+.site-signal-levels .site-section-title, .site-ccet-trend .site-section-title,
+.site-simulation-status .site-section-title {
+  font-size: 22px; margin-bottom: 6px;
+}
+.site-livestats .site-eyebrow, .site-shipping .site-eyebrow,
+.site-signal-levels .site-eyebrow, .site-ccet-trend .site-eyebrow,
+.site-simulation-status .site-eyebrow {
+  margin-bottom: 4px;
+}
+@media (max-width: 640px) {
+  .site-livestats, .site-shipping, .site-signal-levels, .site-ccet-trend, .site-simulation-status {
+    padding: 28px 20px;
+  }
+}
 .site-eyebrow {
   text-align: center; font-size: 11px; font-weight: 700; font-family: var(--mono);
   letter-spacing: .12em; text-transform: uppercase; color: var(--primary); margin-bottom: 10px;
@@ -1708,6 +1735,7 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-stats-row { display: flex; flex-wrap: wrap; gap: 20px 32px; margin-bottom: 22px; }
 .site-about-stat { display: flex; flex-direction: column; align-items: flex-start; flex: 0 1 auto; max-width: 220px; }
 .site-about-bio { font-size: 19px; color: var(--text-soft, #4a4a4a); line-height: 1.75; margin-bottom: 26px; }
+.site-about-proof-caption { font-size: 12.5px; font-weight: 600; color: var(--text-soft, #666); margin-bottom: 8px; }
 .site-about-badges-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }
 .site-about-stat span { font-size: 13px; color: var(--text-soft, #666); margin-top: 2px; font-weight: 500; }
@@ -1853,6 +1881,9 @@ button { cursor: pointer; font-family: inherit; }
   letter-spacing: .14em; text-transform: uppercase; color: var(--primary); margin-bottom: 5px;
 }
 .site-webhub-txt { font-size: 13px; line-height: 1.62; color: var(--text); opacity: .9; }
+.site-webhub-points { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.site-webhub-points li { font-size: 13px; line-height: 1.5; color: var(--text); opacity: .9; }
+.site-webhub-points li::marker { color: var(--primary); }
 .site-webhub-x {
   position: absolute; top: 14px; right: 14px; width: 30px; height: 30px;
   display: inline-flex; align-items: center; justify-content: center; border-radius: 8px;

@@ -125,6 +125,9 @@ function DatenschutzContent({ email }: { email?: string }) {
       <p>
         <strong>Was wir nicht erheben:</strong> keine Standortdaten, kein Device-Fingerprinting, keine Werbe-ID, keine biometrischen Daten, kein Datenverkauf oder -weitergabe an Datenhändler oder Werbenetzwerke — auf dieser Website läuft keine Werbung.
       </p>
+      <p>
+        <strong>Einordnung von Fall-/Projektdaten:</strong> Unterlagen, die Sie im Rahmen einer Case-Intelligence- oder Systemaudit-Leistung einreichen, werden nicht als generische Unternehmensdaten verarbeitet. Sie fließen in Laura Serna Gavirias Forschung zu Emergent Interaction ein — durch ihre eigene methodische Brille analysiert, um daraus passgenaue Frameworks und Agenten abzuleiten, nicht als anonyme Datenpunkte in einem allgemeinen Firmendatensatz.
+      </p>
 
       <h2>Rechtsgrundlage</h2>
       <p>
