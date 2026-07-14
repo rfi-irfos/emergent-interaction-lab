@@ -93,9 +93,9 @@
     "items": []
   },
   "about": {
-    "eyebrow": "The Emergent Interaction Lab",
+    "eyebrow": "",
     "headline": "Human-AI interaction, researched and built",
-    "bio": "<p>The Emergent Interaction Lab studies human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>The work is led by Laura Serna Gaviria with RFI-IRFOS.</p>",
+    "bio": "<p>The Emergent Interaction Lab studies human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>The work is led by Laura Serna Gaviria with RFI-IRFOS. Built on 7 IEIA-2025 frameworks: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data.</p>",
     "stats": [
       {
         "value": "2023",
@@ -108,10 +108,6 @@
       {
         "value": "6",
         "label": "Connected disciplines: Software, Mechatronics, UX, Digital Transformation, Systems Analysis, Macroanalysis"
-      },
-      {
-        "value": "7",
-        "label": "IEIA-2025 frameworks in use: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data"
       }
     ]
   },
