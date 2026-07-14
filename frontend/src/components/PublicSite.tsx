@@ -1343,39 +1343,6 @@ export function PublicSite({
         )}
 
         {/* ── ABOUT ────────────────────────────────────────────────────── */}
-        {content.about && (
-          <section className={reveal("site-about")} id="about">
-            <div className={`site-about-inner${content.about.photo ? '' : ' site-about-inner--no-photo'}`}>
-              {content.about.photo && (
-                <div className="site-about-photo-wrap">
-                  <EImg field="about.photo" src={content.about.photo} alt={content.about.headline} className="site-about-photo" />
-                </div>
-              )}
-              <div className="site-about-content">
-                {content.about.eyebrow && <div className="site-about-eyebrow" data-cid="about.eyebrow">{content.about.eyebrow}</div>}
-                <Reveal from="bottom"><E field="about.headline" value={content.about.headline} as="h2" className="site-about-headline" /></Reveal>
-                {(content.about.stats?.length ?? 0) > 0 && (
-                  <div className="site-about-stats-row">
-                    {content.about.stats!.map((s, i) => (
-                      <Reveal key={i} from="bottom" delay={i}>
-                        <div className="site-about-stat">
-                          <strong data-cid={`about.stats.${i}.value`}>{s.value}</strong>
-                          <span data-cid={`about.stats.${i}.label`}>{s.label}</span>
-                        </div>
-                      </Reveal>
-                    ))}
-                  </div>
-                )}
-                {content.about.frameworksLine && (
-                  <Reveal from="bottom" delay={1}>
-                    <div className="site-about-frameworks-line" data-cid="about.frameworksLine">{content.about.frameworksLine}</div>
-                  </Reveal>
-                )}
-                <Reveal from="bottom" delay={1}><E field="about.frameworksLine" value={content.about.frameworksLine ?? ''} as="p" className="site-about-frameworks-line" /></Reveal>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* ── CO-EVOLUTION PROTOCOL ────────────────────────────────────── */}
         {content.protocol?.nodes?.length ? (

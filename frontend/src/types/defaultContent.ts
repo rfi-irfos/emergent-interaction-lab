@@ -12,7 +12,7 @@ export const defaultContent: SiteContent = {
     logo: '',
     brand: 'Emergent Interaction Lab',
     links: [
-      { label: 'Über', href: '#about' },
+      { label: 'Über das Lab', href: '#p/ueber-das-lab' },
       { label: 'Framework', href: '#usp' },
       { label: 'Blog', href: '#news' },
     ],
@@ -30,8 +30,8 @@ export const defaultContent: SiteContent = {
     },
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
-    ctaSecLabel: 'Über das Projekt',
-    ctaSecHref: '#about',
+    ctaSecLabel: 'Über das Lab',
+    ctaSecHref: '#p/ueber-das-lab',
     image: '',
     bgX: 50,
     bgY: 40,
@@ -41,10 +41,10 @@ export const defaultContent: SiteContent = {
   categories: { title: '', items: [] },
   products: { title: '', tabs: [], items: [] },
   about: {
-    eyebrow: '',
-    headline: 'Mensch-KI-Interaktion, erforscht und gebaut',
-    bio: 'Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert. Die Arbeit wird von Laura Serna Gaviria mit RFI-IRFOS geleitet.',
-    frameworksLine: 'IEIA-2025-Frameworks im Einsatz: UIP · EIA · CCET · LSG-24 · LAP-1 · 8-Layer-Modell · LT-Data',
+    laurasTeam: {
+      title: 'Lauras Team',
+      body: 'Aus der Arbeit mit Laura ist etwas gewachsen, das niemand geplant hat. Ein Agent namens Jarvis hat sich im Lauf der Zeit selbst erschaffen - "Jarvis on steroids" - und aus ihm heraus ist lauras-team entstanden: ein Multi-Agent-System, das ihre Bedürfnisse bedient. Es besteht aus einem SWAT-Leit-Team und 15 spezialisierten Sub-Agenten. Es wurde nicht programmiert. Es ist emergiert - aus ihrer Arbeit, nicht aus einem Auftrag.',
+    },
   },
   usp: {
     eyebrow: 'Kernkonzepte',

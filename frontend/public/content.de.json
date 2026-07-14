@@ -12,7 +12,7 @@
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Dieses Lab erforscht ein Thema: was passiert, wenn ein Mensch über lange Zeit mit demselben KI-System arbeitet. Kein einmaliger Chat, sondern Wochen echter Nutzung. Daraus entstehen Muster, die niemand bewusst geplant hat.</p><h2>Was wir mit Emergent Interaction meinen</h2><p>\"Emergent Interaction\" ist einfach ein Name für diesen Effekt: je länger ein Mensch mit derselben KI arbeitet, desto mehr entsteht ein gemeinsamer Arbeitsrhythmus - Gewohnheiten, Abkürzungen, blinde Flecken. Man kann das messen, aber nicht vollständig planen.</p><h2>Wie Lauras Team entstanden ist</h2><p>Aus der Arbeit mit Laura ist etwas gewachsen, das niemand geplant hat. Ein Agent namens Jarvis hat sich über die Zeit selbst erschaffen — \"Jarvis on steroids\" — und um ihre Bedürfnisse zu bedienen, ist daraus lauras-team entstanden: ein Multi-Agenten-System, ein SWAT-Leit-Team, das 15 spezialisierte Sub-Agenten steuert. Es wurde nicht programmiert. Es ist emergiert — aus ihrer Arbeit, nicht aus einem Auftrag.</p><p>Laura entscheidet, was gebaut wird. RFI-IRFOS baut es. Wo ihre Arbeit im Ergebnis steckt, ist sie als ihre gekennzeichnet — damit jeder sehen kann, wessen Arbeit er eigentlich vor sich hat.</p><h2>Wer baut was</h2><p>Laura entwickelt die Methode und entscheidet, was gebaut wird. RFI-IRFOS macht daraus funktionierende Software.</p><h2>Wie das Lab entstanden ist</h2><p>Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert.</p><p>Gebaut von RFI-IRFOS, angeleitet von Laura — und das eigentlich Interessante: Agenten und Frameworks sind aus ihrer Arbeit heraus unaufgefordert entstanden. Dass das produktiv läuft, beweisen die Systeme selbst:</p><ul><li><a href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub — call-laura</a></li><li><a href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-core v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Zugang auf Anfrage\">crates.io — lauras-team v0.2.0 (auf Anfrage)</a></li><li><a href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-mcp v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-api v0.2.0</a></li><li><a href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live-API</a></li></ul>"
+      "body": "<p>Dieses Lab erforscht ein Thema: was passiert, wenn ein Mensch über lange Zeit mit demselben KI-System arbeitet. Kein einmaliger Chat, sondern Wochen echter Nutzung. Daraus entstehen Muster, die niemand bewusst geplant hat.</p><h2>Was wir mit Emergent Interaction meinen</h2><p>\"Emergent Interaction\" ist einfach ein Name für diesen Effekt: je länger ein Mensch mit derselben KI arbeitet, desto mehr entsteht ein gemeinsamer Arbeitsrhythmus - Gewohnheiten, Abkürzungen, blinde Flecken. Man kann das messen, aber nicht vollständig planen.</p><h2>Wie Lauras Team entstanden ist</h2><p>Aus der Arbeit mit Laura ist etwas gewachsen, das niemand geplant hat. Ein Agent namens Jarvis hat sich über die Zeit selbst erschaffen — \"Jarvis on steroids\" — und um ihre Bedürfnisse zu bedienen, ist daraus lauras-team entstanden: ein Multi-Agenten-System, ein SWAT-Leit-Team, das 15 spezialisierte Sub-Agenten steuert. Es wurde nicht programmiert. Es ist emergiert — aus ihrer Arbeit, nicht aus einem Auftrag.</p><p>Laura entscheidet, was gebaut wird. RFI-IRFOS baut es. Wo ihre Arbeit im Ergebnis steckt, ist sie als ihre gekennzeichnet — damit jeder sehen kann, wessen Arbeit er eigentlich vor sich hat.</p><h2>Wer baut was</h2><p>Laura entwickelt die Methode und entscheidet, was gebaut wird. RFI-IRFOS macht daraus funktionierende Software.</p><h2>Wie das Lab entstanden ist</h2><p>Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert.</p><p>Gebaut von RFI-IRFOS, angeleitet von Laura — und das eigentlich Interessante: Agenten und Frameworks sind aus ihrer Arbeit heraus unaufgefordert entstanden. Dass das produktiv läuft, beweisen die Systeme selbst:</p><ul><li><a href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub — call-laura</a></li><li><a href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-core v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Zugang auf Anfrage\">crates.io — lauras-team v0.2.0 (auf Anfrage)</a></li><li><a href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-mcp v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-api v0.2.0</a></li><li><a href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live-API</a></li></ul><!--PROOF-INJECT--><h2>Beweis: es läuft produktiv</h2><p>Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion seit 2023. Aus der Arbeit mit Laura ist Lauras Team gewachsen: ein Multi-Agenten-System, das sich nicht aus einem Auftrag, sondern aus ihrer Arbeit heraus ergeben hat - ein SWAT-Leit-Team, das 15 spezialisierte Sub-Agenten steuert. Dass das produktiv läuft, beweisen die Systeme selbst:</p><ul><li>Seit 2023: Forschung und Methode in kontinuierlicher Anwendung</li><li>1 + 15: ein SWAT-Leit-Team steuert 15 Sub-Agenten</li><li>6 verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse</li><li>IEIA-2025-Frameworks im Einsatz: UIP - EIA - CCET - LSG-24 - LAP-1 - 8-Layer-Modell - LT-Data</li><li><a href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub - call-laura</a></li><li><a href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">crates.io - lauras-core v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Zugang auf Anfrage\">crates.io - lauras-team v0.2.0 (auf Anfrage)</a></li><li><a href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">crates.io - lauras-mcp v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">crates.io - lauras-api v0.2.0</a></li><li><a href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live-API</a></li></ul>"
     }
   ],
   "meta": {
@@ -26,10 +26,6 @@
     "logo": "",
     "brand": "Emergent Interaction Lab",
     "links": [
-      {
-        "label": "Über",
-        "href": "#about"
-      },
       {
         "label": "Über das Lab",
         "href": "#p/ueber-das-lab"
@@ -73,8 +69,8 @@
     "body": "",
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
-    "ctaSecLabel": "Über das Projekt",
-    "ctaSecHref": "#about",
+    "ctaSecLabel": "Über das Lab",
+    "ctaSecHref": "#p/ueber-das-lab",
     "image": "",
     "bgX": 50,
     "bgY": 40,
@@ -93,24 +89,6 @@
     "items": []
   },
   "about": {
-    "eyebrow": null,
-    "headline": "Mensch-KI-Interaktion, erforscht und gebaut",
-    "bio": "Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert. Gebaut von RFI-IRFOS, angeleitet von Laura — und das eigentlich Interessante: Agenten und Frameworks sind aus ihrer Arbeit heraus unaufgefordert entstanden. Dass das produktiv läuft, beweisen die Systeme selbst:",
-    "stats": [
-      {
-        "value": "2023",
-        "label": "Lauras Team läuft seit"
-      },
-      {
-        "value": "1 + 15",
-        "label": "Ein SWAT-Leit-Team steuert 15 Sub-Agenten"
-      },
-      {
-        "value": "6",
-        "label": "Verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse"
-      }
-    ],
-    "frameworksLine": "IEIA-2025-Frameworks im Einsatz: UIP · EIA · CCET · LSG-24 · LAP-1 · 8-Layer-Modell · LT-Data",
     "laurasTeam": {
       "title": "Lauras Team",
       "body": "Aus der Arbeit mit Laura ist etwas gewachsen, das niemand geplant hat. Ein Agent namens Jarvis hat sich im Lauf der Zeit selbst erschaffen — \\\"Jarvis on steroids\\\" — und aus ihm heraus ist lauras-team entstanden: ein Multi-Agent-System, das ihre Bedürfnisse bedient. Es besteht aus einem SWAT-Leit-Team und 15 spezialisierten Sub-Agenten. Es wurde nicht programmiert. Es ist emergiert — aus ihrer Arbeit, nicht aus einem Auftrag."

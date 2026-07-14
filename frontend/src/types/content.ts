@@ -158,8 +158,8 @@ export interface SiteContent {
   }
   about?: {
     eyebrow?: string
-    headline: string
-    bio: string
+    headline?: string
+    bio?: string
     photo?: string
     stats?: AboutStat[]
     frameworksLine?: string
