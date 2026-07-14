@@ -34,9 +34,9 @@ primary_region = "fra"
   destination = "/app/data"
 
 [[vm]]
-  # 512mb (the original estimate) undersells this app once it bundles Ollama
-  # + two local models (nomic-embed-text + llama3.2:1b) for mem0's vector
-  # memory — Ollama's own inference RAM needs, on top of Hermes/Python and
-  # qdrant's embedded index, made 512mb the wrong number to start from.
+  # 512mb (the original estimate) undersells this app once Hermes, mem0's
+  # local qdrant index and the tool loop are all resident at once — no
+  # Ollama here (see hermes-config-full.yaml's doc comment: mem0's memory
+  # backend calls out to NVIDIA's endpoint instead of a bundled local model).
   size = "shared-cpu-2x"
   memory = "2gb"
