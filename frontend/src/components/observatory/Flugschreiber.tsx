@@ -3,7 +3,7 @@ import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -157,28 +157,36 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
           {selected && (
             <>
               <div className="obs-section-label">Snapshot-Detail: {selected.created_at}</div>
-              <div className="obs-grid" style={{ marginBottom: 8 }}>
-                <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.signals_human}</div><div className="obs-stat-label">Signale: Human</div></div>
+
+              <HudSectionHeader title="Signale" sub="Nach Herkunft — wie viele Beobachtungen aus welchem Kanal." />
+              <HudGrid cols={4}>
+                <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.signals_human}</div><div className="obs-stat-label">Human</div></div>
                 <div className="obs-stat c-blue"><div className="obs-stat-value">{selected.signals_ai}</div><div className="obs-stat-label">Signale: AI</div></div>
                 <div className="obs-stat c-teal"><div className="obs-stat-value">{selected.signals_interaction}</div><div className="obs-stat-label">Signale: Interaction</div></div>
-                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.signals_system}</div><div className="obs-stat-label">Signale: System</div></div>
-              </div>
-              <div className="obs-grid" style={{ marginBottom: 8 }}>
+                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.signals_system}</div><div className="obs-stat-label">System</div></div>
+              </HudGrid>
+
+              <HudSectionHeader title="Emergenz-Indikatoren" sub="CCET-Metriken des ausgewählten Snapshots." />
+              <HudGrid cols={3}>
                 <div className="obs-stat c-green"><div className="obs-stat-value">{formatPercent(selected.cei)}</div><div className="obs-stat-label">CEI</div></div>
                 <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.cep}</div><div className="obs-stat-label">CEP</div></div>
-                <div className="obs-stat c-teal"><div className="obs-stat-value">{formatPercent(selected.resonance_frequency)}</div><div className="obs-stat-label">Resonance Frequency</div></div>
-              </div>
-              <div className="obs-grid" style={{ marginBottom: 8 }}>
-                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.sim_runs_pending}</div><div className="obs-stat-label">Sims: pending</div></div>
-                <div className="obs-stat c-green"><div className="obs-stat-value">{selected.sim_runs_complete}</div><div className="obs-stat-label">Sims: complete</div></div>
-                <div className="obs-stat c-red"><div className="obs-stat-value">{selected.sim_runs_error}</div><div className="obs-stat-label">Sims: error</div></div>
-              </div>
-              <div className="obs-grid" style={{ marginBottom: 14 }}>
+                <div className="obs-stat c-teal"><div className="obs-stat-value">{formatPercent(selected.resonance_frequency)}</div><div className="obs-stat-label">Resonance</div></div>
+              </HudGrid>
+
+              <HudSectionHeader title="Simulationen" sub="Status der Simulationsläufe zum Snapshot-Zeitpunkt." />
+              <HudGrid cols={3}>
+                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.sim_runs_pending}</div><div className="obs-stat-label">Pending</div></div>
+                <div className="obs-stat c-green"><div className="obs-stat-value">{selected.sim_runs_complete}</div><div className="obs-stat-label">Complete</div></div>
+                <div className="obs-stat c-red"><div className="obs-stat-value">{selected.sim_runs_error}</div><div className="obs-stat-label">Error</div></div>
+              </HudGrid>
+
+              <HudSectionHeader title="Aktivität" sub="Jarvis-Output in diesem Zeitfenster." />
+              <HudGrid cols={2}>
                 <div className="obs-stat c-blue"><div className="obs-stat-value">{selected.research_notes_total}</div><div className="obs-stat-label">Research Notes</div></div>
                 <div className="obs-stat c-red"><div className="obs-stat-value">{selected.agent_tool_calls_7d}</div><div className="obs-stat-label">Tool-Aufrufe (7T)</div></div>
-              </div>
-              <p style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 22 }}>
-                Ausgelöst durch Gespräch {selected.conversation_id}
+              </HudGrid>
+
+              <p style={{ fontSize: 12, color: 'rgba(148,190,199,.65)', marginBottom: 22 }}>
                 {selected.trigger_turn_id
                   ? <> · CCET-Turn {selected.trigger_turn_id}</>
                   : ' · kein CCET-Turn verknüpft (z. B. weil zu diesem Zeitpunkt keine NVIDIA-Anbindung konfiguriert war)'}
