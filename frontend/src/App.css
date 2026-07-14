@@ -2528,7 +2528,7 @@ button { cursor: pointer; font-family: inherit; }
 .crm-audit-panel-title { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.32); text-transform: uppercase; letter-spacing: .08em; }
 .crm-audit-chain-badge { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
 .crm-audit-chain-badge.intact { color: #34d399; background: rgba(52,211,153,.12); }
-.crm-audit-chain-badge.broken { color: #f87171; background: rgba(248,113,113,.16); animation: hud-pulse 1.2s ease-in-out infinite; }
+.crm-audit-chain-badge.broken { color: #f87171; background: rgba(248,113,113,.16); animation: hud-pulse 2s ease-in-out infinite; }
 
 .crm-audit-panel-feed { overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
 .crm-audit-panel-empty { font-size: 11px; color: rgba(255,255,255,.3); padding: 6px 2px; }
@@ -2557,7 +2557,7 @@ button { cursor: pointer; font-family: inherit; }
 .crm-audit-panel-collapsed { align-items: center; justify-content: center; padding: 10px 0; }
 .crm-audit-chain-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.2); display: inline-block; }
 .crm-audit-chain-dot.intact { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.6); }
-.crm-audit-chain-dot.broken { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,.7); animation: hud-pulse 1.2s ease-in-out infinite; }
+.crm-audit-chain-dot.broken { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,.7); animation: hud-pulse 2s ease-in-out infinite; }
 
 /* ── ADMIN: OBSERVATORY MODULES ──────────────────────────────────────────────
    A proper BI-dashboard design language (Looker/Linear-adjacent: layered
@@ -3016,9 +3016,8 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .panel-checkbox { color: rgba(226,241,245,.8); }
 .observatory-hud .crm-body::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: repeating-linear-gradient(180deg, rgba(34,211,238,.05) 0px, rgba(34,211,238,.05) 1px, transparent 1px, transparent 3px);
+  background: repeating-linear-gradient(180deg, rgba(34,211,238,.022) 0px, rgba(34,211,238,.022) 1px, transparent 1px, transparent 3px);
   mix-blend-mode: screen;
-  animation: hud-scan-drift 7s linear infinite;
 }
 .observatory-hud .obs-section-label { color: var(--hud-cyan); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
 .observatory-hud .obs-section-label::after { background: rgba(34,211,238,.15); }
@@ -3071,16 +3070,15 @@ button { cursor: pointer; font-family: inherit; }
 .gotham.crm-main::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
   background-image:
-    linear-gradient(rgba(120,160,180,.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120,160,180,.045) 1px, transparent 1px);
+    linear-gradient(rgba(120,160,180,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,160,180,.028) 1px, transparent 1px);
   background-size: 38px 38px;
   mask-image: radial-gradient(ellipse 120% 100% at 50% 0%, #000 55%, transparent 100%);
 }
 .gotham.crm-main::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-  background: repeating-linear-gradient(180deg, rgba(52,225,255,.045) 0px, rgba(52,225,255,.045) 1px, transparent 1px, transparent 3px);
-  mix-blend-mode: screen; opacity: .85;
-  animation: hud-scan-drift 8s linear infinite;
+  background: repeating-linear-gradient(180deg, rgba(52,225,255,.02) 0px, rgba(52,225,255,.02) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode: screen; opacity: .5;
 }
 @keyframes hud-scan-drift {
   from { background-position-y: 0; }
@@ -3235,7 +3233,7 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-map-tooltip-excerpt { color: rgba(212,231,235,.85); }
 
 @keyframes hud-card-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes hud-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes hud-pulse { 0%, 100% { opacity: .82; } 50% { opacity: 1; } }
 
 /* ── VERWALTUNG SECTIONS UNDER THE HUD ────────────────────────────────────
    Website Kit / Inbox / Blog still rendered as plain white BI cards even
