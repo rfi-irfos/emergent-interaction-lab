@@ -114,27 +114,27 @@ export function Inbox() {
       ) : (
         groups.map(group => (
           <div key={group.label} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--panel-text-dim, #999)', margin: '0 0 8px 2px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--panel-text-dim, rgba(148,190,199,.6))', margin: '0 0 8px 2px' }}>
               {group.label}
             </div>
             {group.items.map(item => (
-              <div key={item.id} style={{ background: 'var(--panel-surface, #f8f8f8)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--panel-border, #e8e8e8)' }}>
+              <div key={item.id} style={{ background: 'var(--obs-card, rgba(11,17,26,.6))', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid rgba(34,211,238,.16)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
-                    <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: 'var(--hud-cyan, #0099CC)' }}>{item.email}</a>
-                    {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, #666)' }}>{item.phone}</div>}
+                    <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: 'var(--hud-cyan, #22d3ee)' }}>{item.email}</a>
+                    {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, rgba(148,190,199,.6))' }}>{item.phone}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: `${STATUS_COLOR[item.status] ?? '#999'}1a`, color: STATUS_COLOR[item.status] ?? '#999' }}>
                       {STATUS_LABEL[item.status] ?? item.status}
                     </span>
-                    <div style={{ fontSize: 10, color: 'var(--panel-text-dim, #aaa)', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 10, color: 'var(--panel-text-dim, rgba(148,190,199,.6))', whiteSpace: 'nowrap' }}>
                       {parseServerTimestamp(item.created_at).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 </div>
-                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, #444)', lineHeight: 1.5 }}>{item.message}</p>}
+                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, rgba(226,241,245,.75))', lineHeight: 1.5 }}>{item.message}</p>}
                 <div style={{ display: 'flex', gap: 8 }}>
                   {item.status === 'done' ? (
                     <button

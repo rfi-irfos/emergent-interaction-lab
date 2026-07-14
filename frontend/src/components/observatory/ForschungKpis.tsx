@@ -90,14 +90,14 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
         {/* 1 — Message-volume trend (compact line chart, half width) */}
         <HudTile title="Nachrichten-Volumen" badge="TREND" accent="var(--obs-purple)" span={2}>
           {trend.length > 0
-            ? <ObsChart data={trend} color="#8b5cf6" gradientId="forschung-volume" height={56} />
+            ? <ObsChart data={trend} color="var(--obs-purple)" gradientId="forschung-volume" height={56} />
             : <div className="obs-empty">Noch keine Daten.</div>}
         </HudTile>
 
         {/* 2 — Prompts (total) stat + sparkline */}
         <HudTile title="Prompts" badge="GESAMT" accent="var(--obs-cyan)" span={2}>
           <HudStat value={total} label="gesendete Nutzernachrichten" accent="var(--obs-cyan)" />
-          <Spark values={spark} color="#34e1ff" />
+          <Spark values={spark} color="var(--obs-cyan)" />
         </HudTile>
 
         {/* 3 — Cadence stat */}
@@ -111,7 +111,7 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
         {/* 4 — Avg prompt length (bar) */}
         <HudTile title="Ø Prompt-Länge" badge="ZEICHEN" accent="var(--obs-green)" span={2}>
           <HudStat value={Math.round(avgLen)} label="Zeichen (letzte Prompts)" accent="var(--obs-green)" />
-          <Bar value={avgLen} max={280} color="#10b981" />
+          <Bar value={avgLen} max={280} color="var(--obs-green)" />
         </HudTile>
 
         {/* 5 — Human↔AI ratio (donut) */}

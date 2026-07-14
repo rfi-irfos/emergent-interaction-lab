@@ -6,6 +6,26 @@ a { text-decoration: none; color: inherit; }
 img { max-width: 100%; display: block; }
 button { cursor: pointer; font-family: inherit; }
 
+/* ── Shared gotham/observatory token layer ────────────────────────────────────
+   ONE palette for the whole admin/OS surface, defined once at :root so every
+   module reads the same dark-glass tokens whether it renders inside
+   .observatory-hud or not. Previously modules like Inbox fell back to
+   light-theme defaults (e.g. var(--panel-surface, #f8f8f8)) when they weren't
+   under the observatory scope — that mismatch is exactly what made the OS read
+   like a pile of unrelated Lego bricks instead of one lab. Centralising the
+   tokens here removes the per-scope fallback drift. */
+:root {
+  --obs-card: rgba(11,17,26,.6);
+  --panel-surface: rgba(11,17,26,.6);
+  --panel-border: rgba(34,211,238,.16);
+  --panel-bg: rgba(7,14,20,.6);
+  --panel-text: rgba(226,241,245,.75);
+  --panel-text-dim: rgba(148,190,199,.6);
+  --hud-cyan: #22d3ee;
+  --hud-cyan-dim: rgba(34,211,238,.35);
+  --hud-bg: #070b12;
+}
+
 /* ── Loading / Error ─────────────────────────────────────────────────────────── */
 .loading-screen, .error-screen {
   height: 100vh; display: flex; align-items: center; justify-content: center;

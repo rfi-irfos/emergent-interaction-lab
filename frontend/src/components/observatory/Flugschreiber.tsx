@@ -209,23 +209,23 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
               so the flight-recorder reads as one dense panel, not six
               stacked full-width sparklines. */}
           <HudGrid cols={3}>
-            <HudTile title="Signale gesamt" badge="FLUG" accent="#8b5cf6" span={1}>
-              <ObsChart data={chartData(totalSignals)} color="#8b5cf6" gradientId="fs-signals" />
+            <HudTile title="Signale gesamt" badge="FLUG" accent="var(--obs-purple)" span={1}>
+              <ObsChart data={chartData(totalSignals)} color="var(--obs-purple)" gradientId="fs-signals" />
             </HudTile>
-            <HudTile title="CEI" badge="CO-EVO" accent="#10b981" span={1}>
-              <ObsChart data={chartData(s => s.cei)} color="#10b981" gradientId="fs-cei" valueFormat={formatPercent} />
+            <HudTile title="CEI" badge="CO-EVO" accent="var(--obs-green)" span={1}>
+              <ObsChart data={chartData(s => s.cei)} color="var(--obs-green)" gradientId="fs-cei" valueFormat={formatPercent} />
             </HudTile>
-            <HudTile title="Resonance" badge="FREQ" accent="#14b8a6" span={1}>
-              <ObsChart data={chartData(s => s.resonance_frequency)} color="#14b8a6" gradientId="fs-rf" valueFormat={formatPercent} />
+            <HudTile title="Resonance" badge="FREQ" accent="var(--obs-teal)" span={1}>
+              <ObsChart data={chartData(s => s.resonance_frequency)} color="var(--obs-teal)" gradientId="fs-rf" valueFormat={formatPercent} />
             </HudTile>
-            <HudTile title="Simulationen" badge="RUNS" accent="#f59e0b" span={1}>
-              <ObsChart data={chartData(totalSimRuns)} color="#f59e0b" gradientId="fs-sims" />
+            <HudTile title="Simulationen" badge="RUNS" accent="var(--obs-amber)" span={1}>
+              <ObsChart data={chartData(totalSimRuns)} color="var(--obs-amber)" gradientId="fs-sims" />
             </HudTile>
-            <HudTile title="Research Notes" badge="NOTES" accent="#3b6bf6" span={1}>
-              <ObsChart data={chartData(s => s.research_notes_total)} color="#3b6bf6" gradientId="fs-notes" />
+            <HudTile title="Research Notes" badge="NOTES" accent="var(--obs-blue)" span={1}>
+              <ObsChart data={chartData(s => s.research_notes_total)} color="var(--obs-blue)" gradientId="fs-notes" />
             </HudTile>
-            <HudTile title="Jarvis-Tools" badge="7T" accent="#ef4444" span={1}>
-              <ObsChart data={chartData(s => s.agent_tool_calls_7d)} color="#ef4444" gradientId="fs-tools" />
+            <HudTile title="Jarvis-Tools" badge="7T" accent="var(--obs-red)" span={1}>
+              <ObsChart data={chartData(s => s.agent_tool_calls_7d)} color="var(--obs-red)" gradientId="fs-tools" />
             </HudTile>
           </HudGrid>
 
@@ -236,11 +236,11 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
               key={s.id}
               role="button"
               tabIndex={0}
-              style={{ ...hudStagger(i), ['--obs-accent' as string]: s.id === selected?.id ? '#3b6bf6' : '#6b7280', cursor: 'pointer' }}
+              style={{ ...hudStagger(i), ['--obs-accent' as string]: s.id === selected?.id ? 'var(--obs-blue)' : '#6b7280', cursor: 'pointer' }}
               onClick={() => setSelectedId(s.id)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setSelectedId(s.id) }}
             >
-              <div className="obs-item-title">{s.created_at}{s.id === selected?.id && <span style={{ fontWeight: 400, color: '#3b6bf6' }}> · ausgewählt</span>}</div>
+              <div className="obs-item-title">{s.created_at}{s.id === selected?.id && <span style={{ fontWeight: 400, color: 'var(--obs-blue)' }}> · ausgewählt</span>}</div>
               <div className="obs-item-meta">
                 Signale: {totalSignals(s)} · CEI {formatPercent(s.cei)} · Simulationen: {totalSimRuns(s)} · Notes: {s.research_notes_total} · Tools (7T): {s.agent_tool_calls_7d}
               </div>
