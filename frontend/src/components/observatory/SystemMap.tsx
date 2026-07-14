@@ -173,8 +173,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   const [satellites, setSatellites] = useState<Record<string, SatelliteItem[]>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
   const [expandedSatellite, setExpandedSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
-  const [hoveredSatellite, setHoveredSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null)
   const fgRef = useRef<any>(null)
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const [dims, setDims] = useState({ w: 800, h: 560 })
@@ -239,11 +238,16 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     : (expandedNode ? expandedNode.blurb(counts[expandedNode.id] ?? 0) : '')
   const typed = useTypewriter(detailText, !!detailNode)
 
-  const hoveredMainNode = hoveredNode ? NODES.find(n => n.id === hoveredNode) : null
-  const hoveredSatelliteNode = hoveredSatellite ? NODES.find(n => n.id === hoveredSatellite.nodeId) : null
-  const hoveredSatelliteItem = hoveredSatellite
-    ? (satellites[hoveredSatellite.nodeId] ?? []).find(s => s.id === hoveredSatellite.itemId) ?? null
+  // Hover state comes from ForceGraph2D's onNodeHover (a node id string, or
+  // null). Resolve it to the matching core/satellite for the tooltip.
+  const hoveredMainNode = hoverNodeId && NODES.some(n => n.id === hoverNodeId)
+    ? NODES.find(n => n.id === hoverNodeId) ?? null
     : null
+  const hoveredSatelliteNode = hoveredMainNode ? null : (hoverNodeId ? NODES.find(n => hoverNodeId.startsWith(`${n.id}-sat-`)) ?? null : null)
+  const hoveredSatelliteItem = hoveredSatelliteNode && hoverNodeId
+    ? (satellites[hoveredSatelliteNode.id] ?? []).find(s => `${hoveredSatelliteNode.id}-sat-${s.id}` === hoverNodeId) ?? null
+    : null
+
 
   // Build force-graph nodes: 5 cores + their satellites (real records).
   const graphData = useMemo(() => {
@@ -254,7 +258,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     const links: any[] = []
     for (const n of NODES) {
       const sats = (satellites[n.id] ?? []).slice(0, 5)
-      sats.forEach((s, si) => {
+      sats.forEach((s) => {
         const id = `${n.id}-sat-${s.id}`
         nodes.push({
           id, label: s.label, accent: n.accent, isCore: false,
@@ -313,7 +317,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
         </div>
 
         <ForceGraph2D
-          ref={setFgRef}
+          ref={fgRef}
           width={dims.w}
           height={dims.h}
           graphData={graphData}
@@ -327,6 +331,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           }}
           linkColor={() => 'rgba(148,197,214,.18)'}
           linkWidth={1}
+          onNodeHover={(node: any) => setHoverNodeId(node ? node.id : null)}
           cooldownTicks={140}
           onNodeClick={(node: any) => {
             if (node.isCore) {

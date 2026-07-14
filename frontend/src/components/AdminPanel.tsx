@@ -12,7 +12,12 @@ import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
 import { Inbox, type ContactMessage } from './observatory/Inbox'
 import { ForschungKpis } from './observatory/ForschungKpis'
-import { SystemMap } from './observatory/SystemMap'
+// Heavy force-graph modules (react-force-graph-2d, ~600KB) get lazy-loaded so
+// they don't bloat the initial OS bundle — only fetched when a user actually
+// opens Knowledge Graph / System Map.
+import { lazy, Suspense } from 'react'
+const SystemMap = lazy(() => import('./observatory/SystemMap').then(m => ({ default: m.SystemMap })))
+const KnowledgeGraph = lazy(() => import('./observatory/KnowledgeGraph').then(m => ({ default: m.KnowledgeGraph })))
 import { EmergenceMonitor } from './observatory/EmergenceMonitor'
 import { SystemState } from './observatory/SystemState'
 import { InteractionDynamics } from './observatory/InteractionDynamics'
@@ -21,7 +26,6 @@ import { BehavioralLandscape } from './observatory/BehavioralLandscape'
 import { AgentActivity } from './observatory/AgentActivity'
 import { ResearchPulse } from './observatory/ResearchPulse'
 import { SimulationCenter } from './observatory/SimulationCenter'
-import { KnowledgeGraph } from './observatory/KnowledgeGraph'
 import { Flugschreiber } from './observatory/Flugschreiber'
 import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
 import { Denkfragmente } from './observatory/Denkfragmente'
@@ -78,6 +82,10 @@ function IconMoon() {
 /// single, permanent view of the admin panel. The old "Builder mode / Verwaltung
 /// mode" dichotomy is gone: the website builder is "Website Kit," one more
 /// sidebar app, not a separate top-level mode with its own topbar.
+// Heavy force-graph modules spin up react-force-graph-2d (~600KB) — show a
+// quiet placeholder while their chunk loads so the OS shell stays instant.
+const GraphFallback = () => <div className="obs-panel"><div className="obs-empty">Graph wird geladen…</div></div>
+
 export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Props) {
   const [draft, setDraft] = useState<SiteContent>(content)
   const [adminSection, setAdminSection] = useState<AdminSection>('website-kit')
@@ -415,7 +423,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {/* ── OBSERVATORY MODULES ──────────────────────────────────── */}
             {adminSection === 'systemmap' && (
-              <SystemMap onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+              <Suspense fallback={<GraphFallback />}>
+                <SystemMap onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+              </Suspense>
             )}
             {adminSection === 'emergence' && (
               <EmergenceMonitor onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
@@ -441,7 +451,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
             {adminSection === 'simulationcenter' && <SimulationCenter onNavigate={setAdminSection} />}
             {adminSection === 'knowledgegraph' && (
-              <KnowledgeGraph onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+              <Suspense fallback={<GraphFallback />}>
+                <KnowledgeGraph onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+              </Suspense>
             )}
             {adminSection === 'denkfragmente' && (
               <Denkfragmente onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
