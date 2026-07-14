@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import ForceGraph2D from 'react-force-graph-2d'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
-import { useSvgPanZoom } from '../../hooks/useSvgPanZoom'
-import type { ViewBox } from '../../lib/svgPanZoom'
+import { HudSkeleton } from './HudSkeleton'
 
 // `legend` is the short, count-independent plain-language line shown in the
 // always-visible legend strip below — previously the ONLY explanation of
@@ -19,19 +19,11 @@ const NODES = [
   { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
 ]
 
-const CX = 500, CY = 420, R = 300
-
-// Module-level constant so it's referentially stable across renders — the
-// pan/zoom hook uses it as a dependency and doesn't deep-compare. Sized to a
-// wide canvas so the organism spreads edge-to-edge instead of sitting in a
-// 640px stamp in the middle of the screen.
-const BASE_VIEWBOX: ViewBox = { x: 0, y: 0, w: 1000, h: 840 }
-
 // Age-decay in [0,1]: a fresh record → 1 (bright, long trail), an old one →
 // toward 0 (faint, evaporated), like an ant's pheromone path fading. Half-life
 // ~7 days so a week-old trail is at half strength — matches the mostly-7d
-// windows the backing endpoints report on. Unparseable/missing dates fall back
-// to mid strength rather than vanishing.
+// Age-decay in [0,1]: a fresh record → 1 (bright, long trail), an old one →
+// toward 0 (faint, evaporated), like an ant's pheromone path fading.
 function ageDecay(createdAt: string): number {
   const t = Date.parse(createdAt)
   if (Number.isNaN(t)) return 0.5
@@ -39,14 +31,6 @@ function ageDecay(createdAt: string): number {
   if (ageMs <= 0) return 1
   const halfLifeMs = 7 * 24 * 60 * 60 * 1000
   return Math.max(0.12, Math.pow(0.5, ageMs / halfLifeMs))
-}
-
-// Deterministic pseudo-random in [0,1) — stable satellite placement across
-// re-renders (a real Math.random() would make the mycelium jitter every
-// time `counts` refetches), still reads as organic rather than a grid.
-function hash(n: number): number {
-  const x = Math.sin(n * 12.9898) * 43758.5453
-  return x - Math.floor(x)
 }
 
 async function fetchJson(path: string): Promise<any> {
@@ -83,8 +67,6 @@ function useTypewriter(text: string, active: boolean) {
 //
 // Rendered as a pheromone TRAIL, not a lone dot: `createdAt` drives age-decay
 // (older = fainter/shorter, like an ant trail evaporating) and `confidence`
-// (0..1) drives trail thickness + head glow. confidence is null where no real
-// strength signal exists (a raw message has none) — those trails render at a
 // neutral weight rather than a fabricated one.
 interface SatelliteItem {
   id: string
@@ -193,15 +175,9 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   const [expandedSatellite, setExpandedSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [hoveredSatellite, setHoveredSatellite] = useState<{ nodeId: string; itemId: string } | null>(null)
-  // Destructured (not kept as one `panZoom` object) so eslint's
-  // react-hooks/refs check can tell `viewBox` (plain state) apart from
-  // `svgRef` (an actual ref) — bundling them behind one property access
-  // makes the rule conservatively flag every `panZoom.viewBox.x` read.
-  const {
-    svgRef, viewBox, viewBoxStr, zoomLevel, isPanning, layoutKey,
-    resetView, relayout, onPointerDown, onPointerMove, onPointerUp,
-    onPointerCancel, onPointerLeave, onClickCapture,
-  } = useSvgPanZoom(BASE_VIEWBOX)
+  const fgRef = useRef<any>(null)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  const [dims, setDims] = useState({ w: 800, h: 560 })
 
   useEffect(() => {
     let cancelled = false
@@ -236,10 +212,20 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     return () => { cancelled = true }
   }, [])
 
-  const positions = useMemo(() => NODES.map((n, i) => {
-    const angle = (-90 + i * (360 / NODES.length)) * (Math.PI / 180)
-    return { ...n, x: CX + R * Math.cos(angle), y: CY + R * Math.sin(angle), angle }
-  }), [])
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      setDims({ w: el.clientWidth, h: el.clientHeight })
+    })
+    ro.observe(el)
+    setDims({ w: el.clientWidth, h: el.clientHeight })
+    return () => ro.disconnect()
+  }, [])
+
+  if (!counts) return <div className="obs-panel"><HudSkeleton /></div>
+
+  const maxCount = Math.max(...Object.values(counts), 1)
 
   const expandedNode = expanded ? NODES.find(n => n.id === expanded) : null
   const activeSatelliteNode = expandedSatellite ? NODES.find(n => n.id === expandedSatellite.nodeId) : null
@@ -247,54 +233,75 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     ? (satellites[expandedSatellite.nodeId] ?? []).find(s => s.id === expandedSatellite.itemId) ?? null
     : null
 
-  // A selected satellite always wins over the tier-level aggregate blurb —
-  // the two are mutually exclusive (see the two onClick handlers below),
-  // but this keeps the detail-panel text derivation in one place.
   const detailNode = activeSatelliteNode ?? expandedNode
   const detailText = activeSatelliteItem
     ? activeSatelliteItem.label
-    : (expandedNode ? expandedNode.blurb(counts?.[expandedNode.id] ?? 0) : '')
+    : (expandedNode ? expandedNode.blurb(counts[expandedNode.id] ?? 0) : '')
   const typed = useTypewriter(detailText, !!detailNode)
 
-  // Hover mirrors the click-driven derivation above, but as a lighter
-  // "glance" layer (a floating tooltip) rather than the typewriter panel —
-  // it never touches `expanded`/`expandedSatellite` state. Looked up from
-  // `positions` (not `NODES`) because the tooltip needs x/y, which only
-  // `positions` carries.
-  const hoveredMainNode = hoveredNode ? positions.find(p => p.id === hoveredNode) : null
-  const hoveredSatelliteNode = hoveredSatellite ? positions.find(p => p.id === hoveredSatellite.nodeId) : null
+  const hoveredMainNode = hoveredNode ? NODES.find(n => n.id === hoveredNode) : null
+  const hoveredSatelliteNode = hoveredSatellite ? NODES.find(n => n.id === hoveredSatellite.nodeId) : null
   const hoveredSatelliteItem = hoveredSatellite
     ? (satellites[hoveredSatellite.nodeId] ?? []).find(s => s.id === hoveredSatellite.itemId) ?? null
     : null
-  // Mirrors the satellite jitter formula used when rendering the dots
-  // themselves (same pi/si-seeded hash) so the tooltip lands on the actual
-  // dot rather than back at the parent node's center.
-  const hoveredSatellitePos = (() => {
-    if (!hoveredSatellite || !hoveredSatelliteNode) return null
-    const pi = positions.findIndex(p => p.id === hoveredSatellite.nodeId)
-    const items = satellites[hoveredSatellite.nodeId] ?? []
-    const si = items.findIndex(s => s.id === hoveredSatellite.itemId)
-    if (pi < 0 || si < 0) return null
-    const decay = ageDecay(items[si].createdAt)
-    const a = hoveredSatelliteNode.angle + (hash(pi * 13 + si) - 0.5) * 1.5
-    const dist = 46 + decay * 96 + hash(pi * 29 + si) * 20
-    return { x: hoveredSatelliteNode.x + Math.cos(a) * dist, y: hoveredSatelliteNode.y + Math.sin(a) * dist }
-  })()
 
-  if (!counts) return <div className="obs-panel"><div className="obs-empty">Netzwerk wächst…</div></div>
+  // Build force-graph nodes: 5 cores + their satellites (real records).
+  const graphData = useMemo(() => {
+    const nodes: any[] = NODES.map(n => ({
+      id: n.id, label: n.label, accent: n.accent, isCore: true,
+      count: counts?.[n.id] ?? 0, size: 14 + Math.min((counts?.[n.id] ?? 0) / maxCount, 1) * 22,
+    }))
+    const links: any[] = []
+    for (const n of NODES) {
+      const sats = (satellites[n.id] ?? []).slice(0, 5)
+      sats.forEach((s, si) => {
+        const id = `${n.id}-sat-${s.id}`
+        nodes.push({
+          id, label: s.label, accent: n.accent, isCore: false,
+          conf: s.confidence ?? 0.5, decay: ageDecay(s.createdAt),
+          conversationId: s.conversationId, createdAt: s.createdAt, size: 4,
+        })
+        links.push({ source: n.id, target: id })
+      })
+    }
+    return { nodes, links }
+  }, [counts, satellites, maxCount])
 
-  const maxCount = Math.max(...Object.values(counts), 1)
+  const nodePaint = (node: any, ctx: CanvasRenderingContext2D) => {
+    const x = node.x ?? 0, y = node.y ?? 0
+    const r = node.size ?? 6
+    if (node.isCore) {
+      // glow + labeled core
+      ctx.beginPath(); ctx.arc(x, y, r + 8, 0, 2 * Math.PI)
+      ctx.fillStyle = node.accent + '22'; ctx.fill()
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI)
+      ctx.fillStyle = '#0d141f'; ctx.fill()
+      ctx.lineWidth = 2.5; ctx.strokeStyle = node.accent; ctx.stroke()
+      ctx.font = '700 12px "SF Mono", Consolas, monospace'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillStyle = '#eefcff'; ctx.fillText(node.label, x, y - 2)
+      ctx.fillStyle = node.accent; ctx.font = '800 12px "SF Mono", Consolas, monospace'
+      ctx.fillText(String(node.count), x, y + 14)
+    } else {
+      // satellite dot — confidence/age encoded as glow + alpha
+      const a = 0.22 + (node.decay ?? 0.5) * 0.5
+      ctx.beginPath(); ctx.arc(x, y, r + 3, 0, 2 * Math.PI)
+      ctx.fillStyle = node.accent + '33'; ctx.fill()
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI)
+      ctx.fillStyle = node.accent; ctx.globalAlpha = a; ctx.fill(); ctx.globalAlpha = 1
+    }
+  }
 
   return (
     <div className="obs-panel">
-      <div className="obs-card obs-map-card mycelium-card">
+      <div className="obs-card obs-map-card mycelium-card" ref={wrapRef} style={{ height: '74vh', minHeight: 420, overflow: 'hidden' }}>
         {/* Always-visible legend — what the diagram below actually shows,
             before any hovering/clicking. One line per node, same accent
             color as its dot/thread, so the mapping between "this colored
             thing" and "this is what it means" doesn't require guessing. */}
-        <div className="mycelium-legend">
+        <div className="mycelium-legend" style={{ position: 'absolute', left: 14, top: 14, right: 'auto', maxWidth: 380, zIndex: 5, pointerEvents: 'none' }}>
           <span className="mycelium-legend-title">Was zeigt dieses Netzwerk?</span>
-          <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem; Kantenstärke = relative Aktivität. Die Ausläufer sind Pheromon-Spuren echter Einzelereignisse — Länge/Helligkeit = Alter (frisch → lang & hell, alt → verblasst), Dicke/Leuchten = Konfidenz. Knoten oder Spur anklicken für Details.</span>
+          <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem; die Ausläufer sind Pheromon-Spuren echter Einzelereignisse — Länge/Helligkeit = Alter (frisch → hell, alt → verblasst), Dicke/Leuchten = Konfidenz. Knoten oder Spur anklicken für Details.</span>
           <div className="mycelium-legend-items">
             {NODES.map(n => (
               <span key={n.id} className="mycelium-legend-item">
@@ -304,178 +311,52 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
             ))}
           </div>
         </div>
-        <div className="obs-map-toolbar">
-          <span className="obs-map-toolbar-zoom">{Math.round(zoomLevel * 100)}%</span>
-          <button type="button" className="obs-map-toolbar-btn" onClick={resetView} title="Zoom/Pan zurücksetzen">
-            ⟲ Ansicht zurücksetzen
-          </button>
-          <button type="button" className="obs-map-toolbar-btn" onClick={relayout} title="Layout neu anordnen">
-            ⟳ Neu anordnen
-          </button>
-        </div>
-        <svg
-          ref={svgRef}
-          viewBox={viewBoxStr}
-          style={{
-            width: '100%', height: '100%', minHeight: '78vh', display: 'block', margin: '0 auto',
-            cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none',
+
+        <ForceGraph2D
+          ref={setFgRef}
+          width={dims.w}
+          height={dims.h}
+          graphData={graphData}
+          backgroundColor="rgba(0,0,0,0)"
+          nodeRelSize={1}
+          nodeCanvasObject={nodePaint}
+          nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
+            const r = (node.size ?? 6) + 6
+            ctx.fillStyle = color
+            ctx.beginPath(); ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI); ctx.fill()
           }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerCancel}
-          onPointerLeave={onPointerLeave}
-          onClickCapture={onClickCapture}
-        >
-          <defs>
-            <radialGradient id="hub-glow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-            </radialGradient>
-          </defs>
+          linkColor={() => 'rgba(148,197,214,.18)'}
+          linkWidth={1}
+          cooldownTicks={140}
+          onNodeClick={(node: any) => {
+            if (node.isCore) {
+              setExpandedSatellite(null)
+              setExpanded(cur => cur === node.id ? null : node.id)
+            } else {
+              const [nodeId] = String(node.id).split('-sat-')
+              const itemId = String(node.id).split('-sat-')[1]
+              setExpanded(null)
+              setExpandedSatellite(cur => (cur && cur.itemId === itemId ? null : { nodeId, itemId }))
+            }
+          }}
+          onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
+        />
 
-          <g key={layoutKey}>
-            {/* Inter-node web — faint threads between neighbouring nodes so the
-                five subsystems read as one connected organism rather than five
-                isolated spokes off a hub. Purely structural (not data-weighted):
-                a resting mycelial lattice the live edges pulse over. */}
-            {positions.map((p, pi) => {
-              const q = positions[(pi + 1) % positions.length]
-              const mx = (p.x + q.x) / 2 + (CX - (p.x + q.x) / 2) * 0.22
-              const my = (p.y + q.y) / 2 + (CY - (p.y + q.y) / 2) * 0.22
-              return (
-                <path
-                  key={`web-${p.id}`}
-                  d={`M ${p.x} ${p.y} Q ${mx} ${my} ${q.x} ${q.y}`}
-                  fill="none" stroke="rgba(148,197,214,.16)" strokeWidth={1} strokeDasharray="2 7"
-                />
-              )
-            })}
-
-            {positions.map((p, pi) => {
-              const weight = counts[p.id] ?? 0
-              const w = 1 + (weight / maxCount) * 4
-              const opacity = 0.28 + (weight / maxCount) * 0.5
-              // Organic thread: a gentle bezier bow instead of a straight line.
-              const mx = (CX + p.x) / 2 + Math.sin(pi * 2.1) * 22
-              const my = (CY + p.y) / 2 + Math.cos(pi * 2.1) * 22
-              const items = satellites[p.id] ?? []
-              return (
-                <g key={`edge-${p.id}`}>
-                  <path id={`obs-map-path-${p.id}`} d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w + 5} opacity={opacity * 0.2} style={{ filter: 'blur(4px)' }} />
-                  <path d={`M ${CX} ${CY} Q ${mx} ${my} ${p.x} ${p.y}`} fill="none" stroke={p.accent} strokeWidth={w} opacity={opacity} strokeLinecap="round" />
-                  <circle r="3.5" fill={p.accent}>
-                    <animateMotion dur={`${3 + hash(pi) * 2}s`} repeatCount="indefinite">
-                      <mpath href={`#obs-map-path-${p.id}`} />
-                    </animateMotion>
-                  </circle>
-                  {/* Pheromone trails — the "growing organism" itself: one per
-                      real recent record this node actually has, up to 5. Each
-                      trail is a curved path fading from the node outward; its
-                      LENGTH + OPACITY encode age (fresh = long/bright, old =
-                      short/evaporated) and its THICKNESS + head-glow encode
-                      confidence (retrieval score / tool success), so the map
-                      reads like ant trails laid down over time, not scattered
-                      dots. No padding when fewer than 5 exist — an honest gap
-                      beats a fabricated one. Each trail-head is clickable. */}
-                  {items.map((item, si) => {
-                    const decay = ageDecay(item.createdAt)
-                    // confidence null → neutral 0.5 weight (no fabricated strength)
-                    const conf = item.confidence ?? 0.5
-                    const a = p.angle + (hash(pi * 13 + si) - 0.5) * 1.5
-                    // Trail length grows with freshness; old trails pull back in.
-                    const dist = 46 + decay * 96 + hash(pi * 29 + si) * 20
-                    const sx = p.x + Math.cos(a) * dist
-                    const sy = p.y + Math.sin(a) * dist
-                    // Bowed control point so the trail curves like a real path.
-                    const cxp = p.x + Math.cos(a) * dist * 0.55 + Math.sin(a) * 18 * (hash(si) - 0.5)
-                    const cyp = p.y + Math.sin(a) * dist * 0.55 - Math.cos(a) * 18 * (hash(si) - 0.5)
-                    const isActive = expandedSatellite?.nodeId === p.id && expandedSatellite.itemId === item.id
-                    const trailW = (isActive ? 3.5 : 1.2) + conf * 3.2
-                    const headR = (isActive ? 8 : 5) + conf * 3
-                    const trailOp = isActive ? 0.95 : 0.22 + decay * 0.5
-                    return (
-                      <g
-                        key={item.id}
-                        className={`mycelium-satellite ${isActive ? 'active' : ''}`}
-                        style={{ animationDelay: `${si * 0.15 + pi * 0.1}s`, cursor: 'pointer', color: p.accent }}
-                        onClick={() => {
-                          setExpanded(null)
-                          setExpandedSatellite(cur => (cur && cur.itemId === item.id ? null : { nodeId: p.id, itemId: item.id }))
-                        }}
-                        onMouseEnter={() => setHoveredSatellite({ nodeId: p.id, itemId: item.id })}
-                        onMouseLeave={() => setHoveredSatellite(cur => (cur?.itemId === item.id ? null : cur))}
-                      >
-                        {/* soft under-glow trail (confidence halo) */}
-                        <path d={`M ${p.x} ${p.y} Q ${cxp} ${cyp} ${sx} ${sy}`} fill="none" stroke={p.accent} strokeWidth={trailW + 5} opacity={trailOp * 0.3} strokeLinecap="round" style={{ filter: 'blur(3px)' }} />
-                        {/* main pheromone trail */}
-                        <path d={`M ${p.x} ${p.y} Q ${cxp} ${cyp} ${sx} ${sy}`} fill="none" stroke={p.accent} strokeWidth={trailW} opacity={trailOp} strokeLinecap="round" />
-                        {/* generous invisible hit target so heads are easy to click */}
-                        <circle cx={sx} cy={sy} r={16} fill="transparent" />
-                        {/* confidence-glow ring on the head */}
-                        <circle cx={sx} cy={sy} r={headR + 4} fill={p.accent} opacity={(isActive ? 0.5 : 0.12) + conf * 0.18} style={{ filter: 'blur(2px)' }} />
-                        <circle className="mycelium-satellite-dot" cx={sx} cy={sy} r={headR} fill={p.accent} opacity={isActive ? 1 : 0.55 + decay * 0.4} stroke="#0a0f16" strokeWidth={isActive ? 1.5 : 0.8} />
-                      </g>
-                    )
-                  })}
-                </g>
-              )
-            })}
-
-            <circle cx={CX} cy={CY} r={58} fill="url(#hub-glow)" opacity={0.5} className="mycelium-pulse" />
-            <circle className="mycelium-hub-core" cx={CX} cy={CY} r={36} fill="#0a0f16" />
-            <circle className="mycelium-hub-core" cx={CX} cy={CY} r={36} fill="none" stroke="#22d3ee" strokeWidth={2} opacity={0.7} />
-            <text x={CX} y={CY - 4} textAnchor="middle" fontSize={12} fontWeight={800} fill="#eefcff">Interaction Field</text>
-            <text x={CX} y={CY + 13} textAnchor="middle" fontSize={9} fill="rgba(226,241,245,.65)">Jarvis vermittelt</text>
-
-            {positions.map(p => (
-              <g
-                key={p.id}
-                onClick={() => {
-                  setExpandedSatellite(null)
-                  setExpanded(cur => cur === p.id ? null : p.id)
-                }}
-                onMouseEnter={() => setHoveredNode(p.id)}
-                onMouseLeave={() => setHoveredNode(cur => cur === p.id ? null : cur)}
-                className={`mycelium-node ${expanded === p.id ? 'active' : ''}`}
-                style={{ cursor: 'pointer', color: p.accent }}
-              >
-                <circle cx={p.x} cy={p.y} r={34} fill={p.accent} opacity={expanded === p.id ? 0.28 : 0} className="mycelium-node-ring" />
-                <circle className="mycelium-node-core" cx={p.x} cy={p.y} r={30} fill="#0d141f" stroke={p.accent} strokeWidth={2} />
-                <text x={p.x} y={p.y - 3} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="#eefcff">{p.label}</text>
-                <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={10} fontWeight={800} fill={p.accent}>{counts[p.id] ?? 0}</text>
-              </g>
-            ))}
-          </g>
-        </svg>
-
-        {hoveredSatelliteNode && hoveredSatelliteItem && hoveredSatellitePos ? (
-          <div
-            className="obs-map-tooltip"
-            style={{
-              left: `${((hoveredSatellitePos.x - viewBox.x) / viewBox.w) * 100}%`,
-              top: `${((hoveredSatellitePos.y - viewBox.y) / viewBox.h) * 100}%`,
-            }}
-          >
+        {hoveredSatelliteNode && hoveredSatelliteItem ? (
+          <div className="obs-map-tooltip" style={{ position: 'absolute', right: 14, top: 14, left: 'auto', zIndex: 6, maxWidth: 320 }}>
             <div className="obs-map-tooltip-title" style={{ color: hoveredSatelliteNode.accent }}>{hoveredSatelliteNode.label}</div>
             <div className="obs-map-tooltip-excerpt">{hoveredSatelliteItem.label}</div>
             <div className="obs-map-tooltip-meta">{hoveredSatelliteItem.createdAt}</div>
           </div>
         ) : hoveredMainNode ? (
-          <div
-            className="obs-map-tooltip"
-            style={{
-              left: `${((hoveredMainNode.x - viewBox.x) / viewBox.w) * 100}%`,
-              top: `${((hoveredMainNode.y - viewBox.y) / viewBox.h) * 100}%`,
-            }}
-          >
+          <div className="obs-map-tooltip" style={{ position: 'absolute', right: 14, top: 14, left: 'auto', zIndex: 6, maxWidth: 320 }}>
             <div className="obs-map-tooltip-title" style={{ color: hoveredMainNode.accent }}>{hoveredMainNode.label}</div>
             <div className="obs-map-tooltip-excerpt">{hoveredMainNode.blurb(counts[hoveredMainNode.id] ?? 0)}</div>
           </div>
         ) : null}
 
         {detailNode && (
-          <div className="mycelium-detail" style={{ borderLeftColor: detailNode.accent }}>
+          <div className="mycelium-detail" style={{ borderLeftColor: detailNode.accent, position: 'absolute', right: 14, bottom: 14, left: 'auto', maxWidth: 360, zIndex: 6 }}>
             <span className="mycelium-detail-tag" style={{ color: detailNode.accent }}>#{detailNode.label}</span>
             <span className="mycelium-detail-text">
               {typed}<span className="mycelium-caret">▌</span>
