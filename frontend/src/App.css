@@ -3915,6 +3915,28 @@ button { cursor: pointer; font-family: inherit; }
 }
 .chat-bubble-content p { margin: 0 0 10px; }
 .chat-bubble-content p:last-child { margin-bottom: 0; }
+/* Inline code from the markdown renderer (lib/markdown.tsx) — monospace,
+   subtle dark chip, never a raw unstyled <code>. Same treatment as the
+   blog/article body below. */
+.chat-bubble-content code, .md-inline-code {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.92em;
+  background: rgba(99,240,255,.12);
+  border: 1px solid rgba(99,240,255,.22);
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: #aef3ff;
+}
+.chat-bubble-content pre.md-codeblock {
+  background: rgba(7,14,20,.6);
+  border: 1px solid rgba(120,150,170,.18);
+  border-radius: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 0 0 10px;
+}
+.chat-bubble-content pre.md-codeblock:last-child { margin-bottom: 0; }
+.chat-bubble-content pre.md-codeblock code { background: none; border: none; padding: 0; color: rgba(212,231,235,.9); font-size: 12.5px; }
 .chat-bubble-content ol, .chat-bubble-content ul { margin: 0 0 10px; padding-left: 22px; }
 .chat-bubble-content ol:last-child, .chat-bubble-content ul:last-child { margin-bottom: 0; }
 .chat-bubble-content li { margin-bottom: 4px; }

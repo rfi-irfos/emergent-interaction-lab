@@ -26,8 +26,8 @@ export type AdminSection =
   | 'forschungspipeline'
   // Changelog — the full, standalone hash-chained audit_log surface (see
   // backend/src/auditlog.rs + components/observatory/Changelog.tsx).
-  // Verwaltung-tier, same category as Analytics/Monetarisierung/the
-  // Custom Dashboard page below, deliberately NOT nested under
+  // Verwaltung-tier, same category as Analytics/Monetarisierung,
+  // deliberately NOT nested under
   // Observatory's research/system/technical taxonomy: every row here is an
   // operational/business record (a content edit, a login, a Stripe order,
   // a deletion) about the PLATFORM ITSELF, never a research observable

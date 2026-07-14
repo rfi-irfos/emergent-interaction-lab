@@ -21,7 +21,11 @@ import React from 'react'
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = []
   // Order matters: fenced/inline code first so we don't parse * inside code.
-  const pattern = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`)/g
+  // Italic: a single * wrapping 1+ non-space, non-star chars (so "*y*",
+  // "die *ganze* welt", "*x*" render as emphasis, but "a * b * c" and
+  // "* y *" — stars with spaces *inside* the pair — stay literal, the
+  // exact artifact Simeon saw).
+  const pattern = /(\*\*[^*]+\*\*|\*[^\s*]+\*|`[^`]+`)/g
   let last = 0
   let m: RegExpExecArray | null
   let k = 0
@@ -56,7 +60,11 @@ function renderBlock(block: string, bi: number): React.ReactNode {
 
   // A block is a clean list only if EVERY non-empty line is a list item.
   const isNumbered = nonEmpty.length > 0 && nonEmpty.every(l => /^\d+\.\s/.test(l))
-  const isBulleted = nonEmpty.length > 0 && nonEmpty.every(l => /^[-*+]\s/.test(l))
+  // Bullets: `-` or `+` only. `*` is intentionally NOT a bullet marker here
+  // because it collides with inline emphasis ("* y *" would otherwise be
+  // misread as a list) — matches CommonMark's least-surprising behavior and
+  // keeps raw "*" text literal, the exact artifact Simeon flagged.
+  const isBulleted = nonEmpty.length > 0 && nonEmpty.every(l => /^[-+]\s/.test(l))
 
   if (isNumbered) {
     return (
