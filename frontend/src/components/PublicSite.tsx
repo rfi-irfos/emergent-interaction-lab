@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react'
-import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem, PaperItem } from '../types/content'
+import type { SiteContent, SectionId, CanvasPos, ProductItem, CertificateItem, PaperItem, CredLink } from '../types/content'
 import { useTheme, type Theme } from '../hooks/useTheme'
 import { useLang, type Lang } from '../hooks/useLang'
 import { trackPageView } from '../lib/tracking'
@@ -82,7 +82,30 @@ function BornCarousel({ items }: { items: Array<{ id: string; name: string; buil
   )
 }
 
-// Convert server-side paths to hash routing so GitHub Pages never 404s on legal links
+// Reusable credibility pills — real, checkable proof (a shipped crate,
+// a live API) rendered as bordered pills instead of a plain link list.
+// Used under the Lauras Team block, under Emergent Interaction, and
+// (dark-reskinned) inside the About-the-Lab modal. `tone` switches
+// the palette: 'light' for the public page, 'dark' for the modal.
+function CredPills({ items, tone = 'light' }: { items?: CredLink[]; tone?: 'light' | 'dark' }) {
+  if (!items?.length) return null
+  return (
+    <div className={`creds-badges creds-badges--${tone}`}>
+      {items.map((c, i) => (
+        <a
+          key={i}
+          className={`creds-badge${c.live ? ' creds-badge--live' : ''}`}
+          href={c.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={c.note}
+        >
+          {c.label}
+        </a>
+      ))}
+    </div>
+  )
+}
 function safeHref(href: string): string {
   return href.startsWith('/') && !href.startsWith('//') ? `#p${href}` : href
 }
@@ -1322,6 +1345,7 @@ export function PublicSite({
                 <Reveal from="bottom" delay={1}>
                   <p className="site-lauras-team-body" data-cid="about.laurasTeam.body">{lt.body}</p>
                 </Reveal>
+                <CredPills items={content.creds} tone="light" />
               </div>
             </section>
           )
@@ -1351,6 +1375,7 @@ export function PublicSite({
             <Reveal from="bottom"><h2 className="site-section-title">{content.protocol.title}</h2></Reveal>
             <Reveal from="scale" delay={2}><CoEvolutionDiagram nodes={content.protocol.nodes} intro={content.protocol.intro} /></Reveal>
             {content.protocol.closing && <Reveal from="bottom" delay={3}><p className="site-protocol-closing">{content.protocol.closing}</p></Reveal>}
+            <CredPills items={content.creds} tone="light" />
           </section>
         ) : null}
 
