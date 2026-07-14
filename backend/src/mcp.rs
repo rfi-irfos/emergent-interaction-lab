@@ -638,6 +638,24 @@ mod tests {
         sync::{Arc, RwLock},
     };
 
+    /// The Gmail API's `drafts.create` decodes `message.raw` as base64url and
+    /// then parses it as an RFC 2822 message — this confirms the round trip
+    /// actually holds (headers present, body preserved) rather than trusting
+    /// the encoding step alone.
+    #[test]
+    fn build_raw_email_round_trips_through_base64url() {
+        use base64::Engine;
+        let raw = build_raw_email("laura@example.com", "Subject with spaces", "Body\nwith a newline.");
+        let decoded_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(&raw).unwrap();
+        let decoded = String::from_utf8(decoded_bytes).unwrap();
+        assert!(decoded.contains("To: laura@example.com"));
+        assert!(decoded.contains("Subject: Subject with spaces"));
+        assert!(decoded.contains("Body\nwith a newline."));
+        // URL_SAFE alphabet uses '-'/'_' instead of '+'/'/' — confirms the
+        // "url" half of base64url actually took effect, not plain base64.
+        assert!(!raw.contains('+') && !raw.contains('/'));
+    }
+
     async fn state_with_token(token: &str) -> AppState {
         let db = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
         crate::chat::init_schema(&db).await;
@@ -709,6 +727,58 @@ mod tests {
         let off = state_with_token("").await;
         let (missing, _) = call(&off, bearer("secret"), json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await;
         assert_eq!(missing, StatusCode::NOT_FOUND, "an unconfigured MCP route must be absent");
+    }
+
+    /// The github_*/gmail_* tools follow the same "only mention what's
+    /// actually reachable" rule as the original three — a model told about a
+    /// tool it can't use just learns to apologize for something it was never
+    /// able to do. Both halves matter: absent when unconfigured, present the
+    /// moment both required fields are set.
+    #[tokio::test]
+    async fn github_and_gmail_tools_are_advertised_only_when_configured() {
+        let state = state_with_token("secret").await;
+        let (_, res) = call(&state, bearer("secret"), json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await;
+        let names: Vec<String> = res["result"]["tools"].as_array().unwrap()
+            .iter().map(|t| t["name"].as_str().unwrap().to_string()).collect();
+        assert!(!names.iter().any(|n| n.starts_with("github_")), "github_* tools must be absent when unconfigured: {names:?}");
+        assert!(!names.contains(&"gmail_create_draft".to_string()), "gmail_create_draft must be absent when unconfigured: {names:?}");
+
+        let mut configured = state_with_token("secret").await;
+        configured.eil_github_token = "tok".to_string();
+        configured.eil_github_repo = "rfi-irfos/emergent-interaction-lab".to_string();
+        configured.gmail_client_id = "id".to_string();
+        configured.gmail_client_secret = "secret".to_string();
+        configured.gmail_refresh_token = "refresh".to_string();
+        let (_, res) = call(&configured, bearer("secret"), json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await;
+        let names: Vec<String> = res["result"]["tools"].as_array().unwrap()
+            .iter().map(|t| t["name"].as_str().unwrap().to_string()).collect();
+        for expected in ["github_read_file", "github_list_issues", "github_create_issue", "github_add_comment", "gmail_create_draft"] {
+            assert!(names.contains(&expected.to_string()), "{expected} must be advertised once configured: {names:?}");
+        }
+    }
+
+    /// A model can attempt to call a tool name it was never told about (a
+    /// stale system prompt, a hallucinated tool name, a deployment that
+    /// dropped a secret mid-conversation) — this must degrade to a clear
+    /// isError result, never a panic or a silent no-op that looks like
+    /// success.
+    #[tokio::test]
+    async fn github_and_gmail_tools_fail_gracefully_when_not_configured() {
+        let state = state_with_token("secret").await;
+        for (tool, args) in [
+            ("github_read_file", json!({"path": "README.md"})),
+            ("github_list_issues", json!({})),
+            ("github_create_issue", json!({"title": "t", "body": "b"})),
+            ("github_add_comment", json!({"issue_number": 1, "body": "b"})),
+            ("gmail_create_draft", json!({"to": "a@b.com", "subject": "s", "body": "b"})),
+        ] {
+            let (status, res) = call(&state, bearer("secret"), json!({
+                "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                "params": { "name": tool, "arguments": args }
+            })).await;
+            assert_eq!(status, StatusCode::OK, "{tool}: protocol-level call must still succeed");
+            assert_eq!(res["result"]["isError"], json!(true), "{tool}: must report isError when unconfigured, not succeed silently");
+        }
     }
 
     #[tokio::test]
