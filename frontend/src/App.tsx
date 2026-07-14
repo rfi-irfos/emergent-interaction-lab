@@ -39,7 +39,6 @@ export default function App() {
   const { content, loading } = useContent(lang)
   // The admin always edits the German content, independent of whatever
   // language a visitor last had the public site in — Laura writes in German
-  // and never needs an editing-language switch.
   const admin = useContent('de')
   const { user, login, logout } = useAuth()
   const [route, setRoute] = useState(() => getRoute(window.location.hash))

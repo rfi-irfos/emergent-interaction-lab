@@ -1,33 +1,26 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { SiteContent } from '../types/content'
-import { ghRead, ghWrite, b64Encode, contentPathFor, UPLOADS_DIR, OWNER, REPO } from '../lib/github'
+import { API_BASE } from '../lib/apiBase'
+import { authHeaders } from '../lib/adminApi'
 import type { Lang } from './useLang'
 
 export function useContent(lang: Lang) {
   const [content, setContent]   = useState<SiteContent | null>(null)
   const [loading, setLoading]   = useState(true)
   const [saving, setSaving]     = useState(false)
-  const shaRef = useRef<string | null>(null)
 
-  // Fetch the active language's content. Swaps in place on language change
-  // (no full-screen spinner after the first load).
+  // ── LOAD ────────────────────────────────────────────────────────────────
+  // Try the backend first (`/api/content?lang=`), which is the single source
+  // of truth once anything has been saved there (it lives on the persistent
+  // volume). GET is open (no auth needed) so the public site works too.
+  // Fall back to the static content.{lang}.json (served by the SPA / raw
+  // GitHub) for the GitHub Pages mirror where there is no backend at all.
   useEffect(() => {
     let cancelled = false
-    shaRef.current = null
-    // TEMP LOCAL PREVIEW PATCH (will be reverted): load content.json from the
-    // built dist root instead of GitHub raw, so the dev server shows the same
-    // content.json the user is editing. Uses `content.{lang}.json` at the root
-    // (served by vite from public/ locally AND present at dist/ root on Fly) -
-    // NOT `frontend/public/content.json`, which only exists as a source path
-    // and is never reachable at that URL on the deployed app.
+    setLoading(true)
     const bust = `?t=${Date.now()}`
     const rawBase = import.meta.env.BASE_URL
-    // One retry after a short delay before giving up on the requested
-    // language — raw.githubusercontent.com occasionally 404s/errors on a
-    // brief propagation lag right after a push, which previously fell
-    // straight through to the English file: a German visitor would see an
-    // all-English page (nav labels, badges, buttons) with "DE" still
-    // selected, with nothing prompting a re-fetch of the real German copy.
+
     const fetchJson = async (url: string): Promise<SiteContent | null> => {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
@@ -38,42 +31,50 @@ export function useContent(lang: Lang) {
       }
       return null
     }
+
     ;(async () => {
+      // 1) backend (works on fly.dev; 404/error on the GH Pages mirror)
+      const fromBackend = await fetchJson(`${API_BASE}/api/content?lang=${lang}`)
+      if (cancelled) return
+      if (fromBackend && Object.keys(fromBackend).length > 0) {
+        setContent(fromBackend); setLoading(false); return
+      }
+      // 2) static content.{lang}.json (SPA root / raw GitHub)
       const primary = await fetchJson(`${rawBase}content.${lang}.json${bust}`)
       if (cancelled) return
       if (primary) { setContent(primary); setLoading(false); return }
-      // Requested language still unavailable after retry -> fall back to
-      // EN raw file, then to the bundled default.
+      // 3) static EN fallback
       if (lang !== 'en') {
         const en = await fetchJson(`${rawBase}content.json${bust}`)
         if (cancelled) return
         if (en) { setContent(en); setLoading(false); return }
       }
+      // 4) bundled default
       const { defaultContent } = await import('../types/defaultContent')
       if (!cancelled) { setContent(defaultContent); setLoading(false) }
     })()
     return () => { cancelled = true }
   }, [lang])
 
-  // Lazily prime the SHA for the active language so we can update (not just create)
-  const ensureSha = useCallback(async () => {
-    if (shaRef.current) return shaRef.current
-    try {
-      const file = await ghRead(contentPathFor(lang))
-      shaRef.current = file.sha
-    } catch {
-      shaRef.current = null  // file doesn't exist yet — first save creates it
-    }
-    return shaRef.current
-  }, [lang])
-
+  // ── SAVE ────────────────────────────────────────────────────────────────
+  // Persist to the backend (authenticated PUT). Replaces the old GitHub
+  // Contents-API write, which required a build-time VITE_GH_TOKEN that the
+  // Fly build didn't have — so saving silently 401'd on fly.dev. The backend
+  // endpoint authenticates via the Google OAuth session cookie instead,
+  // which same-origin fetch sends automatically with credentials:'include'.
   const save = useCallback(async (updated: SiteContent): Promise<boolean> => {
     setSaving(true)
     try {
-      const sha = await ensureSha()
-      const b64 = b64Encode(JSON.stringify(updated, null, 2))
-      const file = await ghWrite(contentPathFor(lang), b64, sha, `content: update ${lang} via admin panel`)
-      shaRef.current = file?.sha ?? null
+      const res = await fetch(`${API_BASE}/api/content?lang=${lang}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      })
+      if (!res.ok) {
+        console.error('Save failed:', res.status, await res.text().catch(() => ''))
+        return false
+      }
       setContent(updated)
       return true
     } catch (e) {
@@ -82,26 +83,31 @@ export function useContent(lang: Lang) {
     } finally {
       setSaving(false)
     }
-  }, [ensureSha, lang])
+  }, [lang])
 
+  // ── UPLOAD ──────────────────────────────────────────────────────────────
+  // POST the image to the backend's /api/upload (require_admin / x-chat-secret,
+  // same auth as every other admin surface) and return the served /uploads/*
+  // URL. Replaces the old GitHub-write upload path.
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
-    return new Promise(resolve => {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        try {
-          const b64 = (reader.result as string).split(',')[1]
-          const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').toLowerCase()
-          const filename = `${Date.now()}-${safe}`
-          const path = `${UPLOADS_DIR}/${filename}`
-          await ghWrite(path, b64, null, `upload: ${filename}`)
-          resolve(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${path}`)
-        } catch (e) {
-          console.error('Upload failed:', e)
-          resolve(null)
-        }
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: form,
+      })
+      if (!res.ok) {
+        console.error('Upload failed:', res.status)
+        return null
       }
-      reader.readAsDataURL(file)
-    })
+      const data = await res.json() as { url: string }
+      return data.url
+    } catch (e) {
+      console.error('Upload failed:', e)
+      return null
+    }
   }, [])
 
   return { content, loading, saving, save, uploadImage }
