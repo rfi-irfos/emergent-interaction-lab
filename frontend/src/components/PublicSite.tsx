@@ -776,27 +776,6 @@ interface Props {
 // framework runs in production, not just on this site's own Observatory —
 // Smithery listing is a still-open step (per the ship email) and
 // deliberately not linked yet, to avoid a dead/premature link.
-const CALL_LAURA_COPY = {
-  en: {
-    proofCaption: 'Engineered by RFI-IRFOS, directed by Laura — proof it runs in production:',
-    github: 'GitHub',
-    coreCrate: 'crates.io (core) v0.2.0',
-    teamCrate: 'crates.io (team) v0.2.0 — on request',
-    mcpCrate: 'crates.io (mcp) v0.2.0',
-    apiCrate: 'crates.io (api) v0.2.0',
-    api: 'Live API',
-  },
-  de: {
-    proofCaption: 'Von RFI-IRFOS gebaut, von Laura angeleitet — Beweis, dass es produktiv läuft:',
-    github: 'GitHub',
-    coreCrate: 'crates.io (Core) v0.2.0',
-    teamCrate: 'crates.io (Team) v0.2.0 — auf Anfrage',
-    mcpCrate: 'crates.io (MCP) v0.2.0',
-    apiCrate: 'crates.io (API) v0.2.0',
-    api: 'Live-API',
-  },
-} as const
-
 export function PublicSite({
   content, editMode = false, rearrangeMode = false, initPositions = {},
   onTextChange, onImageClick, onUpdate, modalOpen = false,
@@ -1330,18 +1309,23 @@ export function PublicSite({
         </section>
 
         {/* ── LAURAS TEAM (emergence story, directly under hero) ────────── */}
-        {content.about.laurasTeam?.body && (
-          <section className={reveal("site-lauras-team")} id="lauras-team">
-            <div className="site-lauras-team-inner">
-              <Reveal from="bottom">
-                <h2 className="site-lauras-team-title" data-cid="about.laurasTeam.title">{content.about.laurasTeam.title}</h2>
-              </Reveal>
-              <Reveal from="bottom" delay={1}>
-                <p className="site-lauras-team-body" data-cid="about.laurasTeam.body">{content.about.laurasTeam.body}</p>
-              </Reveal>
-            </div>
-          </section>
-        )}
+        {(() => {
+          const about = content.about
+          if (!about?.laurasTeam?.body) return null
+          const lt = about.laurasTeam
+          return (
+            <section className={reveal("site-lauras-team")} id="lauras-team">
+              <div className="site-lauras-team-inner">
+                <Reveal from="bottom">
+                  <h2 className="site-lauras-team-title" data-cid="about.laurasTeam.title">{lt.title}</h2>
+                </Reveal>
+                <Reveal from="bottom" delay={1}>
+                  <p className="site-lauras-team-body" data-cid="about.laurasTeam.body">{lt.body}</p>
+                </Reveal>
+              </div>
+            </section>
+          )
+        })()}
 
         {/* ── TRUST STRIP ──────────────────────────────────────────────── */}
         {!hiddenSections.includes('trust') && (trust?.items?.length ?? 0) > 0 && (
