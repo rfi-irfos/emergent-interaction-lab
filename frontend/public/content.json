@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>The Emergent Interaction Lab studies one field: how thinking and behavior actually change in sustained human-AI collaboration. Measured, not assumed.</p><h2>Where it began</h2><p>Laura Serna Gaviria was a witness in a criminal case. What she did then was no theory but hard documentation work: record every step, check every statement, name every contradiction. The method behind this Lab grew out of that discipline. Emergence emerged from emergence - the way Laura worked the case became the subject of the research itself.</p><h2>The method</h2><p>For Laura a pattern only counts once it has repeated itself at least three times on its own. What holds becomes structure, then a framework, then an agent. Jarvis grew out of exactly this loop. What starts as research above runs as software below - built by RFI-IRFOS, conceived by Laura.</p><h2>Who builds what</h2><p>Laura designs the methodology and decides what gets built. RFI-IRFOS turns it into real software. Where their work is in it, it is labelled - otherwise no one can tell whose work they are actually reading.</p>"
+      "body": "<p>This Lab is the starting point: the place where I validate a pattern before I put it to use anywhere. Below: how the method works, what has grown out of it, and what happens when you point it at your own case.</p><h2>The method</h2><p>For me a pattern only counts once it has repeated itself at least three times on its own. What holds becomes structure, then a framework, then an agent. Jarvis grew out of exactly this loop. What starts as research above runs as software below - built by RFI-IRFOS, conceived by Laura.</p><h2>Who builds what</h2><p>Laura designs the methodology and decides what gets built. RFI-IRFOS turns it into real software. Where their work is in it, it is labelled - otherwise no one can tell whose work they are actually reading.</p>"
     }
   ],
   "meta": {
@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "The Emergent Interaction Field is what this Lab studies: how thinking and behavior actually change in sustained human-AI collaboration, measured rather than assumed. The method I first used to check my own work now runs on cases, products, and organizations.",
-    "body": "This Lab is where I validate a pattern before it goes to use anywhere. Below: how the method works, what has grown out of it, and what happens when you point it at your own case.",
+    "subheadline": "It began with a criminal case Laura documented as a witness - and the question of how thinking actually emerges in sustained human-AI work.",
+    "body": "",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "The Lab & its founder",
     "headline": "Laura Serna Gaviria",
-    "bio": "Most of the problems I see aren't technical - they're translation problems: what a system does, and how it's talked about, drift apart. That's where I start.<br><br>Since 2023 I've applied that discipline to human-AI interaction. It grew into Lauras Team - review perspectives, now real engineering inside Jarvis and Call Laura. I decide what gets built; RFI-IRFOS builds it, labelled as theirs so it stays clear who did what. If you want the same rigor: <a href=\"#p/pricing\">start here.</a>",
+    "bio": "<p>Most of the problems I see aren't technical - they're translation problems: what a system does, and how it gets talked about, drift apart. That's where I start.</p><p>In 2023 I was a witness in a criminal case. What I did then was no theory but hard documentation work: record every step, check every statement, name every contradiction. That discipline became a method - and emergence emerged from emergence: the way I worked the case became the subject of the research itself.</p><p>Out of that method grew Lauras Team - a multi-agent built on how I think. An ethical agent, a legal one, others, each working the same case from a different side. Call Laura is the first product from it: a case comes in, every perspective reviews it, each tagged with where it came from. Jarvis is the autonomous research partner that keeps the same loop running in the background. I decide what gets built; RFI-IRFOS builds it, labelled as theirs so it stays clear who did what. If you want the same rigor: <a href=\"#p/pricing\">start here.</a></p>",
     "stats": [
       {
         "value": "2023",

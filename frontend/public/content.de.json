@@ -12,7 +12,7 @@
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Das Emergent Interaction Lab untersucht ein einziges Feld: wie Denken und Verhalten sich in anhaltender Mensch-KI-Zusammenarbeit tatsächlich verändern. Gemessen, nicht angenommen.</p><h2>Wo es begann</h2><p>Laura Serna Gaviria war Zeugin in einem Kriminalfall. Was sie damals tat, war keine Theorie, sondern harte Dokumentationsarbeit: jeden Schritt festhalten, jede Aussage prüfen, jeden Widerspruch benennen. Die Methode hinter diesem Lab ist aus dieser Disziplin gewachsen. Emergenz entstand aus Emergenz - die Art, wie Laura den Fall bearbeitete, wurde selbst zum Gegenstand der Forschung.</p><h2>Die Methode</h2><p>Für Laura zählt ein Muster erst, wenn es sich von selbst mindestens dreimal wiederholt hat. Was hält, wird zur Struktur, dann zum Framework, dann zum Agenten. Jarvis ist aus genau dieser Schleife entstanden. Was oben als Forschung beginnt, läuft unten als Software - gebaut von RFI-IRFOS, konzipiert von Laura.</p><h2>Wer baut was</h2><p>Laura entwirft die Methodik und entscheidet, was gebaut wird. RFI-IRFOS setzt es in echte Software um. Wo ihre Arbeit darin steckt, ist sie gekennzeichnet - sonst kann niemand unterscheiden, wessen Arbeit er eigentlich liest.</p>"
+      "body": "<p>Dieses Lab ist der Ausgangspunkt: der Ort, an dem ich ein Muster erst validiere, bevor ich es irgendwo einsetze. Unten steht, wie die Methode funktioniert, was aus ihr gewachsen ist - und was passiert, wenn du sie auf deinen eigenen Fall loslässt.</p><h2>Die Methode</h2><p>Für mich zählt ein Muster erst, wenn es sich von selbst mindestens dreimal wiederholt hat. Was hält, wird zur Struktur, dann zum Framework, dann zum Agenten. Jarvis ist aus genau dieser Schleife entstanden. Was oben als Forschung beginnt, läuft unten als Software - gebaut von RFI-IRFOS, konzipiert von Laura.</p><h2>Wer baut was</h2><p>Laura entwirft die Methodik und entscheidet, was gebaut wird. RFI-IRFOS setzt es in echte Software um. Wo ihre Arbeit darin steckt, ist sie gekennzeichnet - sonst kann niemand unterscheiden, wessen Arbeit er eigentlich liest.</p>"
     }
   ],
   "meta": {
@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Forschung seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Das Emergent Interaction Field ist das, was dieses Lab untersucht: wie Denken und Verhalten sich in anhaltender Mensch-KI-Zusammenarbeit tatsächlich verändern, gemessen statt angenommen. Die Methode, mit der ich zuerst meine eigene Arbeit geprüft habe, läuft jetzt auf Fälle, Produkte und Organisationen.",
-    "body": "Dieses Lab ist der Ort, an dem ich ein Muster validiere, bevor es irgendwo zum Einsatz kommt. Unten: wie die Methode funktioniert, was aus ihr gewachsen ist, und was passiert, wenn du sie auf deinen eigenen Fall richtest.",
+    "subheadline": "Entstanden aus einem Kriminalfall, den Laura als Zeugin dokumentierte - und der Frage, wie Denken in anhaltender Mensch-KI-Arbeit tatsächlich entsteht.",
+    "body": "",
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
     "ctaSecLabel": "Über das Projekt",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "Das Lab & seine Gründerin",
     "headline": "Laura Serna Gaviria",
-    "bio": "Die meisten Probleme, die ich sehe, sind keine technischen - es sind Übersetzungsprobleme: was ein System tut, und wie darüber geredet wird, klaffen auseinander. Genau da fang ich an.<br><br>Seit 2023 wende ich diese Disziplin auf Mensch-KI-Interaktion an. Daraus ist Lauras Team gewachsen - Prüfperspektiven, heute echte Engineering-Arbeit in Jarvis und Call Laura. Ich entscheide, was gebaut wird; RFI-IRFOS baut es um, als deren gekennzeichnet, damit klar bleibt, wer was gemacht hat. Wer dieselbe Sorgfalt will: <a href=\"#p/pricing\">hier entlang.</a>",
+    "bio": "<p>Die meisten Probleme, die ich sehe, sind keine technischen - es sind Übersetzungsprobleme: was ein System tut, und wie darüber geredet wird, klaffen auseinander. Genau da fang ich an.</p><p>2023 war ich Zeugin in einem Kriminalfall. Was ich damals tat, war keine Theorie, sondern harte Dokumentationsarbeit: jeden Schritt festhalten, jede Aussage prüfen, jeden Widerspruch benennen. Aus dieser Disziplin ist eine Methode gewachsen - und Emergenz entstand aus Emergenz: die Art, wie ich den Fall bearbeitete, wurde selbst zum Gegenstand der Forschung.</p><p>Aus dieser Methode ist Lauras Team entstanden - ein Multi-Agent, der auf meinem Denken aufgebaut ist. Ein ethischer Agent, ein juristischer, weitere prüfen denselben Fall aus verschiedenen Richtungen. Call Laura ist das erste Produkt daraus: ein Fall kommt rein, jede Perspektive prüft ihn, jede markiert mit ihrem Ursprung. Jarvis ist der autonome Forschungspartner, der dieselbe Schleife im Hintergrund am Laufen hält. Ich entscheide, was gebaut wird; RFI-IRFOS baut es, als deren Arbeit gekennzeichnet, damit klar bleibt, wer was gemacht hat. Wer dieselbe Sorgfalt will: <a href=\"#p/pricing\">hier entlang.</a></p>",
     "stats": [
       {
         "value": "2023",
