@@ -5,7 +5,7 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { STATUS_ACCENT } from './registry'
@@ -278,24 +278,30 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
-          {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
-        </button>
-        <button
-          className="panel-add-btn"
-          disabled={signals.length === 0}
-          onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
-        >
-          ⬇ JSON
-        </button>
-        {/* Exports whatever is currently loaded/filtered (`signals`), not
-            silently the unfiltered full set — same honesty-about-scope
-            principle as the X-Total-Count pagination above: if a level/
-            status/confidence/evolution filter narrowed the page, the export
-            reflects that narrowed page. */}
-        <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
-      </div>
+      <HudSectionHeader
+        title="Emergence Monitor"
+        sub="Signale emergenter Mensch-KI-Ko-Evolution — automatisch aus Forschungsgesprächen erkannt."
+        actions={
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
+              {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
+            </button>
+            <button
+              className="panel-add-btn"
+              disabled={signals.length === 0}
+              onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
+            >
+              ⬇ JSON
+            </button>
+            {/* Exports whatever is currently loaded/filtered (`signals`), not
+                silently the unfiltered full set — same honesty-about-scope
+                principle as the X-Total-Count pagination above: if a level/
+                status/confidence/evolution filter narrowed the page, the export
+                reflects that narrowed page. */}
+            <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
+          </div>
+        }
+      />
 
       {/* Filter bar — level/status/confidence/evolution, each a closed
           vocabulary already fixed by the analysis prompt (see LEVEL_SECTIONS,

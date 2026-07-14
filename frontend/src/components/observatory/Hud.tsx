@@ -90,7 +90,26 @@ export function useCountUp(target: number, durationMs = 900): number {
   return display
 }
 
-/// A big readout number with count-up. `format` controls display (e.g. %).
+/// A consistent section header for every Observatory module: a monospace
+/// title with a live accent, an optional plain-language sub-line, and an
+/// optional actions slot (range selector, export, …) pinned right. Replaces
+/// the per-module inline `flex + space-between` header blocks that made the
+/// OS read like unrelated Lego bricks — one header language, every surface.
+export function HudSectionHeader({ title, sub, actions }: {
+  title: string
+  sub?: string
+  actions?: React.ReactNode
+}) {
+  return (
+    <header className="hud-section-header">
+      <div className="hud-section-header-text">
+        <h2 className="hud-section-title">{title}</h2>
+        {sub && <p className="hud-section-sub">{sub}</p>}
+      </div>
+      {actions && <div className="hud-section-actions">{actions}</div>}
+    </header>
+  )
+}
 export function HudStat({ value, label, format, accent }: {
   value: number
   label: string

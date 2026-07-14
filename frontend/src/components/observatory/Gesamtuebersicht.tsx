@@ -4,7 +4,7 @@ import { TOOL_LABELS } from '../../lib/toolLabels'
 import { hudStagger } from '../../lib/hudStagger'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
@@ -132,18 +132,18 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
-        <p style={{ fontSize: 12, color: '#9aa0a8', margin: 0, maxWidth: 520 }}>
-          Alles, was diese Plattform über deine Forschungsaktivität aufgezeichnet hat, an einem Ort — nach Quelltabelle
-          getrennt, damit jede Zahl nachvollziehbar bleibt, gefiltert auf {RANGE_SUFFIX[data.range] ?? data.range}.
-        </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <ExportButtons rows={summaryRow} filenameBase={`gesamtuebersicht-zusammenfassung-${range}`} title={`Gesamtübersicht — Zusammenfassung (${RANGE_SUFFIX[data.range] ?? data.range})`} />
-        </div>
-      </div>
+      <HudSectionHeader
+        title="Gesamtübersicht"
+        sub="Alles, was diese Plattform über deine Forschungsaktivität aufgezeichnet hat, an einem Ort — nach Quelltabelle getrennt, damit jede Zahl nachvollziehbar bleibt."
+        actions={
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <ExportButtons rows={summaryRow} filenameBase={`gesamtuebersicht-zusammenfassung-${range}`} title={`Gesamtübersicht — Zusammenfassung (${RANGE_SUFFIX[data.range] ?? data.range})`} />
+          </div>
+        }
+      />
 
       {/* ── Chat (chat_conversations / chat_messages) ─────────────────── */}
       <div className="obs-section-label">Forschungsgespräche</div>

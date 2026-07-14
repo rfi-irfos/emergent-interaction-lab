@@ -3,6 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 
 interface ActivityItem {
   kind: 'pull_request' | 'commit' | 'workflow_run' | 'deploy'
@@ -67,22 +68,21 @@ export function AgentActivity() {
         <div className="obs-warning-note">⚠ {data.message}</div>
       )}
 
-      <div className="obs-section-label">Agent-Aktivität (PRs, Commits, Workflows, Deploys)</div>
-      {data.items.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, margin: '10px 0 14px', flexWrap: 'wrap' }}>
-          <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
-            <option value="">Alle Typen</option>
-            {(Object.keys(KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
-          </select>
-          {/* Exports whatever type filter currently narrowed the feed to
-              (`items`), not silently the unfiltered merged feed. */}
-          <ExportButtons
-            rows={items.map(i => ({ ...i }))}
-            filenameBase="agent-activity"
-            title="Agent-Aktivität"
-          />
-        </div>
-      )}
+      <HudSectionHeader
+        title="Agent-Aktivität"
+        sub="PRs, Commits, Workflows, Deploys"
+        actions={
+          data.items.length > 0 ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
+                <option value="">Alle Typen</option>
+                {(Object.keys(KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+              </select>
+              <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="agent-activity" title="Agent-Aktivität" />
+            </div>
+          ) : undefined
+        }
+      />
       {data.items.length === 0
         ? <div className="obs-card"><div className="obs-empty">Noch keine Aktivität protokolliert.</div></div>
         : items.length === 0

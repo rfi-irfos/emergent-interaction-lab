@@ -6,7 +6,7 @@ import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
@@ -63,20 +63,22 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-          {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        {/* Exports the real per-event tool-call feed below, gated by the
-            same `range` selector — the granular record set on this page,
-            as opposed to category_mix/tool_distribution/length_distribution
-            (small bucketed bar-chart counts, not individual real records). */}
-        <ExportButtons
-          rows={data.recent_tool_calls.map(c => ({ ...c }))}
-          filenameBase={`behavioral-tool-calls-${range}`}
-          title={`Jarvis-Werkzeugaufrufe (${RANGE_SUFFIX[data.range] ?? data.range})`}
-        />
-      </div>
+      <HudSectionHeader
+        title="Behavioral Landscape"
+        sub="Werkzeugaufrufe im zeitlichen Verlauf — eine Ebene tiefer als die Interaktionsdynamik."
+        actions={
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <ExportButtons
+              rows={data.recent_tool_calls.map(c => ({ ...c }))}
+              filenameBase={`behavioral-tool-calls-${range}`}
+              title={`Jarvis-Werkzeugaufrufe (${RANGE_SUFFIX[data.range] ?? data.range})`}
+            />
+          </div>
+        }
+      />
       <HudGrid cols={4}>
         <HudTile title="Research-Aktivität" badge="KAT" accent="var(--obs-purple)" span={2}>
           {data.category_mix.length === 0

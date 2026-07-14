@@ -4,6 +4,7 @@ import { authHeaders } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 
 // One row per anomaly the Anomaly Watchdog v1 flagged — see
 // backend/src/anomaly.rs's module doc comment for the full "what this is
@@ -94,19 +95,19 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | Anomaly['kind'])} style={{ fontSize: 12, padding: '5px 8px' }}>
-          <option value="">Alle Arten</option>
-          {(Object.keys(KIND_LABELS) as Anomaly['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
-        </select>
-        {/* Exports whatever kind filter currently narrowed the page to and
-            whatever's been loaded so far via "Weitere laden" (`items`). */}
-        <ExportButtons
-          rows={items.map(i => ({ ...i }))}
-          filenameBase="anomalie-log"
-          title="Anomalie-Log"
-        />
-      </div>
+      <HudSectionHeader
+        title="Anomalie-Log"
+        sub="Vier mechanische Trip-Wires pro Chat-Turn — von einem Menschen zu prüfen, nie ein zertifizierter Detektor."
+        actions={
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | Anomaly['kind'])} style={{ fontSize: 12, padding: '5px 8px' }}>
+              <option value="">Alle Arten</option>
+              {(Object.keys(KIND_LABELS) as Anomaly['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+            </select>
+            <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="anomalie-log" title="Anomalie-Log" />
+          </div>
+        }
+      />
 
       {items.length === 0 ? (
         <div className="obs-card">

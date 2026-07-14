@@ -7,6 +7,7 @@ import { ObsGauge } from './ObsGauge'
 import { HudTile } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 
 const RANGE_OPTIONS: { value: string; label: string }[] = [
   { value: '7d', label: 'Letzte 7 Tage' },
@@ -50,7 +51,7 @@ export function InteractionDynamics() {
 
   return (
     <div className="obs-panel">
-      <div className="obs-section-label">Letzte Antwort — Token für Token</div>
+      <HudSectionHeader title="Letzte Antwort — Token für Token" />
       {data.latest_tokens && data.latest_tokens.length > 0 ? (
         <div className="obs-item-card" style={{ ['--obs-accent' as string]: '#3b6bf6' }}>
           {data.latest_reply && <div className="obs-item-meta">{data.latest_at}</div>}

@@ -3,7 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -35,6 +35,10 @@ export function InformationDynamics() {
 
   return (
     <div className="obs-panel">
+      <HudSectionHeader
+        title="Information Dynamics"
+        sub="Wie oft frühere Gespräche und Dokumente wiederverwendet werden — die Informations-Ebene der Forschung."
+      />
       <div className="obs-grid">
         <div className="obs-stat c-teal"><div className="obs-stat-value">{data.documents}</div><div className="obs-stat-label">Dokumente</div></div>
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.chunks}</div><div className="obs-stat-label">Embedding-Chunks</div></div>

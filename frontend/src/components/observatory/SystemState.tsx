@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 
 const RANGE_OPTIONS: { value: string; label: string }[] = [
@@ -123,45 +124,33 @@ export function SystemState() {
         </>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <div className="obs-section-label" style={{ marginBottom: 2 }}>Beobachtete Systeme</div>
-          {/* Plain-language framing, always visible — Laura: "hardly
-              anything makes sense." A "Scope" here is just whatever thematic
-              area Jarvis's own analysis tagged a signal with (e.g.
-              "Denkfragmente", "Allgemein") — one card per area, showing its
-              most recent read. */}
-          <p className="obs-section-sub">Ein Kartenstapel pro Themenbereich deiner Forschung, mit dem jeweils aktuellsten Stand.</p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          {/* `states` (unlike the raw signal feed EmergenceMonitor exports) is
-              this view's own real per-scope aggregation — latest signal plus
-              observation count and the linked Interaction Dynamics trend for
-              each scope — so it's a distinct, genuinely row-shaped dataset
-              worth its own export rather than a duplicate of another module's.
-              Exports whatever the range selector above currently narrowed
-              the underlying signals to. */}
-          {states.length > 0 && (
-            <ExportButtons
-              rows={states.map(([scope, s]) => ({
-                scope,
-                status: s.status,
-                confidence: s.confidence,
-                evolution: s.evolution,
-                observation: s.observation,
-                observation_count: countByScope.get(scope) ?? 0,
-                interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
-                updated_at: s.created_at,
-              }))}
-              filenameBase={`system-state-${range}`}
-              title="System State — Beobachtete Systeme"
-            />
-          )}
-        </div>
-      </div>
+      <HudSectionHeader
+        title="Beobachtete Systeme"
+        sub="Ein Kartenstapel pro Themenbereich deiner Forschung, mit dem jeweils aktuellsten Stand."
+        actions={
+          <>
+            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {states.length > 0 && (
+              <ExportButtons
+                rows={states.map(([scope, s]) => ({
+                  scope,
+                  status: s.status,
+                  confidence: s.confidence,
+                  evolution: s.evolution,
+                  observation: s.observation,
+                  observation_count: countByScope.get(scope) ?? 0,
+                  interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
+                  updated_at: s.created_at,
+                }))}
+                filenameBase={`system-state-${range}`}
+                title="System State — Beobachtete Systeme"
+              />
+            )}
+          </>
+        }
+      />
       {signalsLoading && <HudSkeleton variant="list" rows={2} />}
       {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}
       {!signalsLoading && !signalsError && states.length === 0 && (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
-import { HudTile } from './Hud'
+import { HudTile, HudSectionHeader } from './Hud'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import { ObsDonut } from './ObsDonut'
@@ -203,9 +203,10 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
 
   return (
     <div className="obs-panel">
-      <div className="obs-section-label">
-        Aktive Simulationen {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {runs.length} von {total})</span>}
-      </div>
+      <HudSectionHeader
+        title="Aktive Simulationen"
+        sub={total !== null ? `Geladen: ${runs.length} von ${total}` : undefined}
+      />
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
           <option value="">Alle Status</option>

@@ -4,6 +4,7 @@ import { authHeaders } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 
 // Real, standalone Verwaltung page for backend/src/auditlog.rs's
 // hash-chained audit_log — the small sidebar `AuditChangelog.tsx` widget
@@ -193,6 +194,10 @@ export function Changelog() {
 
   return (
     <div className="obs-panel">
+      <HudSectionHeader
+        title="Changelog"
+        sub="Jede Änderung am Lab — nachvollziehbar, mit Kettensignatur."
+      />
       {/* ── Chain integrity — the one thing Lighthouse's own live Changelog
           page never shipped (only its retired Audit.tsx had a verify
           button); our backend's /verify endpoint is real and working, so

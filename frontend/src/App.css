@@ -3167,6 +3167,22 @@ button { cursor: pointer; font-family: inherit; }
 .hud-tile { box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 18%, transparent), 0 0 18px -6px color-mix(in srgb, var(--hud-accent) 55%, transparent); }
 .hud-tile:hover { box-shadow: inset 0 0 24px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 34%, transparent), 0 0 26px -4px color-mix(in srgb, var(--hud-accent) 70%, transparent); }
 
+/* ── HUD SECTION HEADER — one header language for every Observatory module ──
+   Replaces the per-module inline `flex + space-between` header blocks with a
+   shared, gotham-themed header so the OS reads as one lab, not a pile of
+   unrelated Lego bricks. Title uses the same mono telemetry face as
+   .hud-tile-title; the sub-line is the plain-language framing Laura asked
+   for; actions (range selector, export) pin right and wrap on narrow screens. */
+.hud-section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px 14px; margin: 4px 2px 18px; }
+.hud-section-header-text { min-width: 0; }
+.hud-section-title {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 13px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: rgba(206,224,232,.92); margin: 0;
+}
+.hud-section-title::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 9px; vertical-align: middle; background: var(--hud-accent, #34e1ff); box-shadow: 0 0 8px var(--hud-accent, #34e1ff); }
+.hud-section-sub { font-size: 12.5px; line-height: 1.55; color: var(--panel-text-dim, rgba(148,190,199,.6)); margin: 5px 0 0; max-width: 70ch; }
+.hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
 .hud-stat { text-align: left; }
 .hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; text-shadow: 0 0 16px color-mix(in srgb, var(--hud-accent, #34e1ff) 35%, transparent); font-variant-numeric: tabular-nums; }
 .hud-stat-label { font-size: 9.5px; color: var(--gotham-text-dim, rgba(140,170,184,.55)); margin-top: 5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }

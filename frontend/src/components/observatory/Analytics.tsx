@@ -3,7 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -99,6 +99,10 @@ export function Analytics() {
 
   return (
     <div className="obs-panel">
+      <HudSectionHeader
+        title="Analytics"
+        sub="Was die Besucher sehen und tun — Verkehr, Gespräche, Forschungsaktivität."
+      />
       <div className="obs-grid">
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_views}</div><div className="obs-stat-label">Seitenaufrufe (30 T.)</div></div>
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher (30 T.)</div></div>
