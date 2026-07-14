@@ -8,7 +8,7 @@
 export type AdminSection =
   | 'inbox' | 'forschung' | 'blog' | 'analytics' | 'website-kit' | 'monetization'
   | 'systemmap' | 'emergence' | 'systemstate' | 'interaction' | 'information' | 'behavior' | 'research'
-  | 'simulationcenter' | 'knowledgegraph' | 'agentactivity' | 'flugschreiber' | 'gesamtuebersicht' | 'denkfragmente'
+  | 'simulationcenter' | 'knowledgegraph' | 'agentactivity' | 'gesamtuebersicht' | 'denkfragmente'
   // Anomalie-Log — Anomaly Watchdog v1 review surface (see
   // backend/src/anomaly.rs). Systemebene, not Forschungsebene: it's a
   // system-health/safety signal about JARVIS ITSELF (tool failures, the
@@ -37,10 +37,3 @@ export type AdminSection =
   // entries + a chain-intact dot) stays exactly as-is; this is a genuinely
   // separate, more complete surface, not a replacement.
   | 'changelog'
-  // Custom Dashboard — Track A Phase 6c: a movable-card grid of widgets
-  // picked from the fixed catalog in lib/dashboardCatalog.ts (see
-  // components/dashboard/DashboardPage.tsx). Verwaltung-tier alongside
-  // Analytics/Monetarisierung/Changelog, same reasoning as those: this is a
-  // BI-dashboard-building tool, not a research observable or a system-
-  // health signal.
-  | 'dashboard'

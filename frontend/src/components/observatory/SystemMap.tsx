@@ -334,15 +334,17 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           onNodeHover={(node: any) => setHoverNodeId(node ? node.id : null)}
           cooldownTicks={140}
           onNodeClick={(node: any) => {
-            if (node.isCore) {
-              setExpandedSatellite(null)
-              setExpanded(cur => cur === node.id ? null : node.id)
-            } else {
-              const [nodeId] = String(node.id).split('-sat-')
-              const itemId = String(node.id).split('-sat-')[1]
-              setExpanded(null)
-              setExpandedSatellite(cur => (cur && cur.itemId === itemId ? null : { nodeId, itemId }))
-            }
+            try {
+              if (node?.isCore) {
+                setExpandedSatellite(null)
+                setExpanded(cur => cur === node.id ? null : node.id)
+              } else {
+                const [nodeId] = String(node?.id ?? '').split('-sat-')
+                const itemId = String(node?.id ?? '').split('-sat-')[1]
+                setExpanded(null)
+                setExpandedSatellite(cur => (cur && cur.itemId === itemId ? null : { nodeId, itemId }))
+              }
+            } catch { /* ignore click errors — never crash the OS on a node click */ }
           }}
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
         />

@@ -24,6 +24,23 @@ button { cursor: pointer; font-family: inherit; }
   --hud-cyan: #22d3ee;
   --hud-cyan-dim: rgba(34,211,238,.35);
   --hud-bg: #070b12;
+  /* Gotham / Observatory surface tokens — defined globally (not under
+     .observatory-hud) so every module reads the same dark-glass palette
+     regardless of render scope. This is what stopped Verwaltung sections
+     (Inbox, Custom Dashboard, etc.) from flashing a white box when they
+     weren't nested under the HUD scope. */
+  --gotham-bg: #070b12;
+  --gotham-panel: rgba(11,17,26,.66);
+  --gotham-border: rgba(120,150,170,.16);
+  --gotham-text: #cfe8ef;
+  --gotham-text-dim: rgba(148,190,199,.62);
+  /* Full obs status-hue set, available everywhere (no hard-hex drift). */
+  --obs-blue: #3b6bf6;
+  --obs-purple: #8b5cf6;
+  --obs-teal: #14b8a6;
+  --obs-amber: #f59e0b;
+  --obs-green: #10b981;
+  --obs-red: #ef4444;
 }
 
 /* ── Loading / Error ─────────────────────────────────────────────────────────── */
@@ -3085,9 +3102,12 @@ button { cursor: pointer; font-family: inherit; }
   background: repeating-linear-gradient(180deg, rgba(52,225,255,.02) 0px, rgba(52,225,255,.02) 1px, transparent 1px, transparent 3px);
   mix-blend-mode: screen; opacity: .5;
 }
+/* Scanline overlay kept statically fixed — no drift loop. A constantly
+   drifting stripe reads as a fairground flicker, not a secure-ops console.
+   Disabled per Simeon's explicit "das flickert alles" directive. */
 @keyframes hud-scan-drift {
   from { background-position-y: 0; }
-  to { background-position-y: 120px; }
+  to { background-position-y: 0; }
 }
 .gotham .crm-body { position: relative; z-index: 2; color: var(--gotham-text); }
 .gotham .crm-topbar {
@@ -3249,7 +3269,9 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-map-tooltip-excerpt { color: rgba(212,231,235,.85); }
 
 @keyframes hud-card-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes hud-pulse { 0%, 100% { opacity: .82; } 50% { opacity: 1; } }
+/* Calm "alive" breathing — floor raised to 1 so elements never dim to a
+   blink. Motion signals liveness subtly, never strobes. */
+@keyframes hud-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 1; } }
 
 /* ── VERWALTUNG SECTIONS UNDER THE HUD ────────────────────────────────────
    Website Kit / Inbox / Blog still rendered as plain white BI cards even
@@ -3307,8 +3329,10 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .pem-tag-input-row input { background: rgba(7,14,20,.6); border-color: rgba(34,211,238,.22); color: #eefcff; }
 .observatory-hud .pem-tag-add { background: var(--hud-cyan); color: #04222b; }
 
-/* Live/stat cards above the Forschung chat (LiveCards.tsx, retained for
-   other contexts) + the Forschung KPI tracker (ForschungKpis.tsx) */
+/* LiveCards.tsx was removed (replaced by ForschungKpis.tsx — the real
+   Laura-only usage-behavior livestream with tokens in/out). The Forschung
+   KPI tracker (ForschungKpis.tsx) is the single source of top-of-Forschung
+   widgets now. */
 .observatory-hud .live-card {
   background: linear-gradient(180deg, rgba(20,30,42,.75), rgba(11,17,26,.75));
   border-color: rgba(34,211,238,.16);
@@ -4177,4 +4201,84 @@ button { cursor: pointer; font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   .dash-widget { animation: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MONETIZATION — calm BI split (revenue donut + latest-order card)
+   Restyled away from the old "kinderspielplatz" full-width stretched chart:
+   one calm two-column row, dark-glass, no neon. The order card sits
+   directly beside the donut so the revenue split always has a concrete
+   latest charge next to it. */
+.monetization-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+  align-items: stretch;
+}
+.monetization-split .monetization-donut-tile {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+.monetization-donut-caption {
+  font-size: 11px;
+  color: var(--gotham-text-dim, #9aa0a8);
+  line-height: 1.6;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+.monetization-order-card {
+  background: var(--gotham-panel, rgba(11,17,26,.66));
+  border: 1px solid var(--gotham-border, rgba(120,150,170,.16));
+  border-radius: 10px;
+  padding: 18px 18px 20px;
+  box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 3px solid var(--obs-green, #10b981);
+}
+.monetization-order-card-head {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: rgba(206,224,232,.6);
+  margin-bottom: 12px;
+}
+.monetization-order-card-product {
+  color: #eefcff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+.monetization-order-card-amount {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--obs-green, #10b981);
+  text-shadow: 0 0 14px rgba(16,185,129,.25);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.monetization-order-card-meta {
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  font-size: 10.5px;
+  color: var(--gotham-text-dim, rgba(148,190,199,.62));
+  line-height: 1.5;
+  word-break: break-word;
+}
+.monetization-bikpi { margin-bottom: 4px; }
+
+/* Calm the Monetization module's own product list + form — reduce the
+   heavy boxed chrome so it reads as BI tooling, not a toy. */
+.observatory-hud .monetization .obs-item-card { margin-bottom: 10px; }
+.observatory-hud .monetization .obs-section-label { margin-top: 18px; }
+
+@media (max-width: 760px) {
+  .monetization-split { grid-template-columns: 1fr; }
 }

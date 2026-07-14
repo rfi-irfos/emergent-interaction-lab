@@ -203,7 +203,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
           linkColor={() => 'rgba(34,211,238,.22)'}
           linkWidth={1.2}
           cooldownTicks={120}
-          onNodeClick={(node: any) => setExpanded(cur => cur === node.id ? null : node.id)}
+          onNodeClick={(node: any) => { try { setExpanded(cur => cur === node?.id ? null : node?.id) } catch { /* ignore click errors */ } }}
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
         />
 

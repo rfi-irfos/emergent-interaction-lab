@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { HudSkeleton } from './HudSkeleton'
 import { HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
+import { STATUS_ACCENT } from './registry'
 
 const RANGE_OPTIONS: { value: string; label: string }[] = [
   { value: '7d', label: 'Letzte 7 Tage' },
@@ -67,6 +68,54 @@ function StatusRow({ label, ok }: { label: string; ok: boolean }) {
   )
 }
 
+// Click-to-expand detail view for one observed system (scope). Reuses the
+// same `.pem-overlay`/`.pem` modal shell as EmergenceMonitor's signal modal
+// — dark-HUD themed via ancestor cascade, Esc + click-outside to close.
+function SystemStateModal({ scope, signal, count, trend, onClose }: {
+  scope: string
+  signal: Signal
+  count: number
+  trend: string | null
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="pem-overlay" onClick={onClose}>
+      <div
+        className="pem obs-signal-modal"
+        onClick={e => e.stopPropagation()}
+        style={{ ['--obs-accent' as string]: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}
+      >
+        <div className="pem-header">
+          <span className="pem-title">{scope}</span>
+          <button className="pem-close" onClick={onClose} title="Schließen (Esc)">✕</button>
+        </div>
+        <div className="pem-body obs-signal-modal-body">
+          <div className="obs-item-meta" style={{ margin: '4px 0 12px' }}>
+            <span className="obs-pill" style={{ background: `${STATUS_ACCENT[signal.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>{signal.status}</span>
+            {' · '}Konfidenz: {signal.confidence}
+            {' · '}Entwicklung: {signal.evolution}
+            {' · '}{count} Beobachtungen in diesem Bereich
+          </div>
+          {trend && (
+            <div className="obs-badge-verified" style={{ marginBottom: 12 }}>
+              📈 {trend}
+            </div>
+          )}
+          <div className="obs-signal-modal-observation">{signal.observation}</div>
+          <div className="obs-item-meta" style={{ marginTop: 14, opacity: 0.7 }}>
+            Zuletzt aktualisiert: {signal.created_at}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /// The current state of each system under observation — one narrative per
 /// scope, built from the latest emergence_signals row touching that scope.
 /// Technical system health (formerly its own "System Diagnostics" nav item)
@@ -84,6 +133,7 @@ function StatusRow({ label, ok }: { label: string; ok: boolean }) {
 /// already relying on it.
 export function SystemState() {
   const [range, setRange] = useState('all')
+  const [expandedState, setExpandedState] = useState<string | null>(null)
   const { data: signals, loading: signalsLoading, error: signalsError } = useAdminFetch<Signal[]>(`/api/observatory/emergence/signals?range=${range}`, [range])
   const { data: diag, loading: diagLoading, error: diagError } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
   const { data: scopeTrends } = useAdminFetch<ScopeTrend[]>('/api/observatory/scope-trends')
@@ -159,10 +209,19 @@ export function SystemState() {
       {states.map(([scope, s], i) => {
         const trend = trendLine(trendByScope.get(scope))
         return (
-          <div className="obs-item-card" key={scope} style={hudStagger(i)}>
+          <div
+            className="obs-item-card obs-item-card-clickable"
+            key={scope}
+            style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? 'var(--hud-cyan)' }}
+            role="button"
+            tabIndex={0}
+            onClick={() => setExpandedState(scope)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedState(scope) } }}
+          >
             <div className="obs-item-title">
               {scope}
               <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
+              <span className="obs-item-more">Details ansehen →</span>
             </div>
             <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
             <div className="obs-item-meta" style={{ marginTop: -6 }}>Konfidenz: {s.confidence} · Entwicklung: {s.evolution}</div>
@@ -171,6 +230,15 @@ export function SystemState() {
           </div>
         )
       })}
+      {expandedState && byScope.get(expandedState) && (
+        <SystemStateModal
+          scope={expandedState}
+          signal={byScope.get(expandedState)!}
+          count={countByScope.get(expandedState) ?? 0}
+          trend={trendLine(trendByScope.get(expandedState))}
+          onClose={() => setExpandedState(null)}
+        />
+      )}
 
       {/* Deliberately visually demoted from here down — same principle
           chat::SYSTEM_PROMPT itself is instructed to follow ("präsentiere

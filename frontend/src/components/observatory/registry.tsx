@@ -57,16 +57,6 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   { id: 'systemmap', label: 'System Map', tier: 'system', icon: I(<><circle cx="6" cy="6" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="12" cy="18" r="3" /><line x1="8.5" y1="7.5" x2="15.5" y2="16" /><line x1="15.5" y1="7.5" x2="8.5" y2="16" /></>) },
   { id: 'systemstate', label: 'System State', tier: 'system', icon: I(<><path d="M12 2v4M12 18v4M2 12h4M18 12h4" /><circle cx="12" cy="12" r="6" /></>) },
   { id: 'agentactivity', label: 'Agent-Aktivität', tier: 'system', icon: I(<><path d="M9 18l-6-6 6-6M15 6l6 6-6 6" /></>) },
-  // Flugschreiber (flight recorder) — a typed, whole-system rollup captured
-  // after every chat turn (see backend/src/observatory.rs's
-  // capture_system_snapshot), scrubbable back through history. German label,
-  // same convention as "Agent-Aktivität"/"Forschung"/"Monetarisierung"
-  // elsewhere in this registry: used where the German term is the natural,
-  // evocative one rather than an awkward English calque. Systemebene: this
-  // is squarely "Systemzustand über die Zeit" (see the SYSTEM_PROMPT's own
-  // 3-tier description in chat.rs) — a longitudinal view of overall system
-  // state, not a research observable or a technical/platform-health figure.
-  { id: 'flugschreiber', label: 'Flugschreiber', tier: 'system', icon: I(<><rect x="4" y="8" width="16" height="10" rx="2" /><circle cx="9" cy="13" r="1.4" /><circle cx="15" cy="13" r="1.4" /><path d="M12 8V4M9 4h6" /></>) },
   // "Everything about me" — one holistic rollup across every table this
   // platform has captured about Laura's research activity (chat, emergence
   // signals, research notes, CCET, simulation runs, the flight recorder,
@@ -123,11 +113,9 @@ export const SECTION_LABELS: Record<AdminSection, string> = {
   simulationcenter: 'Simulation Center',
   knowledgegraph: 'Knowledge Graph',
   agentactivity: 'Agent-Aktivität',
-  flugschreiber: 'Flugschreiber',
   gesamtuebersicht: 'Gesamtübersicht',
   denkfragmente: 'Denkfragmente',
   anomalies: 'Anomalie-Log',
   forschungspipeline: 'Forschungspipeline',
   changelog: 'Changelog',
-  dashboard: 'Custom Dashboard',
 }

@@ -375,20 +375,12 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
     [range],
   )
 
-  const definitionsNote = effectiveFragments[0]?.definitions_note ?? distribution?.definitions_note
 
   const turns = groupByTurn(effectiveFragments)
   const maxLayerCount = Math.max(...(distribution?.by_layer.map(b => b.count) ?? []), 1)
 
   return (
     <div className="obs-panel">
-      <div
-        className="obs-badge-experimental"
-        title={definitionsNote ?? 'Eigene Operationalisierung dieses Projekts, keine validierte kognitionswissenschaftliche Methode.'}
-      >
-        Eigene Operationalisierung — nicht wörtlich aus Lauras Paper
-      </div>
-
       {/* ── legend: always-visible text labels, not color-only identity — */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginBottom: 16 }}>
         {LAYER_ORDER.map(layer => (
