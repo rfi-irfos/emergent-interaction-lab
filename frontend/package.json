@@ -11,8 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "d3-force": "^3.0.0",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-force-graph-2d": "^1.29.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

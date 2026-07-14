@@ -3128,6 +3128,7 @@ button { cursor: pointer; font-family: inherit; }
 
 /* ── HUD TILE — the shared framed-instrument cell (Hud.tsx) ───────────────── */
 .hud-grid { display: grid; gap: 14px; margin-bottom: 16px; }
+.hud-grid--12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
 .hud-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .hud-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .hud-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -3215,6 +3216,16 @@ button { cursor: pointer; font-family: inherit; }
 }
 .observatory-hud .panel-add-btn:hover:not(:disabled) { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); box-shadow: 0 0 12px rgba(34,211,238,.25); }
 .observatory-hud .panel-delete-btn { border-color: rgba(239,68,68,.4); color: #fca5a5; }
+/* Dashboard toolbar (Custom Dashboard): keep the selects/inputs/+ button in
+   the dark gotham chrome instead of the light Verwaltung defaults — without
+   this the dark Observatory shows a white search box + white add button. */
+.observatory-hud .dash-toolbar select,
+.observatory-hud .dash-toolbar input {
+  background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22);
+  color: #eefcff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+}
+.observatory-hud .dash-toolbar select option { background-color: #0d141f; color: #eefcff; }
+.observatory-hud .dash-toolbar .panel-add-btn { background: rgba(34,211,238,.1); }
 .observatory-hud .panel-delete-btn:hover { background: rgba(239,68,68,.12); }
 
 .observatory-hud .obs-chart-grid { stroke: rgba(34,211,238,.1); }
@@ -3356,7 +3367,7 @@ button { cursor: pointer; font-family: inherit; }
    "Imagine its like a mycelium network growing new nodes dynamically" —
    satellite offshoots sprout per node proportional to its own activity;
    clicking a node (a "metatag") writes its observation out, typewriter-style. */
-.observatory-hud .mycelium-card { position: relative; overflow: visible; }
+.observatory-hud .mycelium-card { position: relative; overflow: hidden; }
 .mycelium-pulse { animation: hud-pulse 2.6s ease-in-out infinite; transform-origin: center; }
 .mycelium-node-ring { transition: opacity .2s ease; }
 .mycelium-node.active .mycelium-node-ring { animation: hud-pulse 1.4s ease-in-out infinite; }

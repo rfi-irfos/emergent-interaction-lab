@@ -234,6 +234,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           tiles always consider all of them; the run-status tile hides
           statuses that weren't fetched when a status filter is active
           (same convention as EmergenceMonitor's visibleStatuses). */}
+      <div className="hud-grid hud-grid--12">
       <HudTile title="Run-Status" badge="SIM" accent="var(--obs-amber)" span={4}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
@@ -283,6 +284,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           Wie viele Zweige eine dokumentierte Entscheidungs-Begründung tragen (geladen: {allBranches.length}).
         </p>
       </HudTile>
+      </div>
       <SimulationLab
         runs={runs}
         loading={loading}

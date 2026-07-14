@@ -1,19 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import ForceGraph2D from 'react-force-graph-2d'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
-import { useSvgPanZoom } from '../../hooks/useSvgPanZoom'
-import type { ViewBox } from '../../lib/svgPanZoom'
+import { HudSkeleton } from './HudSkeleton'
 
 interface SignalRow { id: string; pattern: string; observation: string; scope: string | null; source_conversation_id: string | null; created_at: string }
 interface BlogRow { id: string; title: string; body: string; source_conversation_id: string | null; updated_at: string }
 interface NoteRow { id: string; category: string; title: string; body: string; source_conversation_id: string | null; updated_at: string }
 interface DocRow { id: string; filename: string; created_at: string }
-
-const CX = 300, CY = 230, R = 160
-
-// Module-level constant so it's referentially stable across renders — the
-// pan/zoom hook uses it as a dependency and doesn't deep-compare.
-const BASE_VIEWBOX: ViewBox = { x: 0, y: 0, w: 600, h: 460 }
 
 const KIND_LABEL: Record<DetailItem['kind'], string> = {
   signal: 'Signal', post: 'Blogpost', note: 'Research Note', doc: 'Dokument',
@@ -31,11 +25,6 @@ interface DetailItem {
 function truncate(text: string, len = 160): string {
   const clean = text.replace(/\s+/g, ' ').trim()
   return clean.length > len ? `${clean.slice(0, len)}…` : clean
-}
-
-function hash(n: number): number {
-  const x = Math.sin(n * 12.9898) * 43758.5453
-  return x - Math.floor(x)
 }
 
 // Unlike useAdminFetch (see lib/adminApi.ts), this graph fans out four
@@ -67,17 +56,9 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const [notes, setNotes] = useState<NoteRow[] | null>(null)
   const [docs, setDocs] = useState<DocRow[] | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [hovered, setHovered] = useState<string | null>(null)
-  const [error, setError] = useState(false)
-  // Destructured (not kept as one `panZoom` object) so eslint's
-  // react-hooks/refs check can tell `viewBox` (plain state) apart from
-  // `svgRef` (an actual ref) — bundling them behind one property access
-  // makes the rule conservatively flag every `panZoom.viewBox.x` read.
-  const {
-    svgRef, viewBox, viewBoxStr, zoomLevel, isPanning, layoutKey,
-    resetView, relayout, onPointerDown, onPointerMove, onPointerUp,
-    onPointerCancel, onPointerLeave, onClickCapture,
-  } = useSvgPanZoom(BASE_VIEWBOX)
+  const fgRef = useRef<any>(null)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  const [dims, setDims] = useState({ w: 800, h: 560 })
 
   useEffect(() => {
     let cancelled = false
@@ -98,8 +79,21 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
     return () => { cancelled = true }
   }, [])
 
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      setDims({ w: el.clientWidth, h: el.clientHeight })
+    })
+    ro.observe(el)
+    setDims({ w: el.clientWidth, h: el.clientHeight })
+    return () => ro.disconnect()
+  }, [])
+
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
-  if (!signals || !posts || !notes || !docs) return <div className="obs-panel"><div className="obs-empty">Graph wird aufgebaut…</div></div>
+  if (!signals || !posts || !notes || !docs) return <div className="obs-panel"><HudSkeleton /></div>
 
   // Real relationship engine does not exist anywhere in this codebase —
   // every edge below is inferred from shared fields, not a curated linkage.
@@ -129,33 +123,59 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const noteItems: DetailItem[] = notes.map(n => ({ id: n.id, kind: 'note', title: n.title, excerpt: n.body, timestamp: n.updated_at, conversationId: n.source_conversation_id }))
   const docItems: DetailItem[] = docs.map(d => ({ id: d.id, kind: 'doc', title: d.filename, excerpt: '', timestamp: d.created_at, conversationId: null }))
 
-  const nodes = [
-    ...scopeNames.map((scope, i) => ({ id: `scope-${i}`, label: scope, kind: 'scope' as const, accent: '#22d3ee', count: scopeSignalCount(scope), scope })),
-    { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: '#8b5cf6', count: notes.length, scope: null },
-    { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: '#10b981', count: docs.length, scope: null },
-  ]
+  const hub = { id: 'hub', label: 'Wissensbestand', accent: '#22d3ee', count: 0, kind: 'hub' as const, scope: null as string | null }
+  const scopeNodes = scopeNames.map((scope, i) => ({ id: `scope-${i}`, label: scope, kind: 'scope' as const, accent: '#22d3ee', count: scopeSignalCount(scope), scope }))
+  const noteNode = { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: '#8b5cf6', count: notes.length, scope: null as string | null }
+  const docNode = { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: '#10b981', count: docs.length, scope: null as string | null }
+  const nodes = [hub, ...scopeNodes, noteNode, docNode] as Array<{ id: string; label: string; accent: string; count: number; kind: any; scope: string | null }>
 
-  const positions = nodes.map((n, i) => {
-    const angle = (-90 + i * (360 / nodes.length)) * (Math.PI / 180)
-    return { ...n, x: CX + R * Math.cos(angle), y: CY + R * Math.sin(angle) }
-  })
+  const links = useMemo(() => {
+    const ls: any[] = []
+    for (const n of nodes) {
+      if (n.id === 'hub') continue
+      ls.push({ source: 'hub', target: n.id })
+    }
+    return ls
+  }, [nodes.length])
 
-  // Shared by both the click-to-expand panel and the hover tooltip below —
-  // the tooltip is a lighter "glance" layer on top of the same underlying
-  // items, not a second source of truth.
-  const itemsForNode = (node: (typeof positions)[number] | null | undefined): DetailItem[] =>
+  const graphData = useMemo(() => ({ nodes: nodes.map(n => ({ ...n })), links }), [nodes, links])
+
+  const itemsForNode = (node: any | null | undefined): DetailItem[] =>
     node?.kind === 'scope' && node.scope ? scopeItems(node.scope)
-    : node?.kind === 'notes' ? noteItems
-    : node?.kind === 'docs' ? docItems
-    : []
+      : node?.kind === 'notes' ? noteItems
+      : node?.kind === 'docs' ? docItems
+      : []
 
-  const expandedNode = expanded ? positions.find(p => p.id === expanded) : null
+  const expandedNode = expanded ? nodes.find(p => p.id === expanded) : null
   const expandedLinkedPosts = expandedNode?.scope ? linkedPosts(expandedNode.scope) : []
   const expandedItems: DetailItem[] = itemsForNode(expandedNode)
 
-  const hoveredNode = hovered ? positions.find(p => p.id === hovered) : null
-  const hoveredItems = itemsForNode(hoveredNode)
-  const hoveredTeaser = hoveredItems[0] ?? null
+  const nodePaint = (node: any, ctx: CanvasRenderingContext2D) => {
+    const r = 8 + Math.min(node.count, 20) * 0.9
+    const x = node.x ?? 0, y = node.y ?? 0
+    // glow
+    ctx.beginPath()
+    ctx.arc(x, y, r + 6, 0, 2 * Math.PI)
+    ctx.fillStyle = node.accent + '22'
+    ctx.fill()
+    // core
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, 2 * Math.PI)
+    ctx.fillStyle = '#0d141f'
+    ctx.fill()
+    ctx.lineWidth = 2
+    ctx.strokeStyle = node.accent
+    ctx.stroke()
+    // label
+    ctx.font = '600 11px "SF Mono", Consolas, monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#eefcff'
+    ctx.fillText(node.label, x, y - 2)
+    ctx.fillStyle = node.accent
+    ctx.font = '800 11px "SF Mono", Consolas, monospace'
+    ctx.fillText(String(node.count), x, y + 12)
+  }
 
   return (
     <div className="obs-panel">
@@ -164,92 +184,31 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
           (Platzhalter — heuristische Verknüpfung über gemeinsame Gesprächs-ID/Scope, keine echte Graph-Analyse)
         </div>
       )}
-      <div className="obs-card obs-map-card mycelium-card">
-        <div className="obs-map-toolbar">
-          <span className="obs-map-toolbar-zoom">{Math.round(zoomLevel * 100)}%</span>
-          <button type="button" className="obs-map-toolbar-btn" onClick={resetView} title="Zoom/Pan zurücksetzen">
-            ⟲ Ansicht zurücksetzen
-          </button>
-          <button type="button" className="obs-map-toolbar-btn" onClick={relayout} title="Layout neu anordnen">
-            ⟳ Neu anordnen
-          </button>
-        </div>
-        <svg
-          ref={svgRef}
-          viewBox={viewBoxStr}
-          style={{
-            width: '100%', maxWidth: 640, display: 'block', margin: '0 auto',
-            cursor: isPanning ? 'grabbing' : 'grab', touchAction: 'none',
+      <div className="obs-card obs-map-card mycelium-card" ref={wrapRef} style={{ height: '74vh', minHeight: 420, overflow: 'hidden' }}>
+        <ForceGraph2D
+          ref={fgRef}
+          width={dims.w}
+          height={dims.h}
+          graphData={graphData}
+          backgroundColor="rgba(0,0,0,0)"
+          nodeRelSize={1}
+          nodeCanvasObject={nodePaint}
+          nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
+            const r = 8 + Math.min(node.count, 20) * 0.9 + 6
+            ctx.fillStyle = color
+            ctx.beginPath()
+            ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI)
+            ctx.fill()
           }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerCancel}
-          onPointerLeave={onPointerLeave}
-          onClickCapture={onClickCapture}
-        >
-          <circle className="mycelium-hub-core" cx={CX} cy={CY} r={34} fill="#0a0f16" stroke="#22d3ee" strokeWidth={2} opacity={0.5} />
-          <text x={CX} y={CY + 4} textAnchor="middle" fontSize={10} fill="rgba(226,241,245,.7)">Wissensbestand</text>
-
-          <g key={layoutKey}>
-            {positions.map((p, pi) => {
-              const linked = p.kind === 'scope' && p.scope ? linkedPosts(p.scope).length : 0
-              const opacity = 0.3 + Math.min(linked, 4) * 0.12
-              return (
-                <g key={`edge-${p.id}`}>
-                  <line x1={CX} y1={CY} x2={p.x} y2={p.y} stroke={p.accent} strokeWidth={1 + Math.min(linked, 4)} opacity={opacity} />
-                  {linked > 0 && (
-                    <circle r="3" fill={p.accent}>
-                      <animateMotion dur={`${3 + hash(pi) * 2}s`} repeatCount="indefinite" path={`M ${CX} ${CY} L ${p.x} ${p.y}`} />
-                    </circle>
-                  )}
-                </g>
-              )
-            })}
-
-            {positions.map(p => (
-              <g
-                key={p.id}
-                className="mycelium-node"
-                onClick={() => setExpanded(cur => cur === p.id ? null : p.id)}
-                onMouseEnter={() => setHovered(p.id)}
-                onMouseLeave={() => setHovered(cur => cur === p.id ? null : cur)}
-                style={{ cursor: 'pointer', color: p.accent }}
-              >
-                <circle className="mycelium-node-core" cx={p.x} cy={p.y} r={28} fill="#0d141f" stroke={p.accent} strokeWidth={2} />
-                <text x={p.x} y={p.y - 3} textAnchor="middle" fontSize={9} fontWeight={700} fill="#eefcff">{p.label}</text>
-                <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={10} fontWeight={800} fill={p.accent}>{p.count}</text>
-              </g>
-            ))}
-          </g>
-        </svg>
-
-        {hoveredNode && (
-          <div
-            className="obs-map-tooltip"
-            style={{
-              left: `${((hoveredNode.x - viewBox.x) / viewBox.w) * 100}%`,
-              top: `${((hoveredNode.y - viewBox.y) / viewBox.h) * 100}%`,
-            }}
-          >
-            <div className="obs-map-tooltip-title" style={{ color: hoveredNode.accent }}>{hoveredNode.label}</div>
-            <div className="obs-map-tooltip-meta">{hoveredNode.count} Einträge</div>
-            {hoveredTeaser && (
-              <>
-                <div className="obs-map-tooltip-excerpt">
-                  {KIND_LABEL[hoveredTeaser.kind]}: {truncate(hoveredTeaser.title, 60)}
-                  {hoveredTeaser.excerpt && ` — ${truncate(hoveredTeaser.excerpt, 90)}`}
-                </div>
-                <div className="obs-map-tooltip-meta">
-                  {hoveredTeaser.timestamp}{hoveredItems.length > 1 ? ` · +${hoveredItems.length - 1} weitere` : ''}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+          linkColor={() => 'rgba(34,211,238,.22)'}
+          linkWidth={1.2}
+          cooldownTicks={120}
+          onNodeClick={(node: any) => setExpanded(cur => cur === node.id ? null : node.id)}
+          onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
+        />
 
         {expandedNode && (
-          <div className="mycelium-detail" style={{ borderLeftColor: expandedNode.accent }}>
+          <div className="mycelium-detail" style={{ borderLeftColor: expandedNode.accent, position: 'absolute', right: 14, top: 14, left: 'auto', maxWidth: 360, zIndex: 5 }}>
             <span className="mycelium-detail-tag" style={{ color: expandedNode.accent }}>#{expandedNode.label}</span>
             <span className="mycelium-detail-text">
               {expandedNode.kind === 'scope' && (
