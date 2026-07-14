@@ -346,7 +346,7 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
           so every signal doesn't read with equal visual weight anymore.
           Two parts: (1) per-level counts, same obs-stat/obs-grid primitives
           the rest of the Observatory already uses; (2) the three CCET
-          metrics, clearly marked as this project's own operationalization
+          metrics, derived views rather than validated cognitive-science
           (see the CcetSummary doc comment above) — additive only, the
           detail cards below are unchanged. Counts reflect the currently
           *loaded* signals, not necessarily the global total — see the

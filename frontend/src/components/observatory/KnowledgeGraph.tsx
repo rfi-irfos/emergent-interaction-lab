@@ -92,10 +92,17 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
     return () => ro.disconnect()
   }, [])
 
+  if (error && !API_BASE) {
+    return (
+      <div className="obs-panel">
+        <div className="obs-empty">
+          Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
+        </div>
+      </div>
+    )
+  }
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!signals || !posts || !notes || !docs) return <div className="obs-panel"><HudSkeleton /></div>
-
-  // Real relationship engine does not exist anywhere in this codebase —
   // every edge below is inferred from shared fields, not a curated linkage.
   // The day a real relationship store exists, swap this constant for that
   // check and the placeholder tag disappears on its own.

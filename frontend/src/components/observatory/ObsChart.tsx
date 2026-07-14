@@ -69,7 +69,18 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
         </div>
       )}
       <div className="obs-chart-axis">
-        {data.map((d, i) => <span key={i}>{d.label}</span>)}
+        {data.map((d, i) => {
+          // Thin the labels so they never collide: show ~6-8 evenly spaced
+          // ticks plus always the last one. Otherwise dense series (e.g. 29
+          // daily snapshots) render every label in one row and overlap into
+          // garbage like "07-1107-1107…".
+          const targetTicks = 7
+          const show = data.length <= targetTicks
+            ? true
+            : i % Math.ceil(data.length / targetTicks) === 0 || i === data.length - 1
+          if (!show) return null
+          return <span key={i}>{d.label}</span>
+        })}
       </div>
     </div>
   )

@@ -23,12 +23,20 @@ interface Signal {
   created_at: string
 }
 
-function AlertRow({ label, detail }: { label: string; detail: string }) {
+function AlertRow({ signal, onOpen }: { signal: Signal; onOpen: (s: Signal) => void }) {
+  const accent = STATUS_ACCENT[signal.status] ?? '#f59e0b'
   return (
-    <div className="obs-activity-row">
-      <span className="obs-activity-kind" style={{ background: '#f59e0b' }}>Achtung</span>
-      <span className="obs-activity-label">{label}</span>
-      <span className="obs-activity-ts">{detail}</span>
+    <div
+      className="obs-activity-row obs-item-card-clickable"
+      style={{ ['--obs-accent' as string]: accent, cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(signal)}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(signal) } }}
+    >
+      <span className="obs-activity-kind" style={{ background: accent }}>Achtung</span>
+      <span className="obs-activity-label">{signal.pattern}</span>
+      <span className="obs-activity-ts">{signal.scope ?? 'Allgemein'}</span>
     </div>
   )
 }
@@ -133,7 +141,7 @@ function SystemStateModal({ scope, signal, count, trend, onClose }: {
 /// already relying on it.
 export function SystemState() {
   const [range, setRange] = useState('all')
-  const [expandedState, setExpandedState] = useState<string | null>(null)
+  const [expandedSignal, setExpandedSignal] = useState<Signal | null>(null)
   const { data: signals, loading: signalsLoading, error: signalsError } = useAdminFetch<Signal[]>(`/api/observatory/emergence/signals?range=${range}`, [range])
   const { data: diag, loading: diagLoading, error: diagError } = useAdminFetch<DiagnosticsData>('/api/observatory/diagnostics')
   const { data: scopeTrends } = useAdminFetch<ScopeTrend[]>('/api/observatory/scope-trends')
@@ -168,8 +176,8 @@ export function SystemState() {
         <>
           <div className="obs-section-label">Signale mit erhöhter Aufmerksamkeit</div>
           <div className="obs-card" style={{ marginBottom: 22 }}>
-            {emergingSignals.map(s => <AlertRow key={s.id} label={s.pattern} detail={s.scope ?? 'Allgemein'} />)}
-            {diagAlerts.map((a, i) => <AlertRow key={`diag-${i}`} label={a.label} detail={a.detail} />)}
+            {emergingSignals.map(s => <AlertRow key={s.id} signal={s} onOpen={setExpandedSignal} />)}
+            {diagAlerts.map((a, i) => <AlertRow key={`diag-${i}`} signal={{ id: `diag-${i}`, pattern: a.label, status: 'emerging', confidence: '—', evolution: '—', observation: a.label, scope: a.detail, created_at: '—' }} onOpen={setExpandedSignal} />)}
           </div>
         </>
       )}
@@ -215,8 +223,8 @@ export function SystemState() {
             style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? 'var(--hud-cyan)' }}
             role="button"
             tabIndex={0}
-            onClick={() => setExpandedState(scope)}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedState(scope) } }}
+            onClick={() => setExpandedSignal(s)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedSignal(s) } }}
           >
             <div className="obs-item-title">
               {scope}
@@ -230,13 +238,13 @@ export function SystemState() {
           </div>
         )
       })}
-      {expandedState && byScope.get(expandedState) && (
+      {expandedSignal && (
         <SystemStateModal
-          scope={expandedState}
-          signal={byScope.get(expandedState)!}
-          count={countByScope.get(expandedState) ?? 0}
-          trend={trendLine(trendByScope.get(expandedState))}
-          onClose={() => setExpandedState(null)}
+          scope={expandedSignal.scope ?? 'Allgemein'}
+          signal={expandedSignal}
+          count={countByScope.get(expandedSignal.scope ?? 'Allgemein') ?? 0}
+          trend={trendLine(trendByScope.get(expandedSignal.scope ?? 'Allgemein'))}
+          onClose={() => setExpandedSignal(null)}
         />
       )}
 

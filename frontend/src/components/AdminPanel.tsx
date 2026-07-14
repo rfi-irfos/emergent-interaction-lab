@@ -12,6 +12,7 @@ import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
 import { Inbox, type ContactMessage } from './observatory/Inbox'
 import { ForschungKpis } from './observatory/ForschungKpis'
+import { Flugschreiber } from './observatory/Flugschreiber'
 // Heavy force-graph modules (react-force-graph-2d, ~600KB) get lazy-loaded so
 // they don't bloat the initial OS bundle — only fetched when a user actually
 // opens Knowledge Graph / System Map.
@@ -426,6 +427,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
             {adminSection === 'systemstate' && <SystemState />}
             {adminSection === 'agentactivity' && <AgentActivity />}
+            {adminSection === 'flugschreiber' && (
+              <Flugschreiber onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
             {adminSection === 'gesamtuebersicht' && (
               <Gesamtuebersicht onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}

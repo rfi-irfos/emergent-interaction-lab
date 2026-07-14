@@ -3,8 +3,9 @@ import { API_BASE } from '../../lib/apiBase'
 import { authHeaders, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudTile } from './Hud'
+import { HudGrid, HudTile } from './Hud'
 import { ObsRadar } from './ObsRadar'
+import { ObsDonut } from './ObsDonut'
 import { STATUS_ACCENT } from './registry'
 
 // Denkfragmente — Laura's own ask, verbatim-translated: "I mostly look at my
@@ -27,13 +28,13 @@ import { STATUS_ACCENT } from './registry'
 // backend/src/thinking_fragments.rs's module doc comment for the backend
 // half of this same disclosure.
 //
-// THIS PROJECT'S OWN operationalization, same as CCET: the 8 layer NAMES
-// (facts, analysis, patterns, hypotheses, symbols, action, counterarguments,
-// blind_spot) are Laura's own, from content.json's Research page ("8-Layer
-// Model — separates thinking into eight levels: ..."); classifying a real
-// turn into 1-3 of them is an LLM's interpretation, never a validated
-// cognitive-science instrument — see the `.obs-badge-experimental` badge
-// below, and `definitions_note` echoed verbatim from the backend.
+// The 8 layer NAMES (facts, analysis, patterns, hypotheses, symbols, action,
+// counterarguments, blind_spot) are Laura's own, from content.json's
+// Research page ("8-Layer Model — separates thinking into eight levels:
+// ..."); classifying a real turn into 1-3 of them is an LLM's interpretation,
+// never a validated cognitive-science instrument — see the
+// `.obs-badge-experimental` badge below, and `definitions_note` echoed
+// verbatim from the backend.
 
 interface Fragment {
   id: string
@@ -470,25 +471,34 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
           {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
-      <div className="obs-card">
-        {distLoading ? (
-          <HudSkeleton variant="chart" />
-        ) : distError ? (
-          <div className="obs-empty">Fehler beim Laden.</div>
-        ) : !distribution || distribution.total === 0 ? (
-          <div className="obs-empty">Noch keine Denkfragmente über alle Gespräche hinweg — sie entstehen automatisch nach jedem Forschungsgespräch.</div>
-        ) : (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            {/* Radar/spider chart, one axis per layer of Laura's own 8-Layer
-                Model, fixed LAYER_ORDER so the axis sequence never shifts
-                between reloads — replaces the old flat bar-row breakdown
-                (same real by_layer counts, same LAYER_COLORS/LAYER_LABELS,
-                just an actual chart instead of CSS bars). Every axis shares
-                the SAME max (the largest single layer count) rather than
-                each axis normalizing against its own value — the latter
-                would push every vertex to the outer ring regardless of the
-                real distribution, which is exactly the shape a radar chart
-                exists to show. */}
+      {distLoading ? (
+        <HudSkeleton variant="chart" />
+      ) : distError ? (
+        <div className="obs-empty">Fehler beim Laden.</div>
+      ) : !distribution || distribution.total === 0 ? (
+        <div className="obs-card"><div className="obs-empty">Noch keine Denkfragmente über alle Gespräche hinweg — sie entstehen automatisch nach jedem Forschungsgespräch.</div></div>
+      ) : (
+        <HudGrid cols={4}>
+          {/* (1) Layer counts as horizontal bars — one chart idiom. */}
+          <HudTile title="Ebenen-Verteilung" badge="BARS" accent="var(--obs-purple)" span={2}>
+            <div>
+              {LAYER_ORDER.map(layer => {
+                const count = distribution.by_layer.find(b => b.layer === layer)?.count ?? 0
+                return (
+                  <div key={layer} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                    <span style={{ width: 86, fontSize: 11, color: 'rgba(148,190,199,.72)', flexShrink: 0 }}>{LAYER_LABELS[layer]}</span>
+                    <div style={{ flex: 1, height: 9, borderRadius: 4, background: 'rgba(120,150,170,.14)', overflow: 'hidden' }}>
+                      <div style={{ width: `${maxLayerCount > 0 ? (count / maxLayerCount) * 100 : 0}%`, height: '100%', background: LAYER_COLORS[layer] }} />
+                    </div>
+                    <span style={{ width: 22, fontSize: 11, fontWeight: 700, textAlign: 'right', color: '#cfe8ef' }}>{count}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </HudTile>
+          {/* (2) Radar/spider — one axis per layer, shared max so the shape
+              reads as a real distribution, not a normalized blob. */}
+          <HudTile title="Layer-Profil" badge="RADAR" accent="var(--obs-teal)" span={1}>
             <ObsRadar
               axes={LAYER_ORDER.map(layer => ({
                 key: layer,
@@ -498,9 +508,21 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
                 color: LAYER_COLORS[layer],
               }))}
             />
-          </div>
-        )}
-      </div>
+          </HudTile>
+          {/* (3) Donut — the same counts, a third chart idiom beside the
+              other two. */}
+          <HudTile title="Top-Ebenen" badge="DONUT" accent="var(--obs-blue)" span={1}>
+            <ObsDonut
+              data={LAYER_ORDER.map(layer => ({
+                label: LAYER_LABELS[layer],
+                value: distribution.by_layer.find(b => b.layer === layer)?.count ?? 0,
+                color: LAYER_COLORS[layer],
+              }))}
+              gradientIdPrefix="denkfragmente-layer-donut"
+            />
+          </HudTile>
+        </HudGrid>
+      )}
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
         Verteilung über alle Forschungsgespräche hinweg, nicht nur das oben gewählte — zeigt, welche Denkebenen (nach Lauras eigenem
         8-Layer-Model) über die Zeit dominieren.

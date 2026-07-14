@@ -222,7 +222,18 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     return () => ro.disconnect()
   }, [])
 
-  if (!counts) return <div className="obs-panel"><HudSkeleton /></div>
+  if (!counts) {
+    if (!API_BASE) {
+      return (
+        <div className="obs-panel">
+          <div className="obs-empty">
+            Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
+          </div>
+        </div>
+      )
+    }
+    return <div className="obs-panel"><HudSkeleton /></div>
+  }
 
   const maxCount = Math.max(...Object.values(counts), 1)
 

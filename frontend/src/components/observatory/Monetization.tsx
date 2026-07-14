@@ -91,6 +91,7 @@ export function Monetization() {
   const [creating, setCreating] = useState(false)
   const [linkingId, setLinkingId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [showProductForm, setShowProductForm] = useState(false)
 
   const refresh = async () => {
     const res = await fetch(`${API_BASE}/api/billing/products`, { headers: authHeaders() })
@@ -253,29 +254,66 @@ export function Monetization() {
           is comparatively rare admin housekeeping. */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Bestellungen</div>
-        {orders.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-              <option value="">Alle Währungen</option>
-              {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
-            </select>
-            <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-              {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            {/* Exports whatever currency/range filter currently narrowed
-                the already-loaded pages of orders to (`filteredOrders`),
-                same "export what's currently visible, not silently
-                everything" convention as BlogDrafts/Inbox's own filtered
-                exports. Still bounded by "Weitere laden" pagination, same
-                accumulated-set honesty as EmergenceMonitor's export. */}
-            <ExportButtons
-              rows={filteredOrders.map(o => ({ ...o }))}
-              filenameBase={`billing-orders-${orderRange}`}
-              title="Bestellungen"
-            />
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {orders.length > 0 && (
+            <>
+              <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+                <option value="">Alle Währungen</option>
+                {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+              </select>
+              <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+                {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <ExportButtons
+                rows={filteredOrders.map(o => ({ ...o }))}
+                filenameBase={`billing-orders-${orderRange}`}
+                title="Bestellungen"
+              />
+            </>
+          )}
+          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowProductForm(s => !s)}>
+            + Produkt
+          </button>
+        </div>
       </div>
+      {showProductForm && (
+        <div className="obs-card">
+          <div className="obs-form" style={{ marginBottom: 0 }}>
+            <input placeholder="Name, z.B. „State of Emergent Interaction - Q1“" value={name} onChange={e => setName(e.target.value)} />
+            <textarea placeholder="Beschreibung" value={description} onChange={e => setDescription(e.target.value)} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input placeholder="Preis, z.B. 49.00" value={price} onChange={e => setPrice(e.target.value)} style={{ flex: 1 }} />
+              <select value={currency} onChange={e => setCurrency(e.target.value)}>
+                <option value="eur">EUR</option>
+                <option value="usd">USD</option>
+              </select>
+              <select value={mode} onChange={e => setMode(e.target.value as 'payment' | 'subscription')}>
+                <option value="payment">Einmalig</option>
+                <option value="subscription">Abo</option>
+              </select>
+              {mode === 'subscription' && (
+                <select value={interval} onChange={e => setInterval(e.target.value as 'month' | 'year')}>
+                  <option value="month">monatlich</option>
+                  <option value="year">jährlich</option>
+                </select>
+              )}
+              <select value={category} onChange={e => setCategory(e.target.value as 'service' | 'certification')}>
+                <option value="service">Service (Hauptseite)</option>
+                <option value="certification">Zertifizierung</option>
+              </select>
+            </div>
+            <input
+              placeholder="Bereits vorhandener Zahlungslink (optional, z.B. https://buy.stripe.com/...)"
+              value={existingLink}
+              onChange={e => setExistingLink(e.target.value)}
+            />
+            {formError && <div className="obs-warning-note">{formError}</div>}
+            <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
+              {creating ? 'Legt an…' : 'Produkt anlegen'}
+            </button>
+          </div>
+        </div>
+      )}
       {ordersTotal !== null && (
         <div className="monetization-bikpi">
           <div className="obs-grid" style={{ marginBottom: 14 }}>
@@ -303,11 +341,6 @@ export function Monetization() {
           </div>
         </div>
       )}
-      {/* Revenue donut + order summary side by side — the two halves of
-          "where the money is" on one calm row, not a stretched full-width
-          chart. Left: the by-product revenue split. Right: the single most
-          recent order as a compact summary card (the "Bestellungskarte"),
-          so the donut always has a concrete latest-charge beside it. */}
       {ordersTotal !== null && (
         <div className="monetization-split">
           <HudTile title="Umsatz nach Produkt" badge="REV" accent="var(--obs-green)" span={2} className="monetization-donut-tile">
@@ -354,8 +387,8 @@ export function Monetization() {
       {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
       {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
       {!ordersLoading && !ordersError && orders.length === 0 && (
-        <div className="obs-card">
-          <div className="obs-empty">Noch keine Bestellungen — Verkäufe erscheinen hier automatisch, sobald Stripe eine abgeschlossene Zahlung meldet.</div>
+        <div className="obs-card" style={{ paddingTop: 6, paddingBottom: 6 }}>
+          <div className="obs-empty" style={{ padding: '6px 0' }}>Noch keine Bestellungen — Filter/Currency oben wählen, sobald Stripe meldet.</div>
         </div>
       )}
       {orders.length > 0 && filteredOrders.length === 0 && (

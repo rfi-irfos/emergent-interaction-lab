@@ -53,12 +53,14 @@ export function InteractionDynamics() {
     <div className="obs-panel">
       <HudSectionHeader title="Letzte Antwort — Token für Token" />
       {data.latest_tokens && data.latest_tokens.length > 0 ? (
-        <div className="obs-item-card" style={{ ['--obs-accent' as string]: '#3b6bf6' }}>
+        <div className="obs-item-card" style={{ ['--obs-accent' as string]: 'var(--obs-blue, #3b6bf6)' }}>
           {data.latest_reply && <div className="obs-item-meta">{data.latest_at}</div>}
           <TokenBreakdown tokens={data.latest_tokens} />
         </div>
       ) : (
-        <div className="obs-card"><div className="obs-empty">Noch keine Antwort mit Token-Daten.</div></div>
+        <div className="obs-card" style={{ padding: '14px 18px', marginBottom: 16 }}>
+          <div className="obs-empty" style={{ padding: '8px 0' }}>Noch keine Antwort mit Token-Daten.</div>
+        </div>
       )}
 
       {data.messages_by_day.length > 0 && (

@@ -1,5 +1,5 @@
 import { useAdminFetch } from '../../lib/adminApi'
-import { HudGrid, HudTile, HudStat } from './Hud'
+import { HudGrid, HudTile, HudStat, HudSectionHeader } from './Hud'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
@@ -81,10 +81,10 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
 
   return (
     <div className="forschung-kpis">
-      <div className="forschung-kpis-head">
-        <span className="forschung-kpis-title">EMERGENTE SIGNALE — LAURAS NUTZERVERHALTEN</span>
-        <span className="forschung-kpis-sub">Echtzeit · nur aus Dialogdaten · kein Framework-KPI</span>
-      </div>
+      <HudSectionHeader
+        title="Lauras Nutzerverhalten"
+        sub="Echtzeit · nur aus Dialogdaten · kein Framework-KPI"
+      />
 
       <HudGrid cols={4}>
         {/* 1 — Message-volume trend (compact line chart, half width) */}
