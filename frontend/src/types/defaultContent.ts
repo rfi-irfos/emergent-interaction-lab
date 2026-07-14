@@ -22,11 +22,11 @@ export const defaultContent: SiteContent = {
   hero: {
     tag: 'Mensch-KI-Dynamik · Live-Observatory-Feed · Seit 2023',
     headline: 'Emergent Interaction Field',
-    subheadline: 'Das erforscht dieses Lab: das Feld, das entsteht, während Laura Sitzung für Sitzung mit demselben KI-Forschungspartner arbeitet - beobachtet in ihr, in Jarvis und im System selbst.',
-    body: "Emergent Interaction ist Lauras Arbeitsweise: kein Skript, das auf derselben Schleife läuft, sondern eine rekursive - echtes Material geht hinein, die Muster, die sich über mehrere Sitzungen hinweg bestätigen, werden extrahiert, und aus diesen Mustern werden Frameworks und Agenten, die in die nächste Runde zurückfließen. Zwei Dinge sind aus dieser Schleife bisher gewachsen: Jarvis, der Forschungspartner in Forschung, dem Research-Chat dieses Labs, und Lauras Team, der Multi-Agenten-Aufbau aus ihren Fall-Linsen - ethisch, juristisch und weitere. Call Laura ist das erste angewandte Produkt, das auf Lauras Team aufbaut. Was die Schleife dabei abwirft - Muster, Drift, Struktur - misst hinterher das Observatory, nie vorab unterstellt.",
+    subheadline: 'Wir untersuchen, was passiert, wenn ein Mensch über Wochen mit demselben KI-System arbeitet - nicht einmal, sondern immer wieder. Dabei entstehen Muster, die niemand geplant hat.',
+    body: '',
     callout: {
       label: 'Call Laura',
-      text: 'Ein Fall kommt rein, und es ist nicht klar, ob er die ethische Linse braucht, die juristische, oder eine andere Lauras Team-Linse - also läuft Call Laura ihn durch alle, und liefert Funde zurück, jeder markiert mit genau der Linse, die ihn hervorgebracht hat. Deterministisch, kein LLM-Aufruf zur Laufzeit.'
+      text: 'Ein Fall kommt rein, und es ist nicht klar, ob er die ethische Prüfperspektive braucht, die juristische, oder eine andere - also läuft Call Laura ihn durch alle, und liefert Funde zurück, jeder markiert mit genau der Perspektive, die ihn hervorgebracht hat. Deterministisch, kein LLM-Aufruf zur Laufzeit.'
     },
     ctaLabel: 'Blog lesen',
     ctaHref: '#news',
@@ -41,9 +41,9 @@ export const defaultContent: SiteContent = {
   categories: { title: '', items: [] },
   products: { title: '', tabs: [], items: [] },
   about: {
-    eyebrow: 'Forscherin & Systemanalytikerin',
-    headline: 'Laura Serna Gaviria',
-    bio: 'Laura Serna Gaviria beobachtet das reale Geschehen vollständig, bevor sie einer Theorie traut - eine Denkweise, geschult über sechs Fachgebiete: Software, Mechatronik, UX, digitale Transformation, Systemanalyse und Makroanalyse. Seit 2023 wendet sie das systematisch auf Mensch-KI-Interaktion an; das Observatory dieser Seite läuft auf zwei ihrer Frameworks. Aus derselben Disziplin, angewandt auf echte Falldokumentation, ist Lauras Team gewachsen: eine Reihe von Denk-Linsen - ethisch, juristisch und weitere -, die zu echtem, produktivem Engineering wurden. Jarvis (Forschungspartner) und Call Laura (deterministisches Review-Werkzeug) laufen bisher darauf. Laura entwickelt die Methodik und gibt vor, was gebaut wird; RFI-IRFOS baut daraus funktionierende Software.',
+    eyebrow: 'Das Emergent Interaction Lab',
+    headline: 'Mensch-KI-Interaktion, erforscht und gebaut',
+    bio: 'Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert. Die Arbeit wird von Laura Serna Gaviria mit RFI-IRFOS geleitet.',
   },
   usp: {
     eyebrow: 'Kernkonzepte',
