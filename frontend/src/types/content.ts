@@ -1,4 +1,10 @@
-export interface NavLink { label: string; href: string }
+export interface CredLink {
+  label: string
+  href: string
+  live?: boolean        // green "live" accent (e.g. Live API)
+  note?: string          // tooltip / "(auf Anfrage)" suffix
+}
+
 export interface FeatureItem { id: string; title: string; description: string; icon?: string; pillar?: string }
 export interface FrameworkPillar { id: string; title: string; subtitle: string }
 
@@ -87,6 +93,8 @@ export const DEFAULT_SECTION_ORDER: SectionId[] = ['trust', 'categories', 'produ
 
 export interface CanvasPos { x: number; y: number }
 
+export interface NavLink { label: string; href: string }
+
 export interface SiteContent {
   sectionOrder?: SectionId[]
   hiddenSections?: SectionId[]
@@ -167,6 +175,7 @@ export interface SiteContent {
     ctaLabel?: string
     ctaHref?: string
   }
+  creds?: CredLink[]
   pricing?: {
     title: string
     body: string

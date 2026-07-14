@@ -2336,24 +2336,40 @@ button { cursor: pointer; font-family: inherit; }
 .page-modal-body a { color: #63f0ff; text-decoration: underline; text-underline-offset: 2px; }
 /* credibility pills inside the dark About-the-Lab modal — real, checkable
    credentials (a shipped crate, a live API) rendered as bordered pills
-   instead of a plain link list, so they read as proof, not body text. */
+   instead of a plain link list, so they read as proof, not body text.
+   Default = light theme (public page); the dark About-the-Lab modal
+   re-skins them via the .page-modal-body override below. */
 .creds-badges { display: flex; flex-wrap: wrap; gap: 9px; margin: 4px 0 22px; }
 .creds-badge {
   display: inline-flex; align-items: center; gap: 7px;
-  font-size: 12.5px; font-weight: 700; color: #e7f3f8;
-  background: rgba(255,255,255,.04); border: 1px solid rgba(99,240,255,.28);
-  border-radius: 20px; padding: 7px 14px; text-decoration: none;
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 7px 14px; text-decoration: none;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 .creds-badge:hover {
-  transform: translateY(-2px); border-color: #63f0ff;
-  background: rgba(99,240,255,.10);
-  box-shadow: 0 6px 18px -6px rgba(99,240,255,.55);
+  transform: translateY(-2px); border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 55%, transparent);
   text-decoration: none;
 }
-.creds-badge--live { border-color: rgba(16,185,129,.5); color: #d6f7ea; }
+.creds-badge--live { border-color: #10b981; color: #059669; }
 .creds-badge--live:hover { border-color: #10b981; box-shadow: 0 6px 18px -6px rgba(16,185,129,.5); }
 @media (prefers-reduced-motion: reduce) { .creds-badge:hover { transform: none; } }
+/* the "Seit 2023 / Since 2023" proof line — one tidy paragraph */
+.creds-stat-line { font-size: 13.5px; line-height: 1.7; color: var(--text-soft, #666); margin: 0 0 18px; font-weight: 500; }
+/* dark re-skin inside the About-the-Lab modal */
+.page-modal-body .creds-badge {
+  color: #e7f3f8; background: rgba(255,255,255,.04);
+  border-color: rgba(99,240,255,.28);
+}
+.page-modal-body .creds-badge:hover {
+  border-color: #63f0ff; background: rgba(99,240,255,.10);
+  box-shadow: 0 6px 18px -6px rgba(99,240,255,.55);
+}
+.page-modal-body .creds-badge--live { border-color: rgba(16,185,129,.5); color: #d6f7ea; }
+.page-modal-body .creds-badge--live:hover { border-color: #10b981; box-shadow: 0 6px 18px -6px rgba(16,185,129,.5); }
+.page-modal-body .creds-stat-line { color: #9fb3bd; }
 .page-modal-footnote { margin-top: 28px; font-size: 13px; color: #6f8590; border-top: 1px solid rgba(255,255,255,.08); padding-top: 14px; }
 
 /* Live Observatory widgets nested inside the dark Research modal — re-skin
