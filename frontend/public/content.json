@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>This Lab is the starting point: the place where I validate a pattern before I put it to use anywhere. Below: how the method works, what has grown out of it, and what happens when you point it at your own case.</p><h2>The method</h2><p>For me a pattern only counts once it has repeated itself at least three times on its own. What holds becomes structure, then a framework, then an agent. Jarvis grew out of exactly this loop. What starts as research above runs as software below - built by RFI-IRFOS, conceived by Laura.</p><h2>Who builds what</h2><p>Laura designs the methodology and decides what gets built. RFI-IRFOS turns it into real software. Where their work is in it, it is labelled - otherwise no one can tell whose work they are actually reading.</p>"
+      "body": "<p>This Lab studies one thing: what happens when a person and an AI system work together over a long time. Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one designed on purpose.</p><h2>What we mean by Emergent Interaction</h2><p>\"Emergent interaction\" is just a name for this effect: the longer a person works with the same AI, the more a working rhythm builds up between them - habits, shortcuts, blind spots. You can measure it, you can't fully plan it.</p><h2>From observation to tools</h2><p>Laura Serna Gaviria started watching this in 2023. One thing kept showing up: most problems in human-AI work are not technical. They are translation problems - the system does something, and nobody says clearly what just happened.</p><p>So a team of AI agents was built. Each agent looks at the same case from a different angle: one checks the ethical side, one the legal side, others check other points. The first tool built from this is Call Laura: a case comes in, every agent reviews it, and each finding is tagged with exactly which view it came from. Jarvis is another tool that runs in the background. Laura decides what gets built. RFI-IRFOS builds it.</p><h2>Who builds what</h2><p>Laura develops the method and decides what gets built. RFI-IRFOS turns it into working software. Where her work is inside the result, it is labelled as hers - so anyone can tell whose work they are actually looking at.</p>"
     }
   ],
   "meta": {
@@ -69,7 +69,7 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "It began with a criminal case Laura documented as a witness - and the question of how thinking actually emerges in sustained human-AI work.",
+    "subheadline": "We study what happens when a person works with the same AI system day after day - not once, but over weeks. Patterns show up that nobody planned for.",
     "body": "",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "The Lab & its founder",
     "headline": "Laura Serna Gaviria",
-    "bio": "<p>Most of the problems I see aren't technical - they're translation problems: what a system does, and how it gets talked about, drift apart. That's where I start.</p><p>In 2023 I was a witness in a criminal case. What I did then was no theory but hard documentation work: record every step, check every statement, name every contradiction. That discipline became a method - and emergence emerged from emergence: the way I worked the case became the subject of the research itself.</p><p>Out of that method grew Lauras Team - a multi-agent built on how I think. An ethical agent, a legal one, others, each working the same case from a different side. Call Laura is the first product from it: a case comes in, every perspective reviews it, each tagged with where it came from. Jarvis is the autonomous research partner that keeps the same loop running in the background. I decide what gets built; RFI-IRFOS builds it, labelled as theirs so it stays clear who did what. If you want the same rigor: <a href=\"#p/pricing\">start here.</a></p>",
+    "bio": "<p>The Emergent Interaction Lab studies human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>The work is led by Laura Serna Gaviria with RFI-IRFOS.</p>",
     "stats": [
       {
         "value": "2023",
