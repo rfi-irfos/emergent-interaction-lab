@@ -162,6 +162,7 @@ export interface SiteContent {
     bio: string
     photo?: string
     stats?: AboutStat[]
+    frameworksLine?: string
     ctaLabel?: string
     ctaHref?: string
   }
