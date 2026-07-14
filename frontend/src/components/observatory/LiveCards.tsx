@@ -1,8 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
 import { authHeaders } from '../../lib/adminApi'
 import type { AdminSection } from '../../types/admin'
 import type { ObservatoryTier } from './registry'
+
+// Count-up that only animates a pure numeric value; any non-numeric readout
+// (e.g. "—", "50%", "1.2k") passes through untouched so we never fabricate a
+// number from a string that already carries its own suffix/format.
+function useCountUpText(target: string, durationMs = 800): string {
+  const [display, setDisplay] = useState(target)
+  const fromRef = useRef(0)
+  const rafRef = useRef<number | null>(null)
+  useEffect(() => {
+    const num = Number(target.replace(/[^0-9.-]/g, ''))
+    if (!Number.isFinite(num) || target.trim() === '') { setDisplay(target); return }
+    const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce) { setDisplay(target); return }
+    const from = fromRef.current
+    const start = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs)
+      const eased = 1 - Math.pow(1 - t, 3)
+      const v = from + (num - from) * eased
+      // Preserve any leading/trailing decoration the source string had
+      // (e.g. "50%" → "50%" again), by reformatting just the integer part.
+      const hasSuffix = /[^0-9.-]$/.test(target)
+      setDisplay(hasSuffix ? `${Math.round(v)}${target.replace(/^[0-9.-]+/, '')}` : String(Math.round(v)))
+      if (t < 1) rafRef.current = requestAnimationFrame(tick)
+      else fromRef.current = num
+    }
+    rafRef.current = requestAnimationFrame(tick)
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+  }, [target, durationMs])
+  return display
+}
 
 // One card per Observatory module, grouped into the same 3 tiers as the
 // sidebar (Forschungsebene/Systemebene/Technische Ebene) — a flat row mixing
@@ -136,6 +167,11 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
 
   const row = (tier: ObservatoryTier) => MODULE_META.filter(m => m.tier === tier)
 
+  function LiveCardValue({ value }: { value: string }) {
+    const animated = useCountUpText(value)
+    return <span className="live-card-value">{animated}</span>
+  }
+
   return (
     <div className={`live-cards-panel ${collapsed ? 'collapsed' : ''}`}>
       <button type="button" className="live-cards-panel-toggle" onClick={toggleCollapsed} aria-expanded={!collapsed}>
@@ -148,7 +184,7 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
           <div className="live-cards live-cards-research">
             {row('research').map(m => (
               <button key={m.id} className="live-card" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
-                <span className="live-card-value">{values[m.id] ?? '…'}</span>
+                <LiveCardValue value={values[m.id] ?? '…'} />
                 <span className="live-card-label">{m.label}</span>
               </button>
             ))}
@@ -156,7 +192,7 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
           <div className="live-cards live-cards-system">
             {row('system').map(m => (
               <button key={m.id} className="live-card live-card-secondary" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
-                <span className="live-card-value">{values[m.id] ?? '…'}</span>
+                <LiveCardValue value={values[m.id] ?? '…'} />
                 <span className="live-card-label">{m.label}</span>
               </button>
             ))}
@@ -164,7 +200,7 @@ export function LiveCards({ refreshSignal, onNavigate }: { refreshSignal: number
           <div className="live-cards live-cards-technical">
             {row('technical').map(m => (
               <button key={m.id} className="live-card live-card-technical" style={{ ['--obs-accent' as string]: m.accent }} onClick={() => onNavigate(m.id)} title="Granulare Analyse öffnen">
-                <span className="live-card-value">{values[m.id] ?? '…'}</span>
+                <LiveCardValue value={values[m.id] ?? '…'} />
                 <span className="live-card-label">{m.label}</span>
               </button>
             ))}

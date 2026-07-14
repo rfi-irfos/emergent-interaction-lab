@@ -14,10 +14,11 @@ export function useContent(lang: Lang) {
   useEffect(() => {
     let cancelled = false
     shaRef.current = null
-    // Fetch directly from GitHub raw content so admin saves are reflected
-    // immediately without requiring a full GitHub Pages rebuild.
+    // TEMP LOCAL PREVIEW PATCH (will be reverted): load content.json from the
+    // local public/ dir instead of GitHub raw, so the dev server shows the
+    // same content.json the user is editing.
     const bust = `?t=${Date.now()}`
-    const rawBase = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/`
+    const rawBase = import.meta.env.BASE_URL
     // One retry after a short delay before giving up on the requested
     // language — raw.githubusercontent.com occasionally 404s/errors on a
     // brief propagation lag right after a push, which previously fell

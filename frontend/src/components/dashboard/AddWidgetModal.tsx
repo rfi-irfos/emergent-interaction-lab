@@ -13,7 +13,7 @@ export function AddWidgetModal({ onPick, onClose }: { onPick: (catalogKey: strin
         <div className="dash-modal-head">
           <h3>Widget hinzufügen</h3>
           <button type="button" className="dash-widget-btn" aria-label="Schließen" onClick={onClose}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6 L18 18 M18 6 L6 18" /></svg>
           </button>
         </div>
         <div className="dash-modal-body">

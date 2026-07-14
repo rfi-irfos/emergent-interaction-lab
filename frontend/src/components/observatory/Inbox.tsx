@@ -23,12 +23,12 @@ function InboxPlaceholder({ icon, text, sub }: { icon: string; text: string; sub
     <div style={{ minHeight: 'calc(100vh - 220px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, textAlign: 'center', padding: '24px' }}>
       <div style={{
         width: 46, height: 46, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, border: '1px solid var(--panel-border, #e8e8e8)', background: 'var(--panel-surface, #f8f8f8)', color: 'var(--hud-cyan, #0099CC)',
+        fontSize: 18, border: '1px solid rgba(34,211,238,.16)', background: 'var(--obs-card, rgba(11,17,26,.6))', color: 'var(--hud-cyan, #22d3ee)',
       }}>
         {icon}
       </div>
-      <div style={{ color: 'var(--panel-text, #444)', fontSize: 13.5, fontWeight: 600 }}>{text}</div>
-      {sub && <div style={{ color: 'var(--panel-text-dim, #aaa)', fontSize: 12, maxWidth: 280, lineHeight: 1.5 }}>{sub}</div>}
+      <div style={{ color: 'var(--panel-text, rgba(226,241,245,.75))', fontSize: 13.5, fontWeight: 600 }}>{text}</div>
+      {sub && <div style={{ color: 'var(--panel-text-dim, rgba(148,190,199,.6))', fontSize: 12, maxWidth: 280, lineHeight: 1.5 }}>{sub}</div>}
     </div>
   )
 }
@@ -84,7 +84,7 @@ export function Inbox() {
   // centered placeholder shell instead, so the view is fully designed
   // before a single message ever arrives, not just once one does.
   if (loading && !data) {
-    return <div style={{ padding: 14 }}><HudSkeleton variant="list" /></div>
+    return <div className="obs-panel" style={{ padding: 14 }}><HudSkeleton variant="list" /></div>
   }
   if (error) {
     return <InboxPlaceholder icon="!" text="Konnte nicht geladen werden." />
