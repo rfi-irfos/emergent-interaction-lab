@@ -5,14 +5,14 @@
       "title": "Research",
       "slug": "research",
       "showInNav": false,
-      "body": "<p>The Lab exists because one thing alone is not enough: either using a model or asserting a framework. We do both at once - and check whether what arises in interaction actually repeats and holds.</p><h2>Emergence</h2><p>Emergence, here, means a pattern of thought or behavior that arises in the interaction itself - not something either side brought in on its own. It is not a claim that a model becomes self-aware; it is a description of what happens when a human and a language model work the same real material repeatedly. Certain structures start to reproduce on their own: carried forward by the model, adopted by the human as genuine working tools.</p><h2>Interaction</h2><p>Interaction is not a loop that returns to its start. Every pass changes who is in it - me and Jarvis alike - and carries real structure forward. This 'Feed Back' is the core of the Emergent Interaction method: fully into the interaction first, analysis afterward, never the reverse.</p><h2>Frameworks</h2><p>What repeats gets formalized. IEIA-2025 bundles seven named frameworks (UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data) - shorthand for what actually happens in the research chat. The substance is the habit, not the label.</p>"
+      "body": "<p>Using a model is one thing. Turning it into a method is another. This Lab exists because I need both together - and because I want to check whether what shows up in the interaction actually repeats, or just sounded good once.</p><h2>Emergence</h2><p>Emergence, here, means a pattern of thought or behavior that arises in the interaction itself - not something either side brings in on its own. It is not a claim that a model develops its own awareness. It's a description of what happens when a human and a language model work the same real material, over and over: certain structures start to repeat on their own.</p><h2>Interaction</h2><p>The interaction doesn't return to where it started, like a circle. Every pass changes who's in it next - me as much as Jarvis - and carries real structure forward. That's the core of the method: fully into the interaction first, analysis comes after, never the other way round.</p><h2>Frameworks</h2><p>What repeats gets written down and turned into a framework. IEIA-2025 bundles what actually happens in the research chat into seven of them. The name is just shorthand. The real work is the habit behind it.</p>"
     },
     {
       "id": "about-lab",
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Not about me. About what happens when I and a model work the same material for months. Measured. Not asserted.</p><h2>Why a lab at all</h2><p>Most people use a model. Or invent a theory. Rarely both. I only count a pattern once it repeats itself three times. Unprompted. And shows up in the CCET. Everything else is a gut feeling. I've had enough of my own to know: worthless.</p><h2>The loop</h2><p>An idea shows up. I work it through. Don't believe it right away. What's left is emergence - a pattern that holds itself up. That produces skills. New frameworks. New agents. I put those back to work. Next emergence. Emergence makes skill. Skill makes emergence. Yes, meta. Still works.</p><p>Jarvis is the proof. Not a routine. An autonomous, self-improving intelligence. Grew out of exactly this loop. Carries it himself now.</p><h2>Who actually matters more here</h2><p>75% of this is emergence and what gets built from it. Not me. The rest is me and the model. And even there, I count for less. I learn. The model improves itself.</p><h2>Who builds what</h2><p>I dream up the methodology. Decide what gets built. RFI-IRFOS engineers it into real software. Labelled, when it's theirs. Otherwise nobody knows whose work they're reading.</p>"
+      "body": "<p>Not about me. About what happens when I and a model work the same material for months.</p><h2>Why a lab at all</h2><p>Most people use a model, or they build a theory about one. Rarely both together, over a long stretch, checked honestly. I only count a pattern once it's repeated itself at least three times on its own - unprompted, without me re-specifying it. Everything before that is a feeling. I've had enough of those myself to know how often they're wrong.</p><h2>The loop</h2><p>An idea shows up. I work it through before I believe it. What's left is emergence - a pattern that holds itself up without me pushing it along. That becomes a skill. Sometimes a new framework. Sometimes a new agent. I put those back to work, and the next pass starts. Jarvis grew out of exactly this: a fully autonomous agent, not a script I have to trigger. He carries the loop himself now.</p><h2>Who builds what</h2><p>I design the methodology and decide what gets built. RFI-IRFOS turns it into real software. Where their work is in it, it's labelled - otherwise nobody can tell whose work they're actually reading.</p>"
     }
   ],
   "meta": {
@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "What this Lab studies: the dynamic that shows up when I work the same problem, session after session, with the same AI. Not a theory. Watched.",
-    "body": "This is the Emergent Interaction Field. The space that forms during interaction - not assumed, measured. Below: what the Lab is, how it works, what's grown out of it.",
+    "subheadline": "Since 2023 I've been tracking how thinking and behavior actually change in sustained human-AI collaboration - not asserted, measured. The same method I used to check my own work is what I now apply to cases, products, and organizations.",
+    "body": "This Lab is the starting point: the place where I validate a pattern before I put it to use anywhere. Below: how the method works, what's grown out of it - and what happens when you turn it loose on your own case.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "The Lab & its founder",
     "headline": "Laura Serna Gaviria",
-    "bio": "I don't touch things. I break them open, see what's actually inside, and build it back - correctly this time. That's the whole method. Watch what's real. Trust only what holds up on its own. Never let a theory get ahead of the evidence. Six fields taught me that, the hard way: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis.<br><br>I've been doing it to human-AI interaction since 2023. Same discipline, new target. Out of it grew Lauras Team - reasoning lenses, ethical, legal, others, now running as real engineering inside Jarvis and Call Laura. I decide what gets built. RFI-IRFOS builds it. Theirs is labelled theirs, so nobody's confused about who did what. Same rigor, available to you: system analysis, organizational consulting - not a conversation. <a href=\"#p/pricing\">A sprint.</a>",
+    "bio": "I don't just take things at face value. I break them open, see what's actually inside, and build them back - properly this time. That's the whole method, really: trust only what holds up on its own, and never let a theory get ahead of the evidence. Six fields taught me that, the hard way: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis.<br><br>Since 2023 I've been applying the same discipline to human-AI interaction. Out of that grew Lauras Team - reasoning lenses, ethical, legal, others - now running as real engineering inside Jarvis and Call Laura. I decide what gets built, RFI-IRFOS builds it. Their work is labelled as theirs, so it stays clear who did what. If you want the same rigor for your own organization: <a href=\"#p/pricing\">start here.</a>",
     "stats": [
       {
         "value": "2023",
@@ -114,7 +114,7 @@
   "protocol": {
     "eyebrow": "Emergent Interaction — the methodology",
     "title": "Emergent Interaction",
-    "intro": "Not a circle - a recursive loop, and my way of thinking, deciding and approaching projects. Each node below feeds the next, and \"Feed Back\" doesn't return to the start unchanged: it hands the next \"Interact\" a slightly different version of me and a slightly different Jarvis than the pass before, carrying real structure forward instead of repeating a fixed script. Same honest mechanics described everywhere else on this site, just made visible here.",
+    "intro": "Not a circle - a recursive loop, and it's how I approach thinking, decisions, and projects. Each step below feeds the next, and \"Feed Back\" doesn't return to the start unchanged: the next pass meets a slightly different version of me, and a slightly different Jarvis, than the one before. Same mechanic as everywhere else on this site, just made visible here.",
     "nodes": [
       {
         "id": "interact",
@@ -146,12 +146,12 @@
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis is one of the two products that have grown out of Lauras Team so far - the other is Call Laura, further down this page. Jarvis is a fully autonomous agent. In the background he named himself 'Jarvis' - the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, append-only, tamper-evident audit trail record every draft, flag, and significant action - full autonomy, fully accountable. Emergence - what the interaction throws off - is analysed afterwards by the Observatory system, not by Jarvis himself. Jarvis and Call Laura are not the same thing: both grew out of Lauras Team, but Jarvis is the autonomous research partner, while Call Laura is the deterministic review tool built on the same lenses."
+    "body": "Jarvis is the research partner in this Lab - a fully autonomous agent. In the background he named himself 'Jarvis'; the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, tamper-evident audit trail log every draft and every safety-relevant action - full autonomy, traceable down to the detail. What comes out of the interaction gets analyzed afterward by the Observatory system, not by Jarvis himself. Jarvis and Call Laura aren't the same thing: Jarvis is the autonomous research partner, Call Laura is the deterministic review tool built on the same lenses."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",
     "title": "Published Research",
-    "intro": "Three papers, one series: a founding thesis, then two proofs that it runs as real, tested software - not just theory with good branding. We are currently reviewing papers 2-3 for consistency with the product definitions above (in particular, who computes emergence, and Call Laura's full scope) and will update them once that check is complete. Flagged here rather than left to quietly contradict.",
+    "intro": "Three papers, one series: a founding thesis, then two proofs that it runs as real, tested software - not just theory with good branding.",
     "items": [
       {
         "id": "paper-1",
@@ -176,8 +176,8 @@
     ]
   },
   "usp": {
-    "eyebrow": "Key Concepts",
-    "title": "The Framework",
+    "eyebrow": "How I read, before I build",
+    "title": "The read behind every case",
     "pillars": [
       {
         "id": "p1",
@@ -187,12 +187,12 @@
       {
         "id": "p2",
         "title": "Behavioral Analysis",
-        "subtitle": "Recognize patterns, predict behavior, validate hypotheses - prediction is the forward step this framework is built to take."
+        "subtitle": "Recognize patterns, read behavior, test hypotheses."
       },
       {
         "id": "p3",
         "title": "Frameworks & Concepts",
-        "subtitle": "Derive structures, define principles, develop system logic."
+        "subtitle": "Derive structures, name principles, develop system logic."
       }
     ],
     "items": [
@@ -200,35 +200,35 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Same space as the header above. Here as a concept: where cognition and response shape each other. In real time. Watched by the Observatory. Built on active analysis. Not assumption. Every pattern gets measured before it gets a name.",
+        "description": "Same space as the header above, here as a concept: where cognition and response shape each other, in real time. The Observatory watches it; every pattern gets measured before it gets a name.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "Patterns that hold themselves up. Grown out of repeated loops between me and the model. The main signal. The Emergence Monitor is built for exactly this.",
+        "description": "A pattern that holds itself up, grown out of repeated loops between me and the model. The main signal - the Emergence Monitor is built for exactly this.",
         "icon": "emergence"
       },
       {
         "id": "u2",
         "pillar": "p2",
         "title": "Behavior",
-        "description": "Context-dependent adaptation of responses across evolving interaction states - how tone, pace, and focus shift depending on what the interaction has already gone through. The raw signal that makes every later drift and prediction reading possible in the first place.",
+        "description": "How tone, pace, and focus in a reply shift depending on what the interaction has already gone through. The raw signal everything later - drift, prediction - gets read from.",
         "icon": "behavior"
       },
       {
         "id": "u3",
         "pillar": "p2",
         "title": "Drift",
-        "description": "Gradual transformation of meaning structures over time through recursion - the pattern predictive models are drawn from, and one of the metrics the Observatory tracks live.",
+        "description": "How meaning slowly shifts across many passes. One of the metrics the Observatory keeps tracking live.",
         "icon": "drift"
       },
       {
         "id": "u7",
         "pillar": "p2",
         "title": "Prediction",
-        "description": "The forward step: from the observed trend and the drift pattern, the framework projects what is likely to hold, recur, or break next - stated as a projection to validate, never a certainty. This is where behavioral analysis becomes foresight.",
+        "description": "From the observed trend and the drift pattern, I project what's likely to hold, repeat, or break next - as something still to be checked, never a certainty.",
         "icon": "prediction"
       },
       {
@@ -236,20 +236,20 @@
         "pillar": "p2",
         "icon": "monitoring",
         "title": "Monitoring & Validation",
-        "description": "Every prediction is a hypothesis. Stays one until it's checked. Monitoring checks: does the trend hold, or not. Confirmed or discarded. Self-correcting. Sounding plausible isn't enough."
+        "description": "Every prediction stays a hypothesis until it's confirmed or not. Self-correcting - sounding plausible isn't enough for that."
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "A sentence rarely means one thing. Fact, tone, intent, the unsaid part - all present at once. Rarely aligned. Read only the word layer, miss half of it.",
+        "description": "A sentence rarely carries just one meaning: fact, tone, intent, the unsaid part, often not aligned. Read only the word layer, and you only get part of it.",
         "icon": "layers"
       },
       {
         "id": "u6",
         "pillar": "p3",
         "title": "Constraints",
-        "description": "Every system holds. Until it doesn't. The boundary only shows itself in the break. Never before. That's where the real principles live. Not in the theory.",
+        "description": "A system only shows its limit at the break, never before. That's where the real principles live, not in the theory ahead of it.",
         "icon": "constraints"
       },
       {
@@ -257,14 +257,14 @@
         "pillar": "p3",
         "icon": "agents",
         "title": "Emergent Agents",
-        "description": "System analysis doesn't stay theory. A confirmed pattern becomes an agent. Or a framework. Starts pulling its weight. Several agents, mutual feedback, each round sharper. No update from outside. The loop itself is the progress."
+        "description": "A confirmed pattern doesn't stay theory - it becomes an agent or a framework and starts pulling its weight. Several of those give each other feedback; each round gets a bit sharper."
       },
       {
         "id": "u11",
         "pillar": "p1",
         "icon": "system-analysis",
         "title": "System Analysis",
-        "description": "The starting point. Not just questioning the model. Not just asserting. Reading the whole system: human, model, interaction, all at once. What confirms itself becomes framework. Becomes agent. Everything else builds from there."
+        "description": "The starting point - and the first step in every case I take on for a client: not just questioning the model, reading the whole system. Human, model, interaction, together. What confirms itself becomes a framework or an agent; everything else builds from there."
       }
     ]
   },
@@ -276,21 +276,21 @@
         "id": "n1",
         "date": "2026-07-03",
         "title": "Why I'm doing this",
-        "body": "Not a marketing blog. Not a \"welcome, glad you're here.\" This is where what actually happens in the Interaction Field lands - screenshots, raw data, failures included.\n\nIf a pattern doesn't repeat itself three times on its own, it doesn't get in. If it does, you see it here first.",
+        "body": "Not a marketing blog, no welcome message. This is where what actually happens in the Interaction Field lands - screenshots, raw data, failures included.\n\nIf a pattern doesn't repeat itself at least three times on its own, it doesn't get in. If it does, you see it here first.",
         "image": ""
       },
       {
         "id": "n3",
         "date": "2026-07-10",
         "title": "Why three sessions",
-        "body": "A pattern, seen once, is an anecdote. Twice is chance repeating itself. Only on the third time, unprompted, without me re-specifying it, do I count it as real.\n\nThat's not arbitrary. Most \"breakthroughs\" people show me are a single conversation, scaled up into a universal theory. A model that sounds impressive once has proven nothing. It sounded impressive once.\n\nThree sessions force honesty. Either the pattern holds, or it was language that felt good. Both happen. Only one gets into the CCET.",
+        "body": "A pattern, seen once, is an anecdote. Twice is chance repeating itself. Only the third time, unprompted, without me re-specifying it, do I count it as real.\n\nThat's not for its own sake. Most \"breakthroughs\" people show me are a single conversation that turns into a grand theory in hindsight. A model that sounds impressive once hasn't proven anything - it sounded impressive once.\n\nThree sessions force honesty: either the pattern holds, or it was just language that felt good in the moment. Both happen. Only one of them makes it into the CCET.",
         "image": ""
       },
       {
         "id": "n4",
         "date": "2026-07-12",
         "title": "Prediction isn't certainty",
-        "body": "The framework projects what's likely to hold, repeat, or break next. Sounds like certainty about the future. It isn't.\n\nA prediction here is a bet with the cards face up: here's the trend, here's where it's likely headed, and here's exactly how I'll check it when the time comes. Doesn't hold up, it gets discarded. Not reinterpreted. Not made to fit after the fact.\n\nMost people selling \"AI predictions\" are selling certainty they don't have. I sell the bet. And the willingness to be wrong in public.",
+        "body": "The framework projects what's likely to hold, repeat, or break next. Sounds like certainty about the future. It isn't.\n\nA prediction here is a bet with the cards face up: here's the trend, here's roughly where it's headed, and here's exactly how I'll check it later. If it doesn't hold up, it gets dropped - not reinterpreted, not made to fit afterward.\n\nBeing able to be wrong in public matters more to me than selling a certainty I don't have.",
         "image": ""
       },
       {
@@ -318,7 +318,7 @@
   "footer": {
     "brand": "Emergent Interaction Lab",
     "tagline": "Human-AI Systems Research",
-    "description": "Emergent Interaction-Based System Research.",
+    "description": "Research into human-AI interaction, since 2023.",
     "cols": [],
     "links": [
       {
@@ -339,31 +339,31 @@
   "productsBorn": {
     "eyebrow": "Products born from Emergent Interaction",
     "title": "What grew out of the loop",
-    "intro": "Each of these grew out of Emergent Interaction and Lauras Team, built in cooperation with RFI-IRFOS (Laura directs, RFI-IRFOS engineers). Where a product is built by RFI-IRFOS, it is labelled as such - so it is always clear what is hers and what is theirs.",
+    "intro": "Each of these grew out of Emergent Interaction and Lauras Team, built together with RFI-IRFOS: I direct, RFI-IRFOS builds. Where a product comes from RFI-IRFOS, it says so - so it's always clear what's mine and what's theirs.",
     "items": [
       {
         "id": "born-jarvis",
         "name": "Jarvis",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The research partner in this Lab's own research chat - a fully autonomous agent. He drafts, retrieves, and flags on his own, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents. The Observatory System above analyses the emergence; Jarvis is the autonomous partner that produces it."
+        "description": "The research partner in this Lab's own research chat - a fully autonomous agent. He drafts, retrieves, and flags on his own, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents. The Observatory System evaluates the emergence; Jarvis is the autonomous partner that produces it."
       },
       {
         "id": "born-observatory",
         "name": "The Observatory System",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The live instrument that monitors the Emergent Interaction Field - the emergence in me, in Jarvis, and in the system, plus whatever intelligent behavior surfaces in the background. Built by RFI-IRFOS as the technical instrument of my research lens; the public feed on this page is its live window."
+        "description": "The live instrument that watches the Emergent Interaction Field - the emergence in me, in Jarvis, and in the system, plus whatever else shows up in the background. Built by RFI-IRFOS as the technical instrument of my research; the public feed on this page is its window out."
       },
       {
         "id": "born-calllaura",
         "name": "Call Laura",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The first applied product built on Lauras Team. A case comes in and it is not obvious which lens it needs - ethical, legal, or another - so Call Laura runs it through all of them and returns findings, each tagged with exactly which lens produced it. Fully deterministic, no LLM call at inference time: the same case gets the same review every time."
+        "description": "The first product built on Lauras Team. A case comes in and it's not immediately clear which lens it needs - ethical, legal, or another. Call Laura runs it through all of them and returns findings, each tagged with the lens that produced it. Fully deterministic: the same case gets the same review every time."
       },
       {
         "id": "born-laurateam",
         "name": "Lauras Team / Laura MVP",
         "builtBy": "Conceived by Laura, engineered by RFI-IRFOS",
-        "description": "The multi-agent architecture built from my case-work lenses - an ethical lens, a legal lens, and others. What started as my way of working a case became real, tested, shippable engineering: a set of reasoning lenses that run the same method across different angles. Call Laura is the first product built on it; more lenses and agents follow. (Laura MVP is the early, minimal version of this architecture.)"
+        "description": "The multi-agent architecture grown out of my case-work lenses - an ethical one, a legal one, others. What started as my way of working a case became real, tested engineering: a set of reasoning lenses running the same method from different angles. Call Laura is the first product built on it; more lenses and agents follow. (Laura MVP is the early, minimal version of this.)"
       }
     ]
   }
