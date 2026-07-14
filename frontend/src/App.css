@@ -1755,6 +1755,7 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-stats-row { display: flex; flex-wrap: wrap; gap: 20px 32px; margin-bottom: 22px; }
 .site-about-stat { display: flex; flex-direction: column; align-items: flex-start; flex: 0 1 auto; max-width: 220px; }
 .site-about-bio { font-size: 19px; color: var(--text-soft, #4a4a4a); line-height: 1.75; margin-bottom: 26px; }
+.site-about-frameworks-line { font-size: 13px; color: var(--text-soft, #666); margin: -10px 0 22px; font-weight: 500; letter-spacing: .2px; }
 .site-about-proof-caption { font-size: 12.5px; font-weight: 600; color: var(--text-soft, #666); margin-bottom: 8px; }
 .site-about-badges-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }

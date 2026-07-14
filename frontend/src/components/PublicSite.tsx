@@ -1368,6 +1368,11 @@ export function PublicSite({
                     ))}
                   </div>
                 )}
+                {content.about.frameworksLine && (
+                  <Reveal from="bottom" delay={1}>
+                    <div className="site-about-frameworks-line" data-cid="about.frameworksLine">{content.about.frameworksLine}</div>
+                  </Reveal>
+                )}
                 <Reveal from="bottom" delay={1}><E field="about.bio" value={content.about.bio} as="p" className="site-about-bio" /></Reveal>
                 {!editMode && (
                   <Reveal from="bottom" delay={2}>
