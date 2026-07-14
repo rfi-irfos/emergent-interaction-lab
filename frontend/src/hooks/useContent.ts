@@ -15,8 +15,11 @@ export function useContent(lang: Lang) {
     let cancelled = false
     shaRef.current = null
     // TEMP LOCAL PREVIEW PATCH (will be reverted): load content.json from the
-    // local public/ dir instead of GitHub raw, so the dev server shows the
-    // same content.json the user is editing.
+    // built dist root instead of GitHub raw, so the dev server shows the same
+    // content.json the user is editing. Uses `content.{lang}.json` at the root
+    // (served by vite from public/ locally AND present at dist/ root on Fly) -
+    // NOT `frontend/public/content.json`, which only exists as a source path
+    // and is never reachable at that URL on the deployed app.
     const bust = `?t=${Date.now()}`
     const rawBase = import.meta.env.BASE_URL
     // One retry after a short delay before giving up on the requested
@@ -36,13 +39,13 @@ export function useContent(lang: Lang) {
       return null
     }
     ;(async () => {
-      const primary = await fetchJson(`${rawBase}${contentPathFor(lang)}${bust}`)
+      const primary = await fetchJson(`${rawBase}content.${lang}.json${bust}`)
       if (cancelled) return
       if (primary) { setContent(primary); setLoading(false); return }
       // Requested language still unavailable after retry -> fall back to
       // EN raw file, then to the bundled default.
       if (lang !== 'en') {
-        const en = await fetchJson(`${rawBase}${contentPathFor('en')}${bust}`)
+        const en = await fetchJson(`${rawBase}content.json${bust}`)
         if (cancelled) return
         if (en) { setContent(en); setLoading(false); return }
       }
