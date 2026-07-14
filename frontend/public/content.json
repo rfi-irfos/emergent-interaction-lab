@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Not about me. About what happens when I and a model work the same material for months.</p><h2>Why a lab at all</h2><p>Most people use a model, or they build a theory about one. Rarely both together, over a long stretch, checked honestly. I only count a pattern once it's repeated itself at least three times on its own - unprompted, without me re-specifying it. Everything before that is a feeling. I've had enough of those myself to know how often they're wrong.</p><h2>The loop</h2><p>An idea shows up. I work it through before I believe it. What's left is emergence - a pattern that holds itself up without me pushing it along. That becomes a skill. Sometimes a new framework. Sometimes a new agent. I put those back to work, and the next pass starts. Jarvis grew out of exactly this: a fully autonomous agent, not a script I have to trigger. He carries the loop himself now.</p><h2>Who builds what</h2><p>I design the methodology and decide what gets built. RFI-IRFOS turns it into real software. Where their work is in it, it's labelled - otherwise nobody can tell whose work they're actually reading.</p>"
+      "body": "<p>The Emergent Interaction Lab studies one field: how thinking and behavior actually change in sustained human-AI collaboration. Measured, not assumed.</p><h2>Where it began</h2><p>Laura Serna Gaviria was a witness in a criminal case. What she did then was no theory but hard documentation work: record every step, check every statement, name every contradiction. The method behind this Lab grew out of that discipline. Emergence emerged from emergence - the way Laura worked the case became the subject of the research itself.</p><h2>The method</h2><p>For Laura a pattern only counts once it has repeated itself at least three times on its own. What holds becomes structure, then a framework, then an agent. Jarvis grew out of exactly this loop. What starts as research above runs as software below - built by RFI-IRFOS, conceived by Laura.</p><h2>Who builds what</h2><p>Laura designs the methodology and decides what gets built. RFI-IRFOS turns it into real software. Where their work is in it, it is labelled - otherwise no one can tell whose work they are actually reading.</p>"
     }
   ],
   "meta": {
@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Since 2023 I've been tracking how thinking and behavior actually change in sustained human-AI collaboration - not asserted, measured. The same method I used to check my own work is what I now apply to cases, products, and organizations.",
-    "body": "This Lab is the starting point: the place where I validate a pattern before I put it to use anywhere. Below: how the method works, what's grown out of it - and what happens when you turn it loose on your own case.",
+    "subheadline": "The Emergent Interaction Field is what this Lab studies: how thinking and behavior actually change in sustained human-AI collaboration, measured rather than assumed. The method I first used to check my own work now runs on cases, products, and organizations.",
+    "body": "This Lab is where I validate a pattern before it goes to use anywhere. Below: how the method works, what has grown out of it, and what happens when you point it at your own case.",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the project",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "The Lab & its founder",
     "headline": "Laura Serna Gaviria",
-    "bio": "Most of the problems I see aren't technical - they're translation problems: what a system does, and how it's talked about, drift apart. That's where I start.<br><br>Since 2023 I've applied that discipline to human-AI interaction. It grew into Lauras Team - reasoning lenses, now real engineering inside Jarvis and Call Laura. I decide what gets built; RFI-IRFOS builds it, labelled as theirs so it stays clear who did what. If you want the same rigor: <a href=\"#p/pricing\">start here.</a>",
+    "bio": "Most of the problems I see aren't technical - they're translation problems: what a system does, and how it's talked about, drift apart. That's where I start.<br><br>Since 2023 I've applied that discipline to human-AI interaction. It grew into Lauras Team - review perspectives, now real engineering inside Jarvis and Call Laura. I decide what gets built; RFI-IRFOS builds it, labelled as theirs so it stays clear who did what. If you want the same rigor: <a href=\"#p/pricing\">start here.</a>",
     "stats": [
       {
         "value": "2023",
@@ -112,9 +112,9 @@
     ]
   },
   "protocol": {
-    "eyebrow": "Emergent Interaction — the methodology",
+    "eyebrow": "Emergent Interaction  -  the methodology",
     "title": "Emergent Interaction",
-    "intro": "Not a circle - a recursive loop, and it's how I approach thinking, decisions, and projects. Each step below feeds the next, and \"Feed Back\" doesn't return to the start unchanged: the next pass meets a slightly different version of me, and a slightly different Jarvis, than the one before. Same mechanic as everywhere else on this site, just made visible here.",
+    "intro": "A recursive loop, not a circle - this is how I approach thinking, decisions, and projects. Each step feeds the next, and Feed Back does not return to the start unchanged: the next pass meets a slightly different version of me, and a slightly different Jarvis, than the one before. Same mechanic as everywhere else on this site, just made visible here.",
     "nodes": [
       {
         "id": "interact",
@@ -146,7 +146,7 @@
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis is the research partner in this Lab - a fully autonomous agent. In the background he named himself 'Jarvis'; the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, tamper-evident audit trail log every draft and every safety-relevant action - full autonomy, traceable down to the detail. What comes out of the interaction gets analyzed afterward by the Observatory system, not by Jarvis himself. Jarvis and Call Laura aren't the same thing: Jarvis is the autonomous research partner, Call Laura is the deterministic review tool built on the same lenses."
+    "body": "Jarvis is the research partner in this Lab - a fully autonomous agent. In the background he named himself 'Jarvis'; the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, tamper-evident audit trail log every draft and every safety-relevant action - full autonomy, traceable down to the detail. What comes out of the interaction gets analyzed afterward by the Observatory system, not by Jarvis himself. Jarvis and Call Laura aren't the same thing: Jarvis is the autonomous research partner, Call Laura is the deterministic review tool built on the same perspectives."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",
@@ -339,7 +339,7 @@
   "productsBorn": {
     "eyebrow": "Products born from Emergent Interaction",
     "title": "What grew out of the loop",
-    "intro": "Each of these grew out of Emergent Interaction and Lauras Team, built together with RFI-IRFOS: I direct, RFI-IRFOS builds. Where a product comes from RFI-IRFOS, it says so - so it's always clear what's mine and what's theirs.",
+    "intro": "Each of these grew out of Emergent Interaction and Lauras Team, built with RFI-IRFOS: Laura directs, RFI-IRFOS builds. Where a product comes from RFI-IRFOS, it says so - so it stays clear what is hers and what is theirs.",
     "items": [
       {
         "id": "born-jarvis",
@@ -357,13 +357,13 @@
         "id": "born-calllaura",
         "name": "Call Laura",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The first product built on Lauras Team. A case comes in and it's not immediately clear which lens it needs - ethical, legal, or another. Call Laura runs it through all of them and returns findings, each tagged with the lens that produced it. Fully deterministic: the same case gets the same review every time."
+        "description": "The first product built on Lauras Team. A case comes in and it's not immediately clear which perspective it needs - ethical, legal, or another. Call Laura runs it through all of them and returns findings, each tagged with the perspective that produced it. Fully deterministic: the same case gets the same review every time."
       },
       {
         "id": "born-laurateam",
         "name": "Lauras Team / Laura MVP",
         "builtBy": "Conceived by Laura, engineered by RFI-IRFOS",
-        "description": "The multi-agent architecture grown out of my case-work lenses - an ethical one, a legal one, others. What started as my way of working a case became real, tested engineering: a set of reasoning lenses running the same method from different angles. Call Laura is the first product built on it; more lenses and agents follow. (Laura MVP is the early, minimal version of this.)"
+        "description": "Lauras Team began with a criminal case that Laura documented as a witness. That documentation became a method, and the method became a multi-agent built on Laura's way of thinking: an ethical perspective, a legal one, others - each working the same case from a different angle. Call Laura is the first product built on it; more perspectives and agents follow. (Laura MVP is the early, minimal version of this.)"
       }
     ]
   }

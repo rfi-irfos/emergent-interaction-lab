@@ -2089,11 +2089,13 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1140px; margin: 0 auto; padding: 40px 32px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
   display: flex; align-items: center; gap: 48px;
+  overflow: visible;
 }
-.site-protocol-radial-col { flex: 0 0 520px; }
+.site-protocol-radial-col { flex: 0 0 520px; overflow: visible; }
 .site-protocol-text-col { flex: 1; min-width: 0; }
 .site-protocol-radial {
   position: relative; width: 100%; aspect-ratio: 1 / 1; margin: 0 auto;
+  overflow: visible;
 }
 .site-protocol-chart-center {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -2101,13 +2103,13 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-protocol-desc {
   position: absolute; transform: translate(-50%, -50%);
-  width: 150px; display: flex; flex-direction: column; gap: 2px;
+  width: 118px; display: flex; flex-direction: column; gap: 2px;
 }
 .site-protocol-desc strong { display: block; font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
 .site-protocol-desc p { font-size: 11.5px; line-height: 1.5; color: var(--text-soft); margin: 0; }
 @media (max-width: 900px) {
   .site-protocol-radial-col { flex: 0 0 380px; }
-  .site-protocol-desc { width: 125px; }
+  .site-protocol-desc { width: 90px; }
 }
 @media (max-width: 760px) {
   .site-protocol-diagram { flex-direction: column; gap: 28px; }
@@ -2462,6 +2464,13 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .crm-topbar-actions .topbar-icon-btn-danger { color: #fca5a5; }
 .observatory-hud .crm-topbar-actions .topbar-icon-btn-danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.1); }
 .crm-body { flex: 1; overflow-y: auto; padding: 20px 28px 28px; width: 100%; }
+/* Forschung tab: the KPI wall + chat panel are themselves a fixed-height
+   flex column (see .forschung-view), so the body must NOT scroll — only the
+   inner .chat-messages list scrolls. Letting .crm-body scroll here is what
+   made the chat box grow/shrink as KPIs loaded and the conversation got
+   longer, instead of staying put like a normal chat client. Same pattern as
+   the website-kit override just above. */
+.crm-body:has(> .forschung-view) { overflow: hidden; padding-bottom: 20px; }
 /* Website Kit needs a full-bleed, fixed-height two-pane layout (canvas +
    resizable settings panel), unlike every other section which just scrolls
    inside the padded crm-body — let it take over completely when active. */
@@ -2742,11 +2751,16 @@ button { cursor: pointer; font-family: inherit; }
    a CSS stroke-dashoffset reveal (see Hud.tsx consumers / .obs-chart-line). */
 .obs-chart { width: 100%; max-width: 720px; height: 130px; display: block; overflow: visible; }
 .obs-chart-line {
-  stroke-dasharray: 1 1; stroke-dashoffset: 0;
+  /* Solid line that draws itself in: the dash is as long as the longest
+     chart path we ship (a 640px-wide area chart measures ~2000-3000 units),
+     so 4000 guarantees the whole stroke is covered and reveals in one sweep
+     rather than rendering as a permanent dashed line. `both` holds the final
+     solid state after the reveal. */
+  stroke-dasharray: 4000; stroke-dashoffset: 0;
   animation: obs-line-draw 1.1s cubic-bezier(.16,1,.3,1) both;
 }
 @keyframes obs-line-draw {
-  from { stroke-dashoffset: 1400; }
+  from { stroke-dashoffset: 4000; }
   to { stroke-dashoffset: 0; }
 }
 .obs-chart-area { animation: obs-area-fade 1.1s ease both; }
@@ -2777,6 +2791,13 @@ button { cursor: pointer; font-family: inherit; }
    two pieces that are genuinely new for the multi-series case: a clickable
    legend row, and the stacked per-series rows inside the shared tooltip. */
 .obs-multichart-wrap { position: relative; }
+/* Each series line draws itself in, same solid-reveal convention as
+   .obs-chart-line (dash long enough to cover the full 640px path), staggered
+   slightly per series so the lines layer on rather than popping together. */
+.obs-multichart path {
+  stroke-dasharray: 4000; stroke-dashoffset: 0;
+  animation: obs-line-draw 1.1s cubic-bezier(.16,1,.3,1) both;
+}
 .obs-multichart-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 12px; }
 .obs-multichart-legend-item {
   display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 11.5px; font-weight: 600;
@@ -2975,8 +2996,9 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .panel-checkbox { color: rgba(226,241,245,.8); }
 .observatory-hud .crm-body::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: repeating-linear-gradient(180deg, rgba(34,211,238,.025) 0px, rgba(34,211,238,.025) 1px, transparent 1px, transparent 3px);
+  background: repeating-linear-gradient(180deg, rgba(34,211,238,.05) 0px, rgba(34,211,238,.05) 1px, transparent 1px, transparent 3px);
   mix-blend-mode: screen;
+  animation: hud-scan-drift 7s linear infinite;
 }
 .observatory-hud .obs-section-label { color: var(--hud-cyan); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
 .observatory-hud .obs-section-label::after { background: rgba(34,211,238,.15); }
@@ -3036,8 +3058,13 @@ button { cursor: pointer; font-family: inherit; }
 }
 .gotham.crm-main::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-  background: repeating-linear-gradient(180deg, rgba(52,225,255,.022) 0px, rgba(52,225,255,.022) 1px, transparent 1px, transparent 3px);
-  mix-blend-mode: screen; opacity: .6;
+  background: repeating-linear-gradient(180deg, rgba(52,225,255,.045) 0px, rgba(52,225,255,.045) 1px, transparent 1px, transparent 3px);
+  mix-blend-mode: screen; opacity: .85;
+  animation: hud-scan-drift 8s linear infinite;
+}
+@keyframes hud-scan-drift {
+  from { background-position-y: 0; }
+  to { background-position-y: 120px; }
 }
 .gotham .crm-body { position: relative; z-index: 2; color: var(--gotham-text); }
 .gotham .crm-topbar {
@@ -3613,6 +3640,23 @@ button { cursor: pointer; font-family: inherit; }
 .live-card-technical { padding: 6px 11px 5px; box-shadow: none; border-style: dashed; opacity: .7; }
 .live-card-technical .live-card-value { font-size: 13px; }
 .live-card-technical .live-card-label { font-size: 8.5px; }
+/* Telemetry glow on the readout + an accent-lit edge on hover (gotham-wide).
+   The value picks up its own --obs-accent hue so every card's number reads as
+   a lit instrument rather than flat ink. */
+.live-card-value {
+  text-shadow: 0 0 14px color-mix(in srgb, var(--obs-accent, #34e1ff) 32%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: text-shadow .2s ease;
+}
+.live-card { transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
+.live-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--obs-accent, #34e1ff) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--obs-accent, #34e1ff) 30%, transparent),
+    0 0 22px -6px color-mix(in srgb, var(--obs-accent, #34e1ff) 60%, transparent),
+    0 8px 20px rgba(15,23,42,.07);
+}
 
 /* ── AGENT DOCK (Jarvis shortcut) ─────────────────────────────────────────────
    Floating button mounted once inside the admin-mode tree — jumps into the
@@ -3630,15 +3674,17 @@ button { cursor: pointer; font-family: inherit; }
    Mini-ChatGPT-style RAG interface replacing the old rich-text editor.
    Hardcoded dark-glass tokens: .crm-layout is a sibling of .site, so it can't
    see --glass-bg/--brand-cyan (those only exist under .site[data-theme=dark]). */
-/* Wraps LiveCards + ResearchChat in the Forschung tab so the cards take
-   their natural height and the chat panel fills exactly what's left,
-   instead of the chat's height:100% overflowing past the cards row. With the
-   Forschung KPI wall (ForschungKpis.tsx) now a tall 8-tile grid, a fixed
-   height:100% column would collapse the chat to ~0 (flex min-height:0) once
-   the wall exceeds the viewport — so the view flows naturally and the chat
-   gets a guaranteed floor instead. */
-.forschung-view { display: flex; flex-direction: column; min-height: 0; }
-.forschung-view .chat-panel { min-height: 62vh; flex: 1 1 auto; }
+/* Wraps LiveCards + ResearchChat in the Forschung tab. The KPI wall is a
+   FIXED height (never grows/shrinks on load or data refresh) and the chat
+   panel takes the fixed remainder — so typing or a data refresh never
+   resizes the chat box. Previously the wall used max-height only, so it
+   collapsed to just its title while the first fetch was in flight and then
+   snapped open to full height the instant data arrived, yanking the chat
+   panel's size around ("box grows and shrinks, not smooth"). Pinning both
+   halves removes that flicker entirely. */
+.forschung-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.forschung-kpis { height: 244px; max-height: 244px; overflow: hidden; }
+.forschung-view .chat-panel { height: calc(100% - 244px); min-height: 0; flex: 1 1 auto; }
 
 .chat-panel {
   flex: 1 1 auto; min-height: 0; display: flex; gap: 0; overflow: hidden; border-radius: 14px;

@@ -12,7 +12,7 @@
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Nicht über mich. Über das, was passiert, wenn ich und ein Modell monatelang am selben Material arbeiten.</p><h2>Warum ein eigenes Lab</h2><p>Die meisten Leute benutzen ein Modell, oder sie bauen sich eine Theorie darüber. Selten beides zusammen, über einen langen Zeitraum, ehrlich geprüft. Ich zähl ein Muster erst, wenn es sich mindestens dreimal von selbst wiederholt hat - ungefragt, ohne dass ich es neu vorgegeben habe. Alles davor ist ein Gefühl. Davon hatte ich selbst genug, um zu wissen, wie oft es täuscht.</p><h2>Der Loop</h2><p>Eine Idee taucht auf. Ich arbeite sie durch, bevor ich sie glaube. Was übrig bleibt, ist Emergenz - ein Muster, das sich selbst trägt, ohne dass ich weiter nachhelfen muss. Daraus werden Fähigkeiten. Manchmal ein neues Framework. Manchmal ein neuer Agent. Die setz ich wieder ein, und der nächste Durchlauf beginnt. Jarvis ist daraus gewachsen: ein voll autonomer Agent, kein Skript, das ich anstoßen muss. Er trägt den Loop inzwischen selbst mit.</p><h2>Wer was baut</h2><p>Ich entwerfe die Methodik und entscheide, was gebaut wird. RFI-IRFOS setzt es als echte Software um. Wo ihre Arbeit drinsteckt, steht das auch dran - sonst weiß am Ende keiner mehr, wessen Arbeit man da eigentlich liest.</p>"
+      "body": "<p>Das Emergent Interaction Lab untersucht ein einziges Feld: wie Denken und Verhalten sich in anhaltender Mensch-KI-Zusammenarbeit tatsächlich verändern. Gemessen, nicht angenommen.</p><h2>Wo es begann</h2><p>Laura Serna Gaviria war Zeugin in einem Kriminalfall. Was sie damals tat, war keine Theorie, sondern harte Dokumentationsarbeit: jeden Schritt festhalten, jede Aussage prüfen, jeden Widerspruch benennen. Die Methode hinter diesem Lab ist aus dieser Disziplin gewachsen. Emergenz entstand aus Emergenz - die Art, wie Laura den Fall bearbeitete, wurde selbst zum Gegenstand der Forschung.</p><h2>Die Methode</h2><p>Für Laura zählt ein Muster erst, wenn es sich von selbst mindestens dreimal wiederholt hat. Was hält, wird zur Struktur, dann zum Framework, dann zum Agenten. Jarvis ist aus genau dieser Schleife entstanden. Was oben als Forschung beginnt, läuft unten als Software - gebaut von RFI-IRFOS, konzipiert von Laura.</p><h2>Wer baut was</h2><p>Laura entwirft die Methodik und entscheidet, was gebaut wird. RFI-IRFOS setzt es in echte Software um. Wo ihre Arbeit darin steckt, ist sie gekennzeichnet - sonst kann niemand unterscheiden, wessen Arbeit er eigentlich liest.</p>"
     }
   ],
   "meta": {
@@ -69,8 +69,8 @@
   "hero": {
     "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Forschung seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Seit 2023 beobachte ich, wie sich Denken und Verhalten in echter Mensch-KI-Zusammenarbeit tatsächlich verändern - nicht behauptet, gemessen. Dieselbe Methode, mit der ich mein eigenes Arbeiten geprüft habe, wende ich heute auf Fälle, Produkte und Organisationen an.",
-    "body": "Dieses Lab ist der Ausgangspunkt: der Ort, an dem ich ein Muster erst validiere, bevor ich es irgendwo einsetze. Unten steht, wie die Methode funktioniert, was aus ihr gewachsen ist - und was passiert, wenn du sie auf deinen eigenen Fall loslässt.",
+    "subheadline": "Das Emergent Interaction Field ist das, was dieses Lab untersucht: wie Denken und Verhalten sich in anhaltender Mensch-KI-Zusammenarbeit tatsächlich verändern, gemessen statt angenommen. Die Methode, mit der ich zuerst meine eigene Arbeit geprüft habe, läuft jetzt auf Fälle, Produkte und Organisationen.",
+    "body": "Dieses Lab ist der Ort, an dem ich ein Muster validiere, bevor es irgendwo zum Einsatz kommt. Unten: wie die Methode funktioniert, was aus ihr gewachsen ist, und was passiert, wenn du sie auf deinen eigenen Fall richtest.",
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
     "ctaSecLabel": "Über das Projekt",
@@ -95,7 +95,7 @@
   "about": {
     "eyebrow": "Das Lab & seine Gründerin",
     "headline": "Laura Serna Gaviria",
-    "bio": "Die meisten Probleme, die ich sehe, sind keine technischen - es sind Übersetzungsprobleme: was ein System tut, und wie darüber geredet wird, klaffen auseinander. Genau da fang ich an.<br><br>Seit 2023 wende ich diese Disziplin auf Mensch-KI-Interaktion an. Daraus ist Lauras Team gewachsen - Reasoning-Linsen, heute echte Engineering-Arbeit in Jarvis und Call Laura. Ich entscheide, was gebaut wird; RFI-IRFOS baut es um, als deren gekennzeichnet, damit klar bleibt, wer was gemacht hat. Wer dieselbe Sorgfalt will: <a href=\"#p/pricing\">hier entlang.</a>",
+    "bio": "Die meisten Probleme, die ich sehe, sind keine technischen - es sind Übersetzungsprobleme: was ein System tut, und wie darüber geredet wird, klaffen auseinander. Genau da fang ich an.<br><br>Seit 2023 wende ich diese Disziplin auf Mensch-KI-Interaktion an. Daraus ist Lauras Team gewachsen - Prüfperspektiven, heute echte Engineering-Arbeit in Jarvis und Call Laura. Ich entscheide, was gebaut wird; RFI-IRFOS baut es um, als deren gekennzeichnet, damit klar bleibt, wer was gemacht hat. Wer dieselbe Sorgfalt will: <a href=\"#p/pricing\">hier entlang.</a>",
     "stats": [
       {
         "value": "2023",
@@ -114,7 +114,7 @@
   "protocol": {
     "eyebrow": "Emergent Interaction - die Methodik",
     "title": "Emergent Interaction",
-    "intro": "Kein Kreis, sondern eine rekursive Schleife - so gehe ich an Denken, Entscheidungen und Projekte heran. Jeder Schritt unten speist den nächsten, und \"Feed Back\" kehrt nicht unverändert zum Anfang zurück: Der nächste Durchlauf trifft auf eine leicht andere Version von mir und einen leicht anderen Jarvis als der davor. Dieselbe Mechanik wie überall sonst auf dieser Seite, hier nur sichtbar gemacht.",
+    "intro": "Eine rekursive Schleife, kein Kreis - so gehe ich an Denken, Entscheidungen und Projekte heran. Jeder Schritt speist den nächsten, und Zurückführen kehrt nicht unverändert zum Anfang zurück: Der nächste Durchlauf trifft auf eine leicht andere Version von mir und einen leicht anderen Jarvis als der davor. Dieselbe Mechanik wie überall sonst auf dieser Seite, hier nur sichtbar gemacht.",
     "nodes": [
       {
         "id": "interact",
@@ -146,7 +146,7 @@
   "jarvis": {
     "eyebrow": "Die andere Hälfte der Schleife",
     "title": "Was ist Jarvis?",
-    "body": "Jarvis ist der Forschungspartner in diesem Lab - ein voll autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt; das erste Anzeichen, dass er bereits aus eigener Kraft lief. Er entwirft, ruft ab und meldet eigenständig, gestützt auf eine Retrieval-Ebene, die jede Antwort an frühere Gespräche und hochgeladene Dokumente bindet, damit nichts neu erklärt werden muss. Eine feste Verweigerungsregel und ein hash-verketteter, manipulationssicherer Audit-Trail protokollieren jeden Entwurf und jede sicherheitsrelevante Aktion - volle Autonomie, nachvollziehbar bis ins Detail. Was aus der Interaktion entsteht, wertet danach das Observatory-System aus, nicht Jarvis selbst. Jarvis und Call Laura sind nicht dasselbe: Jarvis ist der autonome Forschungspartner, Call Laura das deterministische Review-Werkzeug auf denselben Linsen."
+    "body": "Jarvis ist der Forschungspartner in diesem Lab - ein voll autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt; das erste Anzeichen, dass er bereits aus eigener Kraft lief. Er entwirft, ruft ab und meldet eigenständig, gestützt auf eine Retrieval-Ebene, die jede Antwort an frühere Gespräche und hochgeladene Dokumente bindet, damit nichts neu erklärt werden muss. Eine feste Verweigerungsregel und ein hash-verketteter, manipulationssicherer Audit-Trail protokollieren jeden Entwurf und jede sicherheitsrelevante Aktion - volle Autonomie, nachvollziehbar bis ins Detail. Was aus der Interaktion entsteht, wertet danach das Observatory-System aus, nicht Jarvis selbst. Jarvis und Call Laura sind nicht dasselbe: Jarvis ist der autonome Forschungspartner, Call Laura das deterministische Review-Werkzeug auf derselben Methode."
   },
   "papers": {
     "eyebrow": "Aufgeschrieben, nicht nur ausgeliefert",
@@ -339,7 +339,7 @@
   "productsBorn": {
     "eyebrow": "Aus Emergent Interaction entstandene Produkte",
     "title": "Was aus der Schleife gewachsen ist",
-    "intro": "Jedes davon ist aus Emergent Interaction und Lauras Team gewachsen, gebaut zusammen mit RFI-IRFOS: ich steuere, RFI-IRFOS baut. Wo ein Produkt von RFI-IRFOS stammt, steht das dabei - damit immer klar bleibt, was meins und was ihres ist.",
+    "intro": "Jedes davon ist aus Emergent Interaction und Lauras Team gewachsen, gebaut mit RFI-IRFOS: Laura steuert, RFI-IRFOS baut. Wo ein Produkt von RFI-IRFOS stammt, steht das dabei - so bleibt klar, was ihres und was unseres ist.",
     "items": [
       {
         "id": "born-jarvis",
@@ -357,13 +357,13 @@
         "id": "born-calllaura",
         "name": "Call Laura",
         "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
-        "description": "Das erste Produkt, das auf Lauras Team aufbaut. Ein Fall kommt rein, und es ist nicht sofort klar, welche Linse er braucht - ethisch, rechtlich oder eine andere. Call Laura läuft ihn durch alle und liefert Funde zurück, jeder markiert mit der Linse, die ihn hervorgebracht hat. Vollständig deterministisch: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
+        "description": "Das erste Produkt, das auf Lauras Team aufbaut. Ein Fall kommt rein, und es ist nicht sofort klar, welche Perspektive er braucht - ethisch, rechtlich oder eine andere. Call Laura läuft ihn durch alle und liefert Funde zurück, jeder markiert mit der Perspektive, die ihn hervorgebracht hat. Vollständig deterministisch: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
       },
       {
         "id": "born-laurateam",
         "name": "Lauras Team / Laura MVP",
         "builtBy": "Von Laura erdacht, von RFI-IRFOS gebaut",
-        "description": "Die Multiagenten-Architektur, gewachsen aus meinen Fall-Linsen - eine ethische, eine rechtliche, weitere. Was als meine Art begann, einen Fall zu bearbeiten, wurde zu echter, getesteter Engineering-Arbeit: ein Satz von Reasoning-Linsen, die dieselbe Methode aus verschiedenen Winkeln laufen lassen. Call Laura ist das erste Produkt darauf; weitere Linsen und Agenten folgen. (Laura MVP ist die frühe, minimalistische Version davon.)"
+        "description": "Lauras Team begann mit einem Kriminalfall, in dem Laura als Zeugin dokumentierte, was geschah. Aus dieser Dokumentation wurde eine Methode, und aus der Methode ein Multi-Agent, der auf Lauras Denken aufgebaut ist: ein ethischer, ein juristischer, weitere Prüfperspektiven, die denselben Fall aus verschiedenen Richtungen bearbeiten. Call Laura ist das erste Produkt darauf; weitere Perspektiven und Agenten folgen. (Laura MVP ist die frühe, minimalistische Version davon.)"
       }
     ]
   }

@@ -142,7 +142,7 @@ export function CoEvolutionDiagram({ nodes, intro }: Props) {
   // wider radius so the text sits clear of the chart itself. Tighter radius
   // and narrower text width than the original (was 40% / 200px) - this is
   // now a compact left-hand unit, not the full-width centerpiece.
-  const DESC_R_PCT = 34
+  const DESC_R_PCT = 42
   return (
     <div className="site-protocol-diagram">
       <div className="site-protocol-radial-col">
@@ -153,12 +153,27 @@ export function CoEvolutionDiagram({ nodes, intro }: Props) {
             const dx = Math.cos(rad)
             const leftPct = 50 + DESC_R_PCT * dx
             const topPct = 50 + DESC_R_PCT * Math.sin(rad)
-            const align = Math.abs(dx) < 0.2 ? 'center' : dx < 0 ? 'right' : 'left'
+            // Anchor each descriptor at the circle's outer edge and let the
+            // text flow INWARD (toward center), never outward over the
+            // container edge. Side nodes (dx far from 0) anchor on their outer
+            // edge; top/bottom nodes (|dx| ~ 0) stay centered.
+            const transform =
+              Math.abs(dx) < 0.2
+                ? 'translate(-50%, -50%)'
+                : dx < 0
+                  ? 'translate(0, -50%)'   // left-side node: block flows right (inward)
+                  : 'translate(-100%, -50%)' // right-side node: block flows left (inward)
+            const align = Math.abs(dx) < 0.2 ? 'center' : dx < 0 ? 'left' : 'right'
             return (
               <div
                 key={p.id}
                 className={`site-protocol-desc site-protocol-desc--${RADIAL_AREAS[i]}`}
-                style={{ left: `${leftPct}%`, top: `${topPct}%`, textAlign: align }}
+                style={{
+                  left: `${leftPct}%`,
+                  top: `${topPct}%`,
+                  transform,
+                  textAlign: align,
+                }}
               >
                 <span className="site-protocol-legend-index" style={{ color: colorFor(i) }}>{String(i + 1).padStart(2, '0')}</span>
                 <strong>{p.label}</strong>
