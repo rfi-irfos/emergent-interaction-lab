@@ -2827,7 +2827,7 @@ button { cursor: pointer; font-family: inherit; }
    visible "one chart fills the screen" case. Cap it and give it a stable
    aspect so it reads as an instrument, not a wall. The draw-in animation is
    a CSS stroke-dashoffset reveal (see Hud.tsx consumers / .obs-chart-line). */
-.obs-chart { width: 100%; max-width: 720px; height: 130px; display: block; overflow: visible; }
+.obs-chart { width: 100%; max-width: 420px; height: 130px; display: block; overflow: visible; }
 .obs-chart-line {
   /* Solid line that draws itself in: the dash is as long as the longest
      chart path we ship (a 640px-wide area chart measures ~2000-3000 units),
@@ -3044,122 +3044,113 @@ button { cursor: pointer; font-family: inherit; }
 .obs-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
 
 /* ── OBSERVATORY HUD THEME ────────────────────────────────────────────────
-   "Verwaltung is business BI, Observatory is the Jarvis station" — this
-   scope (applied to .crm-main only while an Observatory module is active,
-   see AdminPanel.tsx) reskins every shared .obs-* primitive at once: dark
-   glass panels, glowing cyan telemetry accents, monospace readouts, a
-   drifting scanline. Verwaltung's white BI cards are untouched. */
-.observatory-hud { --hud-cyan: #22d3ee; --hud-cyan-dim: rgba(34,211,238,.35); --hud-bg: #070b12; }
+   Reskinned to match the Lighthouse OS standard (see projects/lighthouse
+   frontend/src/styles.css [data-theme="dark"]): deep midnight navy, off-white
+   text, a single muted-teal accent, depth from shadow NOT bright edges, one
+   global sans (no mono-mixing), no glow on foreground text. Calm, high-
+   contrast, data-dense — not a neon Christmas tree. */
+.observatory-hud { --hud-cyan: #38d9cc; --hud-cyan-dim: rgba(56,217,204,.3); --hud-bg: #0a0e17; }
 .observatory-hud.crm-main {
   background:
-    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(34,211,238,.09), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(139,92,246,.08), transparent 55%),
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(56,217,204,.05), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(139,92,246,.04), transparent 55%),
     var(--hud-bg);
 }
-.observatory-hud .crm-topbar { background: rgba(7,11,18,.9); border-bottom: 1px solid rgba(34,211,238,.18); backdrop-filter: blur(6px); }
+.observatory-hud .crm-topbar { background: rgba(10,14,23,.92); border-bottom: 1px solid rgba(150,156,170,.1); backdrop-filter: blur(6px); }
 .observatory-hud .crm-topbar-title {
-  color: #e7fbff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-weight: 700;
-  letter-spacing: .03em; text-shadow: 0 0 12px rgba(34,211,238,.35);
+  color: #e4e8f0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700;
+  letter-spacing: .01em;
 }
 .observatory-hud .crm-body {
-  position: relative; color: rgba(226,241,245,.85);
-  --panel-surface: rgba(20,30,42,.6); --panel-border: rgba(34,211,238,.16); --panel-bg: rgba(7,14,20,.6); --panel-text: rgba(226,241,245,.75);
-  --panel-text-dim: rgba(148,190,199,.6);
+  position: relative; color: rgba(228,232,240,.85);
+  --panel-surface: #12172b; --panel-border: rgba(150,156,170,.1); --panel-bg: #12172b; --panel-text: rgba(228,232,240,.82);
+  --panel-text-dim: rgba(138,152,184,.7);
 }
-.observatory-hud .panel-product-name { color: #eefcff; }
-.observatory-hud .panel-product-meta { color: rgba(148,190,199,.65); }
-.observatory-hud .panel-product-row:hover { background: rgba(34,211,238,.06); border-color: rgba(34,211,238,.2); }
-.observatory-hud .panel-add-big-btn { border-color: rgba(34,211,238,.3); color: var(--hud-cyan); }
-.observatory-hud .panel-add-big-btn:hover { border-color: var(--hud-cyan); background: rgba(34,211,238,.08); }
-.observatory-hud .panel-checkbox { color: rgba(226,241,245,.8); }
+.observatory-hud .panel-product-name { color: #e4e8f0; }
+.observatory-hud .panel-product-meta { color: rgba(138,152,184,.7); }
+.observatory-hud .panel-product-row:hover { background: rgba(56,217,204,.06); border-color: rgba(56,217,204,.2); }
+.observatory-hud .panel-add-big-btn { border-color: rgba(56,217,204,.3); color: var(--hud-cyan); }
+.observatory-hud .panel-add-big-btn:hover { border-color: var(--hud-cyan); background: rgba(56,217,204,.08); }
+.observatory-hud .panel-checkbox { color: rgba(228,232,240,.82); }
 .observatory-hud .crm-body::before {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: repeating-linear-gradient(180deg, rgba(34,211,238,.022) 0px, rgba(34,211,238,.022) 1px, transparent 1px, transparent 3px);
-  mix-blend-mode: screen;
+  background: repeating-linear-gradient(180deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px);
 }
-.observatory-hud .obs-section-label { color: var(--hud-cyan); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
-.observatory-hud .obs-section-label::after { background: rgba(34,211,238,.15); }
-.observatory-hud .obs-empty { color: rgba(226,241,245,.4); }
+.observatory-hud .obs-section-label { color: var(--hud-cyan); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+.observatory-hud .obs-section-label::after { background: rgba(150,156,170,.12); }
+.observatory-hud .obs-empty { color: rgba(228,232,240,.4); }
 
 .observatory-hud .obs-card,
 .observatory-hud .obs-item-card,
 .observatory-hud .obs-map-card,
 .observatory-hud .obs-stat {
-  background: linear-gradient(180deg, rgba(20,30,42,.75), rgba(11,17,26,.75));
-  border: 1px solid rgba(34,211,238,.16);
-  box-shadow: 0 0 0 1px rgba(34,211,238,.05), 0 8px 24px rgba(0,0,0,.45);
-  backdrop-filter: blur(8px);
+  background: #12172b;
+  border: 1px solid rgba(150,156,170,.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   animation: hud-card-in .3s ease both;
 }
 .observatory-hud .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan)); }
 .observatory-hud .obs-item-card:hover, .observatory-hud .obs-stat:hover {
-  border-color: rgba(34,211,238,.4);
-  box-shadow: 0 0 0 1px rgba(34,211,238,.15), 0 0 24px rgba(34,211,238,.12), 0 10px 28px rgba(0,0,0,.5);
+  border-color: rgba(56,217,204,.35);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.45);
 }
-.observatory-hud .obs-item-title { color: #eefcff; }
-.observatory-hud .obs-item-meta { color: rgba(148,190,199,.75); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
-.observatory-hud .obs-item-body { color: rgba(212,231,235,.85); }
-.observatory-hud .obs-stat-value { color: #eefcff; text-shadow: 0 0 14px rgba(34,211,238,.25); }
-.observatory-hud .obs-stat-label { color: rgba(148,190,199,.7); }
-.observatory-hud .obs-pill { box-shadow: 0 0 10px currentColor; opacity: .95; }
-.observatory-hud .obs-status-pill.ok { background: rgba(16,185,129,.18); color: #6ee7b7; box-shadow: 0 0 10px rgba(16,185,129,.25); }
-.observatory-hud .obs-status-pill.bad { background: rgba(239,68,68,.18); color: #fca5a5; box-shadow: 0 0 10px rgba(239,68,68,.25); }
+.observatory-hud .obs-item-title { color: #e4e8f0; }
+.observatory-hud .obs-item-meta { color: rgba(138,152,184,.8); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11px; letter-spacing: .03em; }
+.observatory-hud .obs-item-body { color: rgba(212,219,235,.88); }
+.observatory-hud .obs-stat-value { color: #e4e8f0; }
+.observatory-hud .obs-stat-label { color: rgba(138,152,184,.85); }
+.observatory-hud .obs-pill { opacity: .95; }
+.observatory-hud .obs-status-pill.ok { background: rgba(52,211,153,.14); color: #6ee7b7; }
+.observatory-hud .obs-status-pill.bad { background: rgba(248,113,113,.14); color: #fca5a5; }
 
-/* Mirror the Observatory dark overrides under .gotham as well: the global
-   Gotham shell (applied to .crm-main for every section) means the Observatory
-   .obs-* primitives must render dark even when observatory-hud isn't present
-   on the class list (e.g. a non-Observatory admin section that still mounts
-   an .obs-* component, or when crmTheme isn't 'dark' but gotham is). Without
-   this, those cards fall back to the light .obs-* base rules (white bg,
-   #111827 text) and read as "white LEGO bricks on a dark canvas" — the exact
-   mismatch Simeon flagged. Verwaltung's own white BI cards use .panel-*
-   classes, not .obs-*, so they stay untouched. */
+/* Mirror the Observatory dark overrides under .gotham as well (see comment
+   above). Same Lighthouse-grade tokens: muted teal accent, off-white text,
+   neutral hairline borders, depth from shadow not glow. */
 .gotham .obs-card,
 .gotham .obs-item-card,
 .gotham .obs-map-card,
 .gotham .obs-stat {
-  background: linear-gradient(180deg, rgba(20,30,42,.75), rgba(11,17,26,.75));
-  border: 1px solid rgba(34,211,238,.16);
-  box-shadow: 0 0 0 1px rgba(34,211,238,.05), 0 8px 24px rgba(0,0,0,.45);
-  backdrop-filter: blur(8px);
+  background: #12172b;
+  border: 1px solid rgba(150,156,170,.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
 }
-.gotham .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan, #22d3ee)); }
+.gotham .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan, #38d9cc)); }
 .gotham .obs-item-card:hover, .gotham .obs-stat:hover {
-  border-color: rgba(34,211,238,.4);
-  box-shadow: 0 0 0 1px rgba(34,211,238,.15), 0 0 24px rgba(34,211,238,.12), 0 10px 28px rgba(0,0,0,.5);
+  border-color: rgba(56,217,204,.35);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.45);
 }
-.gotham .obs-item-title { color: #eefcff; }
-.gotham .obs-item-meta { color: rgba(148,190,199,.75); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
-.gotham .obs-item-body { color: rgba(212,231,235,.85); }
-.gotham .obs-stat-value { color: #eefcff; text-shadow: 0 0 14px rgba(34,211,238,.25); }
-.gotham .obs-stat-label { color: rgba(148,190,199,.7); }
-.gotham .obs-pill { box-shadow: 0 0 10px currentColor; opacity: .95; }
-.gotham .obs-status-pill.ok { background: rgba(16,185,129,.18); color: #6ee7b7; box-shadow: 0 0 10px rgba(16,185,129,.25); }
-.gotham .obs-status-pill.bad { background: rgba(239,68,68,.18); color: #fca5a5; box-shadow: 0 0 10px rgba(239,68,68,.25); }
-.gotham .obs-section-label { color: var(--hud-cyan, #22d3ee); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
-.gotham .obs-section-label::after { background: rgba(34,211,238,.15); }
-.gotham .obs-empty { color: rgba(226,241,245,.4); }
-.gotham .obs-activity-label { color: #eefcff; }
-.gotham .obs-activity-row { border-bottom-color: rgba(34,211,238,.1); }
-.gotham .obs-activity-row:hover { background: rgba(34,211,238,.06); }
-.gotham .obs-activity-ts { color: rgba(148,190,199,.7); }
-.gotham .obs-item-more { color: var(--hud-cyan, #22d3ee); }
-.gotham .obs-signal-modal-observation { color: rgba(226,241,245,.85); }
+.gotham .obs-item-title { color: #e4e8f0; }
+.gotham .obs-item-meta { color: rgba(138,152,184,.8); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11px; letter-spacing: .03em; }
+.gotham .obs-item-body { color: rgba(212,219,235,.88); }
+.gotham .obs-stat-value { color: #e4e8f0; }
+.gotham .obs-stat-label { color: rgba(138,152,184,.85); }
+.gotham .obs-pill { opacity: .95; }
+.gotham .obs-status-pill.ok { background: rgba(52,211,153,.14); color: #6ee7b7; }
+.gotham .obs-status-pill.bad { background: rgba(248,113,113,.14); color: #fca5a5; }
+.gotham .obs-section-label { color: var(--hud-cyan, #38d9cc); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+.gotham .obs-section-label::after { background: rgba(150,156,170,.12); }
+.gotham .obs-empty { color: rgba(228,232,240,.4); }
+.gotham .obs-activity-label { color: #e4e8f0; }
+.gotham .obs-activity-row { border-bottom-color: rgba(150,156,170,.1); }
+.gotham .obs-activity-row:hover { background: rgba(56,217,204,.06); }
+.gotham .obs-activity-ts { color: rgba(138,152,184,.7); }
+.gotham .obs-item-more { color: var(--hud-cyan, #38d9cc); }
+.gotham .obs-signal-modal-observation { color: rgba(228,232,240,.85); }
 .gotham .obs-form input, .gotham .obs-form textarea, .gotham .obs-form select {
-  background: rgba(7,14,20,.55); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  background: #12172b; border: 1px solid rgba(150,156,170,.12); color: #e4e8f0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 13px;
 }
-.gotham .obs-form input::placeholder, .gotham .obs-form textarea::placeholder { color: rgba(148,190,199,.5); }
+.gotham .obs-form input::placeholder, .gotham .obs-form textarea::placeholder { color: rgba(138,152,184,.6); }
 .gotham .obs-form input:focus, .gotham .obs-form textarea:focus, .gotham .obs-form select:focus {
-  outline: none; border-color: var(--hud-cyan, #22d3ee); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2);
+  outline: none; border-color: var(--hud-cyan, #38d9cc); box-shadow: 0 0 0 3px rgba(56,217,204,.15);
 }
-.gotham .obs-warning-note { color: #fcd34d; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); }
-.gotham .obs-map-card { background: linear-gradient(180deg, rgba(20,30,42,.6), rgba(11,17,26,.6)); }
-.gotham .mycelium-legend { border-bottom-color: rgba(34,211,238,.14); }
-.gotham .mycelium-legend-title { color: #eefcff; }
-.gotham .mycelium-legend-sub { color: rgba(148,190,199,.6); }
-.gotham .mycelium-legend-item { color: rgba(226,241,245,.75); }
-.gotham .mycelium-legend-item strong { color: #eefcff; }
+.gotham .obs-warning-note { color: #fbbf24; background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.3); }
+.gotham .obs-map-card { background: #12172b; }
+.gotham .mycelium-legend { border-bottom-color: rgba(150,156,170,.12); }
+.gotham .mycelium-legend-title { color: #e4e8f0; }
+.gotham .mycelium-legend-sub { color: rgba(138,152,184,.7); }
+.gotham .mycelium-legend-item { color: rgba(228,232,240,.78); }
+.gotham .mycelium-legend-item strong { color: #e4e8f0; }
 .gotham .obs-compare-label { color: rgba(148,190,199,.6); }
 .gotham .obs-compare-pre { color: rgba(212,231,235,.8); }
 .gotham .obs-placeholder-tag { color: rgba(148,190,199,.55); }

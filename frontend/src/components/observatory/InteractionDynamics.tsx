@@ -85,7 +85,7 @@ export function InteractionDynamics() {
           multi-category breakdown). mean_latency_seconds is a duration, not
           a fraction, so it stays a plain .obs-stat tile — kept rather than
           dropped, it's real information a gauge can't honestly represent. */}
-      <HudTile title="Mensch ↔ KI" badge="RATIO" accent="var(--obs-blue)" span={4}>
+      <HudTile title="Mensch ↔ KI" badge="RATIO" accent="var(--obs-blue)" span={2}>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
           <ObsDonut
             data={[

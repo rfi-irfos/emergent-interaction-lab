@@ -67,7 +67,7 @@ export function InformationDynamics() {
         )}
       </HudGrid>
       {data.recent_retrievals.length > 0 && (
-        <HudTile title="Retrieval-Qualität" badge="VERT" accent="var(--obs-green)" span={4}>
+        <HudTile title="Retrieval-Qualität" badge="VERT" accent="var(--obs-green)" span={2}>
           <ObsDonut
             data={[
               { label: 'Gut (>0.6)', value: data.recent_retrievals.filter(r => r.top_score > 0.6).length, color: 'var(--obs-green)' },

@@ -235,7 +235,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           statuses that weren't fetched when a status filter is active
           (same convention as EmergenceMonitor's visibleStatuses). */}
       <div className="hud-grid hud-grid--12">
-      <HudTile title="Run-Status" badge="SIM" accent="var(--obs-amber)" span={4}>
+      <HudTile title="Run-Status" badge="SIM" accent="var(--obs-amber)" span={2}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
@@ -252,7 +252,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
         </p>
       </HudTile>
 
-      <HudTile title="Zweig-Status" badge="SIM" accent="var(--obs-cyan)" span={4}>
+      <HudTile title="Zweig-Status" badge="SIM" accent="var(--obs-cyan)" span={2}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={Object.keys(STATUS_ACCENT).map(status => ({
