@@ -1329,6 +1329,20 @@ export function PublicSite({
           )}
         </section>
 
+        {/* ── LAURAS TEAM (emergence story, directly under hero) ────────── */}
+        {content.about.laurasTeam?.body && (
+          <section className={reveal("site-lauras-team")} id="lauras-team">
+            <div className="site-lauras-team-inner">
+              <Reveal from="bottom">
+                <h2 className="site-lauras-team-title" data-cid="about.laurasTeam.title">{content.about.laurasTeam.title}</h2>
+              </Reveal>
+              <Reveal from="bottom" delay={1}>
+                <p className="site-lauras-team-body" data-cid="about.laurasTeam.body">{content.about.laurasTeam.body}</p>
+              </Reveal>
+            </div>
+          </section>
+        )}
+
         {/* ── TRUST STRIP ──────────────────────────────────────────────── */}
         {!hiddenSections.includes('trust') && (trust?.items?.length ?? 0) > 0 && (
           <div className="site-trust" id="trust">
@@ -1373,56 +1387,7 @@ export function PublicSite({
                     <div className="site-about-frameworks-line" data-cid="about.frameworksLine">{content.about.frameworksLine}</div>
                   </Reveal>
                 )}
-                <Reveal from="bottom" delay={1}><E field="about.bio" value={content.about.bio} as="p" className="site-about-bio" /></Reveal>
-                {!editMode && (
-                  <Reveal from="bottom" delay={2}>
-                  <div className="site-about-proof-caption">{CALL_LAURA_COPY[lang].proofCaption}</div>
-                  <div className="site-about-badges-row">
-                    <a href="https://github.com/rfi-irfos/call-laura" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
-                      </svg>
-                      <span>{CALL_LAURA_COPY[lang].github}</span>
-                    </a>
-                    <a href="https://crates.io/crates/lauras-core" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
-                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
-                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
-                      </svg>
-                      <span>{CALL_LAURA_COPY[lang].coreCrate}</span>
-                    </a>
-                    <a href="https://crates.io/crates/lauras-team" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge" title={lang === 'de' ? 'Zugang nur auf Anfrage' : 'Access on request only'}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
-                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
-                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
-                      </svg>
-                      <span>{CALL_LAURA_COPY[lang].teamCrate}</span>
-                    </a>
-                    <a href="https://crates.io/crates/lauras-mcp" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
-                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
-                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
-                      </svg>
-                      <span>{CALL_LAURA_COPY[lang].mcpCrate}</span>
-                    </a>
-                    <a href="https://crates.io/crates/lauras-api" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M21 8v8a2 2 0 0 1-1 1.73l-6 3.46a2 2 0 0 1-2 0l-6-3.46A2 2 0 0 1 5 16V8" />
-                        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" /><path d="M12 22.08V12" />
-                        <path d="M17.5 4.63 12 2 6.5 4.63v4.74L12 12l5.5-2.63z" />
-                      </svg>
-                      <span>{CALL_LAURA_COPY[lang].apiCrate}</span>
-                    </a>
-                    <a href="https://laura-api.fly.dev" target="_blank" rel="noopener noreferrer" className="site-about-proof-badge site-about-proof-badge--live">
-                      <span className="site-about-proof-dot" aria-hidden="true" />
-                      <span>{CALL_LAURA_COPY[lang].api}</span>
-                    </a>
-                  </div>
-                  </Reveal>
-                )}
+                <Reveal from="bottom" delay={1}><E field="about.frameworksLine" value={content.about.frameworksLine ?? ''} as="p" className="site-about-frameworks-line" /></Reveal>
               </div>
             </div>
           </section>

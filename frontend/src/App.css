@@ -1756,6 +1756,10 @@ button { cursor: pointer; font-family: inherit; }
 .site-about-stat { display: flex; flex-direction: column; align-items: flex-start; flex: 0 1 auto; max-width: 220px; }
 .site-about-bio { font-size: 19px; color: var(--text-soft, #4a4a4a); line-height: 1.75; margin-bottom: 26px; }
 .site-about-frameworks-line { font-size: 13px; color: var(--text-soft, #666); margin: -10px 0 22px; font-weight: 500; letter-spacing: .2px; }
+.site-lauras-team { padding: 60px 0 20px; }
+.site-lauras-team-inner { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+.site-lauras-team-title { font-size: 30px; font-weight: 800; color: var(--text, #111); margin: 0 0 14px; letter-spacing: -.4px; }
+.site-lauras-team-body { font-size: 18px; line-height: 1.7; color: var(--text-soft, #4a4a4a); margin: 0; max-width: 760px; }
 .site-about-proof-caption { font-size: 12.5px; font-weight: 600; color: var(--text-soft, #666); margin-bottom: 8px; }
 .site-about-badges-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .site-about-stat strong { font-size: 28px; font-weight: 900; color: var(--primary, #0099CC); line-height: 1; }

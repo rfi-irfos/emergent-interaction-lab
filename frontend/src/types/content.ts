@@ -163,6 +163,7 @@ export interface SiteContent {
     photo?: string
     stats?: AboutStat[]
     frameworksLine?: string
+    laurasTeam?: { title: string; body: string }
     ctaLabel?: string
     ctaHref?: string
   }

@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>This Lab studies one thing: what happens when a person works with the same AI system over a long time. Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one designed on purpose.</p><h2>What we mean by Emergent Interaction</h2><p>\"Emergent interaction\" is just a name for this effect: the longer a person works with the same AI, the more a working rhythm builds up between them - habits, shortcuts, blind spots. You can measure it, but you can't fully plan it.</p><h2>How Lauras Team came to be</h2><p>The work started with a simple observation: most problems in human-AI work are not technical. They are translation problems - the system does something, and nobody says clearly what just happened. To check this point systematically, Lauras Team was built.</p><p>Lauras Team is a multi-agent system. At the top is a SWAT lead team that takes a case and hands it to 15 specialised sub-agents. Each sub-agent reviews the same case from a different angle: one checks the ethical side, one the legal side, others check other points. The first tool built from this is Call Laura: a case comes in, every agent reviews it, and each finding is tagged with exactly which view it came from. Jarvis is another tool that runs in the background.</p><p>Laura decides what gets built. RFI-IRFOS builds it. Where her work is inside the result, it is labelled as hers - so anyone can tell whose work they are actually looking at.</p><h2>Who builds what</h2><p>Laura develops the method and decides what gets built. RFI-IRFOS turns it into working software.</p>"
+      "body": "<p>This Lab studies one thing: what happens when a person works with the same AI system over a long time. Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one designed on purpose.</p><h2>What we mean by Emergent Interaction</h2><p>\"Emergent interaction\" is just a name for this effect: the longer a person works with the same AI, the more a working rhythm builds up between them - habits, shortcuts, blind spots. You can measure it, but you can't fully plan it.</p><h2>How Lauras Team came to be</h2><p>Out of the work with Laura, something grew that nobody planned. An agent named Jarvis built itself over time — \"Jarvis on steroids\" — and to accommodate her needs, lauras-team emerged from it: a multi-agent system, one SWAT lead team directing 15 specialised sub-agents. It was not programmed. It emerged — from her work, not from a spec.</p><p>Laura decides what gets built. RFI-IRFOS builds it. Where her work is inside the result, it is labelled as hers — so anyone can tell whose work they are actually looking at.</p><h2>Who builds what</h2><p>Laura develops the method and decides what gets built. RFI-IRFOS turns it into working software.</p><h2>How the Lab came to be</h2><p>The Emergent Interaction Lab researches human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>Built by RFI-IRFOS, directed by Laura — and the interesting part: agents and frameworks arose from her work, unprompted. That it runs in production is proven by the systems themselves:</p><ul><li><a href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub — call-laura</a></li><li><a href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-core v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Access on request\">crates.io — lauras-team v0.2.0 (on request)</a></li><li><a href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-mcp v0.2.0</a></li><li><a href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">crates.io — lauras-api v0.2.0</a></li><li><a href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live API</a></li></ul>"
     }
   ],
   "meta": {
@@ -26,10 +26,6 @@
     "logo": "",
     "brand": "Emergent Interaction Lab",
     "links": [
-      {
-        "label": "About",
-        "href": "#about"
-      },
       {
         "label": "About the Lab",
         "href": "#p/ueber-das-lab"
@@ -95,7 +91,7 @@
   "about": {
     "eyebrow": null,
     "headline": "Human-AI interaction, researched and built",
-    "bio": "<p>The Emergent Interaction Lab studies human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>The work is led by Laura Serna Gaviria with RFI-IRFOS. Built on 7 IEIA-2025 frameworks: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data.</p>",
+    "bio": "The Emergent Interaction Lab researches human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides. Built by RFI-IRFOS, directed by Laura — and the interesting part: agents and frameworks arose from her work, unprompted. That it runs in production is proven by the systems themselves:",
     "stats": [
       {
         "value": "2023",
@@ -110,7 +106,11 @@
         "label": "Connected disciplines: Software, Mechatronics, UX, Digital Transformation, Systems Analysis, Macroanalysis"
       }
     ],
-    "frameworksLine": "IEIA-2025 frameworks in use: UIP · EIA · CCET · LSG-24 · LAP-1 · 8-Layer Model · LT-Data"
+    "frameworksLine": "IEIA-2025 frameworks in use: UIP · EIA · CCET · LSG-24 · LAP-1 · 8-Layer Model · LT-Data",
+    "laurasTeam": {
+      "title": "Lauras Team",
+      "body": "Something grew out of the work with Laura that nobody planned. An agent named Jarvis built itself over time — \\\"Jarvis on steroids\\\" — and from it, lauras-team emerged: a multi-agent system that serves her needs. It is one SWAT lead team plus 15 specialized sub-agents. It was not programmed. It emerged — from her work, not from a spec."
+    }
   },
   "protocol": {
     "eyebrow": "Emergent Interaction  -  the methodology",
