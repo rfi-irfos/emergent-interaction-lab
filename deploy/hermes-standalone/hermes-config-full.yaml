@@ -13,7 +13,11 @@ model:
   provider: nvidia
   # Same proven model the bundled deployment now uses (nemotron-3-super-120b-a12b
   # returned genuinely empty completions under tool use — see ../hermes-config.yaml's
-  # own note on this, 2026-07-13).
+  # own note on this, 2026-07-13). That file's 2026-07-14 follow-up note also
+  # applies here: this model still isn't fully reliable at NATIVE structured
+  # tool_calls through Hermes (sometimes narrates a fake tool call in text
+  # instead) — a different, harder bar than chat.rs's own text-parsing
+  # verification. Read that note before assuming this model is "done".
   default: nvidia/llama-3.3-nemotron-super-49b-v1
 
 # ─────────────────────────────────────────────────────────────────────────────

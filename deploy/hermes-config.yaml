@@ -28,7 +28,23 @@ model:
   # 200 response, actual completion, follows a JSON tool-call instruction
   # correctly — and it's the built-in engine's fixed, always-tried-first
   # default for exactly that reason. Switching Hermes to the same proven
-  # model rather than debug a second one blind.
+  # model rather than debug a second one blind. Fixed the hard crash - it did.
+  #
+  # Follow-up found 2026-07-14: this model still doesn't RELIABLY call
+  # web_search via Hermes even now — sometimes it narrates a fake, simulated
+  # tool call in a text code block instead of emitting a real one. Read
+  # agent/conversation_loop.py in the actual hermes-agent package to
+  # understand why: Hermes has NO text-parsing fallback at all - it reads
+  # `assistant_message.tool_calls`, the model's native OpenAI-style
+  # structured function-calling field, full stop. chat.rs's OWN verification
+  # of this model ("follows a JSON tool-call instruction correctly") tests a
+  # COMPLETELY DIFFERENT mechanism: chat.rs parses tool calls out of the
+  # model's own TEXT (see agent.rs's doc comment), a custom convention with
+  # no relation to native `tool_calls`. A model can be reliable at one and
+  # not the other - this one apparently is. Fixing this needs a model
+  # verified specifically for native structured tool_calls through NVIDIA's
+  # endpoint (a different, harder bar than chat.rs's own smoke test), tested
+  # against a real Hermes turn, not chat.rs's.
   default: nvidia/llama-3.3-nemotron-super-49b-v1
 
 # ─────────────────────────────────────────────────────────────────────────────
