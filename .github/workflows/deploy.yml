@@ -80,3 +80,25 @@ jobs:
         run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  # eil-hermes — the standalone, always-on Hermes host (deploy/hermes-standalone/),
+  # a SEPARATE Fly app from the one deploy-fly above targets. Reuses the same
+  # FLY_API_TOKEN secret: a Fly personal-access-token is scoped to the whole
+  # org/account, not one app, so the token that already deploys
+  # emergent-interaction-lab can deploy this one too. Added 2026-07-14
+  # because the only local flyctl session available at the time had lost its
+  # auth token entirely (`no access token available`, no working `fly auth
+  # login` path in that environment) — CI deploying via its own independent
+  # credential was the way to actually ship this without a human re-running
+  # an interactive browser login. `continue-on-error`-free on purpose: if
+  # FLY_API_TOKEN turns out not to cover this app (e.g. a more narrowly-
+  # scoped deploy token), this job should fail loudly, not hide it.
+  deploy-eil-hermes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy eil-hermes to Fly.io
+        run: flyctl deploy --remote-only --config deploy/hermes-standalone/fly.toml --dockerfile deploy/hermes-standalone/Dockerfile
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
