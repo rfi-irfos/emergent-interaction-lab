@@ -76,17 +76,36 @@ mcp_servers:
     skip_preflight: true
     timeout: 60
 
-# Vector-DB memory (mem0 OSS) was attempted 2026-07-13 and reverted — see the
-# Dockerfile in this same directory for the full story (this wrapper's
-# build_oss_config() only writes a custom base_url override for the "ollama"
-# provider, not "openai"/NVIDIA's endpoint; bundling a local Ollama server to
-# work around that hit repeated build instability without a verified boot).
-# Using Hermes's own default memory below instead — proven live the same
-# day: a fact planted in one conversation was correctly recalled from a
-# completely unrelated one, and survived a redeploy.
+# Vector-DB memory (mem0 OSS), 2026-07-14: the 2026-07-13 revert's stated
+# reason no longer holds. That attempt read hermes-agent's own
+# _oss_providers.py build_oss_config() — which really does only write a
+# custom base_url ("ollama_base_url") for the "ollama" provider, nothing
+# equivalent for "openai" — and concluded the only fix was bundling a local
+# Ollama server, which then hit real build instability and was reverted.
+# But build_oss_config() isn't the only place a base_url can come from: mem0ai
+# itself (installed and read directly, v2.0.12) accepts an explicit
+# `openai_base_url` key inside both llm.config and embedder.config
+# (mem0/configs/llms/openai.py, mem0/configs/embeddings/base.py) — and
+# OSSBackend.__init__ (plugins/memory/mem0/_backend.py) passes oss_config's
+# llm/embedder dicts straight into mem0.Memory.from_config() unmodified. So
+# mem0.json can set `openai_base_url` directly, bypassing hermes-agent's
+# limited CLI wrapper entirely — no Ollama, no separate OpenAI/Mem0-Cloud key,
+# same one NVIDIA_API_KEY as everything else in this deployment. start.sh
+# writes mem0.json on every boot (same always-refresh reasoning as this
+# config file) rather than relying on the interactive `hermes memory setup`
+# wizard.
+#
+# NOT yet live-verified: deploying this needs `fly deploy` against eil-hermes,
+# which is blocked on Fly auth as of 2026-07-14 (see git log around this
+# commit). The embedding model name below (`nvidia/nv-embedqa-e5-v5`) is
+# NVIDIA's NIM catalog naming convention but hasn't been confirmed reachable
+# on this account — check it actually returns embeddings before trusting
+# recall to work, the same way hermes-config.yaml's own model picks were
+# checked line by line rather than assumed.
 memory:
   memory_enabled: true
   user_profile_enabled: true
+  provider: mem0
 
 agent:
   max_turns: 40

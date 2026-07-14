@@ -19,6 +19,48 @@ if [ -n "$HERMES_MODEL" ]; then
   export HERMES_DEFAULT_MODEL="$HERMES_MODEL"
 fi
 
+# mem0 OSS memory config — also always-overwritten, same reasoning as
+# config.yaml above. Written directly rather than via `hermes memory setup
+# --mode oss`: that wizard's build_oss_config() has no CLI flag for a custom
+# openai_base_url (see hermes-config-full.yaml's doc comment), but mem0ai
+# itself reads openai_base_url straight out of this file's llm/embedder
+# blocks (OSSBackend passes them into Memory.from_config() unmodified), so
+# writing it here bypasses the wizard's limitation entirely. qdrant runs
+# embedded (path-based, no separate server) on the same mounted volume as
+# everything else, so memory survives redeploys the same way config.yaml does.
+cat > "$HERMES_HOME/mem0.json" <<EOF
+{
+  "mode": "oss",
+  "user_id": "laura",
+  "agent_id": "hermes",
+  "oss": {
+    "llm": {
+      "provider": "openai",
+      "config": {
+        "model": "nvidia/llama-3.3-nemotron-super-49b-v1",
+        "api_key": "$NVIDIA_API_KEY",
+        "openai_base_url": "https://integrate.api.nvidia.com/v1"
+      }
+    },
+    "embedder": {
+      "provider": "openai",
+      "config": {
+        "model": "nvidia/nv-embedqa-e5-v5",
+        "api_key": "$NVIDIA_API_KEY",
+        "openai_base_url": "https://integrate.api.nvidia.com/v1"
+      }
+    },
+    "vector_store": {
+      "provider": "qdrant",
+      "config": {
+        "path": "$HERMES_HOME/mem0_qdrant"
+      }
+    }
+  }
+}
+EOF
+echo "mem0 OSS memory config refreshed from seed"
+
 # Hermes's own gateway reads its required auth key as API_SERVER_KEY, not
 # HERMES_API_KEY — found by actually running this image and reading its
 # refusal: "Refusing to start: API_SERVER_KEY is required for the API
