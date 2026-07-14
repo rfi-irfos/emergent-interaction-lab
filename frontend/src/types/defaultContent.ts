@@ -57,10 +57,10 @@ export const defaultContent: SiteContent = {
   ],
   creds: [
     { label: 'GitHub - call-laura', href: 'https://github.com/rfi-irfos/call-laura' },
-    { label: 'crates.io - lauras-core v0.2.0', href: 'https://crates.io/crates/lauras-core' },
-    { label: 'crates.io - lauras-team v0.2.0 (auf Anfrage)', href: 'https://crates.io/crates/lauras-team', note: 'Zugang auf Anfrage' },
-    { label: 'crates.io - lauras-mcp v0.2.0', href: 'https://crates.io/crates/lauras-mcp' },
-    { label: 'crates.io - lauras-api v0.2.0', href: 'https://crates.io/crates/lauras-api' },
+    { label: 'lauras-core v0.2.0', href: 'https://crates.io/crates/lauras-core' },
+    { label: 'lauras-team v0.2.0 (auf Anfrage)', href: 'https://crates.io/crates/lauras-team', note: 'Zugang auf Anfrage' },
+    { label: 'lauras-mcp v0.2.0', href: 'https://crates.io/crates/lauras-mcp' },
+    { label: 'lauras-api v0.2.0', href: 'https://crates.io/crates/lauras-api' },
     { label: 'Live-API', href: 'https://laura-api.fly.dev', live: true },
   ],
   usp: {

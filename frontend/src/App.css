@@ -2339,12 +2339,12 @@ button { cursor: pointer; font-family: inherit; }
    instead of a plain link list, so they read as proof, not body text.
    Default = light theme (public page); the dark About-the-Lab modal
    re-skins them via the .page-modal-body override below. */
-.creds-badges { display: flex; flex-wrap: wrap; gap: 9px; margin: 4px 0 22px; }
+.creds-badges { display: flex; flex-wrap: wrap; gap: 7px; margin: 22px 0 24px; }
 .creds-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 12.5px; font-weight: 700; color: var(--text);
-  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-  padding: 7px 14px; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 5px 11px; text-decoration: none;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 .creds-badge:hover {
