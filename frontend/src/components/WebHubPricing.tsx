@@ -576,13 +576,13 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   },
 }
 
-// Three "lenses" (Brille) Laura sees a case through — these are the grouping
-// the offer ladder is organized by, each price-sorted within itself. Anything
-// not in a set defaults to the last (Systemaudit) so a new admin-added
-// product still shows up somewhere sensible instead of silently vanishing.
-// The agent products (Call Laura / Lauras Team / Jarvis) are NOT in this grid —
-// they're rendered as a separate "emerging from the lenses" strip, since they
-// are products of the method, not a service you buy by the hour.
+// Three "review perspectives" (Prüfperspektiven) the offer ladder is organized
+// by, each price-sorted within itself. Anything not in a set defaults to the
+// last (Systemaudit) so a new admin-added product still shows up somewhere
+// sensible instead of silently vanishing. The agent products (Call Laura /
+// Lauras Team / Jarvis) are NOT in this grid — they're rendered as a separate
+// "emerging from the review perspectives" strip, since they are products of
+// the method, not a service you buy by the hour.
 //
 // Corrected 2026-07-13 against the REAL live product names from
 // /api/billing/public-products (verified via curl, not guessed) - the
@@ -660,7 +660,7 @@ const COPY = {
   en: {
     eyebrow: 'Offer',
     title: "Your case isn't random. It has a logic. I find it.",
-    intro: "Bring a complex case, a set of documents, case-file access, or a conversation history. I reconstruct what it actually is: the gaps, the contradictions, the recurring patterns - and the logic a framework or agent system gets built from. Not a vibe check. Structure. Your case is analysed through my own research lens - I'm studying emergence and building agents from it, not ingesting it as generic company data.",
+    intro: "Bring a complex case, a set of documents, case-file access, or a conversation history. I reconstruct what it actually is: the gaps, the contradictions, the recurring patterns - and the logic a framework or agent system gets built from. Not a vibe check. Structure. Your case is analysed through my own research perspective - I'm studying emergence and building agents from it, not ingesting it as generic company data.",
     flagshipBadge: 'Core offer',
     recurring: 'month',
     more: 'More',
@@ -677,7 +677,7 @@ const COPY = {
     subgroupSystemDesign: 'System design & build',
     subgroupOngoing: 'Ongoing',
     agentsEyebrow: 'Agents from the method',
-    agentsIntro: 'These are not services you book by the hour — they are what the lenses produce: working agents built from the same case-logic above.',
+    agentsIntro: 'These are not services you book by the hour — they are what the review perspectives produce: working agents built from the same case-logic above.',
     consentTitle: 'Please confirm before checkout',
     consentB2b: 'I am acting as a business customer and confirm that this purchase is made in the course of my commercial or professional activity.',
     consentAgbBefore: 'I agree to the ',
@@ -689,7 +689,7 @@ const COPY = {
   de: {
     eyebrow: 'Angebot',
     title: 'Dein Fall ist kein Zufall - er hat eine Logik. Ich finde sie.',
-    intro: 'Du bringst einen komplexen Fall, eine Dokumentation, Akteneinsicht oder einen Interaktionsverlauf. Ich rekonstruiere daraus, was er wirklich ist: Mängel, Widersprüche, Lücken - und die Logik, aus der sich ein Framework oder Agentensystem ableiten lässt. Kein Bauchgefühl. Struktur. Dein Fall wird durch meine eigene Forschungsbrille analysiert - ich erforsche Emergenz und baue Agenten daraus, ich nehme ihn nicht als generische Unternehmensdaten auf.',
+    intro: 'Du bringst einen komplexen Fall, eine Dokumentation, Akteneinsicht oder einen Interaktionsverlauf. Ich rekonstruiere daraus, was er wirklich ist: Mängel, Widersprüche, Lücken - und die Logik, aus der sich ein Framework oder Agentensystem ableiten lässt. Kein Bauchgefühl. Struktur. Dein Fall wird durch meine eigene Forschungs-Prüfperspektive analysiert - ich erforsche Emergenz und baue Agenten daraus, ich nehme ihn nicht als generische Unternehmensdaten auf.',
     flagshipBadge: 'Kernangebot',
     recurring: 'Monat',
     more: 'Mehr',
@@ -706,7 +706,7 @@ const COPY = {
     subgroupSystemDesign: 'Systemdesign & Aufbau',
     subgroupOngoing: 'Laufend',
     agentsEyebrow: 'Agenten aus der Methode',
-    agentsIntro: 'Das sind keine Leistungen, die du stundenweise buchst - das ist, was die Brillen hervorbringen: lauffähige Agenten, gebaut aus derselben Fall-Logik wie oben.',
+    agentsIntro: 'Das sind keine Leistungen, die du stundenweise buchst - das ist, was die Prüfperspektiven hervorbringen: lauffähige Agenten, gebaut aus derselben Fall-Logik wie oben.',
     consentTitle: 'Bitte vor dem Checkout bestätigen',
     consentB2b: 'Ich handle als Unternehmer und bestätige, dass dieser Kauf im Rahmen meiner gewerblichen oder beruflichen Tätigkeit erfolgt.',
     consentAgbBefore: 'Ich stimme den ',
