@@ -12,7 +12,7 @@
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Dieses Lab erforscht ein Thema: was passiert, wenn ein Mensch über lange Zeit mit demselben KI-System arbeitet. Kein einmaliger Chat, sondern Wochen echter Nutzung. Daraus entstehen Muster, die niemand bewusst geplant hat.</p><h2>Was wir mit Emergent Interaction meinen</h2><p>\"Emergent Interaction\" ist einfach ein Name für diesen Effekt: je länger ein Mensch mit derselben KI arbeitet, desto mehr entsteht ein gemeinsamer Arbeitsrhythmus - Gewohnheiten, Abkürzungen, blinde Flecken. Man kann das messen, aber nicht vollständig planen.</p><h2>Von der Beobachtung zu Werkzeugen</h2><p>Laura Serna Gaviria beobachtet das seit 2023. Immer wieder zeigte sich: die meisten Probleme in der Mensch-KI-Arbeit sind keine technischen. Es sind Übersetzungsprobleme - das System tut etwas, und niemand sagt klar, was gerade passiert ist.</p><p>Daraus ist ein Team aus KI-Agenten entstanden. Jeder Agent sieht denselben Fall aus einer anderen Sicht: einer prüft die ethische Seite, einer die rechtliche, weitere andere Punkte. Das erste Werkzeug daraus heißt Call Laura: ein Fall kommt rein, jeder Agent prüft ihn, und jeder Befund ist markiert, aus welcher Sicht er stammt. Jarvis ist ein weiteres Werkzeug, das im Hintergrund mitläuft. Laura entscheidet, was gebaut wird. RFI-IRFOS baut es.</p><h2>Wer baut was</h2><p>Laura entwickelt die Methode und entscheidet, was gebaut wird. RFI-IRFOS macht daraus funktionierende Software. Wo ihre Arbeit im Ergebnis steckt, ist sie als ihre gekennzeichnet - damit jeder sehen kann, wessen Arbeit er eigentlich vor sich hat.</p>"
+      "body": "<p>Dieses Lab erforscht ein Thema: was passiert, wenn ein Mensch über lange Zeit mit demselben KI-System arbeitet. Kein einmaliger Chat, sondern Wochen echter Nutzung. Daraus entstehen Muster, die niemand bewusst geplant hat.</p><h2>Was wir mit Emergent Interaction meinen</h2><p>\"Emergent Interaction\" ist einfach ein Name für diesen Effekt: je länger ein Mensch mit derselben KI arbeitet, desto mehr entsteht ein gemeinsamer Arbeitsrhythmus - Gewohnheiten, Abkürzungen, blinde Flecken. Man kann das messen, aber nicht vollständig planen.</p><h2>Wie Lauras Team entstanden ist</h2><p>Die Arbeit begann mit einer einfachen Beobachtung: die meisten Probleme in der Mensch-KI-Arbeit sind keine technischen. Es sind Übersetzungsprobleme - das System tut etwas, und niemand sagt klar, was gerade passiert ist. Um diesen Punkt systematisch zu prüfen, wurde Lauras Team gebaut.</p><p>Lauras Team ist ein Multi-Agenten-System. An der Spitze steht ein SWAT-Leit-Team, das einen Fall übernimmt und ihn an 15 spezialisierte Sub-Agenten verteilt. Jeder Sub-Agent prüft denselben Fall aus einer anderen Sicht: einer achtet auf ethische Fragen, einer auf rechtliche, weitere auf andere Punkte. Das erste Werkzeug, das daraus entstanden ist, heißt Call Laura: ein Fall kommt rein, alle Agenten prüfen ihn, und jeder Befund ist markiert, aus welcher Sicht er kommt. Jarvis ist ein weiteres Werkzeug, das im Hintergrund mitläuft.</p><p>Laura entscheidet, was gebaut wird. RFI-IRFOS baut es. Wo ihre Arbeit im Ergebnis steckt, ist sie als ihre gekennzeichnet - damit jeder sehen kann, wessen Arbeit er eigentlich vor sich hat.</p><h2>Wer baut was</h2><p>Laura entwickelt die Methode und entscheidet, was gebaut wird. RFI-IRFOS macht daraus funktionierende Software.</p>"
     }
   ],
   "meta": {
@@ -93,13 +93,17 @@
     "items": []
   },
   "about": {
-    "eyebrow": "Das Lab & seine Gründerin",
-    "headline": "Laura Serna Gaviria",
+    "eyebrow": "Das Emergent Interaction Lab",
+    "headline": "Mensch-KI-Interaktion, erforscht und gebaut",
     "bio": "<p>Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert.</p><p>Die Arbeit wird von Laura Serna Gaviria mit RFI-IRFOS geleitet.</p>",
     "stats": [
       {
         "value": "2023",
-        "label": "Systematische Praxis seit"
+        "label": "Lauras Team läuft seit"
+      },
+      {
+        "value": "1 + 15",
+        "label": "Ein SWAT-Leit-Team steuert 15 Sub-Agenten"
       },
       {
         "value": "6",

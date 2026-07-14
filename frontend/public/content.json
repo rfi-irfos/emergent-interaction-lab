@@ -12,7 +12,7 @@
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>This Lab studies one thing: what happens when a person and an AI system work together over a long time. Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one designed on purpose.</p><h2>What we mean by Emergent Interaction</h2><p>\"Emergent interaction\" is just a name for this effect: the longer a person works with the same AI, the more a working rhythm builds up between them - habits, shortcuts, blind spots. You can measure it, you can't fully plan it.</p><h2>From observation to tools</h2><p>Laura Serna Gaviria started watching this in 2023. One thing kept showing up: most problems in human-AI work are not technical. They are translation problems - the system does something, and nobody says clearly what just happened.</p><p>So a team of AI agents was built. Each agent looks at the same case from a different angle: one checks the ethical side, one the legal side, others check other points. The first tool built from this is Call Laura: a case comes in, every agent reviews it, and each finding is tagged with exactly which view it came from. Jarvis is another tool that runs in the background. Laura decides what gets built. RFI-IRFOS builds it.</p><h2>Who builds what</h2><p>Laura develops the method and decides what gets built. RFI-IRFOS turns it into working software. Where her work is inside the result, it is labelled as hers - so anyone can tell whose work they are actually looking at.</p>"
+      "body": "<p>This Lab studies one thing: what happens when a person works with the same AI system over a long time. Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one designed on purpose.</p><h2>What we mean by Emergent Interaction</h2><p>\"Emergent interaction\" is just a name for this effect: the longer a person works with the same AI, the more a working rhythm builds up between them - habits, shortcuts, blind spots. You can measure it, but you can't fully plan it.</p><h2>How Lauras Team came to be</h2><p>The work started with a simple observation: most problems in human-AI work are not technical. They are translation problems - the system does something, and nobody says clearly what just happened. To check this point systematically, Lauras Team was built.</p><p>Lauras Team is a multi-agent system. At the top is a SWAT lead team that takes a case and hands it to 15 specialised sub-agents. Each sub-agent reviews the same case from a different angle: one checks the ethical side, one the legal side, others check other points. The first tool built from this is Call Laura: a case comes in, every agent reviews it, and each finding is tagged with exactly which view it came from. Jarvis is another tool that runs in the background.</p><p>Laura decides what gets built. RFI-IRFOS builds it. Where her work is inside the result, it is labelled as hers - so anyone can tell whose work they are actually looking at.</p><h2>Who builds what</h2><p>Laura develops the method and decides what gets built. RFI-IRFOS turns it into working software.</p>"
     }
   ],
   "meta": {
@@ -93,21 +93,25 @@
     "items": []
   },
   "about": {
-    "eyebrow": "The Lab & its founder",
-    "headline": "Laura Serna Gaviria",
+    "eyebrow": "The Emergent Interaction Lab",
+    "headline": "Human-AI interaction, researched and built",
     "bio": "<p>The Emergent Interaction Lab studies human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>The work is led by Laura Serna Gaviria with RFI-IRFOS.</p>",
     "stats": [
       {
         "value": "2023",
-        "label": "Systematic practice since"
+        "label": "Lauras Team running since"
+      },
+      {
+        "value": "1 + 15",
+        "label": "One SWAT lead team directs 15 sub-agents"
       },
       {
         "value": "6",
-        "label": "Disciplines bridged: software, mechatronics, UX, digital transformation, systems analysis, macro-analysis"
+        "label": "Connected disciplines: Software, Mechatronics, UX, Digital Transformation, Systems Analysis, Macroanalysis"
       },
       {
         "value": "7",
-        "label": "IEIA-2025 frameworks shipped: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data"
+        "label": "IEIA-2025 frameworks in use: UIP, EIA, CCET, LSG-24, LAP-1, 8-Layer Model, LT-Data"
       }
     ]
   },
