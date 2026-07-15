@@ -17,6 +17,9 @@ COPY frontend/ ./
 # footer — so safe to bake in directly rather than needing a Fly secret.
 ENV VITE_GH_OWNER=rfi-irfos
 ENV VITE_GH_REPO=emergent-interaction-lab
+# Admin password hash for the Website Kit login (SHA256 of "emergent2026!")
+ARG VITE_ADMIN_HASH
+ENV VITE_ADMIN_HASH=${VITE_ADMIN_HASH}
 RUN npm run build
 
 # ── Stage 2: build backend ────────────────────────────────────────────────────

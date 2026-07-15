@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE } from '../lib/apiBase'
 
 export interface User { name: string; email: string; picture: string }
 
@@ -19,6 +20,22 @@ export function useAuth() {
     if (!ADMIN_HASH) return false
     const hash = await sha256(password)
     if (hash !== ADMIN_HASH) return false
+    
+    // Local auth passed — now get the backend session cookie via DEV_MODE auto-login
+    try {
+      const res = await fetch(`${API_BASE}/auth/google`, {
+        method: 'GET',
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        console.error('Failed to establish backend session:', res.status)
+        return false
+      }
+    } catch (e) {
+      console.error('Backend session request failed:', e)
+      return false
+    }
+    
     localStorage.setItem(SESSION_KEY, '1')
     setUser({ name: 'Admin', email: '', picture: '' })
     return true
@@ -27,6 +44,8 @@ export function useAuth() {
   const logout = () => {
     localStorage.removeItem(SESSION_KEY)
     setUser(null)
+    // Also clear backend session
+    fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {})
     window.location.hash = ''
     window.location.href = import.meta.env.BASE_URL || '/'
   }

@@ -434,7 +434,7 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
             </button>
             {saveErr && (
               <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#c53030', color: '#fff', borderRadius: 10, padding: '12px 18px', fontSize: 13, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,.25)', zIndex: 9999, maxWidth: 320, lineHeight: 1.5 }}>
-                Speichern fehlgeschlagen. Bitte prüfe, ob der GitHub-Token noch gültig ist.
+                Speichern fehlgeschlagen. Bitte versuche es erneut.
               </div>
             )}
           </div>
