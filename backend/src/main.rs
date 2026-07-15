@@ -519,7 +519,11 @@ async fn main() {
                 "https://rfi-irfos.github.io".parse().unwrap(),
             ])
             .allow_methods(Any)
-            .allow_headers(Any)
+            .allow_headers([
+                axum::http::header::CONTENT_TYPE,
+                axum::http::header::AUTHORIZATION,
+                axum::http::HeaderName::from_static("x-chat-secret"),
+            ])
             .allow_credentials(true)
             .expose_headers([HeaderName::from_static("x-total-count")]));
 
