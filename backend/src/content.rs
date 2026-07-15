@@ -51,6 +51,43 @@ pub async fn get_content(
     }
 }
 
+/// Snapshot the current on-disk content into `backups/` next to it before a
+/// save overwrites it, keeping the last `KEEP` per language — the 2026-07-15
+/// incident (a bad save silently replaced the live content with an old,
+/// sensitive-text version and nobody could roll back) had no way back short
+/// of manually re-diffing git history. Best-effort: a backup failure must
+/// never block the actual save, so errors here are swallowed.
+async fn snapshot_before_overwrite(path: &std::path::Path, lang: &str) {
+    const KEEP: usize = 20;
+    let Ok(existing) = tokio::fs::read(path).await else { return };
+    let dir = path.parent().unwrap_or_else(|| std::path::Path::new(".")).join("backups");
+    if tokio::fs::create_dir_all(&dir).await.is_err() {
+        return;
+    }
+    let ts = chrono::Utc::now().format("%Y%m%dT%H%M%S%.6fZ");
+    let backup_path = dir.join(format!("content.{lang}.{ts}.json"));
+    let _ = tokio::fs::write(&backup_path, &existing).await;
+
+    // Prune down to the newest KEEP backups for this language.
+    if let Ok(mut entries) = tokio::fs::read_dir(&dir).await {
+        let prefix = format!("content.{lang}.");
+        let mut files = Vec::new();
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            if let Some(name) = entry.file_name().to_str() {
+                if name.starts_with(&prefix) && name.ends_with(".json") {
+                    files.push(entry.path());
+                }
+            }
+        }
+        files.sort();
+        if files.len() > KEEP {
+            for old in &files[..files.len() - KEEP] {
+                let _ = tokio::fs::remove_file(old).await;
+            }
+        }
+    }
+}
+
 pub async fn update_content(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -67,12 +104,13 @@ pub async fn update_content(
     };
 
     let path = path_for(&state, &q.lang);
+    let lang_label = q.lang.as_deref().unwrap_or("en");
+    snapshot_before_overwrite(&path, lang_label).await;
     match tokio::fs::write(&path, pretty).await {
         Ok(_) => {
             // `content_updated` — real identity available here (unlike the
             // shared-secret `require_admin` endpoints), since this route
             // authenticates via the actual Google OAuth session cookie.
-            let lang_label = q.lang.as_deref().unwrap_or("en");
             crate::auditlog::record(&state, &session.email, "content_updated", &format!("Website-Inhalt (content.{lang_label}.json) aktualisiert"), None).await;
             StatusCode::OK.into_response()
         }
