@@ -32,7 +32,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
-use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
+use tower_http::{cors::{Any, CorsLayer}, services::{ServeDir, ServeFile}};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
@@ -513,7 +513,15 @@ async fn main() {
         // real pagination totals) needs an explicit exposure or the admin
         // panel silently can't read it when served cross-origin (e.g. from
         // GitHub Pages, see frontend/src/lib/apiBase.ts).
-        .layer(CorsLayer::permissive().expose_headers([HeaderName::from_static("x-total-count")]));
+        .layer(CorsLayer::new()
+            .allow_origin([
+                "https://emergent-interaction-lab.fly.dev".parse().unwrap(),
+                "https://rfi-irfos.github.io".parse().unwrap(),
+            ])
+            .allow_methods(Any)
+            .allow_headers(Any)
+            .allow_credentials(true)
+            .expose_headers([HeaderName::from_static("x-total-count")]));
 
     let port = std::env::var("PORT").unwrap_or("3000".into());
     let addr = format!("0.0.0.0:{port}");
