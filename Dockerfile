@@ -17,8 +17,14 @@ COPY frontend/ ./
 # footer — so safe to bake in directly rather than needing a Fly secret.
 ENV VITE_GH_OWNER=rfi-irfos
 ENV VITE_GH_REPO=emergent-interaction-lab
-# Admin password hash for the Website Kit login (SHA256 of "emergent2026!")
-ARG VITE_ADMIN_HASH
+# Admin password hash for the Website Kit login (SHA256 of "emergent2026!").
+# Defaulted here (not a secret — the password itself is in this comment and
+# in fly.toml) because CI's `flyctl deploy --remote-only` in deploy.yml
+# never passes --build-arg, so an ARG with no default silently built empty
+# and broke the login gate on every CI-triggered deploy. Confirmed
+# 2026-07-15: this raced against a manual `fly deploy --build-arg ...` and
+# the CI deploy (no arg) won, wiping out the working login within a minute.
+ARG VITE_ADMIN_HASH=10e6fdbc2f27570ee2f6e1e2f52f688c37d8d96519c2a7a6aae5acd7c3b123fa
 ENV VITE_ADMIN_HASH=${VITE_ADMIN_HASH}
 RUN npm run build
 
