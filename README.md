@@ -10,8 +10,12 @@
 [![Hosting](https://img.shields.io/badge/hosted%20on-Fly.io-8B5CF6)](https://fly.io)
 [![Status](https://img.shields.io/badge/status-live%20research%20instrument-10b981)](https://rfi-irfos.github.io/emergent-interaction-lab/)
 [![License](https://img.shields.io/badge/license-proprietary-lightgrey)](#)
+[![Laura](https://img.shields.io/badge/Laura-Human%E2%80%93AI%20Co--Evolution-ff69b4)](https://github.com/rfi-irfos/call-laura)
+[![CoEvolution Factory](https://img.shields.io/badge/CoEvolution%20Factory-50%20live%20centers-8B5CF6)](https://coevolution-factory-sparkling-mountain-1802.fly.dev)
+[![OSF](https://img.shields.io/badge/OSF-IEIA--2025%20preprint-10b981)](https://doi.org/10.17605/OSF.IO/HC9ZB)
+[![lauras-core](https://img.shields.io/crates/v/lauras-core?color=dea584)](https://crates.io/crates/lauras-core)
 
-A live research instrument for studying how meaning, structure, and behavior emerge from sustained human–AI interaction — not a static site, not a generic analytics dashboard. Every research conversation, blog entry, and note feeds the **Observatory**: a running instrument that measures emergence signals, drift, and interaction dynamics as they happen, organized into a strict three-tier hierarchy (*Forschungsebene / Systemebene / Technische Ebene*) so a real research signal is never presented with the same visual weight as a raw technical figure.
+**Emergent Interaction Lab (EIL)** is the operating-system base of the RFI-IRFOS stack — the instrument everything else is orchestrated from or emerges into. The Laura agent system, the CoEvolution Factory, the ternary OS work, and the public research all hang off this repo.
 
 Built for Laura Serna Gaviria's Emergent Interaction Lab research (RFI-IRFOS). See the [`v1.0.0` release](../../releases/tag/v1.0.0) for the full feature history.
 
@@ -201,6 +205,34 @@ conversation, keyed by the same id. A Hermes turn ends in the same
 feeds the same machinery: the transcript, the cross-chat RAG memory, the tool-call
 log the Observatory reads, and the emergence / CCET / anomaly instrumentation.
 The engine choice changes *who thinks*, not what the system learns from it.
+
+---
+
+## Ecosystem — the RFI-IRFOS stack
+
+EIL is the base OS. Everything below is either orchestrated from it or emerges out of it.
+
+**Laura — Human–AI Co-Evolution research framework**
+- Deterministic MCP review server (public sibling): [github.com/rfi-irfos/call-laura](https://github.com/rfi-irfos/call-laura)
+- Agent implementations (private core + public overview):
+  [github.com/rfi-irfos/lauras-agents](https://github.com/rfi-irfos/lauras-agents) ·
+  [github.com/rfi-irfos/lauras-agents-public](https://github.com/rfi-irfos/lauras-agents-public)
+- Rust crates (v0.2.0):
+  [lauras-core](https://crates.io/crates/lauras-core) ·
+  [lauras-team](https://crates.io/crates/lauras-team) ·
+  [lauras-mcp](https://crates.io/crates/lauras-mcp) ·
+  [lauras-api](https://crates.io/crates/lauras-api)
+
+**CoEvolution Factory — autonomous 50+ center system**
+- Live: [coevolution-factory-sparkling-mountain-1802.fly.dev](https://coevolution-factory-sparkling-mountain-1802.fly.dev)
+- Source: [github.com/rfi-irfos/coevolution-factory](https://github.com/rfi-irfos/coevolution-factory)
+
+**Peer-reviewed research (Open Science Framework)**
+- IEIA-2025 framework preprint: [doi.org/10.17605/OSF.IO/HC9ZB](https://doi.org/10.17605/OSF.IO/HC9ZB)
+- Companion preprint: [doi.org/10.17605/OSF.IO/QCVJB](https://doi.org/10.17605/OSF.IO/QCVJB)
+
+**Ternary Intelligence Stack (the OS maths under EIL)**
+- [github.com/rfi-irfos/ternary-intelligence-stack](https://github.com/rfi-irfos/ternary-intelligence-stack)
 
 ---
 
