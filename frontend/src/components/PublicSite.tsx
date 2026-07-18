@@ -1784,6 +1784,11 @@ export function PublicSite({
         )}
 
         <footer className="site-footer">
+          <p style={{ textAlign: 'center', fontFamily: 'monospace', fontSize: 12, color: '#00f5c4', letterSpacing: '0.06em', fontWeight: 600, margin: '0 0 24px' }}>
+            Human rights are not subject to negotiation.
+            <br />
+            <span style={{ fontSize: 10, color: '#8888a0', fontWeight: 400 }}>— RFI-IRFOS × Emergent Interaction Lab, core doctrine</span>
+          </p>
           {meta?.wko_member && (
             <div className="site-footer-wko">
               <a href="https://www.wko.at" target="_blank" rel="noopener" title="WKO Mitglied - Wirtschaftskammer Osterreich" style={{ display: 'inline-block', opacity: 0.85 }}>

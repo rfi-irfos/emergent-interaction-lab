@@ -1,5 +1,9 @@
 # Emergent Interaction Lab
 
+## Human rights are not subject to negotiation.
+
+
+
 [![Release](https://img.shields.io/github/v/release/rfi-irfos/emergent-interaction-lab?color=3b6bf6&label=release)](../../releases)
 [![Deploy](https://github.com/rfi-irfos/emergent-interaction-lab/actions/workflows/deploy.yml/badge.svg)](../../actions/workflows/deploy.yml)
 [![Last commit](https://img.shields.io/github/last-commit/rfi-irfos/emergent-interaction-lab?color=10b981)](../../commits/main)
