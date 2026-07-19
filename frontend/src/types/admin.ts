@@ -7,8 +7,17 @@
 // rather than a separate top-level mode.
 export type AdminSection =
   | 'inbox' | 'forschung' | 'blog' | 'analytics' | 'website-kit' | 'monetization'
-  | 'systemmap' | 'emergence' | 'systemstate' | 'interaction' | 'information' | 'behavior' | 'research'
-  | 'simulationcenter' | 'knowledgegraph' | 'agentactivity' | 'flugschreiber' | 'gesamtuebersicht' | 'denkfragmente'
+  // 'systemmap' now hosts the merged "Knowledge & System Map" app
+  // (KnowledgeSystemMap.tsx toggles between the two former separate views) —
+  // the old standalone 'knowledgegraph' section id was retired with it.
+  // 'interaction' now hosts the merged "Interaction+Information Dynamics"
+  // app (InteractionInformationDynamics.tsx toggles between the two former
+  // separate views) — the old standalone 'information' section id was
+  // retired with it.
+  | 'systemmap' | 'emergence' | 'systemstate' | 'interaction' | 'behavior' | 'research'
+  // 'gesamtuebersicht' as a standalone section id was retired — it's now a
+  // second tab inside 'analytics' (Analytics.tsx), not its own sidebar app.
+  | 'simulationcenter' | 'agentactivity' | 'flugschreiber' | 'denkfragmente'
   // Anomalie-Log — Anomaly Watchdog v1 review surface (see
   // backend/src/anomaly.rs). Systemebene, not Forschungsebene: it's a
   // system-health/safety signal about JARVIS ITSELF (tool failures, the

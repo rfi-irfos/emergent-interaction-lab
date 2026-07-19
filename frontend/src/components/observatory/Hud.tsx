@@ -52,8 +52,8 @@ export function HudTile({ title, badge, accent, span = 1, tall, className, child
 }
 
 export interface HudGridProps {
-  /** Use the wider 4-col watch-floor grid (default), a 3-col mid grid, or a tighter 2-col stack. */
-  cols?: 2 | 3 | 4
+  /** Use the wider 4-col watch-floor grid (default), a 5-col strip (ForschungKpis' compact top row), a 3-col mid grid, or a tighter 2-col stack. */
+  cols?: 2 | 3 | 4 | 5
   children?: React.ReactNode
 }
 

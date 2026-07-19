@@ -92,48 +92,51 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
     return () => ro.disconnect()
   }, [])
 
-  if (error && !API_BASE) {
-    return (
-      <div className="obs-panel">
-        <div className="obs-empty">
-          Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
-        </div>
-      </div>
-    )
-  }
-  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
-  if (!signals || !posts || !notes || !docs) return <div className="obs-panel"><HudSkeleton /></div>
+  // Everything below MUST run unconditionally, in the same order, on every
+  // render — including the two useMemo calls further down. They used to sit
+  // after the error/loading early returns, which is a Rules-of-Hooks
+  // violation: the loading render calls N hooks and bails out, the loaded
+  // render calls N+2. React throws error #310 ("Rendered more hooks than
+  // during the previous render"), GraphErrorBoundary catches it, and the
+  // panel shows "Knowledge Graph konnte nicht geladen werden." on every
+  // single load — this was the actual crash behind "die laden aber GARNICH
+  // nicht" (verified live: same class of bug found+fixed in SystemMap.tsx).
   // every edge below is inferred from shared fields, not a curated linkage.
   // The day a real relationship store exists, swap this constant for that
   // check and the placeholder tag disappears on its own.
   const usingHeuristicEdges = true
 
-  const scopeNames = Array.from(new Set(signals.map(s => s.scope).filter((s): s is string => !!s)))
-  const scopeSignalCount = (scope: string) => signals.filter(s => s.scope === scope).length
-  const scopeConvIds = (scope: string) => new Set(signals.filter(s => s.scope === scope).map(s => s.source_conversation_id).filter(Boolean))
+  const safeSignals = signals ?? []
+  const safePosts = posts ?? []
+  const safeNotes = notes ?? []
+  const safeDocs = docs ?? []
+
+  const scopeNames = Array.from(new Set(safeSignals.map(s => s.scope).filter((s): s is string => !!s)))
+  const scopeSignalCount = (scope: string) => safeSignals.filter(s => s.scope === scope).length
+  const scopeConvIds = (scope: string) => new Set(safeSignals.filter(s => s.scope === scope).map(s => s.source_conversation_id).filter(Boolean))
   const linkedPosts = (scope: string) => {
     const convIds = scopeConvIds(scope)
-    return posts.filter(p => p.source_conversation_id && convIds.has(p.source_conversation_id))
+    return safePosts.filter(p => p.source_conversation_id && convIds.has(p.source_conversation_id))
   }
 
   // Real per-item records behind each node — this is the actual drill-down
   // content (title/excerpt/timestamp/conversation-link), not just the
   // aggregate count the node bubble already shows.
   const scopeItems = (scope: string): DetailItem[] => {
-    const sigItems: DetailItem[] = signals
+    const sigItems: DetailItem[] = safeSignals
       .filter(s => s.scope === scope)
       .map(s => ({ id: s.id, kind: 'signal', title: s.pattern, excerpt: s.observation, timestamp: s.created_at, conversationId: s.source_conversation_id }))
     const postItems: DetailItem[] = linkedPosts(scope)
       .map(p => ({ id: p.id, kind: 'post', title: p.title, excerpt: p.body, timestamp: p.updated_at, conversationId: p.source_conversation_id }))
     return [...sigItems, ...postItems]
   }
-  const noteItems: DetailItem[] = notes.map(n => ({ id: n.id, kind: 'note', title: n.title, excerpt: n.body, timestamp: n.updated_at, conversationId: n.source_conversation_id }))
-  const docItems: DetailItem[] = docs.map(d => ({ id: d.id, kind: 'doc', title: d.filename, excerpt: '', timestamp: d.created_at, conversationId: null }))
+  const noteItems: DetailItem[] = safeNotes.map(n => ({ id: n.id, kind: 'note', title: n.title, excerpt: n.body, timestamp: n.updated_at, conversationId: n.source_conversation_id }))
+  const docItems: DetailItem[] = safeDocs.map(d => ({ id: d.id, kind: 'doc', title: d.filename, excerpt: '', timestamp: d.created_at, conversationId: null }))
 
   const hub = { id: 'hub', label: 'Wissensbestand', accent: '#22d3ee', count: 0, kind: 'hub' as const, scope: null as string | null }
   const scopeNodes = scopeNames.map((scope, i) => ({ id: `scope-${i}`, label: scope, kind: 'scope' as const, accent: '#22d3ee', count: scopeSignalCount(scope), scope }))
-  const noteNode = { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: '#8b5cf6', count: notes.length, scope: null as string | null }
-  const docNode = { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: '#10b981', count: docs.length, scope: null as string | null }
+  const noteNode = { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: '#8b5cf6', count: safeNotes.length, scope: null as string | null }
+  const docNode = { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: '#10b981', count: safeDocs.length, scope: null as string | null }
   const nodes = [hub, ...scopeNodes, noteNode, docNode] as Array<{ id: string; label: string; accent: string; count: number; kind: any; scope: string | null }>
 
   const links = useMemo(() => {
@@ -146,6 +149,18 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   }, [nodes.length])
 
   const graphData = useMemo(() => ({ nodes: nodes.map(n => ({ ...n })), links }), [nodes, links])
+
+  if (error && !API_BASE) {
+    return (
+      <div className="obs-panel">
+        <div className="obs-empty">
+          Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
+        </div>
+      </div>
+    )
+  }
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
+  if (!signals || !posts || !notes || !docs) return <div className="obs-panel"><HudSkeleton /></div>
 
   const itemsForNode = (node: any | null | undefined): DetailItem[] =>
     node?.kind === 'scope' && node.scope ? scopeItems(node.scope)

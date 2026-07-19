@@ -6,6 +6,7 @@ import { ObsDonut } from './ObsDonut'
 import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { Gesamtuebersicht } from './Gesamtuebersicht'
 
 interface DayCount { day: string; views: number }
 interface Bucket { label: string; count: number }
@@ -73,7 +74,14 @@ function trendAxisLabel(n: number, i: number, bucket: string): string {
 /// counts that used to live in the Observatory's "System Overview" (page
 /// views, conversations, blog drafts, research notes, simulations, Jarvis
 /// actions). The Observatory itself is reserved for emergence signals now.
-export function Analytics() {
+///
+/// Gesamtübersicht (the research-activity rollup across every table this
+/// platform captures) lives here too now, per feedback, as a second tab —
+/// folded in rather than kept as its own top-level sidebar app, so the
+/// sidebar stays leaner. Its own data/fetching is untouched; only its entry
+/// point moved.
+export function Analytics({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
+  const [view, setView] = useState<'analytics' | 'gesamtuebersicht'>('analytics')
   // Retrospective day/week breakdown (see backend/src/analytics.rs's
   // `?bucket=day|week&days=N`) — everything else on this page is an
   // all-time or fixed-window total; this is the one view that answers "what
@@ -85,9 +93,29 @@ export function Analytics() {
     [bucket, days],
   )
 
-  if (loading) return <div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div>
-  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
-  if (!data) return <div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>
+  const tabs = (
+    <div className="obs-toggle-tabs" role="tablist">
+      <button role="tab" aria-selected={view === 'analytics'} className={`obs-toggle-tab ${view === 'analytics' ? 'active' : ''}`} onClick={() => setView('analytics')}>
+        Analytics
+      </button>
+      <button role="tab" aria-selected={view === 'gesamtuebersicht'} className={`obs-toggle-tab ${view === 'gesamtuebersicht' ? 'active' : ''}`} onClick={() => setView('gesamtuebersicht')}>
+        Gesamtübersicht
+      </button>
+    </div>
+  )
+
+  if (view === 'gesamtuebersicht') {
+    return (
+      <div className="obs-toggle-view">
+        {tabs}
+        <Gesamtuebersicht onOpenConversation={onOpenConversation} />
+      </div>
+    )
+  }
+
+  if (loading) return <div className="obs-toggle-view">{tabs}<div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div></div>
+  if (error) return <div className="obs-toggle-view">{tabs}<div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div></div>
+  if (!data) return <div className="obs-toggle-view">{tabs}<div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div></div>
 
   // foldIntoOther is a no-op under its 6-slice ceiling — only matters here
   // if a real deployment ever accumulates more distinct sources/tools than
@@ -98,7 +126,9 @@ export function Analytics() {
   const toolCallCountsData = foldIntoOther(data.tool_call_counts.map(t => ({ label: t.tool, value: t.count })))
 
   return (
-    <div className="obs-panel">
+    <div className="obs-toggle-view">
+      {tabs}
+      <div className="obs-panel">
       <HudSectionHeader
         title="Analytics"
         sub="Was die Besucher sehen und tun — Verkehr, Gespräche, Forschungsaktivität."
@@ -219,6 +249,7 @@ export function Analytics() {
           ))}
         </HudTile>
       </HudGrid>
+      </div>
     </div>
   )
 }

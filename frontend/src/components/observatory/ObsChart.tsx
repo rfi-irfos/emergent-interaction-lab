@@ -6,12 +6,15 @@ interface ChartPoint { label: string; value: number }
 /// Shared BI-grade area/line chart — smooth curve, gradient fill, gridlines,
 /// hover crosshair + tooltip. Replaces the flat solid-fill bar divs used
 /// across the Observatory modules. Pure inline SVG, no charting library.
-export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, gradientId }: {
+export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, gradientId, showAxis = true }: {
   data: ChartPoint[]
   color?: string
   height?: number
   valueFormat?: (v: number) => string
   gradientId: string
+  /** Hide the bottom label row — for tiny sparklines whose x-axis (bare
+   * indices, not real dates) wouldn't mean anything to read anyway. */
+  showAxis?: boolean
 }) {
   const [hover, setHover] = useState<number | null>(null)
   if (!data.length) return <div className="obs-empty">Keine Daten.</div>
@@ -37,7 +40,7 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
 
   return (
     <div className="obs-chart-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="obs-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="obs-chart" style={{ height: H }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.32" />
@@ -68,7 +71,7 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
           <div className="obs-chart-tooltip-label">{points[hover].label}</div>
         </div>
       )}
-      <div className="obs-chart-axis">
+      {showAxis && <div className="obs-chart-axis">
         {data.map((d, i) => {
           // Thin the labels so they never collide: show ~6-8 evenly spaced
           // ticks plus always the last one. Otherwise dense series (e.g. 29
@@ -81,7 +84,7 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
           if (!show) return null
           return <span key={i}>{d.label}</span>
         })}
-      </div>
+      </div>}
     </div>
   )
 }

@@ -2683,6 +2683,21 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-tech-label { color: rgba(148,190,199,.5); }
 .obs-empty { text-align: center; color: #9aa0a8; padding: 40px 0; font-size: 13px; }
 
+/* Knowledge & System Map's in-panel view toggle — two merged force-graph
+   apps sharing one sidebar slot, switched here instead of both rendering
+   full-height on the same screen at once. */
+.obs-toggle-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.obs-toggle-tab {
+  background: none; border: 1.5px solid rgba(15,23,42,.1); border-radius: 8px;
+  padding: 7px 16px; font-size: 12.5px; font-weight: 700; color: #6b7280;
+  cursor: pointer; transition: .15s;
+}
+.obs-toggle-tab:hover { background: rgba(15,23,42,.04); }
+.obs-toggle-tab.active { background: rgba(34,211,238,.1); border-color: var(--hud-cyan, #22d3ee); color: var(--hud-cyan, #0e93a6); }
+.observatory-hud .obs-toggle-tab { border-color: rgba(148,190,199,.18); color: rgba(148,190,199,.7); }
+.observatory-hud .obs-toggle-tab:hover { background: rgba(148,190,199,.08); }
+.observatory-hud .obs-toggle-tab.active { background: rgba(34,211,238,.12); border-color: var(--hud-cyan); color: var(--hud-cyan); }
+
 .obs-card {
   background: #fff; border: 1px solid rgba(15,23,42,.06); border-radius: 14px; padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03); margin-bottom: 18px;
@@ -2827,6 +2842,10 @@ button { cursor: pointer; font-family: inherit; }
    visible "one chart fills the screen" case. Cap it and give it a stable
    aspect so it reads as an instrument, not a wall. The draw-in animation is
    a CSS stroke-dashoffset reveal (see Hud.tsx consumers / .obs-chart-line). */
+/* height: 130px here is only a fallback for the rare caller that renders
+   .obs-chart outside ObsChart.tsx's own inline style — ObsChart.tsx sets
+   the real height inline from its `height` prop (see that component), which
+   otherwise this fixed class value would silently override on every call. */
 .obs-chart { width: 100%; max-width: 420px; height: 130px; display: block; overflow: visible; }
 .obs-chart-line {
   /* Solid line that draws itself in: the dash is as long as the longest
@@ -3262,6 +3281,7 @@ button { cursor: pointer; font-family: inherit; }
 /* ── HUD TILE — the shared framed-instrument cell (Hud.tsx) ───────────────── */
 .hud-grid { display: grid; gap: 14px; margin-bottom: 16px; }
 .hud-grid--12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.hud-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .hud-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .hud-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .hud-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -3276,6 +3296,21 @@ button { cursor: pointer; font-family: inherit; }
   animation: hud-card-in .32s cubic-bezier(.16,1,.3,1) both;
 }
 .hud-tile--tall { min-height: 230px; }
+/* Compact variant — max half the default 150px, for strips of small
+   instruments meant to sit five-across in one row (ForschungKpis' top
+   strip) rather than the normal one-tile-per-metric-with-room-to-spare
+   sizing. Tighter padding too, not just a shorter body. */
+.hud-tile--compact { min-height: 72px; padding: 8px 10px 9px; }
+.hud-tile--compact .hud-tile-head { margin-bottom: 4px; }
+.hud-tile--compact .hud-tile-body { height: calc(100% - 18px); }
+/* Stat typography also shrinks in a compact tile — the default 30px
+   .hud-stat-value is sized for a tile with room to spare; at 72px tall it
+   would eat the whole tile on its own and push the sparkline/chart below
+   it back out to the old height. */
+.hud-tile--compact .hud-stat-value { font-size: 19px; }
+.hud-tile--compact .hud-stat-label { font-size: 8.5px; margin-top: 2px; }
+.hud-tile--compact .hud-stat { margin-bottom: 0; }
+.hud-tile--compact .obs-empty { padding: 6px 0; font-size: 11px; }
 .hud-tile-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .hud-led {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
@@ -3323,8 +3358,8 @@ button { cursor: pointer; font-family: inherit; }
 .hud-tile .obs-donut-wrap, .hud-tile .obs-gauge-wrap { margin: 0 auto; }
 .hud-tile .obs-chart-wrap { align-self: stretch; }
 
-@media (max-width: 1100px) { .hud-grid--4, .hud-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .hud-grid--4, .hud-grid--3, .hud-grid--2 { grid-template-columns: minmax(0, 1fr); } .hud-tile { grid-column: 1 / -1 !important; } }
+@media (max-width: 1100px) { .hud-grid--5, .hud-grid--4, .hud-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .hud-grid--5, .hud-grid--4, .hud-grid--3, .hud-grid--2 { grid-template-columns: minmax(0, 1fr); } .hud-tile { grid-column: 1 / -1 !important; } }
 .observatory-hud .obs-warning-note { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); color: #fbbf24; }
 .observatory-hud .obs-activity-row { border-bottom-color: rgba(34,211,238,.1); }
 .observatory-hud .obs-activity-row:hover { background: rgba(34,211,238,.05); }

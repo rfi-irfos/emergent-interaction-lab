@@ -12,22 +12,17 @@ import { BlogDrafts } from './observatory/BlogDrafts'
 import { Inbox, type ContactMessage } from './observatory/Inbox'
 import { ForschungKpis } from './observatory/ForschungKpis'
 import { Flugschreiber } from './observatory/Flugschreiber'
-// Heavy force-graph modules (react-force-graph-2d, ~600KB) get lazy-loaded so
-// they don't bloat the initial OS bundle — only fetched when a user actually
-// opens Knowledge Graph / System Map.
-import { lazy, Suspense } from 'react'
-const SystemMap = lazy(() => import('./observatory/SystemMap').then(m => ({ default: m.SystemMap })))
-const KnowledgeGraph = lazy(() => import('./observatory/KnowledgeGraph').then(m => ({ default: m.KnowledgeGraph })))
-import { GraphErrorBoundary } from './observatory/GraphErrorBoundary'
+// Knowledge Graph + System Map, merged into one "Knowledge & System Map"
+// sidebar app (KnowledgeSystemMap.tsx) — it owns its own lazy-loading of the
+// two heavy react-force-graph-2d modules internally.
+import { KnowledgeSystemMap } from './observatory/KnowledgeSystemMap'
 import { EmergenceMonitor } from './observatory/EmergenceMonitor'
 import { SystemState } from './observatory/SystemState'
-import { InteractionDynamics } from './observatory/InteractionDynamics'
-import { InformationDynamics } from './observatory/InformationDynamics'
+import { InteractionInformationDynamics } from './observatory/InteractionInformationDynamics'
 import { BehavioralLandscape } from './observatory/BehavioralLandscape'
 import { AgentActivity } from './observatory/AgentActivity'
 import { ResearchPulse } from './observatory/ResearchPulse'
 import { SimulationCenter } from './observatory/SimulationCenter'
-import { Gesamtuebersicht } from './observatory/Gesamtuebersicht'
 import { Denkfragmente } from './observatory/Denkfragmente'
 import { AnomalyLog } from './observatory/AnomalyLog'
 import { Changelog } from './observatory/Changelog'
@@ -81,13 +76,10 @@ function IconMoon() {
 /// single, permanent view of the admin panel. The old "Builder mode / Verwaltung
 /// mode" dichotomy is gone: the website builder is "Website Kit," one more
 /// sidebar app, not a separate top-level mode with its own topbar.
-// Heavy force-graph modules spin up react-force-graph-2d (~600KB) — show a
-// quiet placeholder while their chunk loads so the OS shell stays instant.
-const GraphFallback = () => <div className="obs-panel"><div className="obs-empty">Graph wird geladen…</div></div>
 
 export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Props) {
   const [draft, setDraft] = useState<SiteContent>(content)
-  const [adminSection, setAdminSection] = useState<AdminSection>('website-kit')
+  const [adminSection, setAdminSection] = useState<AdminSection>('analytics')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
   const [crmTheme, setCrmTheme] = useState<'light' | 'dark'>(loadCrmTheme)
 
@@ -239,10 +231,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             </div>
           </div>
           <nav className="crm-nav">
+            {/* Analytics leads the Verwaltung group — the first thing Laura
+                sees on opening the admin panel — with Website Kit moved to
+                the bottom, right under Monetarisierung, per feedback. */}
             {!sidebarCollapsed && <div className="crm-nav-group-label">Verwaltung</div>}
-            <button className={`crm-nav-item ${adminSection === 'website-kit' ? 'active' : ''}`} onClick={() => setAdminSection('website-kit')} title="Website Kit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              {!sidebarCollapsed && 'Website Kit'}
+            <button className={`crm-nav-item ${adminSection === 'analytics' ? 'active' : ''}`} onClick={() => setAdminSection('analytics')} title="Analytics">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+              {!sidebarCollapsed && 'Analytics'}
             </button>
             <button className={`crm-nav-item ${adminSection === 'inbox' ? 'active' : ''}`} onClick={() => setAdminSection('inbox')} title="Inbox">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -257,13 +252,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               {!sidebarCollapsed && 'Blog'}
             </button>
-            <button className={`crm-nav-item ${adminSection === 'analytics' ? 'active' : ''}`} onClick={() => setAdminSection('analytics')} title="Analytics">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-              {!sidebarCollapsed && 'Analytics'}
-            </button>
             <button className={`crm-nav-item ${adminSection === 'monetization' ? 'active' : ''}`} onClick={() => setAdminSection('monetization')} title="Monetarisierung">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               {!sidebarCollapsed && 'Monetarisierung'}
+            </button>
+            <button className={`crm-nav-item ${adminSection === 'website-kit' ? 'active' : ''}`} onClick={() => setAdminSection('website-kit')} title="Website Kit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              {!sidebarCollapsed && 'Website Kit'}
             </button>
 
             {!sidebarCollapsed && <div className="crm-nav-group-label">Observatory</div>}
@@ -398,7 +393,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'inbox' && <Inbox />}
 
             {/* ── ANALYTICS TAB ──────────────────────────────────────────── */}
-            {adminSection === 'analytics' && <Analytics />}
+            {adminSection === 'analytics' && (
+              <Analytics onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+            )}
 
             {/* ── MONETIZATION TAB ───────────────────────────────────────── */}
             {adminSection === 'monetization' && <Monetization />}
@@ -421,11 +418,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {/* ── OBSERVATORY MODULES ──────────────────────────────────── */}
             {adminSection === 'systemmap' && (
-              <Suspense fallback={<GraphFallback />}>
-                <GraphErrorBoundary label="System Map">
-                  <SystemMap onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
-                </GraphErrorBoundary>
-              </Suspense>
+              <KnowledgeSystemMap onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
             {adminSection === 'emergence' && (
               <EmergenceMonitor onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
@@ -435,11 +428,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'flugschreiber' && (
               <Flugschreiber onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
-            {adminSection === 'gesamtuebersicht' && (
-              <Gesamtuebersicht onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
-            )}
-            {adminSection === 'interaction' && <InteractionDynamics />}
-            {adminSection === 'information' && <InformationDynamics />}
+            {adminSection === 'interaction' && <InteractionInformationDynamics />}
             {adminSection === 'behavior' && (
               <BehavioralLandscape onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
@@ -450,13 +439,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               />
             )}
             {adminSection === 'simulationcenter' && <SimulationCenter onNavigate={setAdminSection} />}
-            {adminSection === 'knowledgegraph' && (
-              <Suspense fallback={<GraphFallback />}>
-                <GraphErrorBoundary label="Knowledge Graph">
-                  <KnowledgeGraph onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
-                </GraphErrorBoundary>
-              </Suspense>
-            )}
             {adminSection === 'denkfragmente' && (
               <Denkfragmente onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
