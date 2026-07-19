@@ -4,7 +4,6 @@ import { BlogCoWriter } from './BlogCoWriter'
 import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
-import { AgentDock } from './AgentDock'
 import { useAdminFetch } from '../lib/adminApi'
 import { OBSERVATORY_MODULES, SECTION_LABELS, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
 import { Analytics } from './observatory/Analytics'
@@ -295,6 +294,12 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           <div className="crm-topbar">
             <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
             <div className="crm-topbar-actions">
+              {/* Chat affordance moved into the topbar (replaces the old
+                  floating bottom-right AgentDock FAB). Triggers the Forschung
+                  tab, where the real Jarvis chat lives. */}
+              <button className="topbar-icon-btn" onClick={() => setAdminSection('forschung')} title="Zu Jarvis (Forschung)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+              </button>
               <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
                 {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
               </button>
@@ -460,13 +465,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             )}
           </div>
         </div>
-        {/* Redundant AND actively harmful on the Forschung tab itself: this
-            fixed bottom-right FAB physically overlapped the chat composer's
-            LKS stop button (see ResearchChat.tsx) — found visually testing
-            the composer at every viewport width, not from a code read. A
-            "jump to Jarvis" shortcut has nothing to jump to once you're
-            already there. */}
-        {adminSection !== 'forschung' && <AgentDock onJumpToForschung={() => setAdminSection('forschung')} />}
       </div>
 
       {/* ── BLOG EDIT MODAL ────────────────────────────────────────────── */}

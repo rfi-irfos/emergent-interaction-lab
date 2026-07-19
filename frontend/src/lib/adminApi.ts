@@ -3,7 +3,8 @@ import { API_BASE } from './apiBase'
 
 // Shared admin/agent request auth — the one auth mechanism the shipped admin
 // UI actually round-trips through today (see backend/src/chat.rs is_authorized).
-// Used by ResearchChat, the Observatory modules and AgentDock so the header
+// Used by ResearchChat, the Observatory modules and the topbar chat affordance
+// (AdminPanel) so the header
 // logic exists in exactly one place instead of being copied into each caller.
 const SECRET = import.meta.env.VITE_CHAT_API_SECRET as string | undefined
 

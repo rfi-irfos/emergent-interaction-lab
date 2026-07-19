@@ -222,20 +222,17 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     return () => ro.disconnect()
   }, [])
 
-  if (!counts) {
-    if (!API_BASE) {
-      return (
-        <div className="obs-panel">
-          <div className="obs-empty">
-            Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
-          </div>
-        </div>
-      )
-    }
-    return <div className="obs-panel"><HudSkeleton /></div>
-  }
-
-  const maxCount = Math.max(...Object.values(counts), 1)
+  // Everything below MUST run unconditionally, on every render, in the same
+  // order — including useTypewriter (it calls useState/useEffect internally)
+  // and the graphData useMemo. Both used to sit after the `if (!counts)`
+  // early return, which is a Rules-of-Hooks violation: the loading render
+  // calls N hooks and bails out, the loaded render calls N+2. React throws
+  // "Rendered fewer hooks than expected", GraphErrorBoundary catches it, and
+  // the panel shows "konnte nicht geladen werden" on every single load —
+  // this was the actual crash behind "die laden aber GARNICH nicht", not a
+  // backend/data issue (verified: every API this fetches returns 200 even
+  // against an empty local DB).
+  const maxCount = counts ? Math.max(...Object.values(counts), 1) : 1
 
   const expandedNode = expanded ? NODES.find(n => n.id === expanded) : null
   const activeSatelliteNode = expandedSatellite ? NODES.find(n => n.id === expandedSatellite.nodeId) : null
@@ -246,7 +243,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   const detailNode = activeSatelliteNode ?? expandedNode
   const detailText = activeSatelliteItem
     ? activeSatelliteItem.label
-    : (expandedNode ? expandedNode.blurb(counts[expandedNode.id] ?? 0) : '')
+    : (expandedNode ? expandedNode.blurb(counts?.[expandedNode.id] ?? 0) : '')
   const typed = useTypewriter(detailText, !!detailNode)
 
   // Hover state comes from ForceGraph2D's onNodeHover (a node id string, or
@@ -258,7 +255,6 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
   const hoveredSatelliteItem = hoveredSatelliteNode && hoverNodeId
     ? (satellites[hoveredSatelliteNode.id] ?? []).find(s => `${hoveredSatelliteNode.id}-sat-${s.id}` === hoverNodeId) ?? null
     : null
-
 
   // Build force-graph nodes: 5 cores + their satellites (real records).
   const graphData = useMemo(() => {
@@ -281,6 +277,19 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     }
     return { nodes, links }
   }, [counts, satellites, maxCount])
+
+  if (!counts) {
+    if (!API_BASE) {
+      return (
+        <div className="obs-panel">
+          <div className="obs-empty">
+            Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
+          </div>
+        </div>
+      )
+    }
+    return <div className="obs-panel"><HudSkeleton /></div>
+  }
 
   const nodePaint = (node: any, ctx: CanvasRenderingContext2D) => {
     const x = node.x ?? 0, y = node.y ?? 0
