@@ -65,7 +65,7 @@ export function AgentActivity() {
   return (
     <div className="obs-panel">
       {!data.configured && data.message && (
-        <div className="obs-warning-note">⚠ {data.message}</div>
+        <div className="obs-warning-note">▲ {data.message}</div>
       )}
 
       <HudSectionHeader

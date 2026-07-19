@@ -253,7 +253,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
               <div className="obs-item-title">{p.title}</div>
               <div className="obs-item-meta">
                 <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{p.status}</span>
-                {' · '}{p.source === 'agent' ? '🤖 Jarvis' : 'manuell'} · {p.updated_at}
+                {' · '}{p.source === 'agent' ? '◆ Jarvis' : 'manuell'} · {p.updated_at}
                 {p.source_conversation_id && onOpenConversation && (
                   <>
                     {' · '}

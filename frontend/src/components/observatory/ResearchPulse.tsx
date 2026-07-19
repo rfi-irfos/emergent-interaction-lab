@@ -20,7 +20,7 @@ function BlogActivity() {
       {posts.map(p => (
         <div className="obs-activity-row" key={p.id}>
           <span className="obs-activity-kind">{p.status}</span>
-          <span className="obs-activity-label">{p.source === 'agent' ? '🤖 ' : ''}{p.title}</span>
+          <span className="obs-activity-label">{p.source === 'agent' ? '◆ ' : ''}{p.title}</span>
           <span className="obs-activity-ts">{p.updated_at}</span>
         </div>
       ))}

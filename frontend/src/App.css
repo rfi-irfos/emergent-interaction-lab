@@ -2746,7 +2746,7 @@ button { cursor: pointer; font-family: inherit; }
   padding: 4px 10px; border-radius: 20px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(245,158,11,.08);
   cursor: help;
 }
-.obs-badge-experimental::before { content: '⚠'; font-size: 10px; }
+.obs-badge-experimental::before { content: '▲'; font-size: 10px; }
 
 /* Real data, heuristic (not yet fully real) processing — distinct from
    .obs-badge-experimental (which flags LLM interpretation): this flags
@@ -3929,7 +3929,7 @@ button { cursor: pointer; font-family: inherit; }
 .chat-conv-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Jarvis's proactive weekly digest (kind='digest', see backend/src/digest.rs)
    — a small, quiet distinguisher so it never reads as a conversation Laura
-   started herself: a subtle left accent on the row plus the 🗞️ badge before
+   started herself: a subtle left accent on the row plus the ▤ badge before
    the title (see ResearchChat.tsx). Deliberately understated, not a loud
    "NEW" pill — this is Jarvis checking in, not an alert. */
 .chat-conv-item-digest { border-left: 2px solid rgba(99,240,255,.4); padding-left: 8px; }
@@ -4100,7 +4100,7 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 420px; max-height: 160px; overflow: auto;
 }
 
-/* Web search gets its own look instead of the generic 🔧 badge — real,
+/* Web search gets its own look instead of the generic ▸ badge — real,
    live results deserve to read differently from an internal tool call. */
 .chat-web-search-toggle { border-color: rgba(139,123,240,.35); background: rgba(139,123,240,.1); color: #c7bdfb; }
 .chat-web-search-toggle:hover { background: rgba(139,123,240,.18); }

@@ -211,7 +211,7 @@ export function Changelog() {
             className={`crm-audit-chain-badge ${verify.chain_intact ? 'intact' : 'broken'}`}
             title={verify.chain_intact ? `Kette intakt über ${verify.total} Einträge` : `Kette gebrochen bei Eintrag ${verify.broken_at_id}`}
           >
-            {verify.chain_intact ? `Kette intakt ✓ (${verify.total} Einträge)` : `Kette gebrochen ⚠ bei Eintrag ${verify.broken_at_id}`}
+            {verify.chain_intact ? `Kette intakt ✓ (${verify.total} Einträge)` : `Kette gebrochen ▲ bei Eintrag ${verify.broken_at_id}`}
           </span>
         )}
         {!verify && !verifying && <span className="obs-item-meta" style={{ margin: 0 }}>Noch nicht geprüft.</span>}

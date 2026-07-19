@@ -76,7 +76,7 @@ export function AuditChangelog({ collapsed }: { collapsed: boolean }) {
             className={`crm-audit-chain-badge ${verify.chain_intact ? 'intact' : 'broken'}`}
             title={verify.chain_intact ? `Kette intakt über ${verify.total} Einträge` : `Kette gebrochen bei Eintrag ${verify.broken_at_id}`}
           >
-            {verify.chain_intact ? 'Kette intakt ✓' : 'Kette gebrochen ⚠'}
+            {verify.chain_intact ? 'Kette intakt ✓' : 'Kette gebrochen ▲'}
           </span>
         )}
       </div>

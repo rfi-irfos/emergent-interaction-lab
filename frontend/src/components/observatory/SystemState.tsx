@@ -111,7 +111,7 @@ function SystemStateModal({ scope, signal, count, trend, onClose }: {
           </div>
           {trend && (
             <div className="obs-badge-verified" style={{ marginBottom: 12 }}>
-              📈 {trend}
+              ↗ {trend}
             </div>
           )}
           <div className="obs-signal-modal-observation">{signal.observation}</div>
@@ -234,7 +234,7 @@ export function SystemState() {
             <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
             <div className="obs-item-meta" style={{ marginTop: -6 }}>Konfidenz: {s.confidence} · Entwicklung: {s.evolution}</div>
             <div className="obs-item-body">{s.observation}</div>
-            {trend && <div className="obs-item-meta" style={{ marginTop: 8 }}>📈 Interaction Dynamics: {trend}</div>}
+            {trend && <div className="obs-item-meta" style={{ marginTop: 8 }}>↗ Interaction Dynamics: {trend}</div>}
           </div>
         )
       })}
@@ -276,7 +276,7 @@ export function SystemState() {
             </div>
             {!diag.chat_secret_configured && (
               <div className="obs-warning-note">
-                ⚠ Kein CHAT_API_SECRET gesetzt — alle Admin-Endpunkte sind aktuell ohne Zugriffsschutz erreichbar (dev-Komfort, siehe backend/src/authz.rs).
+                ▲ Kein CHAT_API_SECRET gesetzt — alle Admin-Endpunkte sind aktuell ohne Zugriffsschutz erreichbar (dev-Komfort, siehe backend/src/authz.rs).
               </div>
             )}
           </>

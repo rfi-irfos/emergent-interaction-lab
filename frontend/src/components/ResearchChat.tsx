@@ -188,7 +188,7 @@ function ToolCallBadge({ call }: { call: ToolCallEvent }) {
   return (
     <div className="chat-tool-call">
       <button type="button" className="chat-tool-call-toggle" onClick={() => setOpen(o => !o)}>
-        🔧 {TOOL_LABELS[call.tool] ?? call.tool}
+        ▸ {TOOL_LABELS[call.tool] ?? call.tool}
       </button>
       {open && <pre className="chat-tool-call-detail">{call.result}</pre>}
     </div>
@@ -204,7 +204,7 @@ interface WebSearchResult {
   error?: string
 }
 
-// Its own distinct badge (not the generic 🔧 one) — real live web results
+// Its own distinct badge (not the generic ▸ one) — real live web results
 // deserve to look and read differently from an internal tool's JSON dump,
 // and the honesty framing (live results, thin coverage, no fabrication)
 // belongs right next to the results themselves, not buried in raw JSON.
@@ -216,7 +216,7 @@ function WebSearchBadge({ call }: { call: ToolCallEvent }) {
   return (
     <div className="chat-tool-call chat-web-search">
       <button type="button" className="chat-tool-call-toggle chat-web-search-toggle" onClick={() => setOpen(o => !o)}>
-        🔍 Web-Suche{parsed.query ? `: „${parsed.query}"` : ''}
+        ⌕ Web-Suche{parsed.query ? `: „${parsed.query}"` : ''}
       </button>
       {open && (
         <div className="chat-web-search-detail">
@@ -279,14 +279,14 @@ function ReasoningBlock({ text, streaming, unavailable }: { text: string; stream
   if (unavailable) {
     return (
       <div className="chat-reasoning chat-reasoning-unavailable">
-        🧠 Kein Reasoning-Modell aktuell verfügbar.
+        ⬡ Kein Reasoning-Modell aktuell verfügbar.
       </div>
     )
   }
   return (
     <div className="chat-reasoning">
       <button type="button" className="chat-reasoning-toggle" onClick={() => setOpen(o => !o)}>
-        🧠 {open ? 'Denkprozess ausblenden' : 'Denkprozess anzeigen'}
+        ⬡ {open ? 'Denkprozess ausblenden' : 'Denkprozess anzeigen'}
       </button>
       {open && (
         <div className="chat-reasoning-content">
@@ -329,7 +329,7 @@ function CopyMessageButton({ content }: { content: string }) {
 function EditMessageButton({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className="chat-edit-btn" title="Nachricht bearbeiten" onClick={onClick}>
-      ✎
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: '-2px' }}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
     </button>
   )
 }
@@ -455,7 +455,7 @@ const ChatBubble = React.memo(function ChatBubble({
       {message.role === 'assistant' && tokens.length > 0 && (
         <div className="chat-bubble-tools">
           <button className="chat-inspect-toggle" onClick={() => setShowInspector(s => !s)}>
-            {showInspector ? 'Token-Analyse ausblenden' : '🔍 Token-Analyse'}
+            {showInspector ? 'Token-Analyse ausblenden' : '⌕ Token-Analyse'}
           </button>
           {showInspector && <TokenBreakdown tokens={tokens} />}
         </div>
@@ -646,7 +646,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
         const res = await fetch(`${API_BASE}/api/chat/conversations`, {
           method: 'POST',
           headers: authHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ title: '🧠 Memory-Browser', kind: 'memory-browser' }),
+          body: JSON.stringify({ title: '⬡ Memory-Browser', kind: 'memory-browser' }),
         })
         if (!res.ok) throw new Error('conversation')
         const data = await res.json()
@@ -909,7 +909,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
           setStreaming(false)
           refreshConversations()
           onMessageComplete?.()
-          if (document.hidden) document.title = `💬 ${baseTitleRef.current}`
+          if (document.hidden) document.title = `● ${baseTitleRef.current}`
         },
         (msg) => { flushNow(); setStreaming(false); setError(msg) },
       )
@@ -1078,7 +1078,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
                   <div className="chat-conv-group-label">{group.label}</div>
                   {group.items.map(c => (
                     <div key={c.id} className={`chat-conv-item ${c.id === activeId ? 'active' : ''} ${c.kind === 'digest' ? 'chat-conv-item-digest' : ''}`} onClick={() => openConversation(c.id)}>
-                      {c.kind === 'digest' && <span className="chat-conv-digest-badge" title="Proaktiver Wochenrückblick von Jarvis, nicht von dir gestartet">🗞️</span>}
+                      {c.kind === 'digest' && <span className="chat-conv-digest-badge" title="Proaktiver Wochenrückblick von Jarvis, nicht von dir gestartet">▤</span>}
                       <span className="chat-conv-title">{c.title}</span>
                       <button
                         className="chat-conv-delete"
@@ -1121,7 +1121,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
 
             <div className="chat-memory-panel">
               <div className="chat-docs-title">
-                🧠 Erinnerungen (mem0)
+                ⬡ Erinnerungen (mem0)
                 <button
                   className="chat-memory-refresh"
                   disabled={memoryLoading}
@@ -1162,14 +1162,14 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
                 ? 'Reasoning an: versucht zuerst das Denkprozess-Modell, zeigt den Denkprozess an'
                 : 'Reasoning aus: direkte Antworten ohne den Versuch, ein Reasoning-Modell zu erreichen'}
             >
-              🧠 Reasoning {reasoningEnabled ? 'an' : 'aus'}
+              ⬡ Reasoning {reasoningEnabled ? 'an' : 'aus'}
             </button>
             {hermesAvailable && (
               <span
                 className="chat-export-btn chat-engine-indicator"
                 title="Hermes: ein eigenständiger Agent mit eigenem Werkzeug-Loop und eigenem Langzeitgedächtnis, das über Gespräche hinweg wächst — die Basis-Intelligenz hinter Jarvis, kein Umschalter."
               >
-                🜂 Jarvis, auf Hermes
+                △ Jarvis, auf Hermes
               </span>
             )}
             {messages.length > 0 && (

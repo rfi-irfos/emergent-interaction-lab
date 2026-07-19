@@ -35,8 +35,8 @@ const STATUS_ACCENT: Record<string, string> = { active: '#10b981', archived: '#6
 // who-thought-what is wrong. Anything unrecognised falls back to 'manuell', which
 // is what a human-written note has always been.
 const SOURCE_LABEL: Record<string, string> = {
-  agent: '🤖 Jarvis',
-  hermes: '🜂 Hermes',
+  agent: '◆ Jarvis',
+  hermes: '△ Hermes',
 }
 
 // `tags` has been on research_notes since day one — Jarvis's own

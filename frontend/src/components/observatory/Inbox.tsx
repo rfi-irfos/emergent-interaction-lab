@@ -108,9 +108,9 @@ export function Inbox() {
         </div>
       )}
       {list.length === 0 ? (
-        <InboxPlaceholder icon="✉" text="Keine neuen Anfragen." sub="Anfragen aus dem Kontaktformular der Website erscheinen hier automatisch." />
+        <InboxPlaceholder icon="◇" text="Keine neuen Anfragen." sub="Anfragen aus dem Kontaktformular der Website erscheinen hier automatisch." />
       ) : filteredList.length === 0 ? (
-        <InboxPlaceholder icon="⚲" text="Keine Treffer." sub="Kein Eintrag mit diesem Status." />
+        <InboxPlaceholder icon="○" text="Keine Treffer." sub="Kein Eintrag mit diesem Status." />
       ) : (
         groups.map(group => (
           <div key={group.label} style={{ marginBottom: 18 }}>

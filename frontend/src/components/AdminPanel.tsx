@@ -380,7 +380,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   Blogbeitrag hinzufügen (manuell)
                 </button>
                 <div className="obs-section blog-jarvis-section">
-                  <div className="obs-section-label">🤖 Von Jarvis generiert</div>
+                  <div className="obs-section-label">◆ Von Jarvis generiert</div>
                   <BlogDrafts
                     onPromoteToSite={promoteBlogPostToSite}
                     onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}
