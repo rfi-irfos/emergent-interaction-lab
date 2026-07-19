@@ -69,13 +69,14 @@ pub async fn inspect(
         return (StatusCode::BAD_REQUEST, "Prompt zu lang (max. 300 Zeichen).").into_response();
     }
 
-    let api_key = match std::env::var("NVIDIA_API_KEY") {
-        Ok(k) if !k.is_empty() => k,
-        _ => {
-            tracing::error!("NVIDIA_API_KEY not configured");
-            return StatusCode::SERVICE_UNAVAILABLE.into_response();
-        }
-    };
+    // L4 (2026-07-19): use the key resolved into AppState at startup rather
+    // than re-reading the process env here, so this route can't diverge from
+    // the rest of the backend (e.g. a test that sets only state).
+    let api_key = state.nvidia_api_key.clone();
+    if api_key.is_empty() {
+        tracing::error!("NVIDIA_API_KEY not configured");
+        return StatusCode::SERVICE_UNAVAILABLE.into_response();
+    }
 
     let client = reqwest::Client::new();
     let res = client

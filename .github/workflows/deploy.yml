@@ -42,7 +42,14 @@ jobs:
           VITE_ADMIN_HASH:      ${{ secrets.VITE_ADMIN_HASH }}
           VITE_WEB3FORMS_KEY:   ${{ secrets.VITE_WEB3FORMS_KEY }}
           VITE_BASE_URL:        ${{ vars.VITE_BASE_URL || '/' }}
-          VITE_CHAT_API_SECRET: ${{ secrets.VITE_CHAT_API_SECRET }}
+          # SECURITY (C1, 2026-07-19): VITE_CHAT_API_SECRET is DELIBERATELY NOT
+          # injected into the public GitHub Pages build. It is the same value the
+          # backend uses for the x-chat-secret admin gate (authz.rs) — baking it
+          # into a client-downloadable JS bundle let anyone read it from the
+          # public mirror and call the fly.dev admin API. The GH Pages mirror is
+          # read-only (no backend reachable from it), so it needs no admin secret.
+          # Do NOT re-add this line. If a mirror ever needs admin capability,
+          # decouple the browser call-auth from the server admin secret first.
           VITE_API_BASE:        ${{ vars.VITE_API_BASE }}
 
       - uses: actions/upload-pages-artifact@v3

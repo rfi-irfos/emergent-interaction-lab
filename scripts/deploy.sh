@@ -51,9 +51,17 @@ if [ -z "${CHAT_API_SECRET:-}" ]; then
 fi
 
 echo "==> logging deploy to ${API_BASE}/api/observatory/deploy-log (target=fly, version=${VERSION})"
+# L1 (2026-07-19): pass the shared secret via a header FILE, not a `-H` inline
+# arg — an inline `-H "x-chat-secret: ..."` puts the secret in the process
+# argument list, visible to `ps`/audit logs on whatever runner executes this.
+HDR_FILE="$(mktemp)"
+trap 'rm -f "${HDR_FILE}"' EXIT
+{
+  printf 'Content-Type: application/json\n'
+  printf 'x-chat-secret: %s\n' "${CHAT_API_SECRET}"
+} > "${HDR_FILE}"
 if curl -fsS -X POST "${API_BASE}/api/observatory/deploy-log" \
-  -H "Content-Type: application/json" \
-  -H "x-chat-secret: ${CHAT_API_SECRET}" \
+  -H @"${HDR_FILE}" \
   -d "{\"target\":\"fly\",\"version\":\"${VERSION}\",\"commit_sha\":\"${COMMIT_SHA}\"}"; then
   echo ""
   echo "==> deploy-log entry recorded."

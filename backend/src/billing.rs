@@ -419,22 +419,56 @@ pub async fn seed_webhub_products(db: &SqlitePool) {
     ];
 
     for s in seeds {
-        let id = Uuid::new_v4().to_string();
-        let _ = sqlx::query(
-            "INSERT INTO products (id, name, description, description_de, price_cents, currency, \
-             mode, recurring_interval, category, payment_link_url) \
-             VALUES (?1,?2,?3,?4,?5,'eur',?6,?7,'service',?8)",
+        // H3 (2026-07-19): idempotent UPSERT keyed on the stable (name,
+        // category) pair instead of DELETE-all + fresh-UUID on every boot.
+        // The old approach re-minted product UUIDs each restart, so any
+        // `orders` row pointing at a prior product_id silently resolved to
+        // "Unbekanntes Produkt", and with min_machines_running=0 the machine
+        // restarts on every idle wake — churning IDs on live sales days.
+        // Now an existing service tier keeps its id (and its order linkage)
+        // while its editable copy/price/link are refreshed from this seed.
+        let existing_id: Option<String> = sqlx::query_scalar(
+            "SELECT id FROM products WHERE name = ?1 AND category = 'service'",
         )
-        .bind(&id)
         .bind(s.name)
-        .bind(s.en_desc)
-        .bind(s.de_desc)
-        .bind(s.price_cents)
-        .bind(s.mode)
-        .bind(s.recurring_interval)
-        .bind(s.payment_link_url)
-        .execute(db)
-        .await;
+        .fetch_optional(db)
+        .await
+        .ok()
+        .flatten();
+
+        if let Some(id) = existing_id {
+            let _ = sqlx::query(
+                "UPDATE products SET description = ?2, description_de = ?3, \
+                 price_cents = ?4, currency = 'eur', mode = ?5, \
+                 recurring_interval = ?6, payment_link_url = ?7 WHERE id = ?1",
+            )
+            .bind(&id)
+            .bind(s.en_desc)
+            .bind(s.de_desc)
+            .bind(s.price_cents)
+            .bind(s.mode)
+            .bind(s.recurring_interval)
+            .bind(s.payment_link_url)
+            .execute(db)
+            .await;
+        } else {
+            let id = Uuid::new_v4().to_string();
+            let _ = sqlx::query(
+                "INSERT INTO products (id, name, description, description_de, price_cents, currency, \
+                 mode, recurring_interval, category, payment_link_url) \
+                 VALUES (?1,?2,?3,?4,?5,'eur',?6,?7,'service',?8)",
+            )
+            .bind(&id)
+            .bind(s.name)
+            .bind(s.en_desc)
+            .bind(s.de_desc)
+            .bind(s.price_cents)
+            .bind(s.mode)
+            .bind(s.recurring_interval)
+            .bind(s.payment_link_url)
+            .execute(db)
+            .await;
+        }
     }
 }
 

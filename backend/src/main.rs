@@ -236,6 +236,12 @@ async fn main() {
         .execute(&db).await.ok();
     sqlx::query("CREATE INDEX IF NOT EXISTS idx_wv_source ON web_visits(source, created_at)")
         .execute(&db).await.ok();
+    // M2 (2026-07-19): retention prune. POST /api/track + /api/track/pixel.gif
+    // are public + unauthenticated (by design — they're analytics beacons), so
+    // anyone can inflate web_visits without bound on the single-machine SQLite
+    // file. Keep a rolling 90-day window; best-effort, never blocks startup.
+    let _ = sqlx::query("DELETE FROM web_visits WHERE created_at < datetime('now','-90 days')")
+        .execute(&db).await;
     // Deliberately early: every module below this point (blog, research,
     // billing, chat, anomaly, hallucination) writes to audit_log from its
     // own write paths once the state is constructed, so the table + its

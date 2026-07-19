@@ -18,12 +18,13 @@ primary_region = "fra"
   CONTENT_PATH = "/app/data/content.json"
   DB_PATH = "/app/data/app.db"
   REDIRECT_URI = "https://emergent-interaction-lab.fly.dev/auth/callback"
-  # DEV_MODE=true → backend auto-logs-in (no Google OAuth round-trip) so the
-  # Website Kit / Admin save path (PUT /api/content, get_session cookie) works
-  # on the live fly.dev machine without a Google token. The `emergent2026!`
-  # admin password is a frontend-only gate; the real session is the rfi_session
-  # cookie set by auth::google_login's dev_mode branch.
-  DEV_MODE = "true"
+  # SECURITY (C2, 2026-07-19): DEV_MODE MUST be false in production. When true,
+  # auth::google_login short-circuits BEFORE any Google OAuth / ALLOWED_EMAIL
+  # check and mints a valid rfi_session admin cookie for ANY caller — a live
+  # unauthenticated admin session + full site takeover via PUT /api/content.
+  # The Website Kit save path must authenticate via real Google OAuth, not this
+  # dev bypass. Do NOT set this to "true" on the live machine.
+  DEV_MODE = "false"
   # Belt-and-suspenders alongside the main.rs code fix (2026-07-10): without
   # RUST_LOG set, tracing_subscriber's EnvFilter::from_default_env()
   # defaults to ERROR-only, silently dropping every info!/warn! line in

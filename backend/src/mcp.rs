@@ -55,12 +55,27 @@ pub(crate) fn enabled(state: &AppState) -> bool {
     !state.mcp_token.is_empty()
 }
 
+/// Constant-time byte comparison — matches the discipline already used for the
+/// x-chat-secret (authz.rs) and the Stripe webhook HMAC (billing.rs). (M1,
+/// 2026-07-19: the MCP bearer was previously compared with a plain `==`, a
+/// timing side-channel on EIL_MCP_TOKEN even though it's loopback-only.)
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff: u8 = 0;
+    for (x, y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
 fn authorized(state: &AppState, headers: &HeaderMap) -> bool {
     headers
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
-        .map(|t| t.trim() == state.mcp_token)
+        .map(|t| constant_time_eq(t.trim().as_bytes(), state.mcp_token.as_bytes()))
         .unwrap_or(false)
 }
 

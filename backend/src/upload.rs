@@ -43,14 +43,17 @@ pub async fn upload_file(
             .and_then(|e| e.to_str())
             .unwrap_or("bin");
 
-        // Sanitize: only allow safe image extensions
+        // Sanitize: only allow safe raster/vector image extensions.
+        // SVG is DELIBERATELY excluded (L2, 2026-07-19): an uploaded SVG can
+        // carry inline <script>/<foreignObject> and files are served from
+        // /uploads, so a stored SVG is a stored-XSS vector the moment anything
+        // renders it inline instead of via <img>. Raster formats can't script.
         let ext = match ext.to_lowercase().as_str() {
             "jpg" | "jpeg" => "jpg",
             "png" => "png",
             "gif" => "gif",
             "webp" => "webp",
-            "svg" => "svg",
-            _ => return (StatusCode::BAD_REQUEST, "Only image files allowed").into_response(),
+            _ => return (StatusCode::BAD_REQUEST, "Only raster image files allowed (jpg, png, gif, webp)").into_response(),
         };
 
         let filename = format!("{}.{}", Uuid::new_v4(), ext);
