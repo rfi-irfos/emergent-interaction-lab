@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{AppState, SessionData};
+use crate::authz::constant_time_eq;
 
 const SESSION_COOKIE: &str = "rfi_session";
 
@@ -156,7 +157,54 @@ pub async fn logout(
         state.sessions.write().unwrap().remove(cookie.value());
     }
     let removed = jar.remove(Cookie::from(SESSION_COOKIE));
-    (removed, Redirect::to("/"))
+    (removed, Redirect::to("/")).into_response()
+}
+
+/// Cross-origin admin session mint for the GitHub Pages frontend.
+///
+/// WHY: `useAuth.login()` first verifies the password client-side against
+/// `VITE_ADMIN_HASH`, then calls `/auth/google` to get a backend session.
+/// On GitHub Pages that runs cross-origin to Fly, so the Google OAuth
+/// redirect chain cannot complete inside `fetch()` and the login silently
+/// fails with CORS/TypeError. This endpoint replaces that backend step:
+/// it uses the already-verified frontend password hash, checked against
+/// `ADMIN_PASSWORD_HASH`, and mints the same `rfi_session` cookie without
+/// touching Google OAuth at all.
+///
+/// SECURITY:
+/// - Never accepts plaintext passwords.
+/// - Fails closed when `ADMIN_PASSWORD_HASH` is unset.
+/// - Works cross-origin because there is no third-party redirect.
+#[derive(Deserialize)]
+pub struct AdminSessionRequest {
+    password_hash: String,
+}
+
+pub async fn admin_session(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Json(body): Json<AdminSessionRequest>,
+) -> impl IntoResponse {
+    let expected = std::env::var("ADMIN_PASSWORD_HASH").unwrap_or_default();
+    if expected.is_empty() {
+        tracing::warn!("ADMIN_PASSWORD_HASH missing — admin-session endpoint refused");
+        return (StatusCode::INTERNAL_SERVER_ERROR, "ADMIN_PASSWORD_HASH not configured").into_response();
+    }
+
+    if !constant_time_eq(body.password_hash.as_bytes(), expected.as_bytes()) {
+        return (StatusCode::UNAUTHORIZED, "invalid credentials").into_response();
+    }
+
+    let token = Uuid::new_v4().to_string();
+    state.sessions.write().unwrap().insert(token.clone(), SessionData {
+        email: "admin@pages".into(),
+        name: "Admin".into(),
+        picture: "".into(),
+    });
+
+    crate::auditlog::record(&state, "admin@pages", "admin_login", "Admin-Login via admin-session", None).await;
+
+    (jar.add(make_cookie(token)), Redirect::to("/admin")).into_response()
 }
 
 #[derive(Serialize)]

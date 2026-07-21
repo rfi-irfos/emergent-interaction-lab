@@ -358,6 +358,7 @@ async fn main() {
         // Auth
         .route("/auth/google", get(auth::google_login))
         .route("/auth/callback", get(auth::google_callback))
+        .route("/auth/admin-session", post(auth::admin_session))
         .route("/auth/logout", post(auth::logout))
         // API
         .route("/api/me", get(auth::get_me))

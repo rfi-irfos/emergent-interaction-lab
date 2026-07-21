@@ -20,12 +20,16 @@ export function useAuth() {
     if (!ADMIN_HASH) return false
     const hash = await sha256(password)
     if (hash !== ADMIN_HASH) return false
-    
-    // Local auth passed — now get the backend session cookie via DEV_MODE auto-login
+
+    // Frontend hash check passed — mint a backend session without Google OAuth.
+    // This keeps the Pages -> Fly cross-origin case alive, because it no longer
+    // depends on a fetch()-wrapped Google redirect chain that dies in CORS.
     try {
-      const res = await fetch(`${API_BASE}/auth/google`, {
-        method: 'GET',
+      const res = await fetch(`${API_BASE}/auth/admin-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ password_hash: hash }),
       })
       if (!res.ok) {
         console.error('Failed to establish backend session:', res.status)
@@ -35,7 +39,7 @@ export function useAuth() {
       console.error('Backend session request failed:', e)
       return false
     }
-    
+
     localStorage.setItem(SESSION_KEY, '1')
     setUser({ name: 'Admin', email: '', picture: '' })
     return true
