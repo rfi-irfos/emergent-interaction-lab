@@ -3001,6 +3001,26 @@ button { cursor: pointer; font-family: inherit; }
   box-shadow: 0 8px 24px rgba(0,0,0,.5);
 }
 
+/* Same "unclassed native control left theme-less" gap as the select rule
+   above, for plain text/date/search inputs (e.g. Changelog's filter bar) —
+   without `color-scheme: dark`, a browser's native date-picker calendar
+   icon/popup renders light-mode white regardless of everything else here
+   being dark. */
+.crm-body input[type="text"], .crm-body input[type="date"], .crm-body input[type="search"] {
+  font-family: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 8px;
+  border: 1px solid rgba(15,23,42,.14); background: #fff; color: #1f2937;
+  color-scheme: light;
+}
+.observatory-hud .crm-body input[type="text"], .observatory-hud .crm-body input[type="date"], .observatory-hud .crm-body input[type="search"] {
+  background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
+  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  color-scheme: dark;
+}
+.crm-body input[type="text"]:focus, .crm-body input[type="date"]:focus, .crm-body input[type="search"]:focus { outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12); }
+.observatory-hud .crm-body input[type="text"]:focus, .observatory-hud .crm-body input[type="date"]:focus, .observatory-hud .crm-body input[type="search"]:focus {
+  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2);
+}
+
 /* Simulation Center: side-by-side run comparison — no new schema needed,
    list_runs already returns everything a compare view needs. N-way, not
    just 2: column count comes from --obs-compare-cols (set inline per how
@@ -3888,9 +3908,19 @@ button { cursor: pointer; font-family: inherit; }
    snapped open to full height the instant data arrived, yanking the chat
    panel's size around ("box grows and shrinks, not smooth"). Pinning both
    halves removes that flicker entirely. */
+/* Chat gets whatever height is left over after the KPI strip's own natural
+   height — flex:1 on the chat panel + min-height:0 on this column does that
+   automatically, no fixed pixel number to keep in sync. The KPI strip used
+   to be pinned to a hardcoded 244px (from an old, taller 8-tile/2-row
+   layout) so the chat panel's calc() wouldn't shift around while typing —
+   real problem, wrong fix: every time the strip's own height changed since
+   (the row-1 header dedup, the eyebrow-label demotion), that number went
+   stale again and ate into the chat instead of giving it the space back.
+   flex-shrink:0 on the strip is enough to stop it from ever being squeezed
+   without needing to also hardcode its size. */
 .forschung-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-.forschung-kpis { height: 244px; max-height: 244px; overflow: hidden; }
-.forschung-view .chat-panel { height: calc(100% - 244px); min-height: 0; flex: 1 1 auto; }
+.forschung-kpis { flex-shrink: 0; overflow: hidden; }
+.forschung-view .chat-panel { flex: 1 1 auto; min-height: 0; }
 
 .chat-panel {
   flex: 1 1 auto; min-height: 0; display: flex; gap: 0; overflow: hidden; border-radius: 14px;
