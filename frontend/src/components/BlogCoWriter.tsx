@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { API_BASE } from '../lib/apiBase'
 import { adminFetch } from '../lib/adminApi'
 
 /// Real co-authoring, inline: "schreib mit Jarvis direkt im Modal" — no

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { API_BASE } from '../lib/apiBase'
 import { adminFetch } from '../lib/adminApi'
 import { TOOL_LABELS } from '../lib/toolLabels'
 import { renderMarkdown } from '../lib/markdown'
