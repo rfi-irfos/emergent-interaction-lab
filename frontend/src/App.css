@@ -2457,27 +2457,23 @@ button { cursor: pointer; font-family: inherit; }
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
 .crm-sidebar { width: 220px; flex-shrink: 0; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden; }
-/* Column now, not a single row: the brand/collapse row, then (when expanded)
-   a second row for the theme/view-site/logout actions that used to live in
-   their own separate top bar above the whole shell — folding them in here
-   reclaims that thin strip's height entirely. */
-.crm-sidebar-brand { display: flex; flex-direction: column; padding: 16px 14px 14px 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
-.crm-sidebar-brand-row { display: flex; align-items: center; gap: 11px; }
-.crm-sidebar-icon {
-  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; object-fit: contain;
-  background: rgba(255,255,255,.06); padding: 4px;
-}
-.crm-sidebar-brand-text { flex: 1; min-width: 0; }
-.crm-sidebar-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
-.crm-sidebar-sub { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; text-transform: uppercase; letter-spacing: .08em; }
+/* Brand/logo lives in the page-level topbar (.crm-topbar-brand-block) now —
+   this row is just the collapse toggle, right-aligned like the old brand
+   row's button was. */
+.crm-sidebar-collapse-row { display: flex; justify-content: flex-end; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .crm-sidebar-collapse-icon-btn {
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 26px; height: 26px; border-radius: 7px; border: none;
   background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
 }
 .crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
-.crm-sidebar.collapsed .crm-sidebar-brand { padding: 14px 0; gap: 8px; }
-.crm-sidebar.collapsed .crm-sidebar-brand-row { flex-direction: column; gap: 8px; }
+.crm-sidebar.collapsed .crm-sidebar-collapse-row { justify-content: center; }
+
+/* Brand/logo block in the page-level topbar, left of the section title. */
+.crm-topbar-brand-block { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 18px; margin-right: 18px; border-right: 1px solid rgba(0,0,0,.08); }
+.crm-topbar-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
+.crm-topbar-brand { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.observatory-hud .crm-topbar-brand-block, .gotham .crm-topbar-brand-block { border-right-color: rgba(255,255,255,.12); }
 
 /* min-height: 0 is load-bearing here, not decorative: a flex child's default
    min-height is auto (= as tall as its content demands), which silently
@@ -2523,8 +2519,12 @@ button { cursor: pointer; font-family: inherit; }
 .crm-sidebar.collapsed .crm-nav-group-label--tier { display: none; }
 
 .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.crm-page-topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 28px 16px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); width: 100%; }
-.crm-topbar-title { font-size: 20px; font-weight: 800; color: #0b1720; }
+.crm-page-topbar { display: flex; align-items: center; padding: 16px 28px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); width: 100%; }
+.crm-topbar-title { flex: 1; min-width: 0; font-size: 20px; font-weight: 800; color: #0b1720; }
+.crm-topbar-desc { font-size: 13px; font-weight: 500; color: rgba(11,23,32,.55); text-transform: none; letter-spacing: normal; }
+.observatory-hud .crm-topbar-desc { color: rgba(228,232,240,.5); }
+.gotham .crm-topbar-desc { color: var(--gotham-text-dim); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; text-transform: none; letter-spacing: normal; text-shadow: none; }
+.crm-topbar-actions { margin-left: 18px; }
 /* Always in the same top-right spot regardless of which section is open —
    the sidebar version of this (folded into the brand block) turned out to
    move around/disappear when the sidebar collapsed, which wasn't the ask. */
@@ -3066,7 +3066,7 @@ button { cursor: pointer; font-family: inherit; }
     radial-gradient(ellipse 700px 500px at 100% 10%, rgba(139,92,246,.04), transparent 55%),
     var(--hud-bg);
 }
-.observatory-hud .crm-page-topbar { background: rgba(10,14,23,.92); border-bottom: 1px solid rgba(150,156,170,.1); backdrop-filter: blur(6px); }
+.crm-page-topbar.observatory-hud { background: rgba(10,14,23,.92); border-bottom: 1px solid rgba(150,156,170,.1); backdrop-filter: blur(6px); }
 .observatory-hud .crm-topbar-title {
   color: #e4e8f0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700;
   letter-spacing: .01em;
@@ -3228,7 +3228,7 @@ button { cursor: pointer; font-family: inherit; }
   to { background-position-y: 0; }
 }
 .gotham .crm-body { position: relative; z-index: 2; color: var(--gotham-text); }
-.gotham .crm-page-topbar {
+.crm-page-topbar.gotham {
   background: rgba(7,11,18,.86); border-bottom: 1px solid var(--gotham-border);
   backdrop-filter: blur(8px); position: relative; z-index: 2;
 }
