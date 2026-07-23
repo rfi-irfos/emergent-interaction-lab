@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { SiteContent } from '../types/content'
 import { API_BASE } from '../lib/apiBase'
-import { authHeaders } from '../lib/adminApi'
+import { adminFetch } from '../lib/adminApi'
 import type { Lang } from './useLang'
 
 export function useContent(lang: Lang) {
@@ -65,9 +65,8 @@ export function useContent(lang: Lang) {
   const save = useCallback(async (updated: SiteContent): Promise<boolean> => {
     setSaving(true)
     try {
-      const res = await fetch(`${API_BASE}/api/content?lang=${lang}`, {
+      const res = await adminFetch(`/api/content?lang=${lang}`, {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated),
       })
@@ -93,9 +92,8 @@ export function useContent(lang: Lang) {
     try {
       const form = new FormData()
       form.append('file', file)
-      const res = await fetch(`${API_BASE}/api/upload`, {
+      const res = await adminFetch(`/api/upload`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       })
       if (!res.ok) {

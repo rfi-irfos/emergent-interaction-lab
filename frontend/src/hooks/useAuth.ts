@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 
 export interface User { name: string; email: string; picture: string }
@@ -15,6 +15,28 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(() =>
     localStorage.getItem(SESSION_KEY) ? { name: 'Admin', email: '', picture: '' } : null
   )
+
+  // Sessions live in an in-memory store on the backend — wiped on every
+  // redeploy/restart — but `rfi_admin_ok` in localStorage persists
+  // indefinitely. Without this check, a browser that was logged in before a
+  // deploy keeps showing the full admin shell with a cookie the backend no
+  // longer recognizes, and every fetch silently 401s until someone notices
+  // and manually logs out. Probe once on mount; only an explicit 401 clears
+  // the stale flag — a network hiccup (offline, brief backend blip) is left
+  // alone rather than logging someone out for something that isn't their
+  // session's fault.
+  useEffect(() => {
+    if (!user) return
+    fetch(`${API_BASE}/api/me`, { credentials: 'include' })
+      .then(res => {
+        if (!res.ok) {
+          localStorage.removeItem(SESSION_KEY)
+          setUser(null)
+        }
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const login = async (password: string): Promise<boolean> => {
     if (!ADMIN_HASH) return false

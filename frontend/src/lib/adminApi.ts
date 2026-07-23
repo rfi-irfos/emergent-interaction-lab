@@ -12,6 +12,20 @@ export function authHeaders(extra?: Record<string, string>): Record<string, stri
   return { ...(SECRET ? { 'x-chat-secret': SECRET } : {}), ...(extra ?? {}) }
 }
 
+/// The one place every authenticated request should go through. Always sends
+/// the `rfi_session` cookie cross-origin (GH Pages -> Fly are different
+/// origins, so `credentials: 'include'` is required on every single call —
+/// omitting it on even one call site silently drops the cookie and 401s) and
+/// still layers in `x-chat-secret` when it's configured (local dev / non-browser
+/// callers), matching what `authz::require_admin` accepts on the backend.
+export function adminFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: { ...authHeaders(), ...(init.headers as Record<string, string> | undefined) },
+  })
+}
+
 /// Shared fetch-on-mount pattern for the Observatory modules (10 near-identical
 /// "load this endpoint, show loading/empty/data states" call sites) — mirrors
 /// the analyticsData/analyticsLoading pattern already in AdminPanel.tsx, just
@@ -33,7 +47,7 @@ export function useAdminFetch<T>(path: string, deps: DependencyList = [], pollMs
     const load = (showLoading: boolean) => {
       if (showLoading) setLoading(true)
       setError(false)
-      fetch(`${API_BASE}${path}`, { headers: authHeaders() })
+      adminFetch(path)
         .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
         .then(d => { if (!cancelled) { setData(d); setLoading(false) } })
         .catch(() => { if (!cancelled) { setError(true); setLoading(false) } })

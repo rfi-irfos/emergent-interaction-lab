@@ -10,6 +10,7 @@ use sqlx::{QueryBuilder, Sqlite, SqlitePool};
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Customizable Dashboard system (plan §A2) — an admin-only canvas of
 /// draggable/resizable chart widgets picked from a fixed frontend catalog
@@ -118,8 +119,8 @@ fn widget_row_to_out(r: WidgetRow) -> WidgetOut {
 /// `GET /api/dashboards` — the picker/switcher list, deliberately thin (no
 /// nested widgets here — see `get_dashboard` below for the one-dashboard,
 /// widgets-included view).
-pub async fn list_dashboards(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_dashboards(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let rows: Vec<SummaryRow> = sqlx::query_as("SELECT id, name, is_default FROM dashboards ORDER BY created_at DESC")
@@ -142,8 +143,8 @@ pub struct CreateDashboardReq {
 /// no route in this phase to change that flag, matching the exact route
 /// list this module was scoped to (no speculative "set as default"
 /// endpoint).
-pub async fn create_dashboard(State(state): State<AppState>, headers: HeaderMap, Json(req): Json<CreateDashboardReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn create_dashboard(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Json(req): Json<CreateDashboardReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let name = req.name.trim();
@@ -164,8 +165,8 @@ pub async fn create_dashboard(State(state): State<AppState>, headers: HeaderMap,
 /// SQLite driver enables `PRAGMA foreign_keys` by default per connection —
 /// see `SqliteConnectOptions::default()` — so this is a real DB-enforced
 /// cascade, not something this handler has to do by hand).
-pub async fn delete_dashboard(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn delete_dashboard(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let _ = sqlx::query("DELETE FROM dashboards WHERE id = ?1").bind(&id).execute(&state.db).await;
@@ -176,8 +177,8 @@ pub async fn delete_dashboard(State(state): State<AppState>, headers: HeaderMap,
 /// `GET /api/dashboards/:id` — the dashboard plus every one of its widgets
 /// in one response (two queries total: one for the dashboard row, one for
 /// all its widgets — never one query per widget).
-pub async fn get_dashboard(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn get_dashboard(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let row: Option<DashboardRow> = sqlx::query_as("SELECT id, name, is_default, created_at, updated_at FROM dashboards WHERE id = ?1")
@@ -227,8 +228,8 @@ pub struct CreateWidgetReq {
 /// (checked explicitly, same `fetch_optional` + `NOT_FOUND` idiom as
 /// `billing::create_payment_link`'s product lookup) rather than letting an
 /// orphan-referencing insert fail on the foreign key constraint unchecked.
-pub async fn add_widget(State(state): State<AppState>, headers: HeaderMap, Path(dashboard_id): Path<String>, Json(req): Json<CreateWidgetReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn add_widget(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(dashboard_id): Path<String>, Json(req): Json<CreateWidgetReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -279,8 +280,8 @@ pub struct UpdateWidgetReq {
 /// field simply absent from the JSON leaves its column untouched, it is
 /// never required to resend the full widget object. An empty body (no
 /// recognized field present) is a no-op, not an error.
-pub async fn update_widget(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>, Json(req): Json<UpdateWidgetReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn update_widget(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>, Json(req): Json<UpdateWidgetReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -348,8 +349,8 @@ pub async fn update_widget(State(state): State<AppState>, headers: HeaderMap, Pa
 
 /// `DELETE /api/dashboards/widgets/:id` — removes a single widget; the
 /// owning dashboard and its other widgets are untouched.
-pub async fn delete_widget(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn delete_widget(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let _ = sqlx::query("DELETE FROM dashboard_widgets WHERE id = ?1").bind(&id).execute(&state.db).await;
@@ -433,7 +434,7 @@ mod tests {
     #[tokio::test]
     async fn create_dashboard_writes_a_real_row_and_list_returns_it() {
         let state = test_state().await;
-        let res = create_dashboard(AxState(state.clone()), HeaderMap::new(), Json(CreateDashboardReq { name: "Mein Dashboard".to_string() }))
+        let res = create_dashboard(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Json(CreateDashboardReq { name: "Mein Dashboard".to_string() }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -442,7 +443,7 @@ mod tests {
         let id = body["id"].as_str().unwrap().to_string();
         assert_eq!(dashboard_count(&state.db).await, 1);
 
-        let list_res = list_dashboards(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let list_res = list_dashboards(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let bytes = axum::body::to_bytes(list_res.into_body(), usize::MAX).await.unwrap();
         let list: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(list.len(), 1);
@@ -454,7 +455,7 @@ mod tests {
     #[tokio::test]
     async fn create_dashboard_rejects_an_empty_name() {
         let state = test_state().await;
-        let res = create_dashboard(AxState(state.clone()), HeaderMap::new(), Json(CreateDashboardReq { name: "   ".to_string() }))
+        let res = create_dashboard(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Json(CreateDashboardReq { name: "   ".to_string() }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
@@ -464,7 +465,7 @@ mod tests {
     #[tokio::test]
     async fn get_dashboard_returns_404_for_an_unknown_id() {
         let state = test_state().await;
-        let res = get_dashboard(AxState(state.clone()), HeaderMap::new(), Path("no-such-id".to_string())).await.into_response();
+        let res = get_dashboard(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path("no-such-id".to_string())).await.into_response();
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 
@@ -473,20 +474,20 @@ mod tests {
     #[tokio::test]
     async fn get_dashboard_nests_its_widgets_in_one_response() {
         let state = test_state().await;
-        let create_res = create_dashboard(AxState(state.clone()), HeaderMap::new(), Json(CreateDashboardReq { name: "Board".to_string() }))
+        let create_res = create_dashboard(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Json(CreateDashboardReq { name: "Board".to_string() }))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(create_res.into_body(), usize::MAX).await.unwrap();
         let dash_id = serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["id"].as_str().unwrap().to_string();
 
-        add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
+        add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
-        add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("cei_gauge")))
+        add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("cei_gauge")))
             .await
             .into_response();
 
-        let res = get_dashboard(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone())).await.into_response();
+        let res = get_dashboard(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone())).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -502,7 +503,7 @@ mod tests {
     #[tokio::test]
     async fn add_widget_returns_404_for_an_unknown_dashboard() {
         let state = test_state().await;
-        let res = add_widget(AxState(state.clone()), HeaderMap::new(), Path("ghost-dashboard".to_string()), Json(create_widget_req("level_mix")))
+        let res = add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path("ghost-dashboard".to_string()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
@@ -516,7 +517,7 @@ mod tests {
         let state = test_state().await;
         let dash_id = Uuid::new_v4().to_string();
         sqlx::query("INSERT INTO dashboards (id, name) VALUES (?1, 'Board')").bind(&dash_id).execute(&state.db).await.unwrap();
-        let add_res = add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
+        let add_res = add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(add_res.into_body(), usize::MAX).await.unwrap();
@@ -525,7 +526,7 @@ mod tests {
         // Only patch the title — color_key, catalog_key, and every
         // position/size field must survive exactly as they were.
         let patch_req = UpdateWidgetReq { title: Some("Neuer Titel".to_string()), ..Default::default() };
-        let res = update_widget(AxState(state.clone()), HeaderMap::new(), Path(widget_id.clone()), Json(patch_req)).await.into_response();
+        let res = update_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(widget_id.clone()), Json(patch_req)).await.into_response();
         assert_eq!(res.status(), StatusCode::NO_CONTENT);
 
         let row: (String, Option<String>, Option<String>, String, i64, i64, i64, i64) = sqlx::query_as(
@@ -549,7 +550,7 @@ mod tests {
         let state = test_state().await;
         let dash_id = Uuid::new_v4().to_string();
         sqlx::query("INSERT INTO dashboards (id, name) VALUES (?1, 'Board')").bind(&dash_id).execute(&state.db).await.unwrap();
-        let add_res = add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
+        let add_res = add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(add_res.into_body(), usize::MAX).await.unwrap();
@@ -562,7 +563,7 @@ mod tests {
             height: Some(5),
             ..Default::default()
         };
-        update_widget(AxState(state.clone()), HeaderMap::new(), Path(widget_id.clone()), Json(patch_req)).await.into_response();
+        update_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(widget_id.clone()), Json(patch_req)).await.into_response();
 
         let row: (i64, i64, i64, i64, Option<String>) = sqlx::query_as(
             "SELECT position_x, position_y, width, height, title FROM dashboard_widgets WHERE id = ?1",
@@ -579,13 +580,13 @@ mod tests {
         let state = test_state().await;
         let dash_id = Uuid::new_v4().to_string();
         sqlx::query("INSERT INTO dashboards (id, name) VALUES (?1, 'Board')").bind(&dash_id).execute(&state.db).await.unwrap();
-        let add_res = add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
+        let add_res = add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(add_res.into_body(), usize::MAX).await.unwrap();
         let widget_id = serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["id"].as_str().unwrap().to_string();
 
-        let res = update_widget(AxState(state.clone()), HeaderMap::new(), Path(widget_id), Json(UpdateWidgetReq::default())).await.into_response();
+        let res = update_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(widget_id), Json(UpdateWidgetReq::default())).await.into_response();
         assert_eq!(res.status(), StatusCode::NO_CONTENT);
     }
 
@@ -596,15 +597,15 @@ mod tests {
         let state = test_state().await;
         let dash_id = Uuid::new_v4().to_string();
         sqlx::query("INSERT INTO dashboards (id, name) VALUES (?1, 'Board')").bind(&dash_id).execute(&state.db).await.unwrap();
-        add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
+        add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
-        add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("cei_gauge")))
+        add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("cei_gauge")))
             .await
             .into_response();
         assert_eq!(widget_count(&state.db).await, 2, "sanity: both widgets exist before the delete");
 
-        let res = delete_dashboard(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone())).await.into_response();
+        let res = delete_dashboard(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone())).await.into_response();
         assert_eq!(res.status(), StatusCode::NO_CONTENT);
 
         assert_eq!(dashboard_count(&state.db).await, 0, "the dashboard row itself must be gone");
@@ -616,16 +617,16 @@ mod tests {
         let state = test_state().await;
         let dash_id = Uuid::new_v4().to_string();
         sqlx::query("INSERT INTO dashboards (id, name) VALUES (?1, 'Board')").bind(&dash_id).execute(&state.db).await.unwrap();
-        let add_res_1 = add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
+        let add_res_1 = add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(add_res_1.into_body(), usize::MAX).await.unwrap();
         let widget_id_1 = serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["id"].as_str().unwrap().to_string();
-        add_widget(AxState(state.clone()), HeaderMap::new(), Path(dash_id.clone()), Json(create_widget_req("cei_gauge")))
+        add_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(dash_id.clone()), Json(create_widget_req("cei_gauge")))
             .await
             .into_response();
 
-        let res = delete_widget(AxState(state.clone()), HeaderMap::new(), Path(widget_id_1)).await.into_response();
+        let res = delete_widget(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(widget_id_1)).await.into_response();
         assert_eq!(res.status(), StatusCode::NO_CONTENT);
         assert_eq!(widget_count(&state.db).await, 1, "only the targeted widget must be removed");
         assert_eq!(dashboard_count(&state.db).await, 1, "the owning dashboard must be untouched");
@@ -641,7 +642,7 @@ mod tests {
     async fn list_dashboards_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = list_dashboards(AxState(state), HeaderMap::new()).await.into_response();
+        let res = list_dashboards(AxState(state), HeaderMap::new(), CookieJar::new()).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -649,7 +650,7 @@ mod tests {
     async fn create_dashboard_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = create_dashboard(AxState(state), HeaderMap::new(), Json(CreateDashboardReq { name: "X".to_string() }))
+        let res = create_dashboard(AxState(state), HeaderMap::new(), CookieJar::new(), Json(CreateDashboardReq { name: "X".to_string() }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
@@ -659,7 +660,7 @@ mod tests {
     async fn get_dashboard_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = get_dashboard(AxState(state), HeaderMap::new(), Path("some-id".to_string())).await.into_response();
+        let res = get_dashboard(AxState(state), HeaderMap::new(), CookieJar::new(), Path("some-id".to_string())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -667,7 +668,7 @@ mod tests {
     async fn delete_dashboard_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = delete_dashboard(AxState(state), HeaderMap::new(), Path("some-id".to_string())).await.into_response();
+        let res = delete_dashboard(AxState(state), HeaderMap::new(), CookieJar::new(), Path("some-id".to_string())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -675,7 +676,7 @@ mod tests {
     async fn add_widget_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = add_widget(AxState(state), HeaderMap::new(), Path("some-id".to_string()), Json(create_widget_req("level_mix")))
+        let res = add_widget(AxState(state), HeaderMap::new(), CookieJar::new(), Path("some-id".to_string()), Json(create_widget_req("level_mix")))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
@@ -685,7 +686,7 @@ mod tests {
     async fn update_widget_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = update_widget(AxState(state), HeaderMap::new(), Path("some-id".to_string()), Json(UpdateWidgetReq::default()))
+        let res = update_widget(AxState(state), HeaderMap::new(), CookieJar::new(), Path("some-id".to_string()), Json(UpdateWidgetReq::default()))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
@@ -695,7 +696,7 @@ mod tests {
     async fn delete_widget_requires_admin_auth() {
         let mut state = test_state().await;
         locked_state(&mut state);
-        let res = delete_widget(AxState(state), HeaderMap::new(), Path("some-id".to_string())).await.into_response();
+        let res = delete_widget(AxState(state), HeaderMap::new(), CookieJar::new(), Path("some-id".to_string())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders } from '../../lib/adminApi'
+import { adminFetch } from '../../lib/adminApi'
 import { HudSkeleton } from './HudSkeleton'
 
 interface SignalRow { id: string; pattern: string; observation: string; scope: string | null; source_conversation_id: string | null; created_at: string }
@@ -34,7 +34,7 @@ function truncate(text: string, len = 160): string {
 // from a genuinely empty knowledge base.
 async function fetchJson(path: string): Promise<{ data: any; error: boolean }> {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() })
+    const res = await adminFetch(`${path}`, {})
     return res.ok ? { data: await res.json(), error: false } : { data: null, error: true }
   } catch {
     return { data: null, error: true }

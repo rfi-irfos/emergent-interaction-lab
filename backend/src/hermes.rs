@@ -161,8 +161,9 @@ async fn ensure_session(state: &AppState, conversation_id: &str) -> Result<(), S
 pub async fn engines(
     axum::extract::State(state): axum::extract::State<AppState>,
     headers: axum::http::HeaderMap,
+    jar: axum_extra::extract::cookie::CookieJar,
 ) -> impl IntoResponse {
-    if !crate::authz::require_admin(&state, &headers) {
+    if !crate::authz::require_admin(&state, &headers, &jar) {
         return axum::http::StatusCode::UNAUTHORIZED.into_response();
     }
     let mut available = vec!["builtin"];
@@ -745,7 +746,7 @@ mod tests {
 
         let resp = crate::chat::stream_chat(
             axum::extract::State(state.clone()),
-            axum::http::HeaderMap::new(),
+            axum::http::HeaderMap::new(), axum_extra::extract::cookie::CookieJar::new(),
             AxJson(req),
         )
         .await

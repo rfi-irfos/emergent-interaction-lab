@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { groupByDate, parseServerTimestamp } from '../../lib/dateGroups'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
@@ -65,9 +65,9 @@ export function Inbox() {
   const setStatus = async (id: string, status: string) => {
     setUpdatingId(id)
     try {
-      await fetch(`${API_BASE}/api/contact/messages/${id}`, {
+      await adminFetch(`/api/contact/messages/${id}`, {
         method: 'PATCH',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       })
       setRefreshKey(k => k + 1)

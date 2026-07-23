@@ -10,6 +10,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// The one repo this endpoint reports on — Simeon confirmed via `git remote
 /// -v` this is `rfi-irfos/emergent-interaction-lab`. Not configurable via env
@@ -133,10 +134,10 @@ pub struct DeployLogReq {
 /// happened.
 pub async fn log_deploy(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Json(body): Json<DeployLogReq>,
 ) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     if body.target.trim().is_empty() {
@@ -294,8 +295,8 @@ pub(crate) async fn fetch_pulls(state: &AppState) -> Result<Vec<GhPull>, axum::r
 /// (for `fly deploy`, which is not a GitHub-native event). Degrades honestly
 /// instead of crashing or silently returning nothing when GITHUB_ACTIVITY_TOKEN
 /// isn't configured or a GitHub call fails.
-pub async fn agent_activity(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn agent_activity(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -549,7 +550,7 @@ mod tests {
         .await
         .unwrap();
 
-        let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new())
+        let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new(), CookieJar::new())
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -577,7 +578,7 @@ mod tests {
 
         log_deploy(
             axum::extract::State(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(DeployLogReq { target: "fly".to_string(), version: Some("v1".to_string()), commit_sha: None }),
         )
         .await;
@@ -654,7 +655,7 @@ mod tests {
             .await
             .unwrap();
 
-        let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new())
+        let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new(), CookieJar::new())
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -674,14 +675,14 @@ mod tests {
 
         let log_res = log_deploy(
             axum::extract::State(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(DeployLogReq { target: "fly".to_string(), version: Some("v7".to_string()), commit_sha: Some("abc123".to_string()) }),
         )
         .await
         .into_response();
         assert_eq!(log_res.status(), StatusCode::OK);
 
-        let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new())
+        let res = agent_activity(axum::extract::State(state.clone()), HeaderMap::new(), CookieJar::new())
             .await
             .into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
@@ -697,7 +698,7 @@ mod tests {
         let state = test_state("http://127.0.0.1:1".to_string(), String::new()).await;
         let res = log_deploy(
             axum::extract::State(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(DeployLogReq { target: "  ".to_string(), version: None, commit_sha: None }),
         )
         .await

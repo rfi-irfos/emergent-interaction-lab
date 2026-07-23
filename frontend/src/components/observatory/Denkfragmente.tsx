@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { HudGrid, HudTile } from './Hud'
@@ -283,8 +283,8 @@ function IntrachatLoop({ conversationId }: { conversationId: string }) {
     let cancelled = false
     setLoading(true)
     Promise.all([
-      fetch(`${API_BASE}/api/observatory/emergence/signals?limit=200`, { headers: authHeaders() }).then(r => r.ok ? r.json() : []),
-      fetch(`${API_BASE}/api/observatory/snapshots?range=all&limit=200`, { headers: authHeaders() }).then(r => r.ok ? r.json() : { items: [] }),
+      adminFetch(`/api/observatory/emergence/signals?limit=200`, {}).then(r => r.ok ? r.json() : []),
+      adminFetch(`/api/observatory/snapshots?range=all&limit=200`, {}).then(r => r.ok ? r.json() : { items: [] }),
     ]).then(([sig, snap]: [LoopSignal[], { items: LoopSnapshot[] }]) => {
       if (cancelled) return
       setSignals(sig)
@@ -332,7 +332,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
 
   useEffect(() => {
     let cancelled = false
-    fetch(`${API_BASE}/api/chat/conversations?kind=chat`, { headers: authHeaders() })
+    adminFetch(`/api/chat/conversations?kind=chat`, {})
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then((list: ConversationSummary[]) => {
         if (cancelled) return
@@ -356,7 +356,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
     let cancelled = false
     setSeqLoading(true)
     setSeqError(false)
-    fetch(`${API_BASE}/api/observatory/fragments?conversation_id=${encodeURIComponent(selectedConv)}`, { headers: authHeaders() })
+    adminFetch(`/api/observatory/fragments?conversation_id=${encodeURIComponent(selectedConv)}`, {})
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json() })
       .then((page: Fragment[]) => { if (!cancelled) { setFragments(page); setSeqLoading(false) } })
       .catch(() => { if (!cancelled) { setSeqError(true); setSeqLoading(false) } })

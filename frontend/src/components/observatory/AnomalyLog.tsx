@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders } from '../../lib/adminApi'
+import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
@@ -66,7 +66,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) })
       if (kindFilter) params.set('kind', kindFilter)
-      const res = await fetch(`${API_BASE}/api/observatory/anomalies?${params}`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/observatory/anomalies?${params}`, {})
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
       const page: Anomaly[] = await res.json()
@@ -96,8 +96,6 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
   return (
     <div className="obs-panel">
       <HudSectionHeader
-        title="Anomalie-Log"
-        sub="Vier mechanische Trip-Wires pro Chat-Turn — von einem Menschen zu prüfen, nie ein zertifizierter Detektor."
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | Anomaly['kind'])} style={{ fontSize: 12, padding: '5px 8px' }}>

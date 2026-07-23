@@ -69,8 +69,6 @@ export function AgentActivity() {
       )}
 
       <HudSectionHeader
-        title="Agent-Aktivität"
-        sub="PRs, Commits, Workflows, Deploys"
         actions={
           data.items.length > 0 ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

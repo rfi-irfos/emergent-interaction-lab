@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders } from '../../lib/adminApi'
+import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import type { AdminSection } from '../../types/admin'
 import type { SignalRef } from './SimulationCenter'
@@ -130,9 +130,9 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
       try { paramsJson = JSON.parse(parameters) } catch { paramsJson = { note: parameters } }
     }
     try {
-      await fetch(`${API_BASE}/api/simulation/runs`, {
+      await adminFetch(`/api/simulation/runs`, {
         method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           hypothesis,
           parameters: paramsJson,
@@ -160,7 +160,7 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
     if (!window.confirm(`„${hypothesisText}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return
     setDeletingId(id)
     try {
-      await fetch(`${API_BASE}/api/simulation/runs/${id}`, { method: 'DELETE', headers: authHeaders() })
+      await adminFetch(`/api/simulation/runs/${id}`, { method: 'DELETE' })
       onRefresh()
     } finally {
       setDeletingId(null)

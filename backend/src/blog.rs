@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 pub async fn init_schema(db: &SqlitePool) {
     sqlx::query(
@@ -151,8 +152,8 @@ pub async fn revise_draft(state: &AppState, id: &str, title: Option<&str>, body:
     }
 }
 
-pub async fn list_posts(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn list_posts(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let rows: Vec<PostRow> = sqlx::query_as(
         "SELECT id, title, body, status, source, created_at, updated_at, published_at, source_conversation_id, images FROM blog_posts ORDER BY updated_at DESC",
     )
@@ -165,14 +166,14 @@ pub async fn list_posts(State(state): State<AppState>, headers: HeaderMap) -> im
 #[derive(Deserialize)]
 pub struct CreatePostReq { title: String, body: String, images: Option<Vec<String>> }
 
-pub async fn create_post(State(state): State<AppState>, headers: HeaderMap, Json(req): Json<CreatePostReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn create_post(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Json(req): Json<CreatePostReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let id = insert_post(&state, &req.title, &req.body, "human", None, req.images).await;
     Json(serde_json::json!({ "id": id })).into_response()
 }
 
-pub async fn get_post(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn get_post(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let row: Option<PostRow> = sqlx::query_as(
         "SELECT id, title, body, status, source, created_at, updated_at, published_at, source_conversation_id, images FROM blog_posts WHERE id = ?1",
     )
@@ -189,8 +190,8 @@ pub async fn get_post(State(state): State<AppState>, headers: HeaderMap, Path(id
 #[derive(Deserialize)]
 pub struct UpdatePostReq { title: Option<String>, body: Option<String>, status: Option<String>, images: Option<Vec<String>> }
 
-pub async fn update_post(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>, Json(req): Json<UpdatePostReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn update_post(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>, Json(req): Json<UpdatePostReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     if let Some(t) = &req.title {
         let _ = sqlx::query("UPDATE blog_posts SET title = ?1, updated_at = datetime('now') WHERE id = ?2").bind(t).bind(&id).execute(&state.db).await;
     }
@@ -212,8 +213,8 @@ pub async fn update_post(State(state): State<AppState>, headers: HeaderMap, Path
     StatusCode::NO_CONTENT.into_response()
 }
 
-pub async fn delete_post(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn delete_post(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let _ = sqlx::query("DELETE FROM blog_posts WHERE id = ?1").bind(&id).execute(&state.db).await;
     crate::auditlog::record(&state, "admin", "blog_post_deleted", "Blogbeitrag gelöscht", Some(serde_json::json!({"id": id}))).await;
     StatusCode::NO_CONTENT.into_response()
@@ -223,8 +224,8 @@ pub async fn delete_post(State(state): State<AppState>, headers: HeaderMap, Path
 /// promoting into content.json's news.items and pushing via GitHub) happens
 /// client-side when a human clicks "Veröffentlichen" — the backend has no
 /// GitHub credentials, see content.rs / frontend/src/lib/github.ts.
-pub async fn publish_post(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn publish_post(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let _ = sqlx::query("UPDATE blog_posts SET status = 'published', published_at = datetime('now'), updated_at = datetime('now') WHERE id = ?1")
         .bind(&id)
         .execute(&state.db)
@@ -283,7 +284,7 @@ mod tests {
     async fn create(state: &AppState, title: &str, images: Option<Vec<String>>) -> String {
         let res = create_post(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Json(CreatePostReq { title: title.to_string(), body: "body".to_string(), images }),
         )
         .await
@@ -295,7 +296,7 @@ mod tests {
     }
 
     async fn get(state: &AppState, id: &str) -> serde_json::Value {
-        let res = get_post(AxState(state.clone()), HeaderMap::new(), Path(id.to_string())).await.into_response();
+        let res = get_post(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id.to_string())).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         serde_json::from_slice(&bytes).unwrap()
@@ -306,7 +307,7 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "mit Bildern", Some(vec!["/uploads/a.png".to_string(), "/uploads/b.jpg".to_string()])).await;
 
-        let res = list_posts(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let res = list_posts(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let posts: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
@@ -367,7 +368,7 @@ mod tests {
 
         let res = update_post(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(id.clone()),
             Json(UpdatePostReq { title: None, body: None, status: None, images: Some(vec!["/uploads/added.png".to_string()]) }),
         )
@@ -390,7 +391,7 @@ mod tests {
 
         let res = update_post(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(id.clone()),
             Json(UpdatePostReq { title: None, body: None, status: None, images: Some(vec![]) }),
         )

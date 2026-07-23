@@ -5,7 +5,7 @@ import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { useAdminFetch } from '../lib/adminApi'
-import { OBSERVATORY_MODULES, SECTION_LABELS, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
+import { OBSERVATORY_MODULES, SECTION_COPY, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
 import { Analytics } from './observatory/Analytics'
 import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
@@ -209,11 +209,47 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
   const editingNewsItem = editingNews ? draft.news?.items?.find(n => n.id === editingNews) : null
 
+  // Same classes `.crm-main` carries below — applied here too so the
+  // page-level top bar (a sibling of `.crm-layout`, not a child of
+  // `.crm-main` anymore) themes consistently with the section it's
+  // showing, instead of staying stuck in the light theme.
+  const isObservatoryHud = crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog'
+
   return (
-    <div className="builder">
+    <div className={`builder gotham ${isObservatoryHud ? 'observatory-hud' : ''}`}>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChangeAll} />
 
       {/* ── BODY: one permanent shell, no more Builder/Verwaltung mode split ── */}
+      <div className="crm-page-topbar">
+        <div className="crm-topbar-title">
+          {SECTION_COPY[adminSection].title}
+          {SECTION_COPY[adminSection].description && <span className="crm-topbar-desc">: {SECTION_COPY[adminSection].description}</span>}
+        </div>
+        <div className="crm-topbar-actions">
+          {/* Chat affordance moved into the topbar (replaces the old
+              floating bottom-right AgentDock FAB). Triggers the Forschung
+              tab, where the real Jarvis chat lives. */}
+          <button className="topbar-icon-btn" onClick={() => setAdminSection('forschung')} title="Zu Jarvis (Forschung)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </button>
+          <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
+            {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
+          </button>
+          <a
+            href={window.location.origin + window.location.pathname}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="topbar-icon-btn"
+            title="Live-Seite ansehen"
+          >
+            <IconViewSite />
+          </a>
+          <button className="topbar-icon-btn topbar-icon-btn-danger" onClick={onLogout} title="Logout">
+            <IconLogout />
+          </button>
+        </div>
+      </div>
+
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="crm-sidebar-brand">
@@ -286,32 +322,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
         </aside>
 
         <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
-          <div className="crm-topbar">
-            <div className="crm-topbar-title">{SECTION_LABELS[adminSection]}</div>
-            <div className="crm-topbar-actions">
-              {/* Chat affordance moved into the topbar (replaces the old
-                  floating bottom-right AgentDock FAB). Triggers the Forschung
-                  tab, where the real Jarvis chat lives. */}
-              <button className="topbar-icon-btn" onClick={() => setAdminSection('forschung')} title="Zu Jarvis (Forschung)">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-              </button>
-              <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
-                {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
-              </button>
-              <a
-                href={window.location.origin + window.location.pathname}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="topbar-icon-btn"
-                title="Live-Seite ansehen"
-              >
-                <IconViewSite />
-              </a>
-              <button className="topbar-icon-btn topbar-icon-btn-danger" onClick={onLogout} title="Logout">
-                <IconLogout />
-              </button>
-            </div>
-          </div>
           <div className="crm-body">
             {adminSection === 'website-kit' && (
               <WebsiteKit

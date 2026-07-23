@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
-import { authHeaders } from '../lib/adminApi'
+import { adminFetch } from '../lib/adminApi'
 import { TOOL_LABELS } from '../lib/toolLabels'
 import { renderMarkdown } from '../lib/markdown'
 import { groupByDate, type DateGroup } from '../lib/dateGroups'
@@ -106,9 +106,9 @@ async function streamChat(
 ) {
   let res: Response
   try {
-    res = await fetch(`${API_BASE}/api/chat/stream`, {
+    res = await adminFetch(`/api/chat/stream`, {
       method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         conversation_id: conversationId,
         message,
@@ -585,9 +585,9 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   // onDone, etc. — always sees the latest search term, never a stale one).
   const refreshConversations = () => {
     const q = debouncedSearch.trim()
-    const url = `${API_BASE}/api/chat/conversations${q ? `?q=${encodeURIComponent(q)}` : ''}`
+    const url = `/api/chat/conversations${q ? `?q=${encodeURIComponent(q)}` : ''}`
     const reqToken = ++latestListRequestRef.current
-    fetch(url, { headers: authHeaders() })
+    adminFetch(url)
       .then(r => {
         if (reqToken !== latestListRequestRef.current) return // superseded by a newer refresh
         // A non-200 (e.g. a transient 500 from SQLite lock contention, see
@@ -601,7 +601,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       .catch(() => {})
   }
   const refreshDocuments = () => {
-    fetch(`${API_BASE}/api/chat/documents`, { headers: authHeaders() })
+    adminFetch(`/api/chat/documents`, {})
       .then(r => r.ok ? r.json() : [])
       .then(setDocuments)
       .catch(() => {})
@@ -643,9 +643,9 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     setMemoryError(null)
     try {
       if (!memoryConversationIdRef.current) {
-        const res = await fetch(`${API_BASE}/api/chat/conversations`, {
+        const res = await adminFetch(`/api/chat/conversations`, {
           method: 'POST',
-          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: '⬡ Memory-Browser', kind: 'memory-browser' }),
         })
         if (!res.ok) throw new Error('conversation')
@@ -697,7 +697,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   // did before the engine fork existed.
   useEffect(() => {
     let cancelled = false
-    fetch(`${API_BASE}/api/chat/engines`, { headers: authHeaders() })
+    adminFetch(`/api/chat/engines`, {})
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled || !data) return
@@ -727,7 +727,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     // synchronously, unlike activeId which lags a render behind) makes A's
     // stale .then() a no-op instead of overwriting B's messages.
     latestConvRequestRef.current = id
-    fetch(`${API_BASE}/api/chat/conversations/${id}`, { headers: authHeaders() })
+    adminFetch(`/api/chat/conversations/${id}`, {})
       .then(r => r.ok ? r.json() : [])
       .then(data => { if (latestConvRequestRef.current === id) setMessages(data) })
       .catch(() => { if (latestConvRequestRef.current === id) setMessages([]) })
@@ -772,9 +772,9 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
 
   async function ensureConversation(): Promise<string | null> {
     if (activeId) return activeId
-    const res = await fetch(`${API_BASE}/api/chat/conversations`, {
+    const res = await adminFetch(`/api/chat/conversations`, {
       method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     })
     if (!res.ok) return null
@@ -937,9 +937,9 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     const text = snapshot.text.trim()
     if (text) {
       try {
-        await fetch(`${API_BASE}/api/chat/conversations/${snapshot.conversationId}/interrupted-message`, {
+        await adminFetch(`/api/chat/conversations/${snapshot.conversationId}/interrupted-message`, {
           method: 'POST',
-          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: text }),
         })
       } catch { /* best effort — the abort itself already stopped the stream either way */ }
@@ -972,7 +972,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       return idx === -1 ? m : m.slice(0, idx)
     })
     try {
-      await fetch(`${API_BASE}/api/chat/conversations/${convId}/messages/${id}`, { method: 'DELETE', headers: authHeaders() })
+      await adminFetch(`/api/chat/conversations/${convId}/messages/${id}`, { method: 'DELETE' })
     } catch { /* best effort — send() below still continues the conversation even if the server-side cleanup failed */ }
     refreshConversations()
     send(text)
@@ -997,7 +997,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   }, [])
 
   async function deleteConversation(id: string) {
-    await fetch(`${API_BASE}/api/chat/conversations/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await adminFetch(`/api/chat/conversations/${id}`, { method: 'DELETE' })
     if (activeId === id) startNewConversation()
     refreshConversations()
   }
@@ -1006,7 +1006,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
     const form = new FormData()
     form.append('file', file)
     try {
-      const res = await fetch(`${API_BASE}/api/chat/documents`, { method: 'POST', headers: authHeaders(), body: form })
+      const res = await adminFetch(`/api/chat/documents`, { method: 'POST', body: form })
       return res.ok
     } catch {
       return false
@@ -1037,7 +1037,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   }
 
   async function deleteDocument(id: string) {
-    await fetch(`${API_BASE}/api/chat/documents/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await adminFetch(`/api/chat/documents/${id}`, { method: 'DELETE' })
     refreshDocuments()
   }
 

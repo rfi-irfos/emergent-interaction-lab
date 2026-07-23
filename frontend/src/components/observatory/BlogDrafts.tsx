@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
@@ -67,12 +67,12 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
   })
 
   const refresh = async () => {
-    const res = await fetch(`${API_BASE}/api/blog/posts`, { headers: authHeaders() })
+    const res = await adminFetch(`/api/blog/posts`, {})
     setPosts(await res.json())
   }
 
   const publish = async (post: BlogPost) => {
-    await fetch(`${API_BASE}/api/blog/posts/${post.id}/publish`, { method: 'POST', headers: authHeaders() })
+    await adminFetch(`/api/blog/posts/${post.id}/publish`, { method: 'POST' })
     onPromoteToSite(post.title, post.body)
     await refresh()
   }
@@ -85,7 +85,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
   // deliberate second step before an unrecoverable action.
   const remove = async (id: string, title: string) => {
     if (!window.confirm(`„${title}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return
-    await fetch(`${API_BASE}/api/blog/posts/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await adminFetch(`/api/blog/posts/${id}`, { method: 'DELETE' })
     await refresh()
   }
 
@@ -102,9 +102,9 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
     if (!editTitle.trim() || savingEdit) return
     setSavingEdit(true)
     try {
-      await fetch(`${API_BASE}/api/blog/posts/${id}`, {
+      await adminFetch(`/api/blog/posts/${id}`, {
         method: 'PUT',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: editTitle, body: editBody, images: editImages }),
       })
       setEditingId(null)
@@ -126,7 +126,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
     const form = new FormData()
     form.append('file', file)
     try {
-      const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', headers: authHeaders(), body: form })
+      const res = await adminFetch(`/api/upload`, { method: 'POST', body: form })
       if (!res.ok) return null
       const data = await res.json()
       return typeof data.url === 'string' ? data.url : null

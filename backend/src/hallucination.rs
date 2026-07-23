@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Hallucination Tracker v1 — distinguishes real, legitimate uncertainty
 /// (Laura's own project explicitly values honest "I don't know"/"this is
@@ -328,8 +329,8 @@ struct CheckOut {
 /// `simulation::list_runs` / `billing::list_orders`. Deliberately returns a
 /// plain, generic row shape (no UI-specific fields baked in) so a future
 /// consumer (e.g. the anomaly watchdog) can reuse it as-is.
-pub async fn list_checks(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListChecksQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_checks(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListChecksQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let limit = q.limit.unwrap_or(DEFAULT_CHECKS_LIMIT).clamp(1, MAX_CHECKS_LIMIT);
@@ -635,7 +636,7 @@ mod tests {
         }
         let res = list_checks(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListChecksQuery { limit: Some(2), offset: None, verdict: None }),
         )
         .await
@@ -656,7 +657,7 @@ mod tests {
 
         let res = list_checks(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListChecksQuery { limit: None, offset: None, verdict: Some("mismatch".to_string()) }),
         )
         .await
@@ -672,7 +673,7 @@ mod tests {
     async fn list_checks_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = list_checks(AxState(state), HeaderMap::new(), AxQuery(ListChecksQuery { limit: None, offset: None, verdict: None }))
+        let res = list_checks(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(ListChecksQuery { limit: None, offset: None, verdict: None }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);

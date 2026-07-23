@@ -4,11 +4,13 @@ use serde_json::json;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use axum_extra::extract::cookie::CookieJar;
+
 use crate::{authz::require_admin, AppState};
 
 macro_rules! guard {
-    ($state:expr, $headers:expr) => {
-        if !require_admin(&$state, &$headers) {
+    ($state:expr, $headers:expr, $jar:expr) => {
+        if !require_admin(&$state, &$headers, &$jar) {
             return StatusCode::UNAUTHORIZED.into_response();
         }
     };
@@ -69,8 +71,8 @@ pub struct BehaviorQuery {
     pub range: Option<String>,
 }
 
-pub async fn behavior(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<BehaviorQuery>) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn behavior(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<BehaviorQuery>) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
 
     let (range_label, range_days) = resolve_range(q.range.as_deref());
@@ -129,8 +131,8 @@ pub struct InformationQuery {
     pub gap_only: Option<bool>,
 }
 
-pub async fn information(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<InformationQuery>) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn information(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<InformationQuery>) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
     let gap_only = q.gap_only.unwrap_or(false);
     let (documents,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_documents").fetch_one(db).await.unwrap_or((0,));
@@ -217,8 +219,8 @@ pub struct HumanAiQuery {
     pub range: Option<String>,
 }
 
-pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<HumanAiQuery>) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<HumanAiQuery>) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
     let (range_label, range_days) = resolve_range(q.range.as_deref());
     let window = format!("-{range_days} days");
@@ -336,8 +338,8 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, Query(q
 // invented one. Lets System State's narrative cite an actual Interaction
 // Dynamics number inline instead of the two modules staying disconnected.
 
-pub async fn scope_trends(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn scope_trends(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
 
     let rows: Vec<(String, String)> = sqlx::query_as(
@@ -411,8 +413,8 @@ fn merge_recent_ai_activity(
     items
 }
 
-pub async fn ai_activity(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn ai_activity(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
 
     let messages: Vec<(String, String, String, String)> = sqlx::query_as(
@@ -465,8 +467,8 @@ fn merge_recent_organization_items(
     items
 }
 
-pub async fn organization(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn organization(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
 
     let notes: Vec<(String, String, Option<String>, String)> = sqlx::query_as(
@@ -489,8 +491,8 @@ pub async fn organization(State(state): State<AppState>, headers: HeaderMap) -> 
 // its own nav item — this is the "Technology" side of the system under
 // observation, not a separate business/CMS concern.
 
-pub async fn diagnostics(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn diagnostics(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
     let db_ok = sqlx::query_as::<_, (i64,)>("SELECT 1").fetch_one(db).await.is_ok();
     let (agent_calls_total,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now','-7 days')").fetch_one(db).await.unwrap_or((0,));
@@ -773,8 +775,8 @@ pub struct ListSnapshotsQuery {
 /// rollup captured at real turn-completion time — never a placeholder, never
 /// synthesized for a turn that predates this feature (older conversations
 /// simply have no snapshot history).
-pub async fn list_snapshots(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListSnapshotsQuery>) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn list_snapshots(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListSnapshotsQuery>) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
     let limit = q.limit.unwrap_or(DEFAULT_SNAPSHOTS_LIMIT).clamp(1, MAX_SNAPSHOTS_LIMIT);
     let offset = q.offset.unwrap_or(0).max(0);
@@ -854,8 +856,8 @@ pub struct EverythingQuery {
     pub range: Option<String>,
 }
 
-pub async fn everything(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<EverythingQuery>) -> impl IntoResponse {
-    guard!(state, headers);
+pub async fn everything(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<EverythingQuery>) -> impl IntoResponse {
+    guard!(state, headers, jar);
     let db = &state.db;
     let (range_label, range_days) = resolve_range(q.range.as_deref());
     let window = format!("-{range_days} days");
@@ -1046,7 +1048,7 @@ mod tests {
 
         let res = behavior(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(BehaviorQuery { range: Some("7d".to_string()) }),
         )
         .await
@@ -1071,7 +1073,7 @@ mod tests {
 
         let res = behavior(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(BehaviorQuery { range: Some("all".to_string()) }),
         )
         .await
@@ -1092,7 +1094,7 @@ mod tests {
         sqlx::query("INSERT INTO agent_tool_calls (id, tool_name, arguments, status, created_at) VALUES ('t_31','log_research_note','{}','ok', datetime('now','-31 days'))")
             .execute(&state.db).await.unwrap();
 
-        let res = behavior(AxState(state.clone()), HeaderMap::new(), AxQuery(BehaviorQuery { range: None })).await.into_response();
+        let res = behavior(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(BehaviorQuery { range: None })).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
@@ -1112,7 +1114,7 @@ mod tests {
         sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES ('m_old','c1','user','hi', datetime('now','-20 days'))")
             .execute(&state.db).await.unwrap();
 
-        let res = human_ai(AxState(state.clone()), HeaderMap::new(), AxQuery(HumanAiQuery { range: Some("7d".to_string()) }))
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(HumanAiQuery { range: Some("7d".to_string()) }))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
@@ -1131,7 +1133,7 @@ mod tests {
     async fn human_ai_all_range_includes_everything_in_messages_by_day() {
         let state = state_with_old_message().await;
 
-        let res = human_ai(AxState(state.clone()), HeaderMap::new(), AxQuery(HumanAiQuery { range: Some("all".to_string()) }))
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(HumanAiQuery { range: Some("all".to_string()) }))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
@@ -1154,7 +1156,7 @@ mod tests {
     async fn human_ai_default_range_falls_back_to_30d_not_the_old_14_day_window() {
         let state = state_with_old_message().await;
 
-        let res = human_ai(AxState(state.clone()), HeaderMap::new(), AxQuery(HumanAiQuery { range: None }))
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(HumanAiQuery { range: None }))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
@@ -1194,7 +1196,7 @@ mod tests {
 
         let res = information(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(InformationQuery { gap_only: Some(true) }),
         )
         .await
@@ -1219,7 +1221,7 @@ mod tests {
         insert_retrieval(&state.db, "r_good", "gute Anfrage", 0.72, 3).await;
         insert_retrieval(&state.db, "r_zero", "keine Treffer", 0.0, 0).await;
 
-        let res = information(AxState(state.clone()), HeaderMap::new(), AxQuery(InformationQuery { gap_only: None })).await.into_response();
+        let res = information(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(InformationQuery { gap_only: None })).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
@@ -1471,7 +1473,7 @@ mod tests {
         let (first_page, total) = snapshots_body(
             list_snapshots(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListSnapshotsQuery { limit: Some(3), offset: Some(0), ..empty_snapshots_query() }),
             )
             .await
@@ -1484,7 +1486,7 @@ mod tests {
         let (second_page, _) = snapshots_body(
             list_snapshots(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListSnapshotsQuery { limit: Some(3), offset: Some(3), ..empty_snapshots_query() }),
             )
             .await
@@ -1496,7 +1498,7 @@ mod tests {
         let (third_page, _) = snapshots_body(
             list_snapshots(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListSnapshotsQuery { limit: Some(3), offset: Some(6), ..empty_snapshots_query() }),
             )
             .await
@@ -1517,7 +1519,7 @@ mod tests {
         capture_system_snapshot(&state, "conv-second", None).await;
 
         let (body, total) = snapshots_body(
-            list_snapshots(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_snapshots_query())).await.into_response(),
+            list_snapshots(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_snapshots_query())).await.into_response(),
         )
         .await;
         assert_eq!(total, Some(2));
@@ -1544,7 +1546,7 @@ mod tests {
         let (body, total) = snapshots_body(
             list_snapshots(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListSnapshotsQuery { range: Some("7d".to_string()), ..empty_snapshots_query() }),
             )
             .await
@@ -1558,7 +1560,7 @@ mod tests {
         let (all_body, all_total) = snapshots_body(
             list_snapshots(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListSnapshotsQuery { range: Some("all".to_string()), ..empty_snapshots_query() }),
             )
             .await
@@ -1572,7 +1574,7 @@ mod tests {
     async fn list_snapshots_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = list_snapshots(AxState(state), HeaderMap::new(), AxQuery(empty_snapshots_query())).await.into_response();
+        let res = list_snapshots(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(empty_snapshots_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -1632,7 +1634,7 @@ mod tests {
         insert_tool_call(&state.db, 0).await;
         insert_tool_call(&state.db, 0).await;
 
-        let res = everything(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_everything_query())).await.into_response();
+        let res = everything(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_everything_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -1698,7 +1700,7 @@ mod tests {
 
         let res_7d = everything(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(EverythingQuery { range: Some("7d".to_string()) }),
         ).await.into_response();
         let bytes = axum::body::to_bytes(res_7d.into_body(), usize::MAX).await.unwrap();
@@ -1711,7 +1713,7 @@ mod tests {
 
         let res_all = everything(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(EverythingQuery { range: Some("all".to_string()) }),
         ).await.into_response();
         let bytes = axum::body::to_bytes(res_all.into_body(), usize::MAX).await.unwrap();
@@ -1727,7 +1729,7 @@ mod tests {
     async fn everything_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = everything(AxState(state), HeaderMap::new(), AxQuery(empty_everything_query())).await.into_response();
+        let res = everything(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(empty_everything_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 }

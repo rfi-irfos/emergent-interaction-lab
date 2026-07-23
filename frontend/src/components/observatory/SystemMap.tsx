@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders } from '../../lib/adminApi'
+import { adminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -35,7 +35,7 @@ function ageDecay(createdAt: string): number {
 
 async function fetchJson(path: string): Promise<any> {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() })
+    const res = await adminFetch(`${path}`, {})
     return res.ok ? await res.json() : null
   } catch {
     return null
