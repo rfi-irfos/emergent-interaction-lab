@@ -209,18 +209,29 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
   const editingNewsItem = editingNews ? draft.news?.items?.find(n => n.id === editingNews) : null
 
-  // Same classes `.crm-main` carries below — applied here too so the
-  // page-level top bar (a sibling of `.crm-layout`, not a child of
-  // `.crm-main` anymore) themes consistently with the section it's
-  // showing, instead of staying stuck in the light theme.
+  // Same condition `.crm-main` uses below — applied directly to the topbar
+  // itself (NOT to `.builder`) via a self-referencing class, same pattern
+  // as `.gotham.crm-main`/`.observatory-hud.crm-main`. Putting these classes
+  // on `.builder` instead would make it an ancestor of `.crm-sidebar` too —
+  // `.gotham .crm-sidebar`/`.observatory-hud .crm-sidebar` exist in App.css
+  // and were never reachable before (the sidebar was always a sibling of
+  // `.crm-main`, never its descendant), so that leaks unfinished/half theme
+  // styling onto the sidebar on every page instead of just the intended
+  // topbar (confirmed live: washed-out grey sidebar on the light Verwaltung
+  // pages, since only `.gotham` — not the accompanying `.observatory-hud`
+  // polish — reached it there).
   const isObservatoryHud = crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog'
 
   return (
-    <div className={`builder gotham ${isObservatoryHud ? 'observatory-hud' : ''}`}>
+    <div className="builder">
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChangeAll} />
 
       {/* ── BODY: one permanent shell, no more Builder/Verwaltung mode split ── */}
-      <div className="crm-page-topbar">
+      <div className={`crm-page-topbar gotham ${isObservatoryHud ? 'observatory-hud' : ''}`}>
+        <div className="crm-topbar-brand-block">
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-topbar-icon" />
+          <span className="crm-topbar-brand">{draft.nav?.brand || 'Emergent Interaction Lab'}</span>
+        </div>
         <div className="crm-topbar-title">
           {SECTION_COPY[adminSection].title}
           {SECTION_COPY[adminSection].description && <span className="crm-topbar-desc">: {SECTION_COPY[adminSection].description}</span>}
@@ -252,19 +263,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          <div className="crm-sidebar-brand">
-            <div className="crm-sidebar-brand-row">
-              <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-sidebar-icon" />
-              {!sidebarCollapsed && (
-                <div className="crm-sidebar-brand-text">
-                  <div className="crm-sidebar-name">{draft.nav?.brand || 'Verwaltung'}</div>
-                  <div className="crm-sidebar-sub">Verwaltung</div>
-                </div>
-              )}
-              <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
-                <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
-              </button>
-            </div>
+          {/* Brand/logo lives in the page-level topbar now — this row is
+              just the collapse toggle, per feedback ("was dort bleibt im
+              sidepanel ist nur dieser Pfeil oben"). */}
+          <div className="crm-sidebar-collapse-row">
+            <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
+              <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
+            </button>
           </div>
           <nav className="crm-nav">
             {/* Analytics leads the Verwaltung group — the first thing Laura
