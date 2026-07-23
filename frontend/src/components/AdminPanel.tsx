@@ -234,7 +234,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
         </div>
         <div className="crm-topbar-title">
           {SECTION_COPY[adminSection].title}
-          {SECTION_COPY[adminSection].description && <span className="crm-topbar-desc">: {SECTION_COPY[adminSection].description}</span>}
         </div>
         <div className="crm-topbar-actions">
           {/* Chat affordance moved into the topbar (replaces the old
@@ -327,6 +326,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
         </aside>
 
         <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
+          {/* One-line description, above the app's own content — NOT in the
+              shared page-level topbar (that only ever shows the bare
+              section title, per feedback: "diese Descriptors wollen wir
+              nicht in der Topbar selber haben"). */}
+          {SECTION_COPY[adminSection].description && (
+            <div className="crm-section-desc">{SECTION_COPY[adminSection].description}</div>
+          )}
           <div className="crm-body">
             {adminSection === 'website-kit' && (
               <WebsiteKit

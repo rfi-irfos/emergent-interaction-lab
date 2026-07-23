@@ -2460,7 +2460,7 @@ button { cursor: pointer; font-family: inherit; }
 /* Brand/logo lives in the page-level topbar (.crm-topbar-brand-block) now —
    this row is just the collapse toggle, right-aligned like the old brand
    row's button was. */
-.crm-sidebar-collapse-row { display: flex; justify-content: flex-end; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.crm-sidebar-collapse-row { display: flex; justify-content: flex-end; padding: 10px 14px; }
 .crm-sidebar-collapse-icon-btn {
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 26px; height: 26px; border-radius: 7px; border: none;
@@ -2521,10 +2521,14 @@ button { cursor: pointer; font-family: inherit; }
 .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .crm-page-topbar { display: flex; align-items: center; padding: 16px 28px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); width: 100%; }
 .crm-topbar-title { flex: 1; min-width: 0; font-size: 20px; font-weight: 800; color: #0b1720; }
-.crm-topbar-desc { font-size: 13px; font-weight: 500; color: rgba(11,23,32,.55); text-transform: none; letter-spacing: normal; }
-.observatory-hud .crm-topbar-desc { color: rgba(228,232,240,.5); }
-.gotham .crm-topbar-desc { color: var(--gotham-text-dim); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; text-transform: none; letter-spacing: normal; text-shadow: none; }
 .crm-topbar-actions { margin-left: 18px; }
+
+/* One-line description strip, above the app's own content — a persistent
+   header the app owns, not the shared page-level topbar (which only ever
+   shows the bare section title). */
+.crm-section-desc { flex-shrink: 0; padding: 10px 28px; font-size: 13px; color: rgba(11,23,32,.55); background: #f4f6f5; border-bottom: 1px solid rgba(0,0,0,.05); }
+.observatory-hud .crm-section-desc { color: rgba(228,232,240,.5); background: rgba(10,14,23,.6); border-bottom-color: rgba(150,156,170,.08); }
+.gotham .crm-section-desc { color: var(--gotham-text-dim); background: transparent; border-bottom-color: var(--gotham-border); }
 /* Always in the same top-right spot regardless of which section is open —
    the sidebar version of this (folded into the brand block) turned out to
    move around/disappear when the sidebar collapsed, which wasn't the ask. */
