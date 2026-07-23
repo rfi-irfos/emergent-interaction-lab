@@ -4,7 +4,7 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudGrid, HudTile, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { STATUS_ACCENT } from './registry'
@@ -258,6 +258,48 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
     }
   }
 
+  useHeaderActions(
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+        <option value="">Alle Ebenen</option>
+        {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+      </select>
+      <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+        <option value="">Alle Status</option>
+        {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+        <option value="">Alle Konfidenzen</option>
+        {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+        <option value="">Alle Verläufe</option>
+        {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+        <option value="">Alle Signale</option>
+        <option value="true">Nur verifiziert</option>
+      </select>
+      {filtersActive && (
+        <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
+          Filter zurücksetzen
+        </button>
+      )}
+      <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
+        {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
+      </button>
+      <button
+        className="panel-add-btn"
+        disabled={signals.length === 0}
+        onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
+      >
+        ⬇ JSON
+      </button>
+      <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
+    </div>,
+    [levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter, filtersActive, analyzing, signals],
+  )
+
   if (loading && signals.length === 0) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error && signals.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
@@ -277,67 +319,6 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
-              {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
-            </button>
-            <button
-              className="panel-add-btn"
-              disabled={signals.length === 0}
-              onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
-            >
-              ⬇ JSON
-            </button>
-            {/* Exports whatever is currently loaded/filtered (`signals`), not
-                silently the unfiltered full set — same honesty-about-scope
-                principle as the X-Total-Count pagination above: if a level/
-                status/confidence/evolution filter narrowed the page, the export
-                reflects that narrowed page. */}
-            <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
-          </div>
-        }
-      />
-
-      {/* Filter bar — level/status/confidence/evolution, each a closed
-          vocabulary already fixed by the analysis prompt (see LEVEL_SECTIONS,
-          STATUS_ACCENT, CONFIDENCE_LEVELS, EVOLUTION_ARROW above), so plain
-          <select>s are enough; no free-text search needed for a handful of
-          known values. Every change resets pagination to the first page. */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Ebenen</option>
-          {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-        </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Status</option>
-          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Konfidenzen</option>
-          {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Verläufe</option>
-          {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        {/* The "measured emergence" gate's own filter — same <select>
-            convention as the four above (auto-themed via the existing
-            .crm-body select dark-mode rule in App.css, no new CSS needed
-            for the control itself). "Nur verifiziert" narrows to signals
-            that actually cleared the Research page's own bar, not just
-            this turn's LLM read — see the badge rendered per-card below. */}
-        <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Signale</option>
-          <option value="true">Nur verifiziert</option>
-        </select>
-        {filtersActive && (
-          <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
-            Filter zurücksetzen
-          </button>
-        )}
-      </div>
 
       {/* Summary strip — aggregated view above the flat card feed below,
           so every signal doesn't read with equal visual weight anymore.

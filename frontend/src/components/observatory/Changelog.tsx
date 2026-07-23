@@ -3,6 +3,7 @@ import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { useHeaderActions } from './Hud'
 
 // Real, standalone Verwaltung page for backend/src/auditlog.rs's
 // hash-chained audit_log — the small sidebar `AuditChangelog.tsx` widget
@@ -188,67 +189,54 @@ export function Changelog() {
 
   const anyFilterActive = Boolean(actorFilter || eventTypeFilter || fromDate || toDate || debouncedSearch.trim())
 
+  useHeaderActions(
+    <>
+      {/* Chain integrity — the one thing Lighthouse's own live Changelog page
+          never shipped (only its retired Audit.tsx had a verify button); our
+          backend's /verify endpoint is real and working, so this page gets a
+          real, working verify UI. */}
+      <button className="panel-add-btn" onClick={runVerify} disabled={verifying}>
+        {verifying ? 'Prüft…' : 'Kette jetzt prüfen'}
+      </button>
+      {verify && (
+        <span
+          className={`crm-audit-chain-badge ${verify.chain_intact ? 'intact' : 'broken'}`}
+          title={verify.chain_intact ? `Kette intakt über ${verify.total} Einträge` : `Kette gebrochen bei Eintrag ${verify.broken_at_id}`}
+        >
+          {verify.chain_intact ? `Kette intakt ✓ (${verify.total} Einträge)` : `Kette gebrochen ▲ bei Eintrag ${verify.broken_at_id}`}
+        </span>
+      )}
+      {!verify && !verifying && <span className="obs-item-meta" style={{ margin: 0 }}>Noch nicht geprüft.</span>}
+      <select value={actorFilter} onChange={e => setActorFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+        <option value="">Alle Akteure</option>
+        {actorOptions.map(a => <option key={a} value={a}>{a}</option>)}
+      </select>
+      <select value={eventTypeFilter} onChange={e => setEventTypeFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+        <option value="">Alle Ereignistypen</option>
+        {eventTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} title="Von" style={{ fontSize: 12, padding: '5px 8px' }} />
+      <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} title="Bis" style={{ fontSize: 12, padding: '5px 8px' }} />
+      <input
+        type="text"
+        placeholder="Suche in Zusammenfassung…"
+        value={searchInput}
+        onChange={e => setSearchInput(e.target.value)}
+        style={{ fontSize: 12, padding: '5px 8px', minWidth: 200, flex: '1 1 200px' }}
+      />
+      {/* Exports whatever is currently loaded/filtered (`items`), same
+          "honest about scope" convention as every other Observatory export —
+          see SimulationCenter.tsx/AnomalyLog.tsx's own ExportButtons call
+          sites. */}
+      <ExportButtons rows={exportRows} filenameBase="changelog" title="Änderungsprotokoll" />
+    </>,
+    [verify, verifying, actorFilter, eventTypeFilter, fromDate, toDate, searchInput, actorOptions, eventTypeOptions, exportRows],
+  )
+
   if (loading && items.length === 0) return <div className="obs-panel"><HudSkeleton variant="list" /></div>
 
   return (
     <div className="obs-panel">
-      {/* ── Chain integrity — the one thing Lighthouse's own live Changelog
-          page never shipped (only its retired Audit.tsx had a verify
-          button); our backend's /verify endpoint is real and working, so
-          this page gets a real, working verify UI. ────────────────────── */}
-      <div className="obs-card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <button className="panel-add-btn" onClick={runVerify} disabled={verifying}>
-          {verifying ? 'Prüft…' : 'Kette jetzt prüfen'}
-        </button>
-        {verify && (
-          <span
-            className={`crm-audit-chain-badge ${verify.chain_intact ? 'intact' : 'broken'}`}
-            title={verify.chain_intact ? `Kette intakt über ${verify.total} Einträge` : `Kette gebrochen bei Eintrag ${verify.broken_at_id}`}
-          >
-            {verify.chain_intact ? `Kette intakt ✓ (${verify.total} Einträge)` : `Kette gebrochen ▲ bei Eintrag ${verify.broken_at_id}`}
-          </span>
-        )}
-        {!verify && !verifying && <span className="obs-item-meta" style={{ margin: 0 }}>Noch nicht geprüft.</span>}
-      </div>
-
-      {/* ── Filters ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 8, margin: '16px 0 14px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={actorFilter} onChange={e => setActorFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-          <option value="">Alle Akteure</option>
-          {actorOptions.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-        <select value={eventTypeFilter} onChange={e => setEventTypeFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-          <option value="">Alle Ereignistypen</option>
-          {eventTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <input
-          type="date"
-          value={fromDate}
-          onChange={e => setFromDate(e.target.value)}
-          title="Von"
-          style={{ fontSize: 12, padding: '5px 8px' }}
-        />
-        <input
-          type="date"
-          value={toDate}
-          onChange={e => setToDate(e.target.value)}
-          title="Bis"
-          style={{ fontSize: 12, padding: '5px 8px' }}
-        />
-        <input
-          type="text"
-          placeholder="Suche in Zusammenfassung…"
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-          style={{ fontSize: 12, padding: '5px 8px', minWidth: 200, flex: '1 1 200px' }}
-        />
-        {/* Exports whatever is currently loaded/filtered (`items`), same
-            "honest about scope" convention as every other Observatory
-            export — see SimulationCenter.tsx/AnomalyLog.tsx's own
-            ExportButtons call sites. */}
-        <ExportButtons rows={exportRows} filenameBase="changelog" title="Änderungsprotokoll" />
-      </div>
-
       {error && items.length === 0 && (
         <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>
       )}

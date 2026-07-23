@@ -3,7 +3,7 @@ import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
+import { useHeaderActions } from './Hud'
 
 // One row per anomaly the Anomaly Watchdog v1 flagged — see
 // backend/src/anomaly.rs's module doc comment for the full "what this is
@@ -89,23 +89,22 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
 
   const loadMore = () => load(items.length, true)
 
+  useHeaderActions(
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | Anomaly['kind'])} style={{ fontSize: 12, padding: '5px 8px' }}>
+        <option value="">Alle Arten</option>
+        {(Object.keys(KIND_LABELS) as Anomaly['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+      </select>
+      <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="anomalie-log" title="Anomalie-Log" />
+    </div>,
+    [kindFilter, items],
+  )
+
   if (loading && items.length === 0) return <div className="obs-panel"><HudSkeleton variant="list" /></div>
   if (error && items.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | Anomaly['kind'])} style={{ fontSize: 12, padding: '5px 8px' }}>
-              <option value="">Alle Arten</option>
-              {(Object.keys(KIND_LABELS) as Anomaly['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
-            </select>
-            <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="anomalie-log" title="Anomalie-Log" />
-          </div>
-        }
-      />
-
       {items.length === 0 ? (
         <div className="obs-card">
           <div className="obs-empty">

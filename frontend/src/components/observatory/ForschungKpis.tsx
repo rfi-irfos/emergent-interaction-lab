@@ -1,5 +1,5 @@
 import { useAdminFetch } from '../../lib/adminApi'
-import { HudGrid, HudTile, HudStat, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile, HudStat } from './Hud'
 import { ObsChart } from './ObsChart'
 
 // Real-time emergent-signal tracker for the Forschung tab — every number
@@ -92,10 +92,10 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
 
   return (
     <div className="forschung-kpis">
-      <HudSectionHeader
-        title="Lauras Nutzerverhalten"
-        sub="Echtzeit · nur aus Dialogdaten · kein Framework-KPI"
-      />
+      {/* A sub-widget inside the Forschung page, not a second page header —
+          demoted to a plain eyebrow label so it doesn't compete with the
+          real page header above (Lighthouse never stacks two full headers). */}
+      <div className="obs-section-label" title="Echtzeit · nur aus Dialogdaten · kein Framework-KPI">Lauras Nutzerverhalten</div>
 
       <HudGrid cols={5}>
         {/* 1 — Message-volume trend */}

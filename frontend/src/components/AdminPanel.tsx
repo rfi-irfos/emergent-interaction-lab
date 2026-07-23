@@ -6,7 +6,8 @@ import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { useAdminFetch } from '../lib/adminApi'
 import { OBSERVATORY_MODULES, SECTION_COPY, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
-import { HudSectionHeader } from './observatory/Hud'
+import { HudSectionHeader, HeaderActionsContext } from './observatory/Hud'
+import type { ReactNode } from 'react'
 import { Analytics } from './observatory/Analytics'
 import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
@@ -83,6 +84,13 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [adminSection, setAdminSection] = useState<AdminSection>('analytics')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
   const [crmTheme, setCrmTheme] = useState<'light' | 'dark'>(loadCrmTheme)
+  // The active app's own filter/action controls, pushed up via
+  // useHeaderActions so they render in the ONE shared page header instead of
+  // a second header block inside the app itself (see Hud.tsx). Cleared on
+  // every section switch so a stale filter row from the previous app can
+  // never linger for a frame.
+  const [headerActions, setHeaderActions] = useState<ReactNode>(null)
+  useEffect(() => { setHeaderActions(null) }, [adminSection])
 
   const toggleCrmTheme = () => {
     setCrmTheme(t => {
@@ -333,7 +341,8 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 Lighthouse (router.tsx's topbar carries only the brand; the
                 per-route title/description live in the page content, via
                 one shared header component, not the shared chrome). */}
-            <HudSectionHeader title={SECTION_COPY[adminSection].title} sub={SECTION_COPY[adminSection].description} />
+            <HudSectionHeader title={SECTION_COPY[adminSection].title} sub={SECTION_COPY[adminSection].description} actions={headerActions} />
+            <HeaderActionsContext.Provider value={setHeaderActions}>
             {adminSection === 'website-kit' && (
               <WebsiteKit
                 draft={draft}
@@ -466,6 +475,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'anomalies' && (
               <AnomalyLog onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
+            </HeaderActionsContext.Provider>
           </div>
         </div>
       </div>

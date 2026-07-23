@@ -3,7 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
+import { useHeaderActions } from './Hud'
 
 interface ActivityItem {
   kind: 'pull_request' | 'commit' | 'workflow_run' | 'deploy'
@@ -56,31 +56,30 @@ export function AgentActivity() {
   // already and there's nothing to gain from a server round-trip here.
   const [kindFilter, setKindFilter] = useState<'' | ActivityItem['kind']>('')
 
+  const items = data ? (kindFilter ? data.items.filter(i => i.kind === kindFilter) : data.items) : []
+
+  useHeaderActions(
+    data && data.items.length > 0 ? (
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
+          <option value="">Alle Typen</option>
+          {(Object.keys(KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+        </select>
+        <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="agent-activity" title="Agent-Aktivität" />
+      </div>
+    ) : null,
+    [data, kindFilter],
+  )
+
   if (loading) return <div className="obs-panel"><HudSkeleton variant="list" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
-
-  const items = kindFilter ? data.items.filter(i => i.kind === kindFilter) : data.items
 
   return (
     <div className="obs-panel">
       {!data.configured && data.message && (
         <div className="obs-warning-note">▲ {data.message}</div>
       )}
-
-      <HudSectionHeader
-        actions={
-          data.items.length > 0 ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
-                <option value="">Alle Typen</option>
-                {(Object.keys(KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
-              </select>
-              <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="agent-activity" title="Agent-Aktivität" />
-            </div>
-          ) : undefined
-        }
-      />
       {data.items.length === 0
         ? <div className="obs-card"><div className="obs-empty">Noch keine Aktivität protokolliert.</div></div>
         : items.length === 0
