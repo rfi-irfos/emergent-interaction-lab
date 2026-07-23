@@ -2473,8 +2473,9 @@ button { cursor: pointer; font-family: inherit; }
 /* Brand/logo block in the page-level topbar, left of the section title. */
 .crm-topbar-brand-block { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 18px; margin-right: 18px; border-right: 1px solid rgba(0,0,0,.08); }
 .crm-topbar-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
-.crm-topbar-brand { font-size: 13px; font-weight: 700; white-space: nowrap; }
+.crm-topbar-brand { font-size: 13px; font-weight: 700; white-space: nowrap; color: #0b1720; }
 .observatory-hud .crm-topbar-brand-block, .gotham .crm-topbar-brand-block { border-right-color: rgba(255,255,255,.12); }
+.observatory-hud .crm-topbar-brand, .gotham .crm-topbar-brand { color: rgba(228,232,240,.95); }
 
 /* min-height: 0 is load-bearing here, not decorative: a flex child's default
    min-height is auto (= as tall as its content demands), which silently
