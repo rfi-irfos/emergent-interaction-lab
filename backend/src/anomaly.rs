@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, observatory::resolve_range, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Anomaly Watchdog v1 — "a watchdog that watches the watchdog." Everything
 /// else added tonight (emergence signals, CCET, Denkfragmente, the
@@ -258,8 +259,8 @@ struct AnomalyOut {
 /// / `emergence::list_signals` / `simulation::list_runs`. A plain,
 /// UI-agnostic row shape, same reasoning as `hallucination::list_checks`'s
 /// own doc comment for why it stayed generic.
-pub async fn list_anomalies(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListAnomaliesQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_anomalies(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListAnomaliesQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let limit = q.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
@@ -356,8 +357,8 @@ pub struct DistributionQuery {
 /// happened to fire recently. Contrast with `thinking_fragments::distribution`,
 /// which omits empty layers; that endpoint feeds a ranked list, this one
 /// feeds a fixed-legend chart, hence the deliberate difference.
-pub async fn distribution(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<DistributionQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn distribution(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<DistributionQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let (range_label, range_days) = resolve_range(q.range.as_deref());
@@ -566,7 +567,7 @@ mod tests {
         }
         let res = list_anomalies(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListAnomaliesQuery { limit: Some(2), offset: None, kind: None }),
         )
         .await
@@ -586,7 +587,7 @@ mod tests {
 
         let res = list_anomalies(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListAnomaliesQuery { limit: None, offset: None, kind: Some("iteration_cap".to_string()) }),
         )
         .await
@@ -602,7 +603,7 @@ mod tests {
     async fn list_anomalies_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = list_anomalies(AxState(state), HeaderMap::new(), AxQuery(ListAnomaliesQuery { limit: None, offset: None, kind: None }))
+        let res = list_anomalies(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(ListAnomaliesQuery { limit: None, offset: None, kind: None }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
@@ -617,7 +618,7 @@ mod tests {
         seed_anomaly(&state.db, "a2", KIND_TOOL_ERROR, "conv-2").await;
         seed_anomaly(&state.db, "a3", KIND_REFUSAL_TRIGGERED, "conv-3").await;
 
-        let res = distribution(AxState(state.clone()), HeaderMap::new(), AxQuery(DistributionQuery { range: Some("all".to_string()) }))
+        let res = distribution(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(DistributionQuery { range: Some("all".to_string()) }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -646,7 +647,7 @@ mod tests {
             .await
             .unwrap();
 
-        let res = distribution(AxState(state.clone()), HeaderMap::new(), AxQuery(DistributionQuery { range: Some("30d".to_string()) }))
+        let res = distribution(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(DistributionQuery { range: Some("30d".to_string()) }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -664,7 +665,7 @@ mod tests {
     async fn distribution_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = distribution(AxState(state), HeaderMap::new(), AxQuery(DistributionQuery { range: None })).await.into_response();
+        let res = distribution(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(DistributionQuery { range: None })).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 }

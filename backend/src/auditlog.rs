@@ -10,6 +10,7 @@ use sqlx::{QueryBuilder, Sqlite, SqlitePool};
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Hash-chained, append-only changelog — ported (right-sized, not verbatim)
 /// from RFI-IRFOS's own Lighthouse project's real, shipped `audit_log`
@@ -175,8 +176,8 @@ type ChainRow = (String, String, String, String, String, String, String);
 /// the stored one) doesn't check out. `chain_intact: true` means it walked
 /// every row clean to the end — an empty table is trivially intact (nothing
 /// to break).
-pub async fn verify(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn verify(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -319,8 +320,8 @@ fn append_log_filters<'q>(qb: &mut QueryBuilder<'q, Sqlite>, q: &'q ListLogQuery
 /// otherwise make the frontend's "Weitere laden (X / Y)" counter and
 /// load-more-availability check lie the moment any filter narrows the
 /// result set below the true total.
-pub async fn list_log(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListLogQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_log(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListLogQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let limit = q.limit.unwrap_or(DEFAULT_LOG_LIMIT).clamp(1, MAX_LOG_LIMIT);
@@ -499,7 +500,7 @@ mod tests {
     #[tokio::test]
     async fn verify_reports_chain_intact_true_on_an_empty_table() {
         let state = test_state().await;
-        let res = verify(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let res = verify(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(body["chain_intact"], json!(true));
@@ -514,7 +515,7 @@ mod tests {
             record(&state, "admin", "content_updated", &format!("Änderung {i}"), None).await;
         }
 
-        let res = verify(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let res = verify(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(body["chain_intact"], json!(true));
@@ -558,7 +559,7 @@ mod tests {
         .await
         .unwrap();
 
-        let res = verify(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let res = verify(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(body["chain_intact"], json!(false));
@@ -570,7 +571,7 @@ mod tests {
     async fn verify_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "s3cret".to_string();
-        let res = verify(AxState(state), HeaderMap::new()).await.into_response();
+        let res = verify(AxState(state), HeaderMap::new(), CookieJar::new()).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -596,7 +597,7 @@ mod tests {
 
         let res = list_log(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListLogQuery { limit: Some(2), ..empty_log_query() }),
         )
         .await
@@ -615,7 +616,7 @@ mod tests {
     async fn list_log_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "s3cret".to_string();
-        let res = list_log(AxState(state), HeaderMap::new(), AxQuery(empty_log_query())).await.into_response();
+        let res = list_log(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(empty_log_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -629,7 +630,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery { actor: Some("system".to_string()), ..empty_log_query() }),
             )
             .await
@@ -652,7 +653,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery { event_type: Some("blog_published".to_string()), ..empty_log_query() }),
             )
             .await
@@ -673,7 +674,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery { q: Some("Blogbeitrag".to_string()), ..empty_log_query() }),
             )
             .await
@@ -707,7 +708,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery { from: Some("2025-01-01T00:00:00.000000Z".to_string()), ..empty_log_query() }),
             )
             .await
@@ -722,7 +723,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery { to: Some("2020-12-31T23:59:59.999999Z".to_string()), ..empty_log_query() }),
             )
             .await
@@ -737,7 +738,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery {
                     from: Some("2019-01-01T00:00:00.000000Z".to_string()),
                     to: Some("2019-12-31T23:59:59.999999Z".to_string()),
@@ -762,7 +763,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery {
                     actor: Some("admin".to_string()),
                     event_type: Some("content_updated".to_string()),
@@ -794,7 +795,7 @@ mod tests {
         let (body, total) = log_body(
             list_log(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListLogQuery { actor: Some("system".to_string()), ..empty_log_query() }),
             )
             .await

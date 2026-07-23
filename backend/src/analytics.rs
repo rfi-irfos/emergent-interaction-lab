@@ -1,6 +1,7 @@
 use axum::{extract::{Query, State}, http::{HeaderMap, StatusCode}, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 #[derive(Serialize)]
 pub struct DayCount { pub day: String, pub views: i64 }
@@ -147,8 +148,8 @@ pub struct AnalyticsData {
     pub activity_trend: Vec<TrendPoint>,
 }
 
-pub async fn stats(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<TrendQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn stats(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<TrendQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let db = &state.db;
@@ -417,7 +418,7 @@ mod tests {
         sqlx::query("INSERT INTO web_visits (path, created_at) VALUES ('/old', datetime('now', '-45 days'))")
             .execute(&state.db).await.unwrap();
 
-        let res = stats(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let res = stats(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_query())).await.into_response();
         assert_eq!(res.status(), axum::http::StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -439,7 +440,7 @@ mod tests {
 
         let res = stats(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(TrendQuery { bucket: None, days: Some(60) }),
         )
         .await
@@ -465,7 +466,7 @@ mod tests {
         sqlx::query("INSERT INTO research_notes (id, category, title, body, created_at) VALUES ('n1','idea','T','B', datetime('now'))")
             .execute(&state.db).await.unwrap();
 
-        let res = stats(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let res = stats(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_query())).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
 
@@ -495,7 +496,7 @@ mod tests {
 
         let res = stats(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(TrendQuery { bucket: Some("week".to_string()), days: None }),
         )
         .await

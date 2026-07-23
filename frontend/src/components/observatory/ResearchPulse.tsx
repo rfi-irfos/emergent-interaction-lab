@@ -1,7 +1,6 @@
 import { useAdminFetch } from '../../lib/adminApi'
 import { ResearchNotesPanel } from './ResearchNotesPanel'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
 import type { AdminSection } from '../../types/admin'
 
 interface BlogPost { id: string; title: string; status: string; source: string; updated_at: string }
@@ -42,7 +41,6 @@ export function ResearchPulse({ onNavigate, onOpenConversation }: {
 }) {
   return (
     <div className="obs-panel">
-      <HudSectionHeader title="Research Pulse" sub="Papers, Hypothesen, Ideen, Konzepte & Frameworks." />
       <div className="obs-section-label">Papers &amp; Hypothesen</div>
       <ResearchNotesPanel categories={['paper', 'hypothesis']} addLabel="Eintrag hinzufügen" placeholder="Titel (Paper oder Hypothese)" onOpenConversation={onOpenConversation} />
 

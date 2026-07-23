@@ -10,6 +10,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, chat::CHAT_MODEL, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 const SIMULATION_SYSTEM_PROMPT: &str = "Du hilfst dem Emergent Interaction Lab, eine Hypothese systematisch durchzudenken. Das ist explorative Modellierung, keine validierte Simulation: benenne Annahmen, zeige mögliche Entwicklungen unter den gegebenen Parametern, und weise aktiv auf Unsicherheiten und Grenzen des Gedankenmodells hin. Kein Orakel, kein Vorhersage-Ton — ein Denkwerkzeug. Antworte auf Deutsch, strukturiert in kurzen Absätzen.";
 
@@ -198,8 +199,8 @@ fn parse_multi(raw: &Option<String>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-pub async fn list_runs(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListRunsQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn list_runs(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListRunsQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let limit = q.limit.unwrap_or(DEFAULT_RUNS_LIMIT).clamp(1, MAX_RUNS_LIMIT);
     let offset = q.offset.unwrap_or(0).max(0);
 
@@ -254,8 +255,8 @@ pub struct CreateRunReq {
     branches: Option<Vec<BranchReq>>,
 }
 
-pub async fn create_run(State(state): State<AppState>, headers: HeaderMap, Json(req): Json<CreateRunReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn create_run(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Json(req): Json<CreateRunReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let id = Uuid::new_v4().to_string();
     let parameters = req.parameters.unwrap_or(json!({})).to_string();
     let related_signal_ids = encode_related_signal_ids(&req.related_signal_ids);
@@ -358,8 +359,8 @@ pub async fn create_run(State(state): State<AppState>, headers: HeaderMap, Json(
     Json(json!({ "id": id, "status": "complete", "narrative": narrative, "branches": branches })).into_response()
 }
 
-pub async fn get_run(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn get_run(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let row: Option<RunRow> = sqlx::query_as(
         "SELECT id, hypothesis, parameters, narrative, status, created_at, updated_at, related_signal_ids, branches FROM simulation_runs WHERE id = ?1",
     )
@@ -373,8 +374,8 @@ pub async fn get_run(State(state): State<AppState>, headers: HeaderMap, Path(id)
     }
 }
 
-pub async fn delete_run(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn delete_run(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let _ = sqlx::query("DELETE FROM simulation_runs WHERE id = ?1").bind(&id).execute(&state.db).await;
     crate::auditlog::record(&state, "admin", "simulation_run_deleted", "Simulationslauf gelöscht", Some(json!({"id": id}))).await;
     StatusCode::NO_CONTENT.into_response()
@@ -447,7 +448,7 @@ mod tests {
     ) -> (String, serde_json::Value) {
         let res = create_run(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Json(CreateRunReq { hypothesis: hypothesis.to_string(), parameters: None, related_signal_ids, branches }),
         )
         .await
@@ -488,7 +489,7 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "mehr Kontext -> stabilere Interaktion", Some(vec!["sig-1".to_string(), "sig-2".to_string()])).await;
 
-        let res = list_runs(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_runs_query())).await.into_response();
+        let res = list_runs(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_runs_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let runs: Vec<serde_json::Value> = serde_json::from_slice(&bytes).unwrap();
@@ -501,7 +502,7 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "Rückkopplung testen", Some(vec!["sig-9".to_string()])).await;
 
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -513,7 +514,7 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "Hypothese ohne Signalbezug", None).await;
 
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(run["related_signal_ids"], serde_json::Value::Null);
@@ -524,7 +525,7 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "leere Auswahl übermittelt", Some(vec![])).await;
 
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(run["related_signal_ids"], serde_json::Value::Null);
@@ -543,7 +544,7 @@ mod tests {
             .await
             .unwrap();
 
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -575,7 +576,7 @@ mod tests {
         }
 
         let (first_page, total) = runs_body(
-            list_runs(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_runs_query())).await.into_response(),
+            list_runs(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_runs_query())).await.into_response(),
         )
         .await;
         assert_eq!(first_page.len(), DEFAULT_RUNS_LIMIT as usize, "unbounded query must now default to a real page size");
@@ -584,7 +585,7 @@ mod tests {
         let (second_page, _) = runs_body(
             list_runs(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListRunsQuery { limit: Some(DEFAULT_RUNS_LIMIT), offset: Some(DEFAULT_RUNS_LIMIT), status: None }),
             )
             .await
@@ -609,7 +610,7 @@ mod tests {
         // early-return Err path -> status='error'), so both real statuses
         // are exercised without needing a mock NVIDIA server.
         let ok_id = create(&state, "will error since no NVIDIA key is configured", None).await;
-        let get_res = get_run(AxState(state.clone()), HeaderMap::new(), Path(ok_id.clone())).await.into_response();
+        let get_res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(ok_id.clone())).await.into_response();
         let bytes = axum::body::to_bytes(get_res.into_body(), usize::MAX).await.unwrap();
         let created: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(created["status"], "error", "sanity check: run_scenario's no-API-key path always lands on 'error' in tests");
@@ -626,7 +627,7 @@ mod tests {
         let (body, total) = runs_body(
             list_runs(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxQuery(ListRunsQuery { limit: None, offset: None, status: Some("pending".to_string()) }),
             )
             .await
@@ -648,14 +649,14 @@ mod tests {
         let state = test_state().await;
         let id = create(&state, "temporary hypothesis", None).await;
 
-        let del_res = delete_run(AxState(state.clone()), HeaderMap::new(), Path(id.clone())).await.into_response();
+        let del_res = delete_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id.clone())).await.into_response();
         assert_eq!(del_res.status(), StatusCode::NO_CONTENT);
 
-        let get_res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id.clone())).await.into_response();
+        let get_res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id.clone())).await.into_response();
         assert_eq!(get_res.status(), StatusCode::NOT_FOUND);
 
         let (body, total) = runs_body(
-            list_runs(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_runs_query())).await.into_response(),
+            list_runs(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_runs_query())).await.into_response(),
         )
         .await;
         assert_eq!(total, Some(0));
@@ -668,7 +669,7 @@ mod tests {
         let id = create(&state, "protect me", None).await;
         state.chat_secret = "shh".to_string();
 
-        let res = delete_run(AxState(state), HeaderMap::new(), Path(id)).await.into_response();
+        let res = delete_run(AxState(state), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -697,7 +698,7 @@ mod tests {
         let created_branches = created["branches"].as_array().expect("branches present on create response");
         assert_eq!(created_branches.len(), 2);
 
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -753,7 +754,7 @@ mod tests {
 
         // Persisted state agrees with the synchronous create response, not
         // just an in-memory value that never made it to the row.
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(run["status"], "complete");
@@ -779,7 +780,7 @@ mod tests {
         assert!(created.get("error").is_some(), "flat error path still uses the original 'error' key, not a branches synthesis");
         assert!(created.get("narrative").is_none(), "flat error path never had a 'narrative' key, and still doesn't");
 
-        let res = get_run(AxState(state.clone()), HeaderMap::new(), Path(id)).await.into_response();
+        let res = get_run(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await.into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
         let run: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(run["branches"], serde_json::Value::Null, "flat case's persisted row must have NULL branches, never '[]' or a populated list");

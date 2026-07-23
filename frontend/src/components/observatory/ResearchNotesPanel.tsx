@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
@@ -85,9 +85,9 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
     if (!title.trim() || saving) return
     setSaving(true)
     try {
-      await fetch(`${API_BASE}/api/research/items`, {
+      await adminFetch(`/api/research/items`, {
         method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, title, body }),
       })
       setRefreshKey(k => k + 1)
@@ -100,9 +100,9 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
   const changeStatus = async (id: string, status: string) => {
     setUpdatingId(id)
     try {
-      await fetch(`${API_BASE}/api/research/items/${id}`, {
+      await adminFetch(`/api/research/items/${id}`, {
         method: 'PUT',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       })
       setRefreshKey(k => k + 1)
@@ -121,7 +121,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
     if (!window.confirm(`„${title}" endgültig löschen?\n\nDas kann nicht rückgängig gemacht werden.`)) return
     setDeletingId(id)
     try {
-      await fetch(`${API_BASE}/api/research/items/${id}`, { method: 'DELETE', headers: authHeaders() })
+      await adminFetch(`/api/research/items/${id}`, { method: 'DELETE' })
       setRefreshKey(k => k + 1)
     } finally {
       setDeletingId(null)

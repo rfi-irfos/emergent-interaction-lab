@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { parseServerTimestamp } from '../../lib/dateGroups'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
@@ -94,7 +94,7 @@ export function Monetization() {
   const [showProductForm, setShowProductForm] = useState(false)
 
   const refresh = async () => {
-    const res = await fetch(`${API_BASE}/api/billing/products`, { headers: authHeaders() })
+    const res = await adminFetch(`/api/billing/products`, {})
     if (res.ok) setProducts(await res.json())
   }
 
@@ -107,9 +107,9 @@ export function Monetization() {
     setFormError(null)
     setCreating(true)
     try {
-      const res = await fetch(`${API_BASE}/api/billing/products`, {
+      const res = await adminFetch(`/api/billing/products`, {
         method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
           description,
@@ -135,9 +135,8 @@ export function Monetization() {
   const createPaymentLink = async (id: string) => {
     setLinkingId(id)
     try {
-      const res = await fetch(`${API_BASE}/api/billing/products/${id}/payment-link`, {
+      const res = await adminFetch(`/api/billing/products/${id}/payment-link`, {
         method: 'POST',
-        headers: authHeaders(),
       })
       if (!res.ok) {
         setFormError('Zahlungslink konnte nicht erstellt werden - ist STRIPE_SECRET_KEY gesetzt?')
@@ -159,7 +158,7 @@ export function Monetization() {
   // copy says so explicitly since that's easy to assume otherwise.
   const deleteProduct = async (id: string, name: string) => {
     if (!window.confirm(`„${name}" endgültig löschen?\n\nDas entfernt nur den lokalen Eintrag - ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird. Das kann hier nicht rückgängig gemacht werden.`)) return
-    await fetch(`${API_BASE}/api/billing/products/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await adminFetch(`/api/billing/products/${id}`, { method: 'DELETE' })
     await refresh()
   }
 
@@ -181,7 +180,7 @@ export function Monetization() {
     setOrdersError(false)
     try {
       const params = new URLSearchParams({ limit: String(ORDERS_PAGE_SIZE), offset: String(offset) })
-      const res = await fetch(`${API_BASE}/api/billing/orders?${params}`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/billing/orders?${params}`, {})
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
       const page: OrderOut[] = await res.json()

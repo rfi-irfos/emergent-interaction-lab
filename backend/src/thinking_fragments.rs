@@ -10,6 +10,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, observatory::resolve_range, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Denkfragmente ("thinking fragments") — Laura's own ask, verbatim-
 /// translated: "I mostly look at my AI interaction meta-retrospectively, but
@@ -312,8 +313,8 @@ pub struct SequenceQuery {
 /// `conversation_id` is required — this is a per-conversation view (unlike
 /// `distribution` below, a global rollup), so a missing/blank value is a
 /// genuine 400, not silently "all conversations."
-pub async fn list_sequence(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<SequenceQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_sequence(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<SequenceQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let Some(conversation_id) = q.conversation_id.as_deref().map(str::trim).filter(|s| !s.is_empty()) else {
@@ -374,8 +375,8 @@ pub struct DistributionQuery {
 /// Aggregate distribution — layer counts across ALL conversations (a global
 /// rollup, not scoped to one conversation), same "one global feed" shape as
 /// `emergence::list_signals` / `chat::ccet_summary`.
-pub async fn distribution(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<DistributionQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn distribution(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<DistributionQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let (range_label, range_days) = resolve_range(q.range.as_deref());
@@ -594,7 +595,7 @@ mod tests {
     #[tokio::test]
     async fn sequence_requires_conversation_id() {
         let state = test_state().await;
-        let res = list_sequence(AxState(state), HeaderMap::new(), AxQuery(empty_seq_query())).await.into_response();
+        let res = list_sequence(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(empty_seq_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 
@@ -604,7 +605,7 @@ mod tests {
         state.chat_secret = "shh".to_string();
         let res = list_sequence(
             AxState(state),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(SequenceQuery { conversation_id: Some("conv-1".to_string()) }),
         )
         .await
@@ -628,7 +629,7 @@ mod tests {
 
         let res = list_sequence(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(SequenceQuery { conversation_id: Some("conv-6".to_string()) }),
         )
         .await
@@ -656,7 +657,7 @@ mod tests {
 
         let res = list_sequence(
             AxState(state),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(SequenceQuery { conversation_id: Some("conv-old".to_string()) }),
         )
         .await
@@ -677,7 +678,7 @@ mod tests {
         persist_fragments(&state.db, "conv-7", "msg-x", &["facts".to_string(), "analysis".to_string()]).await;
         persist_fragments(&state.db, "conv-8", "msg-y", &["facts".to_string()]).await;
 
-        let res = distribution(AxState(state.clone()), HeaderMap::new(), AxQuery(DistributionQuery { range: Some("all".to_string()) }))
+        let res = distribution(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(DistributionQuery { range: Some("all".to_string()) }))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -703,7 +704,7 @@ mod tests {
             .await
             .unwrap();
 
-        let res = distribution(AxState(state.clone()), HeaderMap::new(), AxQuery(DistributionQuery { range: Some("30d".to_string()) }))
+        let res = distribution(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(DistributionQuery { range: Some("30d".to_string()) }))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
@@ -717,7 +718,7 @@ mod tests {
     async fn distribution_requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = distribution(AxState(state), HeaderMap::new(), AxQuery(DistributionQuery { range: None })).await.into_response();
+        let res = distribution(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(DistributionQuery { range: None })).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 

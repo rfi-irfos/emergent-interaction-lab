@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
 import { HudTile, HudSectionHeader } from './Hud'
 import type { BranchOut } from './SimulationLab'
@@ -157,7 +157,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) })
       if (statusFilter) params.set('status', statusFilter)
-      const res = await fetch(`${API_BASE}/api/simulation/runs?${params}`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/simulation/runs?${params}`, {})
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
       const page: RunOut[] = await res.json()

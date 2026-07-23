@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Research Workspace (papers/hypotheses) and Innovation Lab (ideas/concepts/
 /// frameworks/prototypes) share one table, filtered by `category` — the two
@@ -90,8 +91,8 @@ pub async fn insert_note(state: &AppState, category: &str, title: &str, body: &s
 #[derive(Deserialize)]
 pub struct ListQuery { category: Option<String> }
 
-pub async fn list_items(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn list_items(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let rows: Vec<NoteRow> = match &q.category {
         Some(cats) => {
             let wanted: Vec<&str> = cats.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
@@ -116,14 +117,14 @@ pub async fn list_items(State(state): State<AppState>, headers: HeaderMap, Query
 #[derive(Deserialize)]
 pub struct CreateItemReq { category: String, title: String, body: String, tags: Option<String> }
 
-pub async fn create_item(State(state): State<AppState>, headers: HeaderMap, Json(req): Json<CreateItemReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn create_item(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Json(req): Json<CreateItemReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let id = insert_note(&state, &req.category, &req.title, &req.body, req.tags.as_deref().unwrap_or(""), "human", None).await;
     Json(serde_json::json!({ "id": id })).into_response()
 }
 
-pub async fn get_item(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn get_item(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let row: Option<NoteRow> = sqlx::query_as(
         "SELECT id, category, title, body, tags, status, source, created_at, updated_at, source_conversation_id FROM research_notes WHERE id = ?1",
     )
@@ -140,8 +141,8 @@ pub async fn get_item(State(state): State<AppState>, headers: HeaderMap, Path(id
 #[derive(Deserialize)]
 pub struct UpdateItemReq { title: Option<String>, body: Option<String>, tags: Option<String>, status: Option<String> }
 
-pub async fn update_item(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>, Json(req): Json<UpdateItemReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn update_item(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>, Json(req): Json<UpdateItemReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     if let Some(t) = &req.title {
         let _ = sqlx::query("UPDATE research_notes SET title = ?1, updated_at = datetime('now') WHERE id = ?2").bind(t).bind(&id).execute(&state.db).await;
     }
@@ -157,8 +158,8 @@ pub async fn update_item(State(state): State<AppState>, headers: HeaderMap, Path
     StatusCode::NO_CONTENT.into_response()
 }
 
-pub async fn delete_item(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) { return StatusCode::UNAUTHORIZED.into_response(); }
+pub async fn delete_item(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) { return StatusCode::UNAUTHORIZED.into_response(); }
     let _ = sqlx::query("DELETE FROM research_notes WHERE id = ?1").bind(&id).execute(&state.db).await;
     crate::auditlog::record(&state, "admin", "research_item_deleted", "Research-/Innovation-Eintrag gelöscht", Some(serde_json::json!({"id": id}))).await;
     StatusCode::NO_CONTENT.into_response()

@@ -183,8 +183,6 @@ export function SystemState() {
       )}
 
       <HudSectionHeader
-        title="Beobachtete Systeme"
-        sub="Ein Kartenstapel pro Themenbereich deiner Forschung, mit dem jeweils aktuellsten Stand."
         actions={
           <>
             <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>

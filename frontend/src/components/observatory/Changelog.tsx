@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders } from '../../lib/adminApi'
+import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
 
 // Real, standalone Verwaltung page for backend/src/auditlog.rs's
 // hash-chained audit_log — the small sidebar `AuditChangelog.tsx` widget
@@ -98,7 +97,7 @@ export function Changelog() {
   const runVerify = async () => {
     setVerifying(true)
     try {
-      const res = await fetch(`${API_BASE}/api/observatory/audit/verify`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/observatory/audit/verify`, {})
       if (!res.ok) throw new Error(String(res.status))
       setVerify(await res.json())
     } catch {
@@ -137,7 +136,7 @@ export function Changelog() {
       if (fromDate) params.set('from', `${fromDate}T00:00:00.000000Z`)
       if (toDate) params.set('to', `${toDate}T23:59:59.999999Z`)
       if (debouncedSearch.trim()) params.set('q', debouncedSearch.trim())
-      const res = await fetch(`${API_BASE}/api/observatory/audit/log?${params}`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/observatory/audit/log?${params}`, {})
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
       const page: AuditLogEntry[] = await res.json()
@@ -194,10 +193,6 @@ export function Changelog() {
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        title="Changelog"
-        sub="Jede Änderung am Lab — nachvollziehbar, mit Kettensignatur."
-      />
       {/* ── Chain integrity — the one thing Lighthouse's own live Changelog
           page never shipped (only its retired Audit.tsx had a verify
           button); our backend's /verify endpoint is real and working, so

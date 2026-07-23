@@ -13,6 +13,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -493,8 +494,8 @@ pub struct CreateProductReq {
     payment_link_url: Option<String>,
 }
 
-pub async fn list_products(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_products(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let rows: Vec<(String, String, String, String, i64, String, String, Option<String>, Option<String>, Option<String>, Option<String>, String, Option<String>)> = sqlx::query_as(
@@ -567,10 +568,10 @@ pub async fn list_public_products(State(state): State<AppState>) -> impl IntoRes
 
 pub async fn create_product(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Json(body): Json<CreateProductReq>,
 ) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     if body.name.trim().is_empty() || body.price_cents <= 0 {
@@ -605,8 +606,8 @@ pub async fn create_product(
     Json(json!({ "ok": true, "id": id })).into_response()
 }
 
-pub async fn delete_product(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn delete_product(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     // Deleting the local row does not deactivate an already-generated Stripe
@@ -631,8 +632,8 @@ struct StripeLinkResp {
 /// Product -> Price -> Payment Link, in that order (Stripe's Payment Links
 /// API requires an existing Price object, unlike Checkout Sessions which
 /// accept inline price data).
-pub async fn create_payment_link(State(state): State<AppState>, headers: HeaderMap, Path(id): Path<String>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn create_payment_link(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(id): Path<String>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     if state.stripe_secret_key.is_empty() {
@@ -1013,8 +1014,8 @@ pub struct ListOrdersQuery {
 /// `customer_email` only ever appears through this authenticated endpoint —
 /// same admin-only visibility as `contact_messages.email` — never the
 /// public storefront feed.
-pub async fn list_orders(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListOrdersQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_orders(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListOrdersQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let limit = q.limit.unwrap_or(DEFAULT_ORDERS_LIMIT).clamp(1, MAX_ORDERS_LIMIT);
@@ -1143,7 +1144,7 @@ mod tests {
         for (name, price_cents, currency, mode, interval) in plan {
             let create_res = create_product(
                 AxState(state.clone()),
-                HeaderMap::new(),
+                HeaderMap::new(), CookieJar::new(),
                 AxJson(CreateProductReq {
                     name: name.to_string(),
                     description: format!("{name} - test fixture"),
@@ -1163,7 +1164,7 @@ mod tests {
             let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
             let id = body["id"].as_str().unwrap().to_string();
 
-            let link_res = create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(id.clone()))
+            let link_res = create_payment_link(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id.clone()))
                 .await
                 .into_response();
             assert_eq!(link_res.status(), StatusCode::OK, "payment link creation failed for {name}");
@@ -1194,7 +1195,7 @@ mod tests {
         state.stripe_secret_key = String::new();
         let create_res = create_product(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(CreateProductReq {
                 name: "Test".to_string(),
                 description: String::new(),
@@ -1212,7 +1213,7 @@ mod tests {
         let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
         let id = body["id"].as_str().unwrap().to_string();
 
-        let link_res = create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(id))
+        let link_res = create_payment_link(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id))
             .await
             .into_response();
         assert_eq!(link_res.status(), StatusCode::SERVICE_UNAVAILABLE);
@@ -1230,7 +1231,7 @@ mod tests {
         // A draft: created but never turned into a payment link.
         let draft_res = create_product(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(CreateProductReq {
                 name: "Draft Product".to_string(),
                 description: "not ready yet".to_string(),
@@ -1250,7 +1251,7 @@ mod tests {
         // A real, sellable product: link generated.
         let create_res = create_product(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(CreateProductReq {
                 name: "Certified Emergence Interaction Analyst".to_string(),
                 description: "Individual".to_string(),
@@ -1267,7 +1268,7 @@ mod tests {
         let body_bytes = axum::body::to_bytes(create_res.into_body(), usize::MAX).await.unwrap();
         let body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
         let id = body["id"].as_str().unwrap().to_string();
-        create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(id)).await;
+        create_payment_link(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(id)).await;
 
         let public_res = list_public_products(AxState(state.clone())).await.into_response();
         assert_eq!(public_res.status(), StatusCode::OK);
@@ -1449,7 +1450,7 @@ mod tests {
 
         let create_res = create_product(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxJson(CreateProductReq {
                 name: "State of Emergent Interaction - Q1 Report".to_string(),
                 description: "test fixture".to_string(),
@@ -1466,7 +1467,7 @@ mod tests {
         let create_bytes = axum::body::to_bytes(create_res.into_body(), usize::MAX).await.unwrap();
         let product_id = serde_json::from_slice::<serde_json::Value>(&create_bytes).unwrap()["id"].as_str().unwrap().to_string();
 
-        create_payment_link(AxState(state.clone()), HeaderMap::new(), Path(product_id.clone())).await;
+        create_payment_link(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path(product_id.clone())).await;
 
         let plink_id: String = sqlx::query_scalar("SELECT stripe_payment_link_id FROM products WHERE id = ?1")
             .bind(&product_id)
@@ -1484,7 +1485,7 @@ mod tests {
         let res = stripe_webhook(AxState(state.clone()), headers, Bytes::from(payload)).await.into_response();
         assert_eq!(res.status(), StatusCode::OK);
 
-        let orders_res = list_orders(AxState(state.clone()), HeaderMap::new(), AxQuery(ListOrdersQuery { limit: None, offset: None }))
+        let orders_res = list_orders(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(ListOrdersQuery { limit: None, offset: None }))
             .await
             .into_response();
         let orders_bytes = axum::body::to_bytes(orders_res.into_body(), usize::MAX).await.unwrap();
@@ -1519,7 +1520,7 @@ mod tests {
         // unauthenticated request must be rejected — same mechanism as
         // every other admin endpoint (authz::require_admin).
         state.chat_secret = "real-admin-secret-for-this-test".to_string();
-        let unauth_res = list_orders(AxState(state.clone()), HeaderMap::new(), AxQuery(ListOrdersQuery { limit: None, offset: None }))
+        let unauth_res = list_orders(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(ListOrdersQuery { limit: None, offset: None }))
             .await
             .into_response();
         assert_eq!(unauth_res.status(), StatusCode::UNAUTHORIZED);
@@ -1527,7 +1528,7 @@ mod tests {
         let mut auth_headers = HeaderMap::new();
         auth_headers.insert("x-chat-secret", "real-admin-secret-for-this-test".parse().unwrap());
 
-        let page1 = list_orders(AxState(state.clone()), auth_headers.clone(), AxQuery(ListOrdersQuery { limit: Some(2), offset: Some(0) }))
+        let page1 = list_orders(AxState(state.clone()), auth_headers.clone(), CookieJar::new(), AxQuery(ListOrdersQuery { limit: Some(2), offset: Some(0) }))
             .await
             .into_response();
         assert_eq!(page1.status(), StatusCode::OK);
@@ -1537,7 +1538,7 @@ mod tests {
         let page1_body: Vec<serde_json::Value> = serde_json::from_slice(&page1_bytes).unwrap();
         assert_eq!(page1_body.len(), 2);
 
-        let page2 = list_orders(AxState(state.clone()), auth_headers, AxQuery(ListOrdersQuery { limit: Some(2), offset: Some(2) }))
+        let page2 = list_orders(AxState(state.clone()), auth_headers, CookieJar::new(), AxQuery(ListOrdersQuery { limit: Some(2), offset: Some(2) }))
             .await
             .into_response();
         let page2_bytes = axum::body::to_bytes(page2.into_body(), usize::MAX).await.unwrap();

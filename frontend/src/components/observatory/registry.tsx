@@ -105,24 +105,39 @@ export function groupByTier(modules: ObservatoryModuleDef[] = OBSERVATORY_MODULE
   }
 }
 
-export const SECTION_LABELS: Record<AdminSection, string> = {
-  inbox: 'Inbox',
-  forschung: 'Forschung',
-  blog: 'Blog',
-  analytics: 'Analytics',
-  'website-kit': 'Website Kit',
-  monetization: 'Monetarisierung',
-  systemmap: 'Knowledge & System Map',
-  emergence: 'Emergence Monitor',
-  systemstate: 'System State',
-  interaction: 'Interaction+Information Dynamics',
-  behavior: 'Behavioral Landscape',
-  research: 'Research Pulse',
-  simulationcenter: 'Simulation Center',
-  agentactivity: 'Agent-Aktivität',
-  flugschreiber: 'Flugschreiber',
-  denkfragmente: 'Denkfragmente',
-  anomalies: 'Anomalie-Log',
-  forschungspipeline: 'Forschungspipeline',
-  changelog: 'Changelog',
+/// One line per app: "{title}: {description}", rendered once in the shared
+/// top bar (AdminPanel.tsx) instead of a second/third title further down in
+/// each panel — see HudSectionHeader call sites, which should carry
+/// `actions` only (no `title`/`sub`) once they read from here.
+///
+/// `description` copy below is placeholder/structural — it needs to be
+/// replaced with Laura's own voice before this ships. Kept short (one
+/// sentence, no jargon) to match the target shape.
+export interface SectionCopy { title: string; description: string }
+
+export const SECTION_COPY: Record<AdminSection, SectionCopy> = {
+  inbox: { title: 'Inbox', description: 'Nachrichten, die über die Website reinkommen.' },
+  forschung: { title: 'Forschung', description: 'Der Jarvis-Chat — hier arbeitest du direkt mit ihm.' },
+  blog: { title: 'Blog', description: 'Beiträge schreiben, bearbeiten, veröffentlichen.' },
+  analytics: { title: 'Analytics', description: 'Was auf der Website passiert, und die Plattform im Überblick.' },
+  'website-kit': { title: 'Website Kit', description: 'Texte, Bilder und Seiten der Website bearbeiten.' },
+  monetization: { title: 'Monetarisierung', description: 'Produkte, Bestellungen, Umsatz.' },
+  systemmap: { title: 'Knowledge & System Map', description: 'Wie Wissen und Systeme hier miteinander verknüpft sind.' },
+  emergence: { title: 'Emergence Monitor', description: 'Emergenz-Signale aus der Mensch-KI-Ko-Evolution.' },
+  systemstate: { title: 'System State', description: 'Beobachtete Systeme und ihr aktueller Zustand.' },
+  interaction: { title: 'Interaction+Information Dynamics', description: 'Wie sich Gespräche und Wissen über Zeit entwickeln.' },
+  behavior: { title: 'Behavioral Landscape', description: 'Verhaltensmuster im Zeitverlauf.' },
+  research: { title: 'Research Pulse', description: 'Papers, Hypothesen, Ideen — der Forschungsfluss.' },
+  simulationcenter: { title: 'Simulation Center', description: 'Simulationsläufe und ihre Ergebnisse.' },
+  agentactivity: { title: 'Agent-Aktivität', description: 'Was das Entwicklungsteam gerade baut.' },
+  flugschreiber: { title: 'Flugschreiber', description: 'Der Systemzustand über die Zeit, Schnappschuss für Schnappschuss.' },
+  denkfragmente: { title: 'Denkfragmente', description: 'Deine eigenen Gedanken, eingeordnet nach dem 8-Layer-Modell.' },
+  anomalies: { title: 'Anomalie-Log', description: 'Auffälligkeiten, die Jarvis selbst gemeldet hat.' },
+  forschungspipeline: { title: 'Forschungspipeline', description: '' },
+  changelog: { title: 'Changelog', description: 'Jede Änderung am Lab — nachvollziehbar, mit Kettensignatur.' },
 }
+
+/** @deprecated use `SECTION_COPY[x].title` — kept only until every consumer migrates. */
+export const SECTION_LABELS: Record<AdminSection, string> = Object.fromEntries(
+  Object.entries(SECTION_COPY).map(([k, v]) => [k, v.title])
+) as Record<AdminSection, string>

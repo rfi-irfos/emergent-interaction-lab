@@ -1,4 +1,5 @@
 use axum::http::HeaderMap;
+use axum_extra::extract::cookie::CookieJar;
 
 use crate::AppState;
 
@@ -13,16 +14,19 @@ pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-/// The one auth mechanism the shipped admin UI actually round-trips through
-/// today: a shared secret header, checked against `CHAT_API_SECRET`.
+/// Admin gate: EITHER a valid `rfi_session` browser cookie OR the
+/// `x-chat-secret` header (server-to-server: Hermes, scripts, deploy-log).
+/// One login satisfies both — the cookie path is what the deployed GH Pages
+/// admin UI actually uses; the header path stays for non-browser callers.
 ///
-/// SECURITY (H1, 2026-07-19): an empty secret is FAIL-CLOSED in production. It
-/// only opens the gate when `DEV_MODE=true` (explicit local/dev convenience).
-/// Previously an unset secret on ANY deployment silently made every admin
-/// endpoint public; now a prod machine with no secret configured refuses admin
-/// access instead of granting it to everyone. Pair with the startup warning in
-/// main.rs and set CHAT_API_SECRET on every real deployment.
-pub fn require_admin(state: &AppState, headers: &HeaderMap) -> bool {
+/// SECURITY (H1, 2026-07-19): an empty secret is FAIL-CLOSED in production —
+/// it only opens the header path when `DEV_MODE=true` (explicit local/dev
+/// convenience). The cookie path is unaffected by that fallback: a valid
+/// session is always sufficient, dev mode or not.
+pub fn require_admin(state: &AppState, headers: &HeaderMap, jar: &CookieJar) -> bool {
+    if crate::auth::get_session(jar, state).is_some() {
+        return true;
+    }
     if state.chat_secret.is_empty() {
         // Fail closed unless this is an explicit dev machine.
         return state.dev_mode;

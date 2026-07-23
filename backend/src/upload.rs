@@ -8,6 +8,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 #[derive(Serialize)]
 struct UploadResponse {
@@ -17,7 +18,7 @@ struct UploadResponse {
 
 pub async fn upload_file(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
     // Was gated on get_session() (the Google-OAuth cookie session) — but
@@ -32,7 +33,7 @@ pub async fn upload_file(
     // reason uploads were broken beyond the already-fixed UPLOADS_DIR volume
     // move. Matching require_admin here is what makes it actually callable
     // from BlogDrafts.tsx (and anything else using authHeaders()).
-    if !require_admin(&state, &headers) {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 

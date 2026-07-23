@@ -9,6 +9,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Real backend-persisted contact inbox. Previously the admin Inbox was
 /// pure `localStorage` — written in the VISITOR's browser on form submit
@@ -119,8 +120,8 @@ pub async fn submit_contact(
 
 /// Admin — list all messages, newest first. A contact inbox is small by
 /// nature, not a firehose, so no pagination yet.
-pub async fn list_messages(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_messages(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let rows: Vec<ContactRow> = sqlx::query_as(
@@ -141,11 +142,11 @@ pub struct UpdateStatusReq {
 /// persist server-side instead of just local UI state.
 pub async fn update_status(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Path(id): Path<String>,
     Json(req): Json<UpdateStatusReq>,
 ) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     if !["new", "replied", "done"].contains(&req.status.as_str()) {
@@ -254,7 +255,7 @@ mod tests {
         // Admin endpoint without a secret configured still requires calling
         // through require_admin (empty secret == open), proving the route
         // is reachable the same way the real admin UI reaches it.
-        let list_res = list_messages(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let list_res = list_messages(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         assert_eq!(list_res.status(), StatusCode::OK);
         let list_bytes = axum::body::to_bytes(list_res.into_body(), usize::MAX).await.unwrap();
         let list_body: Vec<ContactMessageOut> = serde_json::from_slice(&list_bytes).unwrap();
@@ -266,7 +267,7 @@ mod tests {
         // Antworten -> replied
         let update_res = update_status(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(id.clone()),
             Json(UpdateStatusReq { status: "replied".to_string() }),
         )
@@ -274,7 +275,7 @@ mod tests {
         .into_response();
         assert_eq!(update_res.status(), StatusCode::NO_CONTENT);
 
-        let list_res2 = list_messages(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let list_res2 = list_messages(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let list_bytes2 = axum::body::to_bytes(list_res2.into_body(), usize::MAX).await.unwrap();
         let list_body2: Vec<ContactMessageOut> = serde_json::from_slice(&list_bytes2).unwrap();
         assert_eq!(list_body2[0].status, "replied");
@@ -282,7 +283,7 @@ mod tests {
         // Erledigt -> done (status-based, not a delete: still listed)
         let update_res2 = update_status(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(id.clone()),
             Json(UpdateStatusReq { status: "done".to_string() }),
         )
@@ -290,7 +291,7 @@ mod tests {
         .into_response();
         assert_eq!(update_res2.status(), StatusCode::NO_CONTENT);
 
-        let list_res3 = list_messages(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let list_res3 = list_messages(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let list_bytes3 = axum::body::to_bytes(list_res3.into_body(), usize::MAX).await.unwrap();
         let list_body3: Vec<ContactMessageOut> = serde_json::from_slice(&list_bytes3).unwrap();
         assert_eq!(list_body3.len(), 1, "Erledigt must not delete the row");
@@ -299,14 +300,14 @@ mod tests {
         // "Wieder öffnen" undo -> back to new
         let undo_res = update_status(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(id.clone()),
             Json(UpdateStatusReq { status: "new".to_string() }),
         )
         .await
         .into_response();
         assert_eq!(undo_res.status(), StatusCode::NO_CONTENT);
-        let list_res4 = list_messages(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let list_res4 = list_messages(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let list_bytes4 = axum::body::to_bytes(list_res4.into_body(), usize::MAX).await.unwrap();
         let list_body4: Vec<ContactMessageOut> = serde_json::from_slice(&list_bytes4).unwrap();
         assert_eq!(list_body4[0].status, "new");
@@ -328,7 +329,7 @@ mod tests {
         .into_response();
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
-        let list_res = list_messages(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let list_res = list_messages(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         let list_bytes = axum::body::to_bytes(list_res.into_body(), usize::MAX).await.unwrap();
         let list_body: Vec<ContactMessageOut> = serde_json::from_slice(&list_bytes).unwrap();
         assert!(list_body.is_empty(), "invalid submission must not be persisted");
@@ -353,7 +354,7 @@ mod tests {
 
         let res = update_status(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(id),
             Json(UpdateStatusReq { status: "archived".to_string() }),
         )

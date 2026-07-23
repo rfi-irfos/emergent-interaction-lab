@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders, useAdminFetch } from '../../lib/adminApi'
+import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
@@ -210,7 +210,7 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
       if (confidenceFilter) params.set('confidence', confidenceFilter)
       if (evolutionFilter) params.set('evolution', evolutionFilter)
       if (verifiedFilter) params.set('verified', verifiedFilter)
-      const res = await fetch(`${API_BASE}/api/observatory/emergence/signals?${params}`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/observatory/emergence/signals?${params}`, {})
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
       const page: Signal[] = await res.json()
@@ -244,13 +244,13 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
     // without waiting for the next message to arrive.
     setAnalyzing(true)
     try {
-      const convRes = await fetch(`${API_BASE}/api/chat/conversations?kind=chat`, { headers: authHeaders() })
+      const convRes = await adminFetch(`/api/chat/conversations?kind=chat`, {})
       const conversations = convRes.ok ? await convRes.json() : []
       const latestId = conversations[0]?.id
       if (!latestId) return
-      await fetch(`${API_BASE}/api/observatory/emergence/analyze`, {
+      await adminFetch(`/api/observatory/emergence/analyze`, {
         method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation_id: latestId }),
       })
       setRefreshKey(k => k + 1)
@@ -279,8 +279,6 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
   return (
     <div className="obs-panel">
       <HudSectionHeader
-        title="Emergence Monitor"
-        sub="Signale emergenter Mensch-KI-Ko-Evolution — automatisch aus Forschungsgesprächen erkannt."
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>

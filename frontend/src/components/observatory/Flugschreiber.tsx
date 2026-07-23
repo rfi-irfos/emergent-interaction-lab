@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../../lib/apiBase'
-import { authHeaders } from '../../lib/adminApi'
+import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
 import { HudGrid, HudTile, HudSectionHeader } from './Hud'
@@ -80,7 +80,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
     setError(false)
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset), range })
-      const res = await fetch(`${API_BASE}/api/observatory/snapshots?${params}`, { headers: authHeaders() })
+      const res = await adminFetch(`/api/observatory/snapshots?${params}`, {})
       if (!res.ok) throw new Error(String(res.status))
       const totalHeader = res.headers.get('X-Total-Count')
       const page: Snapshot[] = await res.json()

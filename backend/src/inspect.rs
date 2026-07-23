@@ -2,6 +2,7 @@ use axum::{extract::State, http::{HeaderMap, StatusCode}, response::IntoResponse
 use serde::{Deserialize, Serialize};
 
 use crate::{authz::require_admin, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 const MODEL: &str = "meta/llama-3.1-8b-instruct";
 const MAX_PROMPT_CHARS: usize = 300;
@@ -55,10 +56,10 @@ struct NvidiaTopLogprob {
 
 pub async fn inspect(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Json(body): Json<InspectRequest>,
 ) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let prompt = body.prompt.trim();

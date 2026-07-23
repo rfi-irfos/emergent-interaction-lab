@@ -64,8 +64,6 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
   return (
     <div className="obs-panel">
       <HudSectionHeader
-        title="Behavioral Landscape"
-        sub="Werkzeugaufrufe im zeitlichen Verlauf — eine Ebene tiefer als die Interaktionsdynamik."
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>

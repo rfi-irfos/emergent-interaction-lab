@@ -16,6 +16,7 @@ use uuid::Uuid;
 use crate::agent;
 use crate::authz::require_admin as is_authorized;
 use crate::AppState;
+use axum_extra::extract::cookie::CookieJar;
 
 /// Root cause of the 2026-07-10 "message sent, absolutely nothing comes
 /// back — not slow, not an error, just silence" production regression,
@@ -816,8 +817,8 @@ pub(crate) async fn current_ccet_metrics(db: &SqlitePool) -> (f32, u32, f32, i64
 /// PER-conversation live rollup would need the Observatory tab to know
 /// which conversation is "current" outside of Forschung's own chat view,
 /// which nothing here currently threads through.
-pub async fn ccet_summary(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+pub async fn ccet_summary(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -875,10 +876,10 @@ fn escape_like_pattern(term: &str) -> String {
 
 pub async fn list_conversations(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     axum::extract::Query(q): axum::extract::Query<ListConversationsQuery>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let kind = q.kind.unwrap_or_else(|| "chat".to_string());
@@ -971,10 +972,10 @@ pub struct CreateConversationReq {
 
 pub async fn create_conversation(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Json(body): Json<CreateConversationReq>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let id = Uuid::new_v4().to_string();
@@ -1013,10 +1014,10 @@ struct MessageOut {
 
 pub async fn get_conversation(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     // `, rowid ASC` tiebreak: created_at is second-granularity with no other
@@ -1079,10 +1080,10 @@ pub async fn get_conversation(
 
 pub async fn delete_conversation(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let message_ids: Vec<(String,)> = sqlx::query_as("SELECT id FROM chat_messages WHERE conversation_id = ?1")
@@ -1160,10 +1161,10 @@ pub async fn delete_conversation(
 ///   because the entire conversation is going away anyway.
 pub async fn delete_message_and_after(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Path((conversation_id, message_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -1234,8 +1235,8 @@ struct DocumentOut {
     created_at: String,
 }
 
-pub async fn list_documents(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+pub async fn list_documents(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let rows: Vec<(String, String, String)> =
@@ -1252,10 +1253,10 @@ pub async fn list_documents(State(state): State<AppState>, headers: HeaderMap) -
 
 pub async fn delete_document(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let _ = sqlx::query("DELETE FROM chat_chunks WHERE source_type = 'document' AND source_id = ?1")
@@ -1271,10 +1272,10 @@ pub async fn delete_document(
 
 pub async fn upload_document(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
@@ -1562,10 +1563,10 @@ pub(crate) async fn finalize_turn(
 
 pub async fn stream_chat(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Json(body): Json<StreamChatReq>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     // Resolved once, up front, because it decides which credentials this turn
@@ -2140,11 +2141,11 @@ pub struct InterruptedMessageReq {
 /// that contract.
 pub async fn save_interrupted_message(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    headers: HeaderMap, jar: CookieJar,
     Path(id): Path<String>,
     Json(body): Json<InterruptedMessageReq>,
 ) -> impl IntoResponse {
-    if !is_authorized(&state, &headers) {
+    if !is_authorized(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let content = body.content.trim().to_string();
@@ -2249,7 +2250,7 @@ mod tests {
 
     async fn list_ids(state: &AppState, q: Option<&str>) -> Vec<String> {
         let query = ListConversationsQuery { kind: None, q: q.map(str::to_string) };
-        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), AxQuery(query))
+        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(query))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -2374,7 +2375,7 @@ mod tests {
         sqlx::query("DROP TABLE chat_conversations").execute(&state.db).await.unwrap();
 
         let query = ListConversationsQuery { kind: None, q: None };
-        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), AxQuery(query))
+        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(query))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR, "a genuine DB error must not come back as 200 []");
@@ -2414,7 +2415,7 @@ mod tests {
         // agent-dock conversation — the merge only ever activates for the
         // literal 'chat' request, never leaks into other explicit kinds.
         let query = ListConversationsQuery { kind: Some("agent".to_string()), q: None };
-        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), AxQuery(query))
+        let res = list_conversations(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(query))
             .await
             .into_response();
         let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
@@ -2432,7 +2433,7 @@ mod tests {
         seed_conversation(&state, "conv-a", "wird nie gesehen", "irgendwas").await;
         sqlx::query("DROP TABLE chat_messages").execute(&state.db).await.unwrap();
 
-        let res = get_conversation(AxState(state.clone()), HeaderMap::new(), Path("conv-a".to_string()))
+        let res = get_conversation(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path("conv-a".to_string()))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR, "a genuine DB error must not come back as 200 []");
@@ -2446,7 +2447,7 @@ mod tests {
         let state = test_state().await;
         seed_conversation(&state, "conv-a", "titel", "hallo welt").await;
 
-        let res = get_conversation(AxState(state.clone()), HeaderMap::new(), Path("conv-a".to_string()))
+        let res = get_conversation(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), Path("conv-a".to_string()))
             .await
             .into_response();
         assert_eq!(res.status(), StatusCode::OK);
@@ -2864,7 +2865,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
+        let resp = stream_chat(AxState(state), HeaderMap::new(), CookieJar::new(), AxJson(req))
             .await
             .into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -2901,7 +2902,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
+        let resp = stream_chat(AxState(state), HeaderMap::new(), CookieJar::new(), AxJson(req))
             .await
             .into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -2943,7 +2944,7 @@ mod tests {
             reasoning_requested: None,
             engine: Some("hermes".to_string()),
         };
-        let resp = stream_chat(AxState(state), HeaderMap::new(), AxJson(req))
+        let resp = stream_chat(AxState(state), HeaderMap::new(), CookieJar::new(), AxJson(req))
             .await
             .into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -2988,7 +2989,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req))
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req))
             .await
             .into_response();
         let body = read_sse_body_bounded(resp).await;
@@ -3080,7 +3081,7 @@ mod tests {
 
         let resp = save_interrupted_message(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path("conv-lks".to_string()),
             AxJson(InterruptedMessageReq { content: "Das war erst die Hälf".to_string() }),
         )
@@ -3112,7 +3113,7 @@ mod tests {
 
         let resp = save_interrupted_message(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path("conv-lks-empty".to_string()),
             AxJson(InterruptedMessageReq { content: "   ".to_string() }),
         )
@@ -3189,7 +3190,7 @@ mod tests {
             .unwrap();
         let resp = save_interrupted_message(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(conv_id.to_string()),
             AxJson(InterruptedMessageReq { content: "Also, es war einmal ei".to_string() }),
         )
@@ -3207,7 +3208,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req))
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req))
             .await
             .into_response();
         let _ = read_sse_body_bounded(resp).await;
@@ -3300,7 +3301,7 @@ mod tests {
 
         let resp = delete_message_and_after(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path((conv_id.to_string(), "m3".to_string())),
         )
         .await
@@ -3344,7 +3345,7 @@ mod tests {
 
         let resp = delete_message_and_after(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             Path(("conv-404".to_string(), "does-not-exist".to_string())),
         )
         .await
@@ -3525,7 +3526,7 @@ mod tests {
         record_turn_like_stream_chat(&state, conv_id, "BETA: Wieder zeigt sich Emergenz in der Interaktion.").await;
         record_turn_like_stream_chat(&state, conv_id, "GAMMA: Ganz anderes Thema, komplett losgelöst, keine Fachbegriffe.").await;
 
-        let resp = ccet_summary(AxState(state.clone()), HeaderMap::new()).await.into_response();
+        let resp = ccet_summary(AxState(state.clone()), HeaderMap::new(), CookieJar::new()).await.into_response();
         assert_eq!(resp.status(), StatusCode::OK);
         let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
         let parsed: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
@@ -3613,7 +3614,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
         assert!(body.contains("event: done"), "the exchange must still complete: {body:?}");
 
@@ -3666,7 +3667,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
 
         assert!(
@@ -3734,7 +3735,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
         assert!(body.contains("event: done"), "the exchange must still complete: {body:?}");
 
@@ -3780,7 +3781,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
         assert!(body.contains("event: done"), "the exchange must still complete even after exhausting every round: {body:?}");
         // The honest fallback text (see stream_chat's `if
@@ -3835,7 +3836,7 @@ mod tests {
             reasoning_requested: None,
             engine: None,
         };
-        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), AxJson(req)).await.into_response();
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req)).await.into_response();
         let body = read_sse_body_bounded(resp).await;
 
         assert!(

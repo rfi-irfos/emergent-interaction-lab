@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
-import { authHeaders } from '../lib/adminApi'
+import { adminFetch } from '../lib/adminApi'
 
 /// Real co-authoring, inline: "schreib mit Jarvis direkt im Modal" — no
 /// jumping to Forschung and back. Reuses the same /api/chat/stream pipeline
@@ -24,9 +24,9 @@ export function BlogCoWriter({ title, body, siteContent, onApplyTitle, onApplyBo
 
   async function ensureConversation(): Promise<string | null> {
     if (conversationId) return conversationId
-    const res = await fetch(`${API_BASE}/api/chat/conversations`, {
+    const res = await adminFetch(`/api/chat/conversations`, {
       method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     })
     if (!res.ok) return null
@@ -64,9 +64,9 @@ export function BlogCoWriter({ title, body, siteContent, onApplyTitle, onApplyBo
     let full = ''
     let res: Response
     try {
-      res = await fetch(`${API_BASE}/api/chat/stream`, {
+      res = await adminFetch(`/api/chat/stream`, {
         method: 'POST',
-        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation_id: convId, message, current_module: 'Blog (Redaktion)', site_content: siteContent }),
       })
     } catch {

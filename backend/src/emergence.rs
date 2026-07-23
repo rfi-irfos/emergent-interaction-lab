@@ -5,6 +5,7 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::{authz::require_admin, chat::CHAT_MODEL, observatory::resolve_range, AppState};
+use axum_extra::extract::cookie::CookieJar;
 
 /// Emergence signal detection — the Observatory's actual reason to exist.
 /// Deliberately an LLM interpretation of what's happening in a research
@@ -502,8 +503,8 @@ fn in_clause(col: &str, values: &[String], clauses: &mut Vec<String>, binds: &mu
     binds.extend(values.iter().cloned());
 }
 
-pub async fn list_signals(State(state): State<AppState>, headers: HeaderMap, Query(q): Query<ListSignalsQuery>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn list_signals(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<ListSignalsQuery>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let limit = q.limit.unwrap_or(DEFAULT_SIGNALS_LIMIT).clamp(1, MAX_SIGNALS_LIMIT);
@@ -566,8 +567,8 @@ pub struct AnalyzeReq {
 
 /// Manual re-run, independent of the automatic per-turn trigger — lets Laura
 /// force a fresh pass on demand too.
-pub async fn analyze(State(state): State<AppState>, headers: HeaderMap, Json(body): Json<AnalyzeReq>) -> impl IntoResponse {
-    if !require_admin(&state, &headers) {
+pub async fn analyze(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Json(body): Json<AnalyzeReq>) -> impl IntoResponse {
+    if !require_admin(&state, &headers, &jar) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
     analyze_recent_interactions(&state, &body.conversation_id).await;
@@ -679,14 +680,14 @@ mod tests {
             // in SQLite, so no artificial delay is needed here.
         }
 
-        let default_res = list_signals(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let default_res = list_signals(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_query())).await.into_response();
         let (default_page, default_total) = signals_body(default_res).await;
         assert_eq!(default_page.len(), 50, "default page must stay 50, matching the old hardcoded LIMIT");
         assert_eq!(default_total, Some(55), "X-Total-Count must reflect the true total, not just the page size");
 
         let next_res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { limit: Some(50), offset: Some(50), ..empty_query() }),
         )
         .await
@@ -709,7 +710,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { level: Some("human".to_string()), ..empty_query() }),
         )
         .await
@@ -728,7 +729,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { status: Some("fading".to_string()), ..empty_query() }),
         )
         .await
@@ -746,7 +747,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { confidence: Some("tentative".to_string()), ..empty_query() }),
         )
         .await
@@ -764,7 +765,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { evolution: Some("increasing".to_string()), ..empty_query() }),
         )
         .await
@@ -785,7 +786,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { level: Some("human, ai".to_string()), ..empty_query() }),
         )
         .await
@@ -813,7 +814,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { range: Some("7d".to_string()), ..empty_query() }),
         )
         .await
@@ -836,7 +837,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { range: Some("all".to_string()), ..empty_query() }),
         )
         .await
@@ -863,7 +864,7 @@ mod tests {
             .await
             .unwrap();
 
-        let res = list_signals(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let res = list_signals(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_query())).await.into_response();
         let (body, total) = signals_body(res).await;
         assert_eq!(total, Some(1), "no range param at all must still reach a 500-day-old signal, matching pre-range behavior");
         assert_eq!(body.len(), 1);
@@ -873,7 +874,7 @@ mod tests {
     async fn requires_admin_auth() {
         let mut state = test_state().await;
         state.chat_secret = "shh".to_string();
-        let res = list_signals(AxState(state), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let res = list_signals(AxState(state), HeaderMap::new(), CookieJar::new(), AxQuery(empty_query())).await.into_response();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
 
@@ -1100,7 +1101,7 @@ mod tests {
         .await
         .unwrap();
 
-        let res = list_signals(AxState(state.clone()), HeaderMap::new(), AxQuery(empty_query())).await.into_response();
+        let res = list_signals(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(empty_query())).await.into_response();
         let (body, total) = signals_body(res).await;
         assert_eq!(total, Some(1));
         assert_eq!(body[0]["id"], id);
@@ -1135,7 +1136,7 @@ mod tests {
 
         let res = list_signals(
             AxState(state.clone()),
-            HeaderMap::new(),
+            HeaderMap::new(), CookieJar::new(),
             AxQuery(ListSignalsQuery { verified: Some(true), ..empty_query() }),
         )
         .await

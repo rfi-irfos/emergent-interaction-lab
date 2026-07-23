@@ -3,7 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { Gesamtuebersicht } from './Gesamtuebersicht'
@@ -76,12 +76,11 @@ function trendAxisLabel(n: number, i: number, bucket: string): string {
 /// actions). The Observatory itself is reserved for emergence signals now.
 ///
 /// Gesamtübersicht (the research-activity rollup across every table this
-/// platform captures) lives here too now, per feedback, as a second tab —
+/// platform captures) stacks directly below Analytics on this same page —
 /// folded in rather than kept as its own top-level sidebar app, so the
 /// sidebar stays leaner. Its own data/fetching is untouched; only its entry
 /// point moved.
 export function Analytics({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
-  const [view, setView] = useState<'analytics' | 'gesamtuebersicht'>('analytics')
   // Retrospective day/week breakdown (see backend/src/analytics.rs's
   // `?bucket=day|week&days=N`) — everything else on this page is an
   // all-time or fixed-window total; this is the one view that answers "what
@@ -93,29 +92,11 @@ export function Analytics({ onOpenConversation }: { onOpenConversation?: (conver
     [bucket, days],
   )
 
-  const tabs = (
-    <div className="obs-toggle-tabs" role="tablist">
-      <button role="tab" aria-selected={view === 'analytics'} className={`obs-toggle-tab ${view === 'analytics' ? 'active' : ''}`} onClick={() => setView('analytics')}>
-        Analytics
-      </button>
-      <button role="tab" aria-selected={view === 'gesamtuebersicht'} className={`obs-toggle-tab ${view === 'gesamtuebersicht' ? 'active' : ''}`} onClick={() => setView('gesamtuebersicht')}>
-        Gesamtübersicht
-      </button>
-    </div>
-  )
+  const gesamtuebersicht = <Gesamtuebersicht onOpenConversation={onOpenConversation} />
 
-  if (view === 'gesamtuebersicht') {
-    return (
-      <div className="obs-toggle-view">
-        {tabs}
-        <Gesamtuebersicht onOpenConversation={onOpenConversation} />
-      </div>
-    )
-  }
-
-  if (loading) return <div className="obs-toggle-view">{tabs}<div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div></div>
-  if (error) return <div className="obs-toggle-view">{tabs}<div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div></div>
-  if (!data) return <div className="obs-toggle-view">{tabs}<div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div></div>
+  if (loading) return <div className="obs-stacked-views"><div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div>{gesamtuebersicht}</div>
+  if (error) return <div className="obs-stacked-views"><div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>{gesamtuebersicht}</div>
+  if (!data) return <div className="obs-stacked-views"><div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>{gesamtuebersicht}</div>
 
   // foldIntoOther is a no-op under its 6-slice ceiling — only matters here
   // if a real deployment ever accumulates more distinct sources/tools than
@@ -126,13 +107,8 @@ export function Analytics({ onOpenConversation }: { onOpenConversation?: (conver
   const toolCallCountsData = foldIntoOther(data.tool_call_counts.map(t => ({ label: t.tool, value: t.count })))
 
   return (
-    <div className="obs-toggle-view">
-      {tabs}
+    <div className="obs-stacked-views">
       <div className="obs-panel">
-      <HudSectionHeader
-        title="Analytics"
-        sub="Was die Besucher sehen und tun — Verkehr, Gespräche, Forschungsaktivität."
-      />
       <div className="obs-grid">
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_views}</div><div className="obs-stat-label">Seitenaufrufe (30 T.)</div></div>
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher (30 T.)</div></div>
@@ -250,6 +226,7 @@ export function Analytics({ onOpenConversation }: { onOpenConversation?: (conver
         </HudTile>
       </HudGrid>
       </div>
+      {gesamtuebersicht}
     </div>
   )
 }
