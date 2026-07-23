@@ -326,14 +326,15 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
         </aside>
 
         <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
-          {/* One-line description, above the app's own content — NOT in the
-              shared page-level topbar (that only ever shows the bare
-              section title, per feedback: "diese Descriptors wollen wir
-              nicht in der Topbar selber haben"). */}
-          {SECTION_COPY[adminSection].description && (
-            <div className="crm-section-desc">{SECTION_COPY[adminSection].description}</div>
-          )}
           <div className="crm-body">
+            {/* One-line description — inside the app's own scrolling content,
+                not the shared page-level topbar (that only ever shows the
+                bare section title) and not a fixed strip between chrome and
+                content either — it's the app's own header, so it scrolls
+                with the app's own content like everything else in here. */}
+            {SECTION_COPY[adminSection].description && (
+              <div className="crm-section-desc">{SECTION_COPY[adminSection].description}</div>
+            )}
             {adminSection === 'website-kit' && (
               <WebsiteKit
                 draft={draft}
