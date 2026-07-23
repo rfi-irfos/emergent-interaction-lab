@@ -6,7 +6,7 @@ import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile, useHeaderActions } from './Hud'
 
 interface Bucket { category?: string; tool?: string; bucket?: string; count: number }
 interface ToolCallEntry { tool_name: string; status: string; conversation_id: string | null; result: string | null; created_at: string }
@@ -46,6 +46,22 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<BehaviorData>(`/api/observatory/behavior?range=${range}`, [range])
 
+  useHeaderActions(
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+        {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {data && (
+        <ExportButtons
+          rows={data.recent_tool_calls.map(c => ({ ...c }))}
+          filenameBase={`behavioral-tool-calls-${range}`}
+          title={`Jarvis-Werkzeugaufrufe (${RANGE_SUFFIX[data.range] ?? data.range})`}
+        />
+      )}
+    </div>,
+    [range, data],
+  )
+
   if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
@@ -63,20 +79,6 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <ExportButtons
-              rows={data.recent_tool_calls.map(c => ({ ...c }))}
-              filenameBase={`behavioral-tool-calls-${range}`}
-              title={`Jarvis-Werkzeugaufrufe (${RANGE_SUFFIX[data.range] ?? data.range})`}
-            />
-          </div>
-        }
-      />
       <HudGrid cols={4}>
         <HudTile title="Research-Aktivität" badge="KAT" accent="var(--obs-purple)" span={2}>
           {data.category_mix.length === 0

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
+import { useHeaderActions } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { STATUS_ACCENT } from './registry'
 
@@ -170,6 +170,31 @@ export function SystemState() {
   }
   const hasAlerts = emergingSignals.length > 0 || diagAlerts.length > 0
 
+  useHeaderActions(
+    <>
+      <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+        {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      {states.length > 0 && (
+        <ExportButtons
+          rows={states.map(([scope, s]) => ({
+            scope,
+            status: s.status,
+            confidence: s.confidence,
+            evolution: s.evolution,
+            observation: s.observation,
+            observation_count: countByScope.get(scope) ?? 0,
+            interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
+            updated_at: s.created_at,
+          }))}
+          filenameBase={`system-state-${range}`}
+          title="System State — Beobachtete Systeme"
+        />
+      )}
+    </>,
+    [range, states, countByScope, trendByScope],
+  )
+
   return (
     <div className="obs-panel">
       {hasAlerts && (
@@ -181,32 +206,6 @@ export function SystemState() {
           </div>
         </>
       )}
-
-      <HudSectionHeader
-        actions={
-          <>
-            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            {states.length > 0 && (
-              <ExportButtons
-                rows={states.map(([scope, s]) => ({
-                  scope,
-                  status: s.status,
-                  confidence: s.confidence,
-                  evolution: s.evolution,
-                  observation: s.observation,
-                  observation_count: countByScope.get(scope) ?? 0,
-                  interaction_trend: trendLine(trendByScope.get(scope)) ?? '',
-                  updated_at: s.created_at,
-                }))}
-                filenameBase={`system-state-${range}`}
-                title="System State — Beobachtete Systeme"
-              />
-            )}
-          </>
-        }
-      />
       {signalsLoading && <HudSkeleton variant="list" rows={2} />}
       {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}
       {!signalsLoading && !signalsError && states.length === 0 && (

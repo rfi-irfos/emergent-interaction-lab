@@ -1,4 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+
+/// Lets the currently-active app push its own filter/action controls up into
+/// the ONE shared page header AdminPanel renders — mirrors Lighthouse's
+/// PageHeader `right=` slot, which every route's own controls (filters,
+/// search, the primary action button) flow into, rather than each panel
+/// rendering a second header block of its own below the real one.
+/// AdminPanel provides this; a panel calls `useHeaderActions(node, deps)`.
+export const HeaderActionsContext = createContext<(node: ReactNode) => void>(() => {})
+
+export function useHeaderActions(node: ReactNode, deps: React.DependencyList) {
+  const setHeaderActions = useContext(HeaderActionsContext)
+  useEffect(() => {
+    setHeaderActions(node)
+    return () => setHeaderActions(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+}
 
 /// SHARED HUD CARD LANGUAGE — the single source of truth for how every
 /// Observatory/Verwaltung panel and chart is framed. Previously each of the
