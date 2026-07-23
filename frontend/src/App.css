@@ -2456,16 +2456,17 @@ button { cursor: pointer; font-family: inherit; }
    Blog / Analytics, toggled via the "Verwaltung" topbar button. */
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
-.crm-sidebar { width: 220px; flex-shrink: 0; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden; }
-/* Brand/logo lives in the page-level topbar (.crm-topbar-brand-block) now —
-   this row is just the collapse toggle, right-aligned like the old brand
-   row's button was. */
-.crm-sidebar-collapse-row { display: flex; justify-content: flex-end; padding: 10px 14px; }
+.crm-sidebar { position: relative; width: 220px; flex-shrink: 0; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden; }
+/* Brand/logo lives in the page-level topbar now. Collapse toggle FLOATS
+   over the nav's top-right corner (same as Lighthouse's own sidebar,
+   router.tsx) instead of taking a whole row of its own. */
 .crm-sidebar-collapse-icon-btn {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 26px; height: 26px; border-radius: 7px; border: none;
   background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
 }
+.crm-sidebar.collapsed .crm-sidebar-collapse-icon-btn { left: 50%; right: auto; transform: translateX(-50%); }
 .crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
 .crm-sidebar.collapsed .crm-sidebar-collapse-row { justify-content: center; }
 
@@ -2483,7 +2484,7 @@ button { cursor: pointer; font-family: inherit; }
    finally grew past typical viewport height and .crm-sidebar's own
    overflow:hidden started clipping the bottom entries outright instead of
    making them reachable. */
-.crm-nav { padding: 12px 10px; flex: 1; min-height: 0; overflow-y: auto; }
+.crm-nav { padding: 44px 10px 12px; flex: 1; min-height: 0; overflow-y: auto; }
 .crm-nav-item {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 8px;
   border: none; background: none; color: rgba(255,255,255,.5); font-size: 13px; font-weight: 500;
@@ -2520,15 +2521,7 @@ button { cursor: pointer; font-family: inherit; }
 
 .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .crm-page-topbar { display: flex; align-items: center; padding: 16px 28px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); width: 100%; }
-.crm-topbar-title { flex: 1; min-width: 0; font-size: 20px; font-weight: 800; color: #0b1720; }
-.crm-topbar-actions { margin-left: 18px; }
-
-/* One-line description strip, above the app's own content — a persistent
-   header the app owns, not the shared page-level topbar (which only ever
-   shows the bare section title). */
-.crm-section-desc { flex-shrink: 0; padding: 10px 28px; font-size: 13px; color: rgba(11,23,32,.55); background: #f4f6f5; border-bottom: 1px solid rgba(0,0,0,.05); }
-.observatory-hud .crm-section-desc { color: rgba(228,232,240,.5); background: rgba(10,14,23,.6); border-bottom-color: rgba(150,156,170,.08); }
-.gotham .crm-section-desc { color: var(--gotham-text-dim); background: transparent; border-bottom-color: var(--gotham-border); }
+.crm-topbar-actions { margin-left: auto; }
 /* Always in the same top-right spot regardless of which section is open —
    the sidebar version of this (folded into the brand block) turned out to
    move around/disappear when the sidebar collapsed, which wasn't the ask. */
@@ -3328,21 +3321,22 @@ button { cursor: pointer; font-family: inherit; }
 .hud-tile { box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 18%, transparent), 0 0 18px -6px color-mix(in srgb, var(--hud-accent) 55%, transparent); }
 .hud-tile:hover { box-shadow: inset 0 0 24px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 34%, transparent), 0 0 26px -4px color-mix(in srgb, var(--hud-accent) 70%, transparent); }
 
-/* ── HUD SECTION HEADER — one header language for every Observatory module ──
-   Replaces the per-module inline `flex + space-between` header blocks with a
-   shared, gotham-themed header so the OS reads as one lab, not a pile of
-   unrelated Lego bricks. Title uses the same mono telemetry face as
-   .hud-tile-title; the sub-line is the plain-language framing Laura asked
-   for; actions (range selector, export) pin right and wrap on narrow screens. */
-.hud-section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px 14px; margin: 4px 2px 18px; }
+/* ── PAGE HEADER — one header language for every app, same pattern as
+   Lighthouse's PageHeader.tsx: row 1 is title + tabs + right-aligned
+   controls/actions, together on one line; row 2 (only when present) is the
+   plain-language description, full width, nothing else. Plain sans-serif,
+   sentence case — no monospace/uppercase treatment and no decorative
+   bullet/icon before the title; the title itself is the signal. */
+.hud-section-header { display: flex; flex-direction: column; gap: 4px; margin: 0 0 18px; }
+.hud-section-header-row1 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
 .hud-section-header-text { min-width: 0; }
 .hud-section-title {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 13px; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase; color: rgba(206,224,232,.92); margin: 0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: rgba(228,232,240,.95); margin: 0;
 }
-.hud-section-title::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 9px; vertical-align: middle; background: var(--hud-accent, #34e1ff); box-shadow: 0 0 8px var(--hud-accent, #34e1ff); }
-.hud-section-sub { font-size: 12.5px; line-height: 1.55; color: var(--panel-text-dim, rgba(148,190,199,.6)); margin: 5px 0 0; max-width: 70ch; }
-.hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hud-section-sub { font-size: 13px; line-height: 1.5; color: var(--panel-text-dim, rgba(148,190,199,.6)); margin: 0; max-width: 70ch; }
+.hud-section-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
 
 .hud-stat { text-align: left; }
 .hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; text-shadow: 0 0 16px color-mix(in srgb, var(--hud-accent, #34e1ff) 35%, transparent); font-variant-numeric: tabular-nums; }
