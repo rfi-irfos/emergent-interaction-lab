@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { API_BASE } from '../../lib/apiBase'
 import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import type { AdminSection } from '../../types/admin'

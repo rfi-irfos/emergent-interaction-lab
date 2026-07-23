@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { API_BASE } from '../../lib/apiBase'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
 import { HudTile, HudSectionHeader } from './Hud'
