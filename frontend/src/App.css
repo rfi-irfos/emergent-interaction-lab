@@ -3240,7 +3240,6 @@ button { cursor: pointer; font-family: inherit; }
   color: #eafdff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: .04em;
   text-transform: uppercase; font-size: 15px; font-weight: 700; text-shadow: 0 0 14px rgba(52,225,255,.3);
 }
-.gotham .crm-topbar-title::before { content: '◈ '; color: var(--hud-cyan); }
 .gotham .crm-topbar-actions .topbar-icon-btn { border-color: rgba(120,150,170,.25); background: rgba(120,150,170,.06); color: var(--gotham-text); }
 .gotham .crm-topbar-actions .topbar-icon-btn:hover { border-color: var(--hud-cyan); color: var(--hud-cyan); background: rgba(52,225,255,.08); }
 .gotham .crm-nav-item { color: var(--gotham-text-dim); }
