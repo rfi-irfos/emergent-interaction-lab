@@ -24,7 +24,8 @@ fn make_cookie(token: String) -> Cookie<'static> {
     Cookie::build((SESSION_COOKIE, token))
         .path("/")
         .http_only(true)
-        .same_site(SameSite::Lax)
+        .same_site(SameSite::None)
+        .secure(true)
         .build()
 }
 
