@@ -6,6 +6,7 @@ import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { useAdminFetch } from '../lib/adminApi'
 import { OBSERVATORY_MODULES, SECTION_COPY, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
+import { HudSectionHeader } from './observatory/Hud'
 import { Analytics } from './observatory/Analytics'
 import { Monetization } from './observatory/Monetization'
 import { BlogDrafts } from './observatory/BlogDrafts'
@@ -226,14 +227,17 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
     <div className="builder">
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChangeAll} />
 
-      {/* ── BODY: one permanent shell, no more Builder/Verwaltung mode split ── */}
+      {/* ── One full-width topbar; sidebar and page resolve UNDER it — same
+          shell pattern as Lighthouse's router.tsx. The topbar shows ONLY the
+          brand, never the current section's title: that lives with its own
+          description in the page content itself (see the PageHeader-style
+          block right above crm-body below), matching Lighthouse's own
+          PageHeader component (title+description rendered per-route, inside
+          <main>, never in the shared chrome). ── */}
       <div className={`crm-page-topbar gotham ${isObservatoryHud ? 'observatory-hud' : ''}`}>
         <div className="crm-topbar-brand-block">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-topbar-icon" />
           <span className="crm-topbar-brand">{draft.nav?.brand || 'Emergent Interaction Lab'}</span>
-        </div>
-        <div className="crm-topbar-title">
-          {SECTION_COPY[adminSection].title}
         </div>
         <div className="crm-topbar-actions">
           {/* Chat affordance moved into the topbar (replaces the old
@@ -262,14 +266,12 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-          {/* Brand/logo lives in the page-level topbar now — this row is
-              just the collapse toggle, per feedback ("was dort bleibt im
-              sidepanel ist nur dieser Pfeil oben"). */}
-          <div className="crm-sidebar-collapse-row">
-            <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
-              <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
-            </button>
-          </div>
+          {/* Brand/logo lives in the page-level topbar now. Collapse toggle
+              FLOATS over the nav's top-right corner (same as Lighthouse's
+              own sidebar) instead of taking a whole row of its own. */}
+          <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
+            <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
+          </button>
           <nav className="crm-nav">
             {/* Analytics leads the Verwaltung group — the first thing Laura
                 sees on opening the admin panel — with Website Kit moved to
@@ -327,14 +329,11 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
         <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
           <div className="crm-body">
-            {/* One-line description — inside the app's own scrolling content,
-                not the shared page-level topbar (that only ever shows the
-                bare section title) and not a fixed strip between chrome and
-                content either — it's the app's own header, so it scrolls
-                with the app's own content like everything else in here. */}
-            {SECTION_COPY[adminSection].description && (
-              <div className="crm-section-desc">{SECTION_COPY[adminSection].description}</div>
-            )}
+            {/* Page header — title + description, same PageHeader shape as
+                Lighthouse (router.tsx's topbar carries only the brand; the
+                per-route title/description live in the page content, via
+                one shared header component, not the shared chrome). */}
+            <HudSectionHeader title={SECTION_COPY[adminSection].title} sub={SECTION_COPY[adminSection].description} />
             {adminSection === 'website-kit' && (
               <WebsiteKit
                 draft={draft}

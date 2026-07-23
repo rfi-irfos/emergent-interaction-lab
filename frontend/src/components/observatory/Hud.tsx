@@ -95,20 +95,27 @@ export function useCountUp(target: number, durationMs = 900): number {
 /// optional actions slot (range selector, export, …) pinned right. Replaces
 /// the per-module inline `flex + space-between` header blocks that made the
 /// OS read like unrelated Lego bricks — one header language, every surface.
-export function HudSectionHeader({ title, sub, actions }: {
+/// Same shape as Lighthouse's PageHeader.tsx: row 1 is title + tabs + right-
+/// aligned actions together on one line; row 2 (only rendered when `sub` is
+/// set) is the description, alone, full width.
+export function HudSectionHeader({ title, sub, tabs, actions }: {
   title?: string
   sub?: string
+  tabs?: React.ReactNode
   actions?: React.ReactNode
 }) {
   return (
     <header className="hud-section-header">
-      {title && (
-        <div className="hud-section-header-text">
-          <h2 className="hud-section-title">{title}</h2>
-          {sub && <p className="hud-section-sub">{sub}</p>}
-        </div>
-      )}
-      {actions && <div className="hud-section-actions">{actions}</div>}
+      <div className="hud-section-header-row1">
+        {title && (
+          <div className="hud-section-header-text">
+            <h2 className="hud-section-title">{title}</h2>
+          </div>
+        )}
+        {tabs && <div className="hud-section-tabs">{tabs}</div>}
+        {actions && <div className="hud-section-actions">{actions}</div>}
+      </div>
+      {sub && <p className="hud-section-sub">{sub}</p>}
     </header>
   )
 }
