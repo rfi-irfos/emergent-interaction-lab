@@ -205,7 +205,7 @@ pub async fn admin_session(
 
     crate::auditlog::record(&state, "admin@pages", "admin_login", "Admin-Login via admin-session", None).await;
 
-    (jar.add(make_cookie(token)), Redirect::to("/admin")).into_response()
+    (jar.add(make_cookie(token)), StatusCode::OK).into_response()
 }
 
 #[derive(Serialize)]
