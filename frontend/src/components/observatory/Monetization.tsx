@@ -138,7 +138,7 @@ export function Monetization() {
         method: 'POST',
       })
       if (!res.ok) {
-        setFormError('Zahlungslink konnte nicht erstellt werden - ist STRIPE_SECRET_KEY gesetzt?')
+        setFormError('Zahlungslink konnte nicht erstellt werden — die Stripe-Anbindung ist vermutlich nicht eingerichtet. Bitte bei der technischen Betreuung melden.')
         return
       }
       await refresh()
@@ -173,6 +173,7 @@ export function Monetization() {
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [ordersLoadingMore, setOrdersLoadingMore] = useState(false)
   const [ordersError, setOrdersError] = useState(false)
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
   const loadOrders = async (offset: number, append: boolean) => {
     if (append) setOrdersLoadingMore(true); else setOrdersLoading(true)
@@ -403,7 +404,16 @@ export function Monetization() {
             {' · '}{o.created_at}
           </div>
           <div className="obs-item-body" style={{ fontSize: 11, color: '#9aa0a8' }}>
-            Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}
+            <button
+              className="chat-inspect-toggle"
+              style={{ fontSize: 11, padding: 0 }}
+              onClick={() => setExpandedOrderId(id => id === o.id ? null : o.id)}
+            >
+              {expandedOrderId === o.id ? 'Details ausblenden' : 'Details anzeigen'}
+            </button>
+            {expandedOrderId === o.id && (
+              <div style={{ marginTop: 4 }}>Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}</div>
+            )}
           </div>
         </div>
       ))}

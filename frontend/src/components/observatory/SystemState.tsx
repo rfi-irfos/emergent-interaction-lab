@@ -165,7 +165,7 @@ export function SystemState() {
   const diagAlerts: { label: string; detail: string }[] = []
   if (diag) {
     if (!diag.db_reachable) diagAlerts.push({ label: 'Datenbank nicht erreichbar', detail: 'technisch' })
-    if (!diag.nvidia_api_key_configured) diagAlerts.push({ label: 'NVIDIA_API_KEY fehlt', detail: 'technisch' })
+    if (!diag.nvidia_api_key_configured) diagAlerts.push({ label: 'KI-Anbindung fehlt', detail: 'technisch' })
     if (diag.agent_tool_call_errors_7d > 0) diagAlerts.push({ label: `${diag.agent_tool_call_errors_7d} Jarvis-Fehler in 7 Tagen`, detail: 'technisch' })
   }
   const hasAlerts = emergingSignals.length > 0 || diagAlerts.length > 0
@@ -264,8 +264,8 @@ export function SystemState() {
           <>
             <div className="obs-card" style={{ marginBottom: 16 }}>
               <StatusRow label="Datenbank erreichbar" ok={diag.db_reachable} />
-              <StatusRow label="NVIDIA_API_KEY konfiguriert" ok={diag.nvidia_api_key_configured} />
-              <StatusRow label="CHAT_API_SECRET konfiguriert" ok={diag.chat_secret_configured} />
+              <StatusRow label="KI-Anbindung konfiguriert" ok={diag.nvidia_api_key_configured} />
+              <StatusRow label="Zugriffsschutz aktiv" ok={diag.chat_secret_configured} />
             </div>
             <div className="obs-grid">
               <div className="obs-stat c-purple"><div className="obs-stat-value">{diag.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aufrufe (7 T.)</div></div>
@@ -273,7 +273,7 @@ export function SystemState() {
             </div>
             {!diag.chat_secret_configured && (
               <div className="obs-warning-note">
-                ▲ Kein CHAT_API_SECRET gesetzt — alle Admin-Endpunkte sind aktuell ohne Zugriffsschutz erreichbar (dev-Komfort, siehe backend/src/authz.rs).
+                ▲ Kein Zugriffsschutz aktiv — die Verwaltungsseiten sind aktuell ohne Passwortschutz erreichbar. Das ist für die lokale Entwicklung praktisch gedacht, nicht für den Live-Betrieb.
               </div>
             )}
           </>
