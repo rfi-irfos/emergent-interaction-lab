@@ -379,9 +379,16 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                     to via draft_blog_post/revise_blog_post. Labelled + boxed
                     off below so it's clear which button touches which data. */}
                 <div className="obs-section-label">Manuell · Themen</div>
-                <div className="pem-tags" style={{ marginBottom: 10 }}>
+                {/* Own local classes, not the shared .pem-tag (a warm
+                    beige/brown chip with no dark-theme override at all —
+                    the single most jarring element on this page, sitting at
+                    the very top: a light-mode-only sticker in an otherwise
+                    all-dark Observatory palette. .pem-tag/.pem-tag-add were
+                    confirmed used nowhere else in the app, so restyling here
+                    doesn't touch any other screen.) */}
+                <div className="blog-topic-pills" style={{ marginBottom: 10 }}>
                   {(draft.news?.categories ?? []).map(c => (
-                    <span className="pem-tag" key={c.id}>
+                    <span className="obs-pill blog-topic-pill" key={c.id}>
                       {c.name}
                       <button type="button" onClick={() => removeCategory(c.id)} title="Thema löschen">×</button>
                     </span>
@@ -390,33 +397,41 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                     <span style={{ fontSize: 12, color: 'var(--panel-text-dim, #aaa)' }}>Noch keine Themen — leg mindestens eines an, um Blogposts zu kategorisieren.</span>
                   )}
                 </div>
-                <div className="pem-tag-input-row" style={{ marginBottom: 22, maxWidth: 360 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 22, maxWidth: 360 }}>
                   <input
                     placeholder="Neues Thema, z.B. Emergenz"
                     value={newCategoryName}
                     onChange={e => setNewCategoryName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } }}
+                    style={{ flex: 1 }}
                   />
-                  <button className="pem-tag-add" onClick={addCategory} type="button">+</button>
+                  <button className="panel-add-btn" onClick={addCategory} type="button">+</button>
                 </div>
-                <div className="panel-product-list">
-                  {(draft.news?.items ?? []).map(n => (
-                    <div key={n.id} className={`panel-product-row ${editingNews === n.id ? 'active' : ''}`} onClick={() => setEditingNews(n.id)}>
-                      <div className="panel-product-info">
-                        <div className="panel-product-name">{n.title}</div>
-                        <div className="panel-product-meta">
-                          {n.date}
-                          {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
-                            <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
-                          )}
-                        </div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                {/* .obs-item-card, not the shared .panel-product-row (also
+                    used by Website Kit's own product list) — same idiom
+                    every other list in the app uses instead of a second,
+                    Website-Kit-flavored one on this page. */}
+                {(draft.news?.items ?? []).map(n => (
+                  <div
+                    key={n.id}
+                    className={`obs-item-card ${editingNews === n.id ? 'blog-topic-item-active' : ''}`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setEditingNews(n.id)}
+                  >
+                    <div className="obs-item-title">{n.title}</div>
+                    <div className="obs-item-meta">
+                      {n.date}
+                      {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
+                        <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
+                      )}
                     </div>
-                  ))}
-                </div>
-                <button className="panel-add-big-btn" onClick={addNews}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </div>
+                ))}
+                {(draft.news?.items ?? []).length === 0 && (
+                  <div className="obs-empty">Noch keine manuellen Blogbeiträge.</div>
+                )}
+                <button className="panel-add-btn" style={{ marginTop: 10 }} onClick={addNews}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Blogbeitrag hinzufügen (manuell)
                 </button>
                 <div className="obs-section blog-jarvis-section">

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ObsChart } from './ObsChart'
-import { HudGrid, HudTile, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader, useHeaderActions, HudHeaderActions } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { SYSTEM_SIGNAL_LABELS, SIMULATION_STATUS_LABELS } from '../../lib/labels'
@@ -107,6 +107,27 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
   // in the new page anymore.
   const changeRange = (next: string) => { setRange(next); setSelectedId(null) }
 
+  // Promoted to the shared page header — was its own embedded row mid-page,
+  // the one remaining Systemebene module still doing that (confirmed by the
+  // last UI/UX audit).
+  useHeaderActions(
+    <HudHeaderActions
+      filters={
+        <select value={range} onChange={e => changeRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+          {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      }
+      action={
+        <ExportButtons
+          rows={snapshots.map(s => ({ ...s }))}
+          filenameBase={`flugschreiber-snapshots-${range}`}
+          title="Flugschreiber: Snapshots"
+        />
+      }
+    />,
+    [range, snapshots],
+  )
+
   if (loading && snapshots.length === 0) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error && snapshots.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
@@ -121,20 +142,6 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
 
   return (
     <div className="obs-panel">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <select value={range} onChange={e => changeRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-          {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        {/* Exports whatever range filter currently narrowed the page to and
-            whatever's been loaded so far via "Weitere laden" (`snapshots`) —
-            same honesty-about-scope principle as the rest of the app. */}
-        <ExportButtons
-          rows={snapshots.map(s => ({ ...s }))}
-          filenameBase={`flugschreiber-snapshots-${range}`}
-          title="Flugschreiber: Snapshots"
-        />
-      </div>
-
       {snapshots.length === 0 ? (
         <div className="obs-card">
           <div className="obs-empty">
