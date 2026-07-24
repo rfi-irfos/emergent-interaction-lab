@@ -2579,7 +2579,15 @@ button { cursor: pointer; font-family: inherit; }
    made the chat box grow/shrink as KPIs loaded and the conversation got
    longer, instead of staying put like a normal chat client. Same pattern as
    the website-kit override just above. */
-.crm-body:has(> .forschung-view) { overflow: hidden; padding-bottom: 20px; }
+/* display: flex is load-bearing here, not decorative — without it,
+   .forschung-view's own `height: 100%` has no real height to resolve
+   against (a percentage height against a non-flex, auto-height parent
+   computes to auto per spec), so the whole page grew to fit the chat's
+   natural content height instead of being clipped to the viewport, and the
+   compose box at the bottom scrolled off-screen on any longer conversation
+   — confirmed live ("the bottom of the chatbox does not fit into the
+   screen"). Same fix .crm-body:has(> .website-kit) already applies below. */
+.crm-body:has(> .forschung-view) { overflow: hidden; padding-bottom: 20px; display: flex; flex-direction: column; }
 /* Website Kit needs a full-bleed, fixed-height two-pane layout (canvas +
    resizable settings panel), unlike every other section which just scrolls
    inside the padded crm-body — let it take over completely when active. */
@@ -3967,7 +3975,11 @@ button { cursor: pointer; font-family: inherit; }
    stale again and ate into the chat instead of giving it the space back.
    flex-shrink:0 on the strip is enough to stop it from ever being squeezed
    without needing to also hardcode its size. */
-.forschung-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+/* flex: 1 (not just height: 100%) since .crm-body is now itself a flex
+   column (see .crm-body:has(> .forschung-view) above) — .forschung-view is
+   its flex ITEM, sitting below the page header, and needs to grow to fill
+   the remaining space rather than sizing off a percentage. */
+.forschung-view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .forschung-kpis { flex-shrink: 0; overflow: hidden; }
 .forschung-view .chat-panel { flex: 1 1 auto; min-height: 0; }
 
@@ -3999,17 +4011,25 @@ button { cursor: pointer; font-family: inherit; }
   width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1; flex-shrink: 0;
 }
 .chat-sidebar-collapse-btn:hover { border-color: #63f0ff; color: #63f0ff; }
-/* Same size + corner radius as .chat-sidebar-collapse-btn directly above it
-   (both were square-ish but different sizes/radii — 26x26px/6px vs a
-   30x30px/8px inherited from the expanded .chat-new-btn below — reading as
-   two mismatched buttons stacked in a 44px rail rather than one consistent
-   collapsed toolbar). Keeps its own accent color (it's still the primary
-   action, the collapse toggle is secondary/neutral) — same size and shape,
-   different color is a deliberate hierarchy, not an inconsistency. */
-.chat-new-btn-collapsed {
-  width: 26px; height: 26px; margin: 8px auto 0; padding: 0; font-size: 15px; line-height: 1; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+/* Collapsed-rail toolbar: the reopen toggle and "new conversation" used to
+   be two independently-floating squares (different fill colors, a visible
+   gap, no shared frame) that read as a mismatched pair even once their
+   size/radius matched — reported directly as "looking like a joke." One
+   bordered container now holds both, divided by a hairline, same neutral
+   chrome throughout; the "new conversation" action is distinguished only
+   by its icon color, not a competing bright fill. */
+.chat-collapsed-toolbar {
+  display: flex; flex-direction: column; width: 30px; margin: 8px auto 0;
+  border: 1px solid rgba(148,197,214,.22); border-radius: 7px; overflow: hidden;
 }
+.chat-collapsed-toolbar-btn {
+  border: none; background: rgba(255,255,255,.03); color: rgba(233,251,255,.55);
+  width: 100%; height: 28px; cursor: pointer; font-size: 14px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.chat-collapsed-toolbar-btn + .chat-collapsed-toolbar-btn { border-top: 1px solid rgba(148,197,214,.16); }
+.chat-collapsed-toolbar-btn:hover { background: rgba(99,240,255,.1); color: #63f0ff; }
+.chat-collapsed-toolbar-btn-accent { color: #63f0ff; font-size: 16px; font-weight: 700; }
 .chat-new-btn {
   margin: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(99,240,255,.35);
   background: rgba(99,240,255,.12); color: #63f0ff; font-weight: 600; font-size: 13px; cursor: pointer;
