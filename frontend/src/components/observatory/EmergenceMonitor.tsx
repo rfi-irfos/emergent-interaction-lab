@@ -164,7 +164,17 @@ function SignalDetailModal({ signal, onClose, onOpenConversation }: {
 /// (see backend/src/emergence.rs) — this page just lists what's accumulated.
 /// Every card carries the experimental badge deliberately: this is model
 /// interpretation, never presented as validated fact.
-export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
+export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSignalHandled }: {
+  onOpenConversation?: (conversationId: string) => void
+  /// A specific signal to jump straight into, e.g. from SimulationCenter/Lab's
+  /// "Signal: {pattern} ↗" chip — previously that chip just navigated here
+  /// with no indication which signal was meant (confirmed dead end, see the
+  /// plan). Independent of this page's own filters/pagination: the id is
+  /// looked up directly via a wider fetch rather than requiring the signal to
+  /// already be on the currently-loaded/filtered page.
+  focusSignalId?: string | null
+  onFocusSignalHandled?: () => void
+} = {}) {
   // Which signal (if any) is currently expanded in the detail modal — see
   // SignalDetailModal above. Laura: "emergence signals need to pop and be
   // dynamic" — this is that interaction; the flat static card list itself
@@ -229,6 +239,32 @@ export function EmergenceMonitor({ onOpenConversation }: { onOpenConversation?: 
     loadSignals(0, false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey, levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter])
+
+  // Jump-in from a related-signal chip elsewhere in the app. The signal is
+  // real (the link only ever exists because some run's related_signal_ids
+  // referenced it) but may not be on the currently loaded/filtered page, so
+  // this looks it up directly with a wide, filter-independent fetch rather
+  // than requiring "Weitere laden" to happen to reach it first.
+  useEffect(() => {
+    if (!focusSignalId) return
+    let cancelled = false
+    const already = signals.find(s => s.id === focusSignalId)
+    if (already) {
+      setExpandedSignal(already)
+      onFocusSignalHandled?.()
+      return
+    }
+    adminFetch(`/api/observatory/emergence/signals?limit=500`, {})
+      .then(res => (res.ok ? res.json() : []))
+      .then((page: Signal[]) => {
+        if (cancelled) return
+        const match = page.find(s => s.id === focusSignalId)
+        if (match) setExpandedSignal(match)
+      })
+      .finally(() => { if (!cancelled) onFocusSignalHandled?.() })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusSignalId])
 
   const loadMore = () => loadSignals(signals.length, true)
   const resetFilters = () => {

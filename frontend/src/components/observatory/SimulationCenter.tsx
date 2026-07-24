@@ -77,7 +77,7 @@ function flattenForExport(runs: RunOut[]): Record<string, unknown>[] {
   return rows
 }
 
-function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: SignalRef[]; onNavigate?: (s: AdminSection) => void }) {
+function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: SignalRef[]; onNavigate?: (s: AdminSection, opts?: { signalId?: string }) => void }) {
   if (!run) return <div className="obs-item-card obs-compare-empty"><div className="obs-empty">Lauf auswählen…</div></div>
   const related = (run.related_signal_ids ?? [])
     .map(id => signals.find(s => s.id === id))
@@ -94,7 +94,7 @@ function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: 
               type="button"
               className="chat-inspect-toggle"
               style={{ fontSize: 11, padding: 0, marginRight: 8 }}
-              onClick={() => onNavigate?.('emergence')}
+              onClick={() => onNavigate?.('emergence', { signalId: s.id })}
             >
               Signal: {s.pattern} ↗
             </button>
@@ -134,7 +134,7 @@ const PAGE_SIZE = 20
 /// side-by-side comparison needs. Extended from a fixed 2-column A/B view
 /// to N runs at once (see plan item 8) — slots are added/removed, not a
 /// hardcoded pair.
-export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection) => void } = {}) {
+export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection, opts?: { signalId?: string }) => void } = {}) {
   // Owns the runs list directly (rather than useAdminFetch) because
   // pagination/filtering need a manual fetch that can either replace the
   // list (new filter, or after create/delete) or append to it ("Weitere

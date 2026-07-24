@@ -91,7 +91,7 @@ interface SimulationLabProps {
   /// should just disappear from wherever it was.
   onRefresh: () => void
   signals: SignalRef[]
-  onNavigate?: (s: AdminSection) => void
+  onNavigate?: (s: AdminSection, opts?: { signalId?: string }) => void
 }
 
 export function SimulationLab({ runs: list, loading, loadingMore, error, total, onLoadMore, onRefresh, signals, onNavigate }: SimulationLabProps) {
@@ -257,7 +257,7 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
                     type="button"
                     className="chat-inspect-toggle"
                     style={{ fontSize: 11, padding: 0, marginRight: 10 }}
-                    onClick={() => onNavigate?.('emergence')}
+                    onClick={() => onNavigate?.('emergence', { signalId: s.id })}
                   >
                     Signal: {s.pattern} ↗
                   </button>
