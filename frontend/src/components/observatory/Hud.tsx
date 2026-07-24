@@ -145,14 +145,15 @@ export function useCountUp(target: number, durationMs = 900): number {
   return display
 }
 
-/// A consistent section header for every Observatory module: a monospace
-/// title with a live accent, an optional plain-language sub-line, and an
-/// optional actions slot (range selector, export, …) pinned right. Replaces
-/// the per-module inline `flex + space-between` header blocks that made the
-/// OS read like unrelated Lego bricks — one header language, every surface.
-/// Same shape as Lighthouse's PageHeader.tsx: row 1 is title + tabs + right-
-/// aligned actions together on one line; row 2 (only rendered when `sub` is
-/// set) is the description, alone, full width.
+/// A consistent section header for every Observatory module: title, a soft
+/// divider, and the plain-language description all on ONE line (title's own
+/// weight/size carries the hierarchy, not a second row), tabs and the
+/// right-aligned actions slot (search/filter/export) sharing that same
+/// line and height. Replaces the per-module inline `flex + space-between`
+/// header blocks that made the OS read like unrelated Lego bricks — one
+/// header language, every surface. The description truncates with an
+/// ellipsis rather than wrapping or pushing the actions off-row when it's
+/// long — the full text is always still there on hover (`title` attribute).
 export function HudSectionHeader({ title, sub, tabs, actions }: {
   title?: string
   sub?: string
@@ -162,15 +163,16 @@ export function HudSectionHeader({ title, sub, tabs, actions }: {
   return (
     <header className="hud-section-header">
       <div className="hud-section-header-row1">
-        {title && (
-          <div className="hud-section-header-text">
-            <h2 className="hud-section-title">{title}</h2>
-          </div>
+        {title && <h2 className="hud-section-title">{title}</h2>}
+        {sub && (
+          <>
+            <span className="hud-section-divider" aria-hidden="true" />
+            <p className="hud-section-sub" title={sub}>{sub}</p>
+          </>
         )}
         {tabs && <div className="hud-section-tabs">{tabs}</div>}
         {actions && <div className="hud-section-actions">{actions}</div>}
       </div>
-      {sub && <p className="hud-section-sub">{sub}</p>}
     </header>
   )
 }
