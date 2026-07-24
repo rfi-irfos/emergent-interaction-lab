@@ -4,6 +4,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { useHeaderActions, HudHeaderActions } from './Hud'
 import { BLOG_STATUS_LABELS } from '../../lib/labels'
 
 interface BlogPost {
@@ -157,29 +158,21 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
 
   const STATUS_ACCENT: Record<string, string> = { draft: '#f59e0b', published: '#10b981' }
 
-  if (loading && !posts) return <HudSkeleton variant="list" />
-  if (error && !posts) return <div className="obs-empty">Fehler beim Laden.</div>
-
-  return (
-    <div>
-      <p style={{ fontSize: 12, color: '#9aa0a8', margin: '4px 0 16px', lineHeight: 1.6 }}>
-        Entwürfe, die Jarvis (im Forschungstab) oder du hier angelegt habt. „Veröffentlichen" übernimmt den Beitrag in
-        den öffentlichen Blog oben — anschließend oben rechts auf „Speichern" klicken, um ihn live zu schalten.
-      </p>
-      {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-          <input
-            placeholder="Suche in Titel oder Inhalt…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ flex: 1 }}
-          />
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+  // Promoted to the shared page header — this is the one real filter/export
+  // on the whole Blog tab (the manual-news section above has no filter of
+  // its own, a small always-visible list), matching the "one filter per
+  // page" pattern every other canonical app follows.
+  useHeaderActions(
+    list.length > 0 ? (
+      <HudHeaderActions
+        search={{ value: search, onChange: setSearch, placeholder: 'Suche in Titel oder Inhalt…' }}
+        filters={
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
             <option value="">Alle Status</option>
             {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{BLOG_STATUS_LABELS[v] ?? v}</option>)}
           </select>
-          {/* Exports whatever search/status filter currently narrowed the
-              list to (`filtered`), not silently every draft. */}
+        }
+        action={
           <ExportButtons
             rows={filtered.map(p => ({
               id: p.id,
@@ -196,8 +189,21 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
             filenameBase="blog-drafts"
             title="Blog-Entwürfe"
           />
-        </div>
-      )}
+        }
+      />
+    ) : null,
+    [list, search, statusFilter, filtered],
+  )
+
+  if (loading && !posts) return <HudSkeleton variant="list" />
+  if (error && !posts) return <div className="obs-empty">Fehler beim Laden.</div>
+
+  return (
+    <div>
+      <p style={{ fontSize: 12, color: '#9aa0a8', margin: '4px 0 16px', lineHeight: 1.6 }}>
+        Entwürfe, die Jarvis (im Forschungstab) oder du hier angelegt habt. „Veröffentlichen" übernimmt den Beitrag in
+        den öffentlichen Blog oben — anschließend oben rechts auf „Speichern" klicken, um ihn live zu schalten.
+      </p>
       {list.length === 0 && <div className="obs-empty">Noch keine Blogpost-Entwürfe.</div>}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
       {filtered.map((p, i) => (
