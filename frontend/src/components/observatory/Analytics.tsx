@@ -172,13 +172,13 @@ export function Analytics() {
           what's kept. */}
       <div className="obs-grid">
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_views}</div><div className="obs-stat-label">Seitenaufrufe</div></div>
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher</div></div>
+        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher</div></div>
         <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.chat.conversations_total}</div><div className="obs-stat-label">Gespräche</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{everything.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{everything.research_notes.total}</div><div className="obs-stat-label">Research Notes</div></div>
-        <div className="obs-stat c-amber"><div className="obs-stat-value">{everything.simulation_runs.total}</div><div className="obs-stat-label">Simulationen</div></div>
-        <div className="obs-stat c-red"><div className="obs-stat-value">{everything.agent_tool_calls.total}</div><div className="obs-stat-label">Jarvis-Werkzeuge</div></div>
+        <div className="obs-stat c-amber"><div className="obs-stat-value">{everything.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
+        <div className="obs-stat c-green"><div className="obs-stat-value">{everything.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
+        <div className="obs-stat c-red"><div className="obs-stat-value">{everything.research_notes.total}</div><div className="obs-stat-label">Research Notes</div></div>
+        <div className="obs-stat c-blue"><div className="obs-stat-value">{everything.simulation_runs.total}</div><div className="obs-stat-label">Simulationen</div></div>
+        <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.agent_tool_calls.total}</div><div className="obs-stat-label">Jarvis-Werkzeuge</div></div>
       </div>
 
       {/* ── instrument wall: every chart in a fixed-size framed HudTile,
