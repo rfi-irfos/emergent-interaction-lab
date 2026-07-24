@@ -3,14 +3,13 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { Gesamtuebersicht } from './Gesamtuebersicht'
+import { Gesamtuebersicht, type EverythingData } from './Gesamtuebersicht'
 
 interface DayCount { day: string; views: number }
 interface Bucket { label: string; count: number }
-interface ToolCallCount { tool: string; count: number }
 interface ActivityItem { kind: string; label: string; created_at: string }
 interface TrendPoint {
   bucket: string
@@ -28,21 +27,41 @@ interface AnalyticsData {
   views_by_day: DayCount[]
   top_sources: Bucket[]
   top_paths: Bucket[]
-  chat_conversations: number
-  chat_messages: number
   blog_posts_draft: number
   blog_posts_published: number
-  research_notes: number
-  simulation_runs: number
-  agent_tool_calls_7d: number
-  tool_call_counts: ToolCallCount[]
   recent_activity: ActivityItem[]
   bucket: string
   days: number
   activity_trend: TrendPoint[]
 }
 
-const DAYS_OPTIONS = [7, 14, 30, 60, 90]
+// The ONE global filter for this whole combined page (Analytics +
+// Gesamtübersicht stacked together) — same 7d/30d/all vocabulary every
+// other range-filtered Observatory module already uses. Replaces what used
+// to be TWO independent filters (Analytics' own bucket=day|week&days=N
+// retrospective selector, Gesamtübersicht's own range=7d|30d|all) that
+// never agreed with each other and left half the page's own numbers
+// (chat_conversations, chat_messages, research_notes, simulation_runs —
+// see backend/src/analytics.rs) not responding to any filter at all.
+const RANGE_OPTIONS: { value: '7d' | '30d' | 'all'; label: string }[] = [
+  { value: '7d', label: 'Letzte 7 Tage' },
+  { value: '30d', label: 'Letzte 30 Tage' },
+  { value: 'all', label: 'Alle' },
+]
+const RANGE_SUFFIX: Record<string, string> = { '7d': 'letzte 7 Tage', '30d': 'letzte 30 Tage', all: 'alle' }
+
+// Maps the one shared range onto backend/src/analytics.rs's own
+// `?bucket=day|week&days=N` shape — day-granularity for the two shorter
+// windows (fine-grained enough to be useful), week-granularity once the
+// window is wide enough that daily buckets would just be noise. `all` uses
+// MAX_TREND_DAYS (180, see analytics.rs) as the widest window the backend
+// will actually serve, not a literal "forever."
+const RANGE_TO_TREND_PARAMS: Record<string, { days: number; bucket: 'day' | 'week' }> = {
+  '7d': { days: 7, bucket: 'day' },
+  '30d': { days: 30, bucket: 'day' },
+  all: { days: 180, bucket: 'week' },
+}
+
 // Fixed order + fixed color per metric — the same 6-accent set every other
 // Observatory primitive draws from (ObsDonut's DEFAULT_DONUT_COLORS, .obs-stat's
 // c-blue/c-purple/…), assigned by entity, never re-cycled.
@@ -58,7 +77,7 @@ const TREND_COLUMNS: { key: Exclude<keyof TrendPoint, 'bucket'>; label: string; 
 // ObsChart's `data` array drives its axis labels 1:1 (one <span> per point,
 // laid out via flex `space-between`) with no thinning of its own — fine for
 // its existing callers' small/fixed point counts, but this page's mini-charts
-// below can carry up to 90 points (`?days=90`) inside a card roughly a third
+// below can carry up to 180 points (`all`) inside a card roughly a third
 // the width ObsChart's other callers render at. Blanking every label but a
 // handful (kept at genuinely evenly-spaced indices, always including the
 // last point) keeps every chart's x-position/shape intact — only the text is
@@ -75,56 +94,98 @@ function trendAxisLabel(n: number, i: number, bucket: string): string {
 /// views, conversations, blog drafts, research notes, simulations, Jarvis
 /// actions). The Observatory itself is reserved for emergence signals now.
 ///
-/// Gesamtübersicht (the research-activity rollup across every table this
-/// platform captures) stacks directly below Analytics on this same page —
-/// folded in rather than kept as its own top-level sidebar app, so the
-/// sidebar stays leaner. Its own data/fetching is untouched; only its entry
-/// point moved.
+/// Owns BOTH data sources for the combined page (its own `/api/analytics`
+/// AND Gesamtübersicht's `/api/observatory/everything`) under the SAME
+/// range, so there is exactly one filter, one page header, and one top KPI
+/// block for what used to be two separately-filtered, separately-headered
+/// stacked apps. Gesamtübersicht itself is now purely presentational (see
+/// its own doc comment).
 export function Analytics() {
-  // Retrospective day/week breakdown (see backend/src/analytics.rs's
-  // `?bucket=day|week&days=N`) — everything else on this page is an
-  // all-time or fixed-window total; this is the one view that answers "what
-  // happened on 2026-07-08" vs. "what happened this week" specifically.
-  const [bucket, setBucket] = useState<'day' | 'week'>('day')
-  const [days, setDays] = useState(30)
+  const [range, setRange] = useState<'7d' | '30d' | 'all'>('30d')
+  const trendParams = RANGE_TO_TREND_PARAMS[range]
   const { data, loading, error } = useAdminFetch<AnalyticsData>(
-    `/api/analytics?bucket=${bucket}&days=${days}`,
-    [bucket, days],
+    `/api/analytics?bucket=${trendParams.bucket}&days=${trendParams.days}`,
+    [range],
+  )
+  const { data: everything, loading: everythingLoading, error: everythingError } = useAdminFetch<EverythingData>(
+    `/api/observatory/everything?range=${range}`,
+    [range],
   )
 
-  const gesamtuebersicht = <Gesamtuebersicht />
+  const combinedLoading = loading || everythingLoading
+  const combinedError = error || everythingError
 
-  if (loading) return <div className="obs-stacked-views"><div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div>{gesamtuebersicht}</div>
-  if (error) return <div className="obs-stacked-views"><div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>{gesamtuebersicht}</div>
-  if (!data) return <div className="obs-stacked-views"><div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>{gesamtuebersicht}</div>
+  // One combined export covering both data sources under the one shared
+  // filter — the per-tile exports Gesamtübersicht used to carry on its own
+  // are gone (see its own doc comment); this single row is what's left.
+  const summaryRow = (data && everything) ? [{
+    range,
+    total_views: data.total_views,
+    unique_visitors: data.unique_visitors,
+    conversations_total: everything.chat.conversations_total,
+    user_messages: everything.chat.user_messages,
+    assistant_messages: everything.chat.assistant_messages,
+    research_notes_total: everything.research_notes.total,
+    simulation_runs_total: everything.simulation_runs.total,
+    agent_tool_calls_total: everything.agent_tool_calls.total,
+    emergence_signals_total: everything.emergence_signals.total,
+    ccet_cei: everything.ccet.cei,
+    ccet_cep: everything.ccet.cep,
+    ccet_resonance_frequency: everything.ccet.resonance_frequency,
+    system_snapshots_total: everything.system_snapshots.total,
+  }] : []
+
+  useHeaderActions(
+    <HudHeaderActions
+      filters={
+        <select value={range} onChange={e => setRange(e.target.value as '7d' | '30d' | 'all')} style={{ fontSize: 12, padding: '5px 8px' }}>
+          {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      }
+      action={<ExportButtons rows={summaryRow} filenameBase={`analytics-zusammenfassung-${range}`} title={`Analytics — Zusammenfassung (${RANGE_SUFFIX[range]})`} />}
+    />,
+    [range, data, everything],
+  )
+
+  if (combinedLoading) return <div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div>
+  if (combinedError) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
+  if (!data || !everything) return <div className="obs-panel"><div className="obs-empty">Noch keine Daten.</div></div>
 
   // foldIntoOther is a no-op under its 6-slice ceiling — only matters here
-  // if a real deployment ever accumulates more distinct sources/tools than
-  // that (see chartMath.ts's doc comment: fold the tail into "Andere"
-  // rather than generating more hues, this codebase's own dataviz skill's
+  // if a real deployment ever accumulates more distinct sources than that
+  // (see chartMath.ts's doc comment: fold the tail into "Andere" rather
+  // than generating more hues, this codebase's own dataviz skill's
   // prescribed fix for a categorical series past the token ceiling).
   const topSourcesData = foldIntoOther(data.top_sources.map(s => ({ label: s.label || '(direkt)', value: s.count })))
-  const toolCallCountsData = foldIntoOther(data.tool_call_counts.map(t => ({ label: t.tool, value: t.count })))
 
   return (
-    <div className="obs-stacked-views">
-      <div className="obs-panel">
+    <div className="obs-panel">
+      {/* ── ONE top KPI block for the whole combined page — card directly
+          next to card, no section label/gap. Deduplicated: Analytics used
+          to separately show chat_conversations/chat_messages/research_notes/
+          simulation_runs/agent_tool_calls as flat all-time-ish totals right
+          next to Gesamtübersicht's own range-filtered versions of the exact
+          same numbers (10 cards total) — now that both halves share one
+          filter, those pairs would show literally the same figure twice, so
+          the flat duplicates are gone and Gesamtübersicht's richer
+          range-filtered breakdown (Nachrichten split by Laura/Jarvis) is
+          what's kept. */}
       <div className="obs-grid">
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_views}</div><div className="obs-stat-label">Seitenaufrufe (30 T.)</div></div>
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher (30 T.)</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat_conversations}</div><div className="obs-stat-label">Gespräche</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat_messages}</div><div className="obs-stat-label">Nachrichten</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.research_notes}</div><div className="obs-stat-label">Research Notes</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.simulation_runs}</div><div className="obs-stat-label">Simulationen</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aktionen (7 T.)</div></div>
+        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_views}</div><div className="obs-stat-label">Seitenaufrufe</div></div>
+        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher</div></div>
+        <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.chat.conversations_total}</div><div className="obs-stat-label">Gespräche</div></div>
+        <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
+        <div className="obs-stat c-teal"><div className="obs-stat-value">{everything.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
+        <div className="obs-stat c-teal"><div className="obs-stat-value">{everything.research_notes.total}</div><div className="obs-stat-label">Research Notes</div></div>
+        <div className="obs-stat c-amber"><div className="obs-stat-value">{everything.simulation_runs.total}</div><div className="obs-stat-label">Simulationen</div></div>
+        <div className="obs-stat c-red"><div className="obs-stat-value">{everything.agent_tool_calls.total}</div><div className="obs-stat-label">Jarvis-Werkzeuge</div></div>
       </div>
 
       {/* ── instrument wall: every chart in a fixed-size framed HudTile,
-          never a lone full-width card. Small donuts get span=1 (sized by
-          HudTile, no dead space); the activity trend + views line read
-          better wide, so span=2/4. */}
-
-      <HudGrid cols={4}>
+          never a lone full-width card. Jarvis-Werkzeuge's own donut is gone
+          from here — Gesamtübersicht's version below already covers the
+          same agent_tool_calls breakdown, now under the identical filter. */}
+      <HudGrid cols={3}>
         <HudTile title="Blog" badge="STATUS" accent="var(--obs-amber)" span={1}>
           <div className="obs-section-label" style={{ marginBottom: 10 }}>Entwürfe vs. Veröffentlicht</div>
           <ObsDonut
@@ -136,44 +197,25 @@ export function Analytics() {
           />
         </HudTile>
 
-        <HudTile title="Quellen" badge="30 T." accent="var(--obs-teal)" span={1}>
+        <HudTile title="Quellen" accent="var(--obs-teal)" span={1}>
           {data.top_sources.length > 0 ? (
             <ObsDonut data={topSourcesData} gradientIdPrefix="analytics-top-sources" />
           ) : <div className="obs-empty">Keine Quellen.</div>}
         </HudTile>
 
-        <HudTile title="Jarvis-Werkzeuge" badge="30 T." accent="var(--obs-purple)" span={1}>
-          {data.tool_call_counts.length > 0 ? (
-            <ObsDonut data={toolCallCountsData} gradientIdPrefix="analytics-tool-calls" />
-          ) : <div className="obs-empty">Keine Aufrufe.</div>}
-        </HudTile>
-
-        <HudTile title="Aufrufe" badge="14 T." accent="var(--obs-blue)" span={1}>
+        <HudTile title="Aufrufe" accent="var(--obs-blue)" span={1}>
           {data.views_by_day.length > 0 ? (
             <ObsChart data={data.views_by_day.map(d => ({ label: d.day.slice(5), value: d.views }))} color="#3b6bf6" gradientId="analytics-views" />
           ) : <div className="obs-empty">Keine Aufrufe.</div>}
         </HudTile>
       </HudGrid>
 
-      <HudGrid cols={4}>
-        <HudTile title="Aktivität im Zeitverlauf" badge="RETRO" accent="var(--obs-cyan)" span={4}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
-            <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>retrospektiv nach Tag oder Woche</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <select value={bucket} onChange={e => setBucket(e.target.value as 'day' | 'week')} style={{ fontSize: 12, padding: '5px 8px' }}>
-                <option value="day">Pro Tag</option>
-                <option value="week">Pro Woche</option>
-              </select>
-              <select value={days} onChange={e => setDays(Number(e.target.value))} style={{ fontSize: 12, padding: '5px 8px' }}>
-                {DAYS_OPTIONS.map(d => <option key={d} value={d}>letzte {d} Tage</option>)}
-              </select>
-              <ExportButtons
-                rows={data.activity_trend.map(p => ({ ...p }))}
-                filenameBase={`analytics-activity-${bucket}`}
-                title={`Analytics — Aktivität pro ${bucket === 'week' ? 'Woche' : 'Tag'} (letzte ${days} Tage)`}
-              />
-            </div>
-          </div>
+      <HudGrid cols={3}>
+        {/* No local bucket/day selector anymore — this always shows the
+            currently selected global range, mapped to the finest sensible
+            granularity (see RANGE_TO_TREND_PARAMS above). That was the
+            other still-remaining "extra filter" this page had. */}
+        <HudTile title="Aktivität im Zeitverlauf" badge="RETRO" accent="var(--obs-cyan)" span={3}>
           {data.activity_trend.length === 0
             ? <div className="obs-empty">Noch keine Aktivität in diesem Zeitraum.</div>
             : (
@@ -225,8 +267,8 @@ export function Analytics() {
           ))}
         </HudTile>
       </HudGrid>
-      </div>
-      {gesamtuebersicht}
+
+      <Gesamtuebersicht data={everything} />
     </div>
   )
 }

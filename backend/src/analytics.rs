@@ -132,7 +132,11 @@ pub struct AnalyticsData {
     pub blog_posts_published: i64,
     pub research_notes: i64,
     pub simulation_runs: i64,
-    pub agent_tool_calls_7d: i64,
+    /// Renamed from `agent_tool_calls_7d`: it used to be hardcoded to a fixed
+    /// 7-day window regardless of `?days=`, now it shares the same resolved
+    /// window as every other number here, so a name still saying "_7d" would
+    /// be a lie.
+    pub agent_tool_calls: i64,
     pub tool_call_counts: Vec<ToolCallCount>,
     pub recent_activity: Vec<ActivityItem>,
     /// The resolved `?bucket=` granularity actually applied below ("day" or
@@ -159,38 +163,48 @@ pub async fn stats(State(state): State<AppState>, headers: HeaderMap, jar: Cooki
     let bucket_expr = bucket_sql_expr(bucket);
     let window = format!("-{days} days");
 
+    // Every stat below shares the SAME resolved `window` the trend queries
+    // already use — previously each had its own independently hardcoded
+    // lookback (30 days here, 14 there, 7 elsewhere, or no filter at all for
+    // chat_conversations/chat_messages/research_notes/simulation_runs), so
+    // the one `?days=` control a caller could set never actually touched
+    // most of this page. One filter now genuinely drives every number on
+    // this endpoint at once.
     let (total_views, unique_visitors) = sqlx::query_as::<_, (i64, i64)>(
-        "SELECT COUNT(*), COUNT(DISTINCT visitor) FROM web_visits WHERE created_at > datetime('now', '-30 days')"
-    ).fetch_one(db).await.unwrap_or((0, 0));
+        "SELECT COUNT(*), COUNT(DISTINCT visitor) FROM web_visits WHERE created_at > datetime('now', ?1)"
+    ).bind(&window).fetch_one(db).await.unwrap_or((0, 0));
 
     let views_by_day = sqlx::query_as::<_, (String, i64)>(
         "SELECT date(created_at) as day, COUNT(*) FROM web_visits \
-         WHERE created_at > datetime('now', '-14 days') GROUP BY day ORDER BY day"
-    ).fetch_all(db).await.unwrap_or_default()
+         WHERE created_at > datetime('now', ?1) GROUP BY day ORDER BY day"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default()
     .into_iter().map(|(day, views)| DayCount { day, views }).collect();
 
     let top_sources = sqlx::query_as::<_, (String, i64)>(
         "SELECT source, COUNT(*) as cnt FROM web_visits \
-         WHERE created_at > datetime('now', '-30 days') GROUP BY source ORDER BY cnt DESC LIMIT 8"
-    ).fetch_all(db).await.unwrap_or_default()
+         WHERE created_at > datetime('now', ?1) GROUP BY source ORDER BY cnt DESC LIMIT 8"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default()
     .into_iter().map(|(label, count)| Bucket { label, count }).collect();
 
     let top_paths = sqlx::query_as::<_, (String, i64)>(
         "SELECT path, COUNT(*) as cnt FROM web_visits \
-         WHERE created_at > datetime('now', '-30 days') GROUP BY path ORDER BY cnt DESC LIMIT 8"
-    ).fetch_all(db).await.unwrap_or_default()
+         WHERE created_at > datetime('now', ?1) GROUP BY path ORDER BY cnt DESC LIMIT 8"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default()
     .into_iter().map(|(label, count)| Bucket { label, count }).collect();
 
-    let (chat_conversations,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_conversations").fetch_one(db).await.unwrap_or((0,));
-    let (chat_messages,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages").fetch_one(db).await.unwrap_or((0,));
+    let (chat_conversations,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_conversations WHERE created_at > datetime('now', ?1)").bind(&window).fetch_one(db).await.unwrap_or((0,));
+    let (chat_messages,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE created_at > datetime('now', ?1)").bind(&window).fetch_one(db).await.unwrap_or((0,));
+    // Draft/published are current STATUS counts ("how many drafts exist right
+    // now"), not activity that happened within a window — genuinely all-time,
+    // unlike everything else on this page, so no window filter here.
     let (blog_posts_draft,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM blog_posts WHERE status='draft'").fetch_one(db).await.unwrap_or((0,));
     let (blog_posts_published,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM blog_posts WHERE status='published'").fetch_one(db).await.unwrap_or((0,));
-    let (research_notes,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM research_notes").fetch_one(db).await.unwrap_or((0,));
-    let (simulation_runs,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM simulation_runs").fetch_one(db).await.unwrap_or((0,));
-    let (agent_tool_calls_7d,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now','-7 days')").fetch_one(db).await.unwrap_or((0,));
+    let (research_notes,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM research_notes WHERE created_at > datetime('now', ?1)").bind(&window).fetch_one(db).await.unwrap_or((0,));
+    let (simulation_runs,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM simulation_runs WHERE created_at > datetime('now', ?1)").bind(&window).fetch_one(db).await.unwrap_or((0,));
+    let (agent_tool_calls,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now', ?1)").bind(&window).fetch_one(db).await.unwrap_or((0,));
     let tool_call_counts: Vec<ToolCallCount> = sqlx::query_as::<_, (String, i64)>(
-        "SELECT tool_name, COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now','-30 days') GROUP BY tool_name"
-    ).fetch_all(db).await.unwrap_or_default()
+        "SELECT tool_name, COUNT(*) FROM agent_tool_calls WHERE created_at > datetime('now', ?1) GROUP BY tool_name"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default()
     .into_iter().map(|(tool, count)| ToolCallCount { tool, count }).collect();
 
     let mut recent_activity: Vec<ActivityItem> = Vec::new();
@@ -240,7 +254,7 @@ pub async fn stats(State(state): State<AppState>, headers: HeaderMap, jar: Cooki
     Json(AnalyticsData {
         total_views, unique_visitors, views_by_day, top_sources, top_paths,
         chat_conversations, chat_messages, blog_posts_draft, blog_posts_published,
-        research_notes, simulation_runs, agent_tool_calls_7d, tool_call_counts, recent_activity,
+        research_notes, simulation_runs, agent_tool_calls, tool_call_counts, recent_activity,
         bucket: bucket.to_string(), days, activity_trend,
     }).into_response()
 }
