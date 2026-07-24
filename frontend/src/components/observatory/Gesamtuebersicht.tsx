@@ -3,7 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
-import { HudGrid, HudTile, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
@@ -104,16 +104,12 @@ export function Gesamtuebersicht() {
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<EverythingData>(`/api/observatory/everything?range=${range}`, [range])
 
-  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
-  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
-  if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
-
   // One combined, single-row export of every section's headline number —
   // all directly comparable "how much of X happened" totals, so one flat
   // row is honest here (unlike the per-section breakdown lists below, which
   // have genuinely different shapes from each other and would just become
   // a sparse, confusing table if forced into one sheet together).
-  const summaryRow = [{
+  const summaryRow = data ? [{
     range: data.range,
     conversations_total: data.chat.conversations_total,
     user_messages: data.chat.user_messages,
@@ -127,21 +123,35 @@ export function Gesamtuebersicht() {
     simulation_runs_total: data.simulation_runs.total,
     system_snapshots_total: data.system_snapshots.total,
     agent_tool_calls_total: data.agent_tool_calls.total,
-  }]
+  }] : []
+
+  // No visible header of its own — this stacks directly below Analytics on
+  // the same page, so a second title/actions block here would read as two
+  // stitched-together apps rather than one coherent page. The range filter
+  // + the one export action button push into the SAME shared top-of-page
+  // header Analytics itself sits under (see useHeaderActions/Hud.tsx),
+  // which is also why the filter/action row now always renders at the true
+  // top of the page rather than floating mid-scroll.
+  useHeaderActions(
+    data ? (
+      <HudHeaderActions
+        filters={
+          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        }
+        action={<ExportButtons rows={summaryRow} filenameBase={`gesamtuebersicht-zusammenfassung-${range}`} title={`Gesamtübersicht — Zusammenfassung (${RANGE_SUFFIX[data.range] ?? data.range})`} />}
+      />
+    ) : null,
+    [range, data],
+  )
+
+  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
+  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
+  if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        title="Gesamtübersicht"
-        actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <ExportButtons rows={summaryRow} filenameBase={`gesamtuebersicht-zusammenfassung-${range}`} title={`Gesamtübersicht — Zusammenfassung (${RANGE_SUFFIX[data.range] ?? data.range})`} />
-          </div>
-        }
-      />
 
       {/* ── Chat (chat_conversations / chat_messages) — three cards only;
           the raw conversation list below this used to duplicate what

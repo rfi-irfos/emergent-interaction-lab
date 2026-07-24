@@ -1403,6 +1403,20 @@ button { cursor: pointer; font-family: inherit; }
 .panel-add-btn:hover:not(:disabled) { background: #eff8ff; border-color: #0099CC; }
 .panel-add-btn:disabled { opacity: .55; cursor: default; }
 
+/* The one export action button's own format dropdown (ExportButtons.tsx) —
+   same canonical "action button" every app's shared page header ends with. */
+.export-menu-wrap { position: relative; display: inline-flex; }
+.export-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; min-width: 130px;
+  background: #fff; border: 1px solid rgba(15,23,42,.1); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15,23,42,.12); padding: 4px; display: flex; flex-direction: column; gap: 2px;
+}
+.export-menu-item {
+  display: block; width: 100%; text-align: left; background: none; border: none; border-radius: 6px;
+  padding: 7px 10px; font-size: 12.5px; font-weight: 500; color: #1f2937; cursor: pointer; transition: background .12s ease;
+}
+.export-menu-item:hover { background: rgba(0,153,204,.08); color: #0099CC; }
+
 /* Checkbox */
 .panel-checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #444; cursor: pointer; }
 .panel-checkbox input { width: 15px; height: 15px; accent-color: #0099CC; }
@@ -3291,6 +3305,9 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .panel-product-name, .gotham .panel-product-meta { color: #eefcff; }
 .gotham .panel-add-btn, .gotham .chat-inspect-toggle { border-color: rgba(52,225,255,.3); color: var(--hud-cyan); }
 .gotham .panel-add-btn:hover, .gotham .chat-inspect-toggle:hover { border-color: var(--hud-cyan); background: rgba(52,225,255,.08); }
+.gotham .export-menu { background: var(--gotham-panel, #12172b); border-color: var(--gotham-border, rgba(120,150,170,.16)); }
+.gotham .export-menu-item { color: rgba(226,235,245,.85); }
+.gotham .export-menu-item:hover { background: rgba(52,225,255,.1); color: var(--hud-cyan); }
 .gotham select { background: rgba(7,14,20,.9); color: var(--gotham-text); border: 1px solid var(--gotham-border); }
 .gotham .crm-body select option { background-color: #0a111a; color: #eefcff; }
 

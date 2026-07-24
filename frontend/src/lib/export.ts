@@ -125,3 +125,33 @@ export function toMarkdownTable(rows: Record<string, unknown>[], title?: string)
 export function exportMarkdown(filename: string, rows: Record<string, unknown>[], title?: string) {
   triggerDownload(filename, toMarkdownTable(rows, title), 'text/markdown;charset=utf-8')
 }
+
+// Minimal, dependency-free YAML block-scalar serializer — this app's export
+// rows are always a flat array of flat key/value objects (see this file's
+// own doc comment), never nested structures, so a full spec-compliant YAML
+// library would be solving a much bigger problem than this actually has.
+// Plain scalars are written bare; anything containing a character that would
+// change YAML's parse (colon+space, a leading special char, a line break) is
+// double-quoted with the same escaping JSON already uses for strings, which
+// is valid YAML flow-scalar syntax.
+function yamlScalar(value: unknown): string {
+  if (value === null || value === undefined) return 'null'
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  const s = cellText(value)
+  if (s === '') return '""'
+  const needsQuoting = /^[\s"'>|*&!%#@,[\]{}?:-]|: |:$|\r|\n|^\s|\s$/.test(s)
+  return needsQuoting ? JSON.stringify(s) : s
+}
+
+export function toYaml(rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return '[]\n'
+  const keys = unionKeys(rows)
+  return rows.map(row => {
+    const lines = keys.map((k, i) => `${i === 0 ? '- ' : '  '}${k}: ${yamlScalar(row[k])}`)
+    return lines.join('\n')
+  }).join('\n') + '\n'
+}
+
+export function exportYaml(filename: string, rows: Record<string, unknown>[]) {
+  triggerDownload(filename, toYaml(rows), 'application/yaml;charset=utf-8')
+}
