@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
-import { HudTile, HudSectionHeader } from './Hud'
+import { HudTile, useHeaderActions } from './Hud'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import { ObsDonut } from './ObsDonut'
@@ -189,6 +189,25 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
     setCompareIds(ids => ids.map(id => (id && !runs.some(r => r.id === id) ? '' : id)))
   }, [runs])
 
+  useHeaderActions(
+    <>
+      <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
+        <option value="">Alle Status</option>
+        {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{SIMULATION_STATUS_LABELS[v] ?? v}</option>)}
+      </select>
+      {/* Exports whatever is currently loaded/filtered (`runs`), same
+          honesty-about-scope principle as EmergenceMonitor's export —
+          related_signal_ids (an array) is flattened to a "; "-joined
+          string since CSV/Markdown cells are plain text. */}
+      <ExportButtons
+        rows={flattenForExport(runs)}
+        filenameBase="simulation-runs"
+        title="Simulationsläufe"
+      />
+    </>,
+    [statusFilter, runs],
+  )
+
   if (error && runs.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   const setCompareId = (idx: number, value: string) => {
@@ -203,25 +222,9 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        title="Aktive Simulationen"
-        sub={total !== null ? `Geladen: ${runs.length} von ${total}` : undefined}
-      />
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
-          <option value="">Alle Status</option>
-          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{SIMULATION_STATUS_LABELS[v] ?? v}</option>)}
-        </select>
-        {/* Exports whatever is currently loaded/filtered (`runs`), same
-            honesty-about-scope principle as EmergenceMonitor's export —
-            related_signal_ids (an array) is flattened to a "; "-joined
-            string since CSV/Markdown cells are plain text. */}
-        <ExportButtons
-          rows={flattenForExport(runs)}
-          filenameBase="simulation-runs"
-          title="Simulationsläufe"
-        />
-      </div>
+      {total !== null && (
+        <p style={{ fontSize: 12, color: '#9aa0a8', margin: '0 0 12px' }}>Geladen: {runs.length} von {total}</p>
+      )}
       {/* Three distinct compact status instruments — the old design jammed a
           run-status and a branch-status donut into ONE centered HudTile,
           which read as a single oversized chart. Splitting into three
