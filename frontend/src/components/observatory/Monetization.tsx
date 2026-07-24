@@ -3,7 +3,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { parseServerTimestamp } from '../../lib/dateGroups'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
-import { HudTile, useHeaderActions } from './Hud'
+import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
 
@@ -245,20 +245,26 @@ export function Monetization() {
 
   useHeaderActions(
     orders.length > 0 ? (
-      <>
-        <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-          <option value="">Alle Währungen</option>
-          {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
-        </select>
-        <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-          {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <ExportButtons
-          rows={filteredOrders.map(o => ({ ...o }))}
-          filenameBase={`billing-orders-${orderRange}`}
-          title="Bestellungen"
-        />
-      </>
+      <HudHeaderActions
+        filters={
+          <>
+            <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              <option value="">Alle Währungen</option>
+              {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+            </select>
+            <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+              {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </>
+        }
+        action={
+          <ExportButtons
+            rows={filteredOrders.map(o => ({ ...o }))}
+            filenameBase={`billing-orders-${orderRange}`}
+            title="Bestellungen"
+          />
+        }
+      />
     ) : null,
     [orders, orderCurrencyFilter, orderRange, filteredOrders],
   )
@@ -302,8 +308,8 @@ export function Monetization() {
         </div>
       )}
       {ordersTotal !== null && (
-        <div className="monetization-split">
-          <HudTile title="Umsatz nach Produkt" badge="REV" accent="var(--obs-green)" span={2} className="monetization-donut-tile">
+        <HudGrid cols={2}>
+          <HudTile title="Umsatz nach Produkt" badge="REV" accent="var(--obs-green)" span={1}>
             <ObsDonut
               data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
               valueFormat={(v, _t, pct) =>
@@ -311,38 +317,37 @@ export function Monetization() {
               }
               gradientIdPrefix="monetization-revenue-by-product"
             />
-            <p className="monetization-donut-caption">
+            <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
               Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}) — kein serverseitiges
               Gesamt-Grouping nach Produkt, siehe „Weitere laden" oben.
               {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
             </p>
           </HudTile>
-          <div className="monetization-order-card">
-            <div className="monetization-order-card-head">Letzte Bestellung</div>
+          {/* Same .obs-item-card language the orders list below already uses
+              — this used to be a bespoke dark-glass card with its own
+              colors/radius/shadow, sitting next to a HudTile and above a
+              plain-list .obs-item-card further down: three different card
+              languages on one screen ("total chaos", confirmed by audit). */}
+          <HudTile title="Letzte Bestellung" accent="var(--obs-green)" span={1}>
             {filteredOrders.length > 0 ? (
               (() => {
                 const o = filteredOrders[filteredOrders.length - 1]
                 return (
-                  <>
-                    <div className="monetization-order-card-product">{o.product_name ?? 'Unbekanntes Produkt'}</div>
-                    <div className="monetization-order-card-amount">{formatPrice(o.amount_cents, o.currency)}</div>
-                    <div className="monetization-order-card-meta">
+                  <div className="obs-item-card">
+                    <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
+                    <div className="obs-stat-value" style={{ color: 'var(--obs-green)', fontSize: 22, margin: '6px 0' }}>{formatPrice(o.amount_cents, o.currency)}</div>
+                    <div className="obs-item-meta">
                       {o.created_at}
                       {o.customer_email ? ` · ${o.customer_email}` : ' · keine E-Mail übermittelt'}
                     </div>
-                    {o.stripe_session_id && (
-                      <div className="monetization-order-card-meta" style={{ opacity: 0.6 }}>
-                        Session {o.stripe_session_id}
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )
               })()
             ) : (
-              <div className="obs-empty" style={{ padding: '12px 0' }}>Noch keine Bestellung im Filter.</div>
+              <div className="obs-empty">Noch keine Bestellung im Filter.</div>
             )}
-          </div>
-        </div>
+          </HudTile>
+        </HudGrid>
       )}
       {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
       {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
@@ -398,6 +403,13 @@ export function Monetization() {
           {showProductForm ? 'Abbrechen' : '+ Produkt'}
         </button>
       </div>
+      {!loading && list.length > 0 && (
+        <div className="obs-grid" style={{ marginBottom: 14 }}>
+          <div className="obs-stat c-blue"><div className="obs-stat-value">{list.length}</div><div className="obs-stat-label">Produkte gesamt</div></div>
+          <div className="obs-stat c-green"><div className="obs-stat-value">{list.filter(p => p.payment_link_url).length}</div><div className="obs-stat-label">mit Zahlungslink</div></div>
+          <div className="obs-stat c-amber"><div className="obs-stat-value">{list.filter(p => !p.payment_link_url).length}</div><div className="obs-stat-label">ohne Zahlungslink</div></div>
+        </div>
+      )}
       {showProductForm && (
         <div className="obs-card">
           <div className="obs-form" style={{ marginBottom: 0 }}>

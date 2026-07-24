@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
-import { HudTile, useHeaderActions } from './Hud'
+import { HudGrid, HudTile, useHeaderActions } from './Hud'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import { ObsDonut } from './ObsDonut'
@@ -237,8 +237,13 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           tiles always consider all of them; the run-status tile hides
           statuses that weren't fetched when a status filter is active
           (same convention as EmergenceMonitor's visibleStatuses). */}
-      <div className="hud-grid hud-grid--12">
-      <HudTile title="Lauf-Status" badge="SIM" accent="var(--obs-amber)" span={2}>
+      {/* HudGrid cols={4}, not a raw hud-grid--12 div — that variant has no
+          responsive breakpoint at all (App.css only collapses --5/--4/--3/--2
+          on narrower screens), so these donuts would stay pinned at ~17%/
+          17%/33% width on any tablet or narrower desktop instead of
+          reflowing like every other HudGrid in the app. */}
+      <HudGrid cols={4}>
+      <HudTile title="Lauf-Status" badge="SIM" accent="var(--obs-amber)" span={1}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
@@ -255,7 +260,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
         </p>
       </HudTile>
 
-      <HudTile title="Zweig-Status" badge="SIM" accent="var(--obs-cyan)" span={2}>
+      <HudTile title="Zweig-Status" badge="SIM" accent="var(--obs-cyan)" span={1}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={Object.keys(STATUS_ACCENT).map(status => ({
@@ -272,7 +277,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
         </p>
       </HudTile>
 
-      <HudTile title="Zweig-Begründung" badge="SIM" accent="var(--obs-green)" span={4}>
+      <HudTile title="Zweig-Begründung" badge="SIM" accent="var(--obs-green)" span={2}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={[
@@ -287,7 +292,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           Wie viele Zweige eine dokumentierte Entscheidungs-Begründung tragen (geladen: {allBranches.length}).
         </p>
       </HudTile>
-      </div>
+      </HudGrid>
       <SimulationLab
         runs={runs}
         loading={loading}
