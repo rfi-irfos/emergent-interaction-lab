@@ -1163,14 +1163,6 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
             >
               ⬡ Reasoning {reasoningEnabled ? 'an' : 'aus'}
             </button>
-            {hermesAvailable && (
-              <span
-                className="chat-export-btn chat-engine-indicator"
-                title="Hermes: ein eigenständiger Agent mit eigenem Werkzeug-Loop und eigenem Langzeitgedächtnis, das über Gespräche hinweg wächst — die Basis-Intelligenz hinter Jarvis, kein Umschalter."
-              >
-                △ Jarvis, auf Hermes
-              </span>
-            )}
             {messages.length > 0 && (
               <>
                 <button

@@ -33,7 +33,7 @@ function Spark({ values, color }: { values: number[]; color: string }) {
   if (values.length === 0) return <div style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>—</div>
   return (
     <div style={{ marginTop: 4 }}>
-      <ObsChart data={values.map((v, i) => ({ label: String(i), value: v }))} color={color} gradientId="forschung-spark" height={22} showAxis={false} />
+      <ObsChart data={values.map((v, i) => ({ label: String(i), value: v }))} color={color} gradientId="forschung-spark" height={22} showAxis={false} interactive={false} />
     </div>
   )
 }
@@ -92,16 +92,11 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
 
   return (
     <div className="forschung-kpis">
-      {/* A sub-widget inside the Forschung page, not a second page header —
-          demoted to a plain eyebrow label so it doesn't compete with the
-          real page header above (Lighthouse never stacks two full headers). */}
-      <div className="obs-section-label" title="Echtzeit · nur aus echten Gesprächsdaten, kein interner Framework-Wert">Lauras Nutzerverhalten</div>
-
       <HudGrid cols={5}>
         {/* 1 — Message-volume trend */}
         <HudTile title="Nachrichten-Volumen" badge="TREND" accent="var(--obs-purple)" span={1} className="hud-tile--compact">
           {trend.length > 0
-            ? <ObsChart data={trend} color="var(--obs-purple)" gradientId="forschung-volume" height={34} />
+            ? <ObsChart data={trend} color="var(--obs-purple)" gradientId="forschung-volume" height={34} interactive={false} />
             : <div className="obs-empty">Keine Daten.</div>}
         </HudTile>
 
