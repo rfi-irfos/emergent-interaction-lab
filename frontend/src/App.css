@@ -1404,7 +1404,21 @@ button { cursor: pointer; font-family: inherit; }
 .panel-add-btn:disabled { opacity: .55; cursor: default; }
 
 /* The one export action button's own format dropdown (ExportButtons.tsx) —
-   same canonical "action button" every app's shared page header ends with. */
+   same canonical "action button" every app's shared page header ends with.
+   Its own dedicated class (not .panel-add-btn, which a dozen unrelated
+   "+X create" buttons also share) — real SVG icons instead of the old
+   unicode ⬇/▾ glyphs, which rendered cramped and inconsistently across
+   fonts at this size ("mega hässlich" — fair). */
+.export-menu-btn {
+  display: inline-flex; align-items: center; gap: 7px; justify-content: center;
+  background: none; border: 1.5px solid #93c5fd; border-radius: 7px;
+  padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: #0099CC;
+  transition: .15s; cursor: pointer; white-space: nowrap;
+}
+.export-menu-btn:hover:not(:disabled) { background: #eff8ff; border-color: #0099CC; }
+.export-menu-btn:disabled { opacity: .5; cursor: default; }
+.export-menu-btn[aria-expanded="true"] .export-menu-chevron { transform: rotate(180deg); }
+.export-menu-chevron { transition: transform .15s ease; flex-shrink: 0; }
 .export-menu-wrap { position: relative; display: inline-flex; }
 .export-menu {
   position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; min-width: 130px;
@@ -3305,6 +3319,8 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .panel-product-name, .gotham .panel-product-meta { color: #eefcff; }
 .gotham .panel-add-btn, .gotham .chat-inspect-toggle { border-color: rgba(52,225,255,.3); color: var(--hud-cyan); }
 .gotham .panel-add-btn:hover, .gotham .chat-inspect-toggle:hover { border-color: var(--hud-cyan); background: rgba(52,225,255,.08); }
+.gotham .export-menu-btn { border-color: rgba(52,225,255,.3); color: var(--hud-cyan); }
+.gotham .export-menu-btn:hover:not(:disabled) { border-color: var(--hud-cyan); background: rgba(52,225,255,.08); }
 .gotham .export-menu { background: var(--gotham-panel, #12172b); border-color: var(--gotham-border, rgba(120,150,170,.16)); }
 .gotham .export-menu-item { color: rgba(226,235,245,.85); }
 .gotham .export-menu-item:hover { background: rgba(52,225,255,.1); color: var(--hud-cyan); }
@@ -3370,22 +3386,36 @@ button { cursor: pointer; font-family: inherit; }
 .hud-tile { box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 22%, transparent); }
 .hud-tile:hover { box-shadow: 0 4px 12px rgba(0,0,0,.28), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 38%, transparent); }
 
-/* ── PAGE HEADER — one header language for every app, same pattern as
-   Lighthouse's PageHeader.tsx: row 1 is title + tabs + right-aligned
-   controls/actions, together on one line; row 2 (only when present) is the
-   plain-language description, full width, nothing else. Plain sans-serif,
-   sentence case — no monospace/uppercase treatment and no decorative
-   bullet/icon before the title; the title itself is the signal. */
-.hud-section-header { display: flex; flex-direction: column; gap: 4px; margin: 0 0 18px; }
-.hud-section-header-row1 { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
-.hud-section-header-text { min-width: 0; }
+/* ── PAGE HEADER — one header language for every app, ALL on one line:
+   title, a soft divider, the plain-language description (truncated with an
+   ellipsis, never wraps or pushes actions off-row — full text on hover),
+   then tabs and the right-aligned actions (search/filter/export), all at
+   the same height. Plain sans-serif, sentence case — no monospace/uppercase
+   treatment and no decorative bullet/icon before the title; the title
+   itself is the signal. */
+.hud-section-header { margin: 0 0 18px; }
+.hud-section-header-row1 { display: flex; align-items: center; gap: 12px; }
 .hud-section-title {
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: rgba(228,232,240,.95); margin: 0;
+  flex-shrink: 0; white-space: nowrap;
 }
-.hud-section-sub { font-size: 13px; line-height: 1.5; color: var(--panel-text-dim, rgba(148,190,199,.6)); margin: 0; max-width: 70ch; }
-.hud-section-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
+.hud-section-divider { width: 1px; height: 18px; background: rgba(255,255,255,.14); flex-shrink: 0; }
+.hud-section-sub {
+  font-size: 13px; line-height: 1.5; color: var(--panel-text-dim, rgba(148,190,199,.6)); margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; cursor: default;
+}
+.hud-section-tabs { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+.hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; flex-shrink: 0; margin-left: auto; }
+@media (max-width: 720px) {
+  /* Below this width there's no honest way to keep everything on one line
+     without the description disappearing entirely or the actions
+     overflowing the viewport — wrapping to a second row here beats either
+     of those, this is the one exception to "strict one line." */
+  .hud-section-header-row1 { flex-wrap: wrap; }
+  .hud-section-sub { flex-basis: 100%; order: 3; white-space: normal; }
+  .hud-section-divider { display: none; }
+}
 
 .hud-stat { text-align: left; }
 .hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; font-variant-numeric: tabular-nums; }
@@ -3419,6 +3449,8 @@ button { cursor: pointer; font-family: inherit; }
   border-color: rgba(34,211,238,.4); color: var(--hud-cyan);
 }
 .observatory-hud .panel-add-btn:hover:not(:disabled) { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); }
+.observatory-hud .export-menu-btn { border-color: rgba(34,211,238,.4); color: var(--hud-cyan); }
+.observatory-hud .export-menu-btn:hover:not(:disabled) { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); }
 .observatory-hud .panel-delete-btn { border-color: rgba(239,68,68,.4); color: #fca5a5; }
 /* Dashboard toolbar (Custom Dashboard): keep the selects/inputs/+ button in
    the dark gotham chrome instead of the light Verwaltung defaults — without

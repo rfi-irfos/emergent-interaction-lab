@@ -50,13 +50,19 @@ export function ExportButtons({ rows, filenameBase, title, disabled }: {
     <div className="export-menu-wrap" ref={ref}>
       <button
         type="button"
-        className="panel-add-btn"
+        className="export-menu-btn"
         disabled={isDisabled}
         onClick={() => setOpen(o => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        ⬇ Export ▾
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M4 20h16" />
+        </svg>
+        <span>Export</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="export-menu-chevron">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
       {open && (
         <div className="export-menu" role="menu">
