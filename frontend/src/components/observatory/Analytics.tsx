@@ -186,8 +186,15 @@ export function Analytics() {
           from here — Gesamtübersicht's version below already covers the
           same agent_tool_calls breakdown, now under the identical filter. */}
       <HudGrid cols={3}>
-        <HudTile title="Blog" badge="STATUS" accent="var(--obs-amber)" span={1}>
-          <div className="obs-section-label" style={{ marginBottom: 10 }}>Entwürfe vs. Veröffentlicht</div>
+        <HudTile title="Jarvis-Blogentwürfe" badge="STATUS" accent="var(--obs-amber)" span={1}>
+          {/* Only ever counts blog_posts (Jarvis's own draft_blog_post tool
+              output) — a genuinely different, separate list from the
+              manually-managed public news/blog under Verwaltung → Blog's
+              top section. Zero here is honest if Jarvis hasn't drafted
+              anything yet; it says nothing about your actual published
+              posts, which is exactly the confusion the old bare "Blog"
+              title invited. */}
+          <div className="obs-section-label" style={{ marginBottom: 10 }}>Entwürfe vs. veröffentlicht (nur Jarvis-Entwürfe)</div>
           <ObsDonut
             data={[
               { label: 'Entwürfe', value: data.blog_posts_draft, color: 'var(--obs-amber)' },

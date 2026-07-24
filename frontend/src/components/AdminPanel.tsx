@@ -280,16 +280,22 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
       <div className="crm-layout">
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           {/* Brand/logo lives in the page-level topbar now. Collapse toggle
-              FLOATS over the nav's top-right corner (same as Lighthouse's
-              own sidebar) instead of taking a whole row of its own. */}
-          <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
-            <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
-          </button>
+              sits in normal flow on the same row as the first group label
+              (not floating absolutely above it at a disconnected height —
+              that used to reserve 44px of dead top padding on .crm-nav just
+              to keep clear of the button, most of which was never actually
+              needed). Collapsed state centers the button alone on this row
+              instead of showing the label. */}
+          <div className="crm-nav-top-row">
+            {!sidebarCollapsed && <div className="crm-nav-group-label crm-nav-group-label--inline">Verwaltung</div>}
+            <button className="crm-sidebar-collapse-icon-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}>
+              <span style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', display: 'inline-flex' }}><IconCollapse /></span>
+            </button>
+          </div>
           <nav className="crm-nav">
             {/* Analytics leads the Verwaltung group — the first thing Laura
                 sees on opening the admin panel — with Website Kit moved to
                 the bottom, right under Monetarisierung, per feedback. */}
-            {!sidebarCollapsed && <div className="crm-nav-group-label">Verwaltung</div>}
             <button className={`crm-nav-item ${adminSection === 'analytics' ? 'active' : ''}`} onClick={() => setAdminSection('analytics')} title="Analytics">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
               {!sidebarCollapsed && 'Analytics'}

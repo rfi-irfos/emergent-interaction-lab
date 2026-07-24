@@ -2485,18 +2485,23 @@ button { cursor: pointer; font-family: inherit; }
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
 .crm-sidebar { position: relative; width: 220px; flex-shrink: 0; background: var(--panel-shell-bg, #0a0e1a); display: flex; flex-direction: column; overflow: hidden; }
-/* Brand/logo lives in the page-level topbar now. Collapse toggle FLOATS
-   over the nav's top-right corner (same as Lighthouse's own sidebar,
-   router.tsx) instead of taking a whole row of its own. */
+/* Brand/logo lives in the page-level topbar now. Collapse toggle sits in
+   normal flow on the same row as the first group label — it used to float
+   `position: absolute` above everything at a fixed 8px offset, disconnected
+   from the label's own row, and .crm-nav reserved 44px of top padding just
+   to keep clear of it (most of that padding was dead space once expanded —
+   flagged directly: "wenn druff klicksch zum expandieren nimmt's viel
+   nutzlosen Raum weg"). Now it's a real flex row, no reserved clearance
+   needed at all. */
+.crm-nav-top-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px 8px; flex-shrink: 0; }
+.crm-sidebar.collapsed .crm-nav-top-row { justify-content: center; }
 .crm-sidebar-collapse-icon-btn {
-  position: absolute; top: 8px; right: 8px; z-index: 2;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 26px; height: 26px; border-radius: 7px; border: none;
   background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
 }
-.crm-sidebar.collapsed .crm-sidebar-collapse-icon-btn { left: 50%; right: auto; transform: translateX(-50%); }
 .crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
-.crm-sidebar.collapsed .crm-sidebar-collapse-row { justify-content: center; }
+.crm-nav-group-label--inline { padding: 0; margin: 0; }
 
 /* Brand/logo block in the page-level topbar, left of the section title. */
 .crm-topbar-brand-block { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 18px; margin-right: 18px; border-right: 1px solid rgba(0,0,0,.08); }
@@ -2513,7 +2518,7 @@ button { cursor: pointer; font-family: inherit; }
    finally grew past typical viewport height and .crm-sidebar's own
    overflow:hidden started clipping the bottom entries outright instead of
    making them reachable. */
-.crm-nav { padding: 44px 10px 12px; flex: 1; min-height: 0; overflow-y: auto; }
+.crm-nav { padding: 0 10px 12px; flex: 1; min-height: 0; overflow-y: auto; }
 .crm-nav-item {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 8px;
   border: none; background: none; color: rgba(255,255,255,.5); font-size: 13px; font-weight: 500;
