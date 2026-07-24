@@ -4,6 +4,7 @@ import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { useHeaderActions } from './Hud'
+import { AGENT_ACTIVITY_KIND_LABELS, AGENT_ACTIVITY_STATUS_LABELS } from '../../lib/labels'
 
 interface ActivityItem {
   kind: 'pull_request' | 'commit' | 'workflow_run' | 'deploy'
@@ -17,13 +18,6 @@ interface AgentActivityData {
   configured: boolean
   message: string | null
   items: ActivityItem[]
-}
-
-const KIND_LABELS: Record<ActivityItem['kind'], string> = {
-  pull_request: 'Pull Request',
-  commit: 'Commit',
-  workflow_run: 'Workflow',
-  deploy: 'Deploy',
 }
 
 const KIND_COLORS: Record<ActivityItem['kind'], string> = {
@@ -63,7 +57,7 @@ export function AgentActivity() {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
           <option value="">Alle Typen</option>
-          {(Object.keys(KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
+          {(Object.keys(AGENT_ACTIVITY_KIND_LABELS) as ActivityItem['kind'][]).map(k => <option key={k} value={k}>{AGENT_ACTIVITY_KIND_LABELS[k]}</option>)}
         </select>
         <ExportButtons rows={items.map(i => ({ ...i }))} filenameBase="agent-activity" title="Agent-Aktivität" />
       </div>
@@ -93,13 +87,13 @@ export function AgentActivity() {
               </div>
               <div className="obs-item-meta">
                 <span className="obs-pill" style={{ background: `${KIND_COLORS[item.kind]}1a`, color: KIND_COLORS[item.kind] }}>
-                  {KIND_LABELS[item.kind]}
+                  {AGENT_ACTIVITY_KIND_LABELS[item.kind] ?? item.kind}
                 </span>
                 {item.status && (
                   <>
                     {' '}
                     <span className="obs-pill" style={{ background: `${statusColor(item)}1a`, color: statusColor(item) }}>
-                      {item.status}
+                      {AGENT_ACTIVITY_STATUS_LABELS[item.status] ?? item.status}
                     </span>
                   </>
                 )}
@@ -119,8 +113,8 @@ export function AgentActivity() {
       }
 
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Echte GitHub-/Git-Ereignisse für dieses Repository — keine Chat-Erzählung. Fly-Deploys sind kein
-        GitHub-natives Ereignis und werden separat protokolliert.
+        Was tatsächlich am Code passiert ist — keine Erzählung aus dem Chat, sondern echte Einträge aus der
+        Versionsverwaltung dieses Projekts. Veröffentlichungen werden separat erfasst, da sie dort nicht automatisch sichtbar sind.
       </p>
     </div>
   )

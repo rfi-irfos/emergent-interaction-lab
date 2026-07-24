@@ -75,11 +75,32 @@ export const SYSTEM_MAP_NODE_LABELS: Record<string, string> = {
   information: 'Informationsdynamik',
 }
 
-/// Colocated here (moved from AgentActivity.tsx, unchanged) so every raw-
-/// value label map in the app lives in one place.
+/// Colocated here (moved from AgentActivity.tsx) — translated out of raw
+/// GitHub vocabulary per the Stage 0 call (this is the worst jargon offender
+/// in the app; "zero engineering jargon" wins over staying literal to
+/// GitHub's own terms, since Laura never opens GitHub itself).
 export const AGENT_ACTIVITY_KIND_LABELS: Record<string, string> = {
-  pull_request: 'Pull Request',
-  commit: 'Commit',
-  workflow_run: 'Workflow',
-  deploy: 'Deploy',
+  pull_request: 'Änderungsvorschlag',
+  commit: 'Änderung',
+  workflow_run: 'Automatischer Ablauf',
+  deploy: 'Veröffentlichung',
+}
+
+/// Raw GitHub PR-state/workflow-conclusion/deploy-log status strings — same
+/// MAP[raw] ?? raw fallback as everywhere else, since GitHub Actions has more
+/// conclusion values than are worth enumerating (a rare one just shows as-is).
+export const AGENT_ACTIVITY_STATUS_LABELS: Record<string, string> = {
+  merged: 'Übernommen',
+  open: 'Offen',
+  closed: 'Geschlossen',
+  success: 'Erfolgreich',
+  failure: 'Fehlgeschlagen',
+  deployed: 'Veröffentlicht',
+  cancelled: 'Abgebrochen',
+  skipped: 'Übersprungen',
+  neutral: 'Ohne Ergebnis',
+  timed_out: 'Zeitüberschreitung',
+  action_required: 'Aktion erforderlich',
+  in_progress: 'Läuft',
+  queued: 'Wartet',
 }
