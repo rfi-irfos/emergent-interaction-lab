@@ -2456,7 +2456,7 @@ button { cursor: pointer; font-family: inherit; }
    Blog / Analytics, toggled via the "Verwaltung" topbar button. */
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
-.crm-sidebar { position: relative; width: 220px; flex-shrink: 0; background: #0a0e1a; display: flex; flex-direction: column; overflow: hidden; }
+.crm-sidebar { position: relative; width: 220px; flex-shrink: 0; background: var(--panel-shell-bg, #0a0e1a); display: flex; flex-direction: column; overflow: hidden; }
 /* Brand/logo lives in the page-level topbar now. Collapse toggle FLOATS
    over the nav's top-right corner (same as Lighthouse's own sidebar,
    router.tsx) instead of taking a whole row of its own. */
@@ -2499,7 +2499,7 @@ button { cursor: pointer; font-family: inherit; }
   width: 3px; height: 16px; border-radius: 3px; background: #63f0ff;
 }
 .crm-nav-item:active { transform: scale(.98); }
-.crm-nav-item svg { flex-shrink: 0; opacity: .65; }
+.crm-nav-item svg { flex-shrink: 0; opacity: .85; }
 .crm-nav-item.active svg { stroke: #63f0ff; opacity: 1; }
 
 .crm-badge {
@@ -2513,15 +2513,15 @@ button { cursor: pointer; font-family: inherit; }
   letter-spacing: .08em; padding: 14px 12px 6px;
 }
 .crm-nav-group-label:first-child { padding-top: 4px; }
-/* Sub-headers inside Observatory: Forschungsebene / Systemebene / Technische
-   Ebene — three genuinely different kinds of information, not one flat
-   list (see plan). Smaller + indented relative to the top-level "Observatory"
-   label, but still real headers, not decoration. */
-.crm-nav-group-label--tier { font-size: 9px; padding: 10px 12px 4px 20px; color: rgba(255,255,255,.24); }
+/* Forschungsebene / Systemebene / Technische Ebene — three genuinely
+   different kinds of information, not one flat list (see plan). No separate
+   "Observatory" wrapper label above these — what's inside is already named
+   by its own tier, a second English header on top was pure redundancy. */
+.crm-nav-group-label--tier { font-size: 9px; padding: 10px 12px 4px 20px; color: rgba(255,255,255,.55); }
 .crm-sidebar.collapsed .crm-nav-group-label--tier { display: none; }
 
 .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.crm-page-topbar { display: flex; align-items: center; padding: 16px 28px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); width: 100%; }
+.crm-page-topbar { display: flex; align-items: center; padding: 10px 28px; background: #f4f6f5; flex-shrink: 0; border-bottom: 1px solid rgba(0,0,0,.06); width: 100%; }
 .crm-topbar-actions { margin-left: auto; }
 /* Always in the same top-right spot regardless of which section is open —
    the sidebar version of this (folded into the brand block) turned out to
@@ -2634,7 +2634,10 @@ button { cursor: pointer; font-family: inherit; }
   box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03);
   position: relative; overflow: hidden; transition: box-shadow .18s ease, transform .18s ease;
 }
-.obs-stat::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--obs-accent); }
+/* No single-side accent stripe (standing rule — reads as unfinished, not
+   designed). The card stays neutral; the accent color lives on the number
+   itself instead — same "colored figure, neutral frame" convention as most
+   real BI dashboards. */
 .obs-stat:hover { box-shadow: 0 2px 6px rgba(15,23,42,.07), 0 10px 24px rgba(15,23,42,.06); transform: translateY(-1px); }
 .obs-stat.c-blue { --obs-accent: var(--obs-blue); }
 .obs-stat.c-purple { --obs-accent: var(--obs-purple); }
@@ -2655,7 +2658,7 @@ button { cursor: pointer; font-family: inherit; }
   background: linear-gradient(180deg, #fffbeb, #fef3c7); border: 1px solid rgba(245,158,11,.3);
   border-radius: 11px; padding: 12px 16px;
 }
-.obs-stat-value { font-size: 27px; font-weight: 800; color: #111827; letter-spacing: -.01em; line-height: 1.1; }
+.obs-stat-value { font-size: 27px; font-weight: 800; color: var(--obs-accent, #111827); letter-spacing: -.01em; line-height: 1.1; }
 .obs-stat-label { font-size: 10.5px; color: #8a8f98; margin-top: 5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 
 .obs-section-label {
@@ -3082,7 +3085,7 @@ button { cursor: pointer; font-family: inherit; }
     radial-gradient(ellipse 700px 500px at 100% 10%, rgba(139,92,246,.04), transparent 55%),
     var(--hud-bg);
 }
-.crm-page-topbar.observatory-hud { background: rgba(10,14,23,.92); border-bottom: 1px solid rgba(150,156,170,.1); backdrop-filter: blur(6px); }
+.crm-page-topbar.observatory-hud { background: var(--panel-shell-bg, #0a0e1a); border-bottom: 1px solid rgba(150,156,170,.1); }
 .observatory-hud .crm-topbar-title {
   color: #e4e8f0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700;
   letter-spacing: .01em;
@@ -3123,7 +3126,7 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-item-title { color: #e4e8f0; }
 .observatory-hud .obs-item-meta { color: rgba(138,152,184,.8); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11px; letter-spacing: .03em; }
 .observatory-hud .obs-item-body { color: rgba(212,219,235,.88); }
-.observatory-hud .obs-stat-value { color: #e4e8f0; }
+.observatory-hud .obs-stat-value { color: var(--obs-accent, #e4e8f0); }
 .observatory-hud .obs-stat-label { color: rgba(138,152,184,.85); }
 .observatory-hud .obs-pill { opacity: .95; }
 .observatory-hud .obs-status-pill.ok { background: rgba(52,211,153,.14); color: #6ee7b7; }
@@ -3148,7 +3151,7 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .obs-item-title { color: #e4e8f0; }
 .gotham .obs-item-meta { color: rgba(138,152,184,.8); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11px; letter-spacing: .03em; }
 .gotham .obs-item-body { color: rgba(212,219,235,.88); }
-.gotham .obs-stat-value { color: #e4e8f0; }
+.gotham .obs-stat-value { color: var(--obs-accent, #e4e8f0); }
 .gotham .obs-stat-label { color: rgba(138,152,184,.85); }
 .gotham .obs-pill { opacity: .95; }
 .gotham .obs-status-pill.ok { background: rgba(52,211,153,.14); color: #6ee7b7; }
@@ -3213,7 +3216,15 @@ button { cursor: pointer; font-family: inherit; }
    `.observatory-hud` rules below still layer on top for the Observatory
    telemetry accent (cyan), so Observatory surfaces stay the brightest.
    ═══════════════════════════════════════════════════════════════════════════ */
-.gotham { --gotham-bg: #05080d; --gotham-panel: rgba(16,24,34,.72); --gotham-border: rgba(120,150,170,.16); --gotham-text: rgba(206,224,232,.82); --gotham-text-dim: rgba(140,170,184,.55); --hud-cyan: #34e1ff; --hud-cyan-dim: rgba(52,225,255,.32); --hud-amber: #ffb01f; }
+.gotham {
+  --gotham-bg: #05080d; --gotham-panel: rgba(16,24,34,.72); --gotham-border: rgba(120,150,170,.16);
+  --gotham-text: rgba(206,224,232,.82); --gotham-text-dim: rgba(140,170,184,.55);
+  --hud-cyan: #34e1ff; --hud-cyan-dim: rgba(52,225,255,.32); --hud-amber: #ffb01f;
+  /* One shared shell color for both the sidebar and the topbar — defined
+     once here so they're byte-identical by construction, not two
+     independently-tuned rgba values that drift apart (they used to). */
+  --panel-shell-bg: #0a0e1a;
+}
 .gotham.crm-main {
   background:
     radial-gradient(ellipse 1000px 600px at 12% -12%, rgba(52,225,255,.07), transparent 58%),
@@ -3245,8 +3256,8 @@ button { cursor: pointer; font-family: inherit; }
 }
 .gotham .crm-body { position: relative; z-index: 2; color: var(--gotham-text); }
 .crm-page-topbar.gotham {
-  background: rgba(7,11,18,.86); border-bottom: 1px solid var(--gotham-border);
-  backdrop-filter: blur(8px); position: relative; z-index: 2;
+  background: var(--panel-shell-bg); border-bottom: 1px solid var(--gotham-border);
+  position: relative; z-index: 2;
 }
 .gotham .crm-topbar-title {
   color: #eafdff; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; letter-spacing: -.005em;
@@ -3254,12 +3265,12 @@ button { cursor: pointer; font-family: inherit; }
 }
 .gotham .crm-topbar-actions .topbar-icon-btn { border-color: rgba(120,150,170,.25); background: rgba(120,150,170,.06); color: var(--gotham-text); }
 .gotham .crm-topbar-actions .topbar-icon-btn:hover { border-color: var(--hud-cyan); color: var(--hud-cyan); background: rgba(52,225,255,.08); }
-.gotham .crm-nav-item { color: var(--gotham-text-dim); }
+.gotham .crm-nav-item { color: rgba(255,255,255,.68); }
 .gotham .crm-nav-item:hover { background: rgba(120,150,170,.08); color: var(--gotham-text); }
 .gotham .crm-nav-item.active { background: rgba(52,225,255,.12); color: var(--hud-cyan); }
 .gotham .crm-nav-item.active::before { background: var(--hud-cyan); }
-.gotham .crm-nav-group-label { color: rgba(140,170,184,.4); }
-.gotham .crm-sidebar { background: rgba(7,11,18,.7); border-right: 1px solid var(--gotham-border); }
+.gotham .crm-nav-group-label { color: rgba(255,255,255,.5); }
+.gotham .crm-sidebar { background: var(--panel-shell-bg); border-right: 1px solid var(--gotham-border); }
 
 /* Verwaltung's white BI cards become dark tactical panels under gotham. */
 .gotham .obs-card, .gotham .obs-item-card, .gotham .obs-map-card, .gotham .obs-stat {
@@ -3271,7 +3282,7 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .obs-item-title { color: #eefcff; }
 .gotham .obs-item-meta { color: var(--gotham-text-dim); font-size: 10.5px; }
 .gotham .obs-item-body { color: rgba(212,231,235,.85); }
-.gotham .obs-stat-value { color: #eefcff; }
+.gotham .obs-stat-value { color: var(--obs-accent, #eefcff); }
 .gotham .obs-stat-label { color: var(--gotham-text-dim); }
 .gotham .obs-section-label { color: var(--hud-cyan); letter-spacing: .04em; }
 .gotham .obs-section-label::after { background: rgba(52,225,255,.14); }

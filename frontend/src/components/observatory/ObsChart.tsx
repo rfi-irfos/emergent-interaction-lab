@@ -1,11 +1,13 @@
-import { useState } from 'react'
-import { smoothPath } from '../../lib/chartMath'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface ChartPoint { label: string; value: number }
 
-/// Shared BI-grade area/line chart — smooth curve, gradient fill, gridlines,
-/// hover crosshair + tooltip. Replaces the flat solid-fill bar divs used
-/// across the Observatory modules. Pure inline SVG, no charting library.
+/// Shared BI-grade area/line chart, built on Recharts (see
+/// frontend/package.json) rather than hand-rolled SVG — a real charting
+/// library reads as a normal, familiar chart (Laura's own years in Excel),
+/// not a custom instrument. Same external prop shape as before this
+/// migration, so every existing caller (Analytics, Flugschreiber,
+/// InteractionDynamics, InformationDynamics, ...) needed zero changes.
 export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, gradientId, showAxis = true }: {
   data: ChartPoint[]
   color?: string
@@ -16,75 +18,64 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
    * indices, not real dates) wouldn't mean anything to read anyway. */
   showAxis?: boolean
 }) {
-  const [hover, setHover] = useState<number | null>(null)
   if (!data.length) return <div className="obs-empty">Keine Daten.</div>
 
-  const W = 640
-  const H = height
-  const padTop = 14, padBottom = 4, padLeft = 2, padRight = 2
-  const max = Math.max(...data.map(d => d.value), 1)
-  const innerW = W - padLeft - padRight
-  const innerH = H - padTop - padBottom
-  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0
-
-  const points = data.map((d, i) => ({
-    x: padLeft + i * stepX,
-    y: padTop + innerH - (d.value / max) * innerH,
-    ...d,
-  }))
-
-  const linePath = smoothPath(points)
-  const areaPath = `${linePath} L ${points[points.length - 1].x},${padTop + innerH} L ${points[0].x},${padTop + innerH} Z`
-  const gridLines = [0, 0.33, 0.66, 1].map(f => padTop + innerH * f)
   const fmt = valueFormat ?? ((v: number) => String(v))
 
+  // Recharts renders every tick by default — same collision problem the old
+  // hand-rolled axis solved (a 90-point series overlapping into garbage) —
+  // so labels are still thinned to ~7 evenly-spaced ticks, always including
+  // the last one, via a custom tickFormatter that blanks the rest.
+  const targetTicks = 7
+  const tickStep = Math.max(1, Math.ceil(data.length / targetTicks))
+  const tickFormatter = (label: string, index: number) =>
+    (index % tickStep === 0 || index === data.length - 1) ? label : ''
+
   return (
-    <div className="obs-chart-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="obs-chart" style={{ height: H }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.32" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {gridLines.map((y, i) => <line key={i} x1={padLeft} x2={W - padRight} y1={y} y2={y} className="obs-chart-grid" />)}
-        <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" className="obs-chart-area" />
-        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="obs-chart-line" />
-        {hover !== null && (
-          <line x1={points[hover].x} x2={points[hover].x} y1={padTop} y2={padTop + innerH} className="obs-chart-crosshair" />
-        )}
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r={hover === i ? 4.5 : 2} fill={color} stroke="#fff" strokeWidth={hover === i ? 1.5 : 0} />
-            <rect
-              x={p.x - (stepX || W) / 2} y={0} width={stepX || W} height={H}
-              fill="transparent"
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(null)}
+    <div className="obs-chart-wrap" style={{ height }}>
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} className="obs-chart-grid" />
+          {showAxis && (
+            <XAxis
+              dataKey="label"
+              tickFormatter={tickFormatter as (v: string, i: number) => string}
+              tickLine={false}
+              axisLine={false}
+              className="obs-chart-axis"
+              interval={0}
+              fontSize={10}
             />
-          </g>
-        ))}
-      </svg>
-      {hover !== null && (
-        <div className="obs-chart-tooltip" style={{ left: `${(points[hover].x / W) * 100}%` }}>
-          <div className="obs-chart-tooltip-value">{fmt(points[hover].value)}</div>
-          <div className="obs-chart-tooltip-label">{points[hover].label}</div>
-        </div>
-      )}
-      {showAxis && <div className="obs-chart-axis">
-        {data.map((d, i) => {
-          // Thin the labels so they never collide: show ~6-8 evenly spaced
-          // ticks plus always the last one. Otherwise dense series (e.g. 29
-          // daily snapshots) render every label in one row and overlap into
-          // garbage like "07-1107-1107…".
-          const targetTicks = 7
-          const show = data.length <= targetTicks
-            ? true
-            : i % Math.ceil(data.length / targetTicks) === 0 || i === data.length - 1
-          if (!show) return null
-          return <span key={i}>{d.label}</span>
-        })}
-      </div>}
+          )}
+          <YAxis hide domain={[0, 'dataMax']} />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload || payload.length === 0) return null
+              return (
+                <div className="obs-chart-tooltip">
+                  <div className="obs-chart-tooltip-value">{fmt(payload[0].value as number)}</div>
+                  <div className="obs-chart-tooltip-label">{label}</div>
+                </div>
+              )
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2.5}
+            fill={`url(#${gradientId})`}
+            dot={{ r: 2, fill: color, stroke: 'none' }}
+            activeDot={{ r: 4.5, fill: color, stroke: '#fff', strokeWidth: 1.5 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   )
 }
