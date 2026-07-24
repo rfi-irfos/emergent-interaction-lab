@@ -1051,18 +1051,45 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
       <aside className={`chat-sidebar ${chatSidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="chat-sidebar-header">
           {!chatSidebarCollapsed && <button className="chat-new-btn" onClick={startNewConversation}>+ Neue Unterhaltung</button>}
-          <button
-            type="button"
-            className="chat-sidebar-collapse-btn"
-            onClick={toggleChatSidebar}
-            title={chatSidebarCollapsed ? 'Unterhaltungen einblenden' : 'Unterhaltungen ausblenden — mehr Platz zum Chatten'}
-          >
-            {chatSidebarCollapsed ? '»' : '«'}
-          </button>
+          {chatSidebarCollapsed ? (
+            /* One shared toolbar block, not two independently-floating
+               squares with a gap between them — the collapse toggle and
+               "new conversation" button used to differ enough in color
+               weight (bright cyan fill vs. muted grey) that even at
+               matching size/radius they read as a mismatched pair rather
+               than one designed control. Same neutral chrome now, with the
+               "+" only distinguished by its icon color, not a competing
+               fill. */
+            <div className="chat-collapsed-toolbar">
+              <button
+                type="button"
+                className="chat-collapsed-toolbar-btn"
+                onClick={toggleChatSidebar}
+                title="Unterhaltungen einblenden"
+              >
+                »
+              </button>
+              <button
+                type="button"
+                className="chat-collapsed-toolbar-btn chat-collapsed-toolbar-btn-accent"
+                onClick={startNewConversation}
+                title="Neue Unterhaltung"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="chat-sidebar-collapse-btn"
+              onClick={toggleChatSidebar}
+              title="Unterhaltungen ausblenden — mehr Platz zum Chatten"
+            >
+              «
+            </button>
+          )}
         </div>
-        {chatSidebarCollapsed ? (
-          <button className="chat-new-btn chat-new-btn-collapsed" onClick={startNewConversation} title="Neue Unterhaltung">+</button>
-        ) : (
+        {chatSidebarCollapsed ? null : (
           <>
             <input
               type="text"
