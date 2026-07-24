@@ -4,6 +4,7 @@ import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { useHeaderActions } from './Hud'
+import { EVENT_TYPE_LABELS } from '../../lib/labels'
 
 // Real, standalone Verwaltung page for backend/src/auditlog.rs's
 // hash-chained audit_log — the small sidebar `AuditChangelog.tsx` widget
@@ -213,7 +214,7 @@ export function Changelog() {
       </select>
       <select value={eventTypeFilter} onChange={e => setEventTypeFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
         <option value="">Alle Ereignistypen</option>
-        {eventTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+        {eventTypeOptions.map(t => <option key={t} value={t}>{EVENT_TYPE_LABELS[t] ?? t}</option>)}
       </select>
       <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} title="Von" style={{ fontSize: 12, padding: '5px 8px' }} />
       <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} title="Bis" style={{ fontSize: 12, padding: '5px 8px' }} />
@@ -274,9 +275,9 @@ export function Changelog() {
               <div className="obs-item-title">
                 <span
                   className="obs-pill"
-                  style={{ background: 'rgba(99,240,255,.12)', color: '#63f0ff', fontFamily: "'SF Mono','JetBrains Mono',Consolas,monospace" }}
+                  style={{ background: 'rgba(99,240,255,.12)', color: '#63f0ff' }}
                 >
-                  {entry.event_type}
+                  {EVENT_TYPE_LABELS[entry.event_type] ?? entry.event_type}
                 </span>
               </div>
               <div className="obs-item-body">{entry.summary}</div>

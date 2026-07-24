@@ -42,6 +42,11 @@ export interface HudTileProps {
   tall?: boolean
   className?: string
   children?: React.ReactNode
+  /** A filter/export control cluster, pinned to this tile's own title bar —
+      keeps a tile's own controls anchored to the thing they act on instead of
+      floating in a separate row above/below the tile (the "8 loose control
+      rows on one page" anti-pattern flagged in the app-by-app audit). */
+  headerActions?: React.ReactNode
 }
 
 /// A framed instrument panel: hairline border with a soft accent glow,
@@ -49,18 +54,23 @@ export interface HudTileProps {
 /// grid, never by its content, so a chart can't blow the layout out.
 /// No corner brackets — the frame reads as a lit instrument, not a boxed
 /// label (the corner-bracket decoration was removed app-wide per feedback).
-export function HudTile({ title, badge, accent, span = 1, tall, className, children }: HudTileProps) {
+export function HudTile({ title, badge, accent, span = 1, tall, className, children, headerActions }: HudTileProps) {
   const style = accent ? ({ ['--hud-accent' as string]: accent } as React.CSSProperties) : undefined
   return (
     <section
       className={`hud-tile${tall ? ' hud-tile--tall' : ''}${className ? ` ${className}` : ''}`}
       style={{ ...style, ['--hud-span' as string]: String(span) }}
     >
-      {title && (
+      {(title || headerActions) && (
         <header className="hud-tile-head">
-          <span className="hud-led" aria-hidden />
-          <span className="hud-tile-title">{title}</span>
-          {badge && <span className="hud-tile-badge">{badge}</span>}
+          {title && (
+            <>
+              <span className="hud-led" aria-hidden />
+              <span className="hud-tile-title">{title}</span>
+              {badge && <span className="hud-tile-badge">{badge}</span>}
+            </>
+          )}
+          {headerActions && <span className="hud-tile-head-actions">{headerActions}</span>}
         </header>
       )}
       <div className="hud-tile-body">{children}</div>

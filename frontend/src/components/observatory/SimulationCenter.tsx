@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
-import { HudTile, HudSectionHeader } from './Hud'
+import { HudTile, useHeaderActions } from './Hud'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import { ObsDonut } from './ObsDonut'
 import type { AdminSection } from '../../types/admin'
+import { SIMULATION_STATUS_LABELS } from '../../lib/labels'
 
 interface RunOut {
   id: string
@@ -76,7 +77,7 @@ function flattenForExport(runs: RunOut[]): Record<string, unknown>[] {
   return rows
 }
 
-function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: SignalRef[]; onNavigate?: (s: AdminSection) => void }) {
+function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: SignalRef[]; onNavigate?: (s: AdminSection, opts?: { signalId?: string }) => void }) {
   if (!run) return <div className="obs-item-card obs-compare-empty"><div className="obs-empty">Lauf auswählen…</div></div>
   const related = (run.related_signal_ids ?? [])
     .map(id => signals.find(s => s.id === id))
@@ -84,7 +85,7 @@ function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: 
   return (
     <div className="obs-item-card">
       <div className="obs-item-title">{run.hypothesis}</div>
-      <div className="obs-item-meta">{run.status} · {run.created_at}</div>
+      <div className="obs-item-meta">{SIMULATION_STATUS_LABELS[run.status] ?? run.status} · {run.created_at}</div>
       {related.length > 0 && (
         <div className="obs-item-meta" style={{ marginTop: -2 }}>
           {related.map(s => (
@@ -93,7 +94,7 @@ function RunColumn({ run, signals, onNavigate }: { run: RunOut | null; signals: 
               type="button"
               className="chat-inspect-toggle"
               style={{ fontSize: 11, padding: 0, marginRight: 8 }}
-              onClick={() => onNavigate?.('emergence')}
+              onClick={() => onNavigate?.('emergence', { signalId: s.id })}
             >
               Signal: {s.pattern} ↗
             </button>
@@ -133,7 +134,7 @@ const PAGE_SIZE = 20
 /// side-by-side comparison needs. Extended from a fixed 2-column A/B view
 /// to N runs at once (see plan item 8) — slots are added/removed, not a
 /// hardcoded pair.
-export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection) => void } = {}) {
+export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection, opts?: { signalId?: string }) => void } = {}) {
   // Owns the runs list directly (rather than useAdminFetch) because
   // pagination/filtering need a manual fetch that can either replace the
   // list (new filter, or after create/delete) or append to it ("Weitere
@@ -188,6 +189,25 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
     setCompareIds(ids => ids.map(id => (id && !runs.some(r => r.id === id) ? '' : id)))
   }, [runs])
 
+  useHeaderActions(
+    <>
+      <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
+        <option value="">Alle Status</option>
+        {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{SIMULATION_STATUS_LABELS[v] ?? v}</option>)}
+      </select>
+      {/* Exports whatever is currently loaded/filtered (`runs`), same
+          honesty-about-scope principle as EmergenceMonitor's export —
+          related_signal_ids (an array) is flattened to a "; "-joined
+          string since CSV/Markdown cells are plain text. */}
+      <ExportButtons
+        rows={flattenForExport(runs)}
+        filenameBase="simulation-runs"
+        title="Simulationsläufe"
+      />
+    </>,
+    [statusFilter, runs],
+  )
+
   if (error && runs.length === 0) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
 
   const setCompareId = (idx: number, value: string) => {
@@ -202,25 +222,9 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
 
   return (
     <div className="obs-panel">
-      <HudSectionHeader
-        title="Aktive Simulationen"
-        sub={total !== null ? `Geladen: ${runs.length} von ${total}` : undefined}
-      />
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 200px' }}>
-          <option value="">Alle Status</option>
-          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        {/* Exports whatever is currently loaded/filtered (`runs`), same
-            honesty-about-scope principle as EmergenceMonitor's export —
-            related_signal_ids (an array) is flattened to a "; "-joined
-            string since CSV/Markdown cells are plain text. */}
-        <ExportButtons
-          rows={flattenForExport(runs)}
-          filenameBase="simulation-runs"
-          title="Simulationsläufe"
-        />
-      </div>
+      {total !== null && (
+        <p style={{ fontSize: 12, color: '#9aa0a8', margin: '0 0 12px' }}>Geladen: {runs.length} von {total}</p>
+      )}
       {/* Three distinct compact status instruments — the old design jammed a
           run-status and a branch-status donut into ONE centered HudTile,
           which read as a single oversized chart. Splitting into three
@@ -234,11 +238,11 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           statuses that weren't fetched when a status filter is active
           (same convention as EmergenceMonitor's visibleStatuses). */}
       <div className="hud-grid hud-grid--12">
-      <HudTile title="Run-Status" badge="SIM" accent="var(--obs-amber)" span={2}>
+      <HudTile title="Lauf-Status" badge="SIM" accent="var(--obs-amber)" span={2}>
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
-              label: status,
+              label: SIMULATION_STATUS_LABELS[status] ?? status,
               value: runs.filter(r => r.status === status).length,
               color: STATUS_ACCENT[status] ?? '#3b6bf6',
             }))}
@@ -247,7 +251,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           />
         </div>
         <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
-          Status der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf „${statusFilter}“)` : ''} (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}).
+          Status der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf „${SIMULATION_STATUS_LABELS[statusFilter] ?? statusFilter}“)` : ''} (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}).
         </p>
       </HudTile>
 
@@ -255,7 +259,7 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <ObsDonut
             data={Object.keys(STATUS_ACCENT).map(status => ({
-              label: status,
+              label: SIMULATION_STATUS_LABELS[status] ?? status,
               value: allBranches.filter(b => b.status === status).length,
               color: STATUS_ACCENT[status] ?? '#3b6bf6',
             }))}

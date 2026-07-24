@@ -3,6 +3,8 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
+import { RESEARCH_CATEGORY_LABELS, RESEARCH_NOTE_STATUS_LABELS } from '../../lib/labels'
 
 interface NoteOut {
   id: string
@@ -16,6 +18,8 @@ interface NoteOut {
   updated_at: string
   source_conversation_id: string | null
 }
+
+const ALL_CATEGORIES = ['paper', 'hypothesis', 'idea', 'concept', 'framework', 'prototype']
 
 const CATEGORY_ACCENT: Record<string, string> = {
   paper: '#3b6bf6', hypothesis: '#8b5cf6', idea: '#14b8a6',
@@ -48,17 +52,22 @@ function parseTags(raw: string): string[] {
   return raw.split(/[,;]+/).map(t => t.trim()).filter(Boolean)
 }
 
-/// Research Workspace and Innovation Lab are the same table filtered by
-/// category (see backend/src/research.rs) — one shared panel, two thin
-/// wrappers configuring which categories it shows. Avoids building two
-/// near-identical CRUD surfaces for structurally identical data.
-export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenConversation }: {
-  categories: string[]
+/// One panel, one list, one add-form, one filter/export row — covers all 6
+/// categories at once (previously rendered as two entirely separate
+/// instances on Research Pulse, own add-form + own filter/export bar each,
+/// for what's conceptually one "notes" concern). A "Kategorie" select
+/// narrows the view the same way "Status" already does — same closed-
+/// vocabulary select convention used everywhere else in this app (AnomalyLog's
+/// kind filter, EmergenceMonitor's filters), not a separate tab toggle: each
+/// note's own category pill already tells papers from ideas apart on the
+/// card itself, so a person browsing "everything" isn't missing that
+/// information, only someone who wants to see just one slice needs to filter.
+export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }: {
   addLabel: string
   placeholder: string
   onOpenConversation?: (conversationId: string) => void
 }) {
-  const query = `?category=${categories.join(',')}`
+  const query = `?category=${ALL_CATEGORIES.join(',')}`
   // 18s background poll — same refreshKey idiom EmergenceMonitor uses for its
   // manual "reanalyze" button, just on a timer too: Jarvis's log_research_note
   // tool writes rows here autonomously mid-session, so this panel needs to
@@ -67,18 +76,20 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
   const { data, loading, error } = useAdminFetch<NoteOut[]>(`/api/research/items${query}`, [query, refreshKey], 18000)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [category, setCategory] = useState(categories[0])
+  const [category, setCategory] = useState(ALL_CATEGORIES[0])
   const [saving, setSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  // Client-side only, matching BlogDrafts' statusFilter — the list here is
-  // already fully loaded (category is a fixed prop, not user-filterable
-  // server-side) and status has exactly the two values in STATUS_ACCENT, so
-  // there's no reason to round-trip to the backend for this.
+  // Client-side only — the list is already fully loaded (all 6 categories at
+  // once) and both status and category have small closed vocabularies, so
+  // there's no reason to round-trip to the backend for either filter.
   const [statusFilter, setStatusFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
 
   const list = data ?? []
-  const filtered = statusFilter ? list.filter(n => n.status === statusFilter) : list
+  const filtered = list
+    .filter(n => !statusFilter || n.status === statusFilter)
+    .filter(n => !categoryFilter || n.category === categoryFilter)
 
   const submit = async () => {
     if (!title.trim() || saving) return
@@ -133,50 +144,51 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
         <div className="obs-form" style={{ marginBottom: 0 }}>
           <input placeholder={placeholder} value={title} onChange={e => setTitle(e.target.value)} />
           <textarea placeholder="Inhalt" value={body} onChange={e => setBody(e.target.value)} />
-          {categories.length > 1 && (
-            <select value={category} onChange={e => setCategory(e.target.value)}>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          )}
+          <select value={category} onChange={e => setCategory(e.target.value)}>
+            {ALL_CATEGORIES.map(c => <option key={c} value={c}>{RESEARCH_CATEGORY_LABELS[c] ?? c}</option>)}
+          </select>
           <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={submit} disabled={saving || !title.trim()}>
             {saving ? 'Speichert…' : addLabel}
           </button>
         </div>
       </div>
 
+      {list.length > 0 && (
+        <HudSectionHeader
+          title="Notizen"
+          actions={
+            <>
+              <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+                <option value="">Alle Kategorien</option>
+                {ALL_CATEGORIES.map(c => <option key={c} value={c}>{RESEARCH_CATEGORY_LABELS[c] ?? c}</option>)}
+              </select>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+                <option value="">Alle Status</option>
+                {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{RESEARCH_NOTE_STATUS_LABELS[v] ?? v}</option>)}
+              </select>
+              <ExportButtons
+                rows={filtered.map(n => ({
+                  id: n.id,
+                  category: n.category,
+                  title: n.title,
+                  body: n.body,
+                  tags: n.tags,
+                  status: n.status,
+                  source: n.source,
+                  created_at: n.created_at,
+                  updated_at: n.updated_at,
+                  source_conversation_id: n.source_conversation_id ?? '',
+                }))}
+                filenameBase="research-notes"
+                title="Research Notes"
+              />
+            </>
+          }
+        />
+      )}
       {loading && !data && <HudSkeleton variant="list" />}
       {error && <div className="obs-empty">Fehler beim Laden.</div>}
       {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
-      {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, margin: '14px 0', flexWrap: 'wrap' }}>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
-            <option value="">Alle Status</option>
-            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
-          </select>
-          {/* Exports whatever status filter currently narrowed the list to
-              (`filtered`) — this component backs two side-by-side sections
-              on Research Pulse (Papers & Hypotheses; Ideas/Concepts/
-              Frameworks/Prototypes) plus Innovation Lab, so the filename is
-              derived from `categories` to keep the two exports distinct
-              rather than both landing on one generic name. */}
-          <ExportButtons
-            rows={filtered.map(n => ({
-              id: n.id,
-              category: n.category,
-              title: n.title,
-              body: n.body,
-              tags: n.tags,
-              status: n.status,
-              source: n.source,
-              created_at: n.created_at,
-              updated_at: n.updated_at,
-              source_conversation_id: n.source_conversation_id ?? '',
-            }))}
-            filenameBase={`research-notes-${categories.join('-')}`}
-            title={`Research Notes — ${categories.join(', ')}`}
-          />
-        </div>
-      )}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
       {filtered.map((n, i) => {
         const tags = parseTags(n.tags)
@@ -184,9 +196,9 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
           <div className="obs-item-card" key={n.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>
             <div className="obs-item-title">{n.title}</div>
             <div className="obs-item-meta">
-              <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{n.category}</span>
+              <span className="obs-pill" style={{ background: `${CATEGORY_ACCENT[n.category] ?? '#3b6bf6'}1a`, color: CATEGORY_ACCENT[n.category] ?? '#3b6bf6' }}>{RESEARCH_CATEGORY_LABELS[n.category] ?? n.category}</span>
               {' · '}
-              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[n.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[n.status] ?? '#3b6bf6' }}>{n.status}</span>
+              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[n.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[n.status] ?? '#3b6bf6' }}>{RESEARCH_NOTE_STATUS_LABELS[n.status] ?? n.status}</span>
               {' · '}{SOURCE_LABEL[n.source] ?? 'manuell'} · {n.updated_at}
               {n.source_conversation_id && onOpenConversation && (
                 <>
@@ -216,7 +228,7 @@ export function ResearchNotesPanel({ categories, addLabel, placeholder, onOpenCo
                 disabled={updatingId === n.id}
                 style={{ fontSize: 11, padding: '3px 6px' }}
               >
-                {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+                {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{RESEARCH_NOTE_STATUS_LABELS[v] ?? v}</option>)}
               </select>
               <button
                 type="button"

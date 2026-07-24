@@ -28,6 +28,7 @@ import { SimulationCenter } from './observatory/SimulationCenter'
 import { Denkfragmente } from './observatory/Denkfragmente'
 import { AnomalyLog } from './observatory/AnomalyLog'
 import { Changelog } from './observatory/Changelog'
+import { Ameisenhaufen } from './observatory/Ameisenhaufen'
 
 interface Props {
   content: SiteContent
@@ -113,6 +114,10 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const inboxNewCount = (inboxBadgeData ?? []).filter(m => m.status === 'new').length
   const [forschungRefresh, setForschungRefresh] = useState(0)
   const [openConversationId, setOpenConversationId] = useState<string | null>(null)
+  // Which emergence signal (if any) SimulationCenter/Lab's "Signal: {pattern}
+  // ↗" chip was pointing at when it navigated here — same shape as
+  // openConversationId above, consumed once by EmergenceMonitor then cleared.
+  const [focusSignalId, setFocusSignalId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const toggleSidebar = () => {
@@ -451,7 +456,11 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <KnowledgeSystemMap onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
             {adminSection === 'emergence' && (
-              <EmergenceMonitor onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+              <EmergenceMonitor
+                onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}
+                focusSignalId={focusSignalId}
+                onFocusSignalHandled={() => setFocusSignalId(null)}
+              />
             )}
             {adminSection === 'systemstate' && <SystemState />}
             {adminSection === 'agentactivity' && <AgentActivity />}
@@ -468,13 +477,18 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                 onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}
               />
             )}
-            {adminSection === 'simulationcenter' && <SimulationCenter onNavigate={setAdminSection} />}
+            {adminSection === 'simulationcenter' && (
+              <SimulationCenter
+                onNavigate={(s, opts) => { setFocusSignalId(opts?.signalId ?? null); setAdminSection(s) }}
+              />
+            )}
             {adminSection === 'denkfragmente' && (
               <Denkfragmente onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
             {adminSection === 'anomalies' && (
               <AnomalyLog onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
+            {adminSection === 'ameisenhaufen' && <Ameisenhaufen />}
             </HeaderActionsContext.Provider>
           </div>
         </div>

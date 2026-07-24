@@ -46,3 +46,8 @@ export type AdminSection =
   // entries + a chain-intact dot) stays exactly as-is; this is a genuinely
   // separate, more complete surface, not a replacement.
   | 'changelog'
+  // Ameisenhaufen — Laura's own nickname for the coevolution-factory
+  // 50-center compliance/risk agent fleet (a separate Fly app, built on the
+  // lauras-agents engine). Proxied read-only into EIL so she can see her own
+  // agents at work without leaving this tool (see backend/src/coevolution.rs).
+  | 'ameisenhaufen'

@@ -3,6 +3,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { groupByDate, parseServerTimestamp } from '../../lib/dateGroups'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { useHeaderActions } from './Hud'
 
 export interface ContactMessage {
   id: string
@@ -82,6 +83,25 @@ export function Inbox() {
   // with nothing in it yet." All three now render the same full-height,
   // centered placeholder shell instead, so the view is fully designed
   // before a single message ever arrives, not just once one does.
+  useHeaderActions(
+    list.length > 0 ? (
+      <>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 180px' }}>
+          <option value="">Alle Status</option>
+          {Object.keys(STATUS_LABEL).map(v => <option key={v} value={v}>{STATUS_LABEL[v]}</option>)}
+        </select>
+        {/* Exports whatever status filter currently narrowed the inbox to
+            (`filteredList`), not silently every message. */}
+        <ExportButtons
+          rows={filteredList.map(m => ({ ...m }))}
+          filenameBase="inbox-messages"
+          title="Inbox"
+        />
+      </>
+    ) : null,
+    [list, statusFilter, filteredList],
+  )
+
   if (loading && !data) {
     return <div className="obs-panel" style={{ padding: 14 }}><HudSkeleton variant="list" /></div>
   }
@@ -91,21 +111,6 @@ export function Inbox() {
 
   return (
     <div style={{ padding: 14 }}>
-      {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 180px' }}>
-            <option value="">Alle Status</option>
-            {Object.keys(STATUS_LABEL).map(v => <option key={v} value={v}>{STATUS_LABEL[v]}</option>)}
-          </select>
-          {/* Exports whatever status filter currently narrowed the inbox to
-              (`filteredList`), not silently every message. */}
-          <ExportButtons
-            rows={filteredList.map(m => ({ ...m }))}
-            filenameBase="inbox-messages"
-            title="Inbox"
-          />
-        </div>
-      )}
       {list.length === 0 ? (
         <InboxPlaceholder icon="◇" text="Keine neuen Anfragen." sub="Anfragen aus dem Kontaktformular der Website erscheinen hier automatisch." />
       ) : filteredList.length === 0 ? (

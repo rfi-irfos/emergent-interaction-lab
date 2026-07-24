@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ObsRadar } from './ObsRadar'
 import { ObsDonut } from './ObsDonut'
 import { STATUS_ACCENT } from './registry'
@@ -255,7 +255,7 @@ function LoopNode({
             <div style={{ display: 'flex', gap: 14 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: ceiDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{ceiDelta >= 0 ? '+' : ''}{fmtPct(Math.abs(ceiDelta))}</div>
-                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>CEI Δ</div>
+                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>Stabilität Δ</div>
               </div>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: resDelta !== null && resDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{(resDelta ?? 0) >= 0 ? '+' : ''}{fmtPct(Math.abs(resDelta ?? 0))}</div>
@@ -392,33 +392,36 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
       </div>
 
       {/* ── per-conversation timeline ────────────────────────────────── */}
-      <div className="obs-section-label">Denkfragmente — Gesprächsverlauf</div>
+      <HudSectionHeader
+        title="Denkfragmente — Gesprächsverlauf"
+        actions={
+          <>
+            {convLoading ? (
+              <span style={{ fontSize: 12, color: '#9aa0a8' }}>Lade Gespräche…</span>
+            ) : convError ? (
+              <span style={{ fontSize: 12, color: '#9aa0a8' }}>Gespräche konnten nicht geladen werden.</span>
+            ) : conversations.length === 0 ? (
+              <span style={{ fontSize: 12, color: '#9aa0a8' }}>Noch keine Forschungsgespräche vorhanden.</span>
+            ) : (
+              <select value={selectedConv} onChange={e => setSelectedConv(e.target.value)} style={{ flex: '1 1 260px', fontSize: 12, padding: '5px 8px' }}>
+                {conversations.map(c => <option key={c.id} value={c.id}>{c.title} ({c.updated_at})</option>)}
+              </select>
+            )}
+            {selectedConv && onOpenConversation && (
+              <button className="chat-inspect-toggle" style={{ fontSize: 11 }} onClick={() => onOpenConversation(selectedConv)}>
+                im Gespräch öffnen ↗
+              </button>
+            )}
+            <ExportButtons
+              rows={effectiveFragments.map(f => ({ ...f }))}
+              filenameBase="denkfragmente-gespraech"
+              title="Denkfragmente — ein Gespräch"
+              disabled={effectiveFragments.length === 0}
+            />
+          </>
+        }
+      />
       <div className="obs-card">
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-          {convLoading ? (
-            <span style={{ fontSize: 12, color: '#9aa0a8' }}>Lade Gespräche…</span>
-          ) : convError ? (
-            <span style={{ fontSize: 12, color: '#9aa0a8' }}>Gespräche konnten nicht geladen werden.</span>
-          ) : conversations.length === 0 ? (
-            <span style={{ fontSize: 12, color: '#9aa0a8' }}>Noch keine Forschungsgespräche vorhanden.</span>
-          ) : (
-            <select value={selectedConv} onChange={e => setSelectedConv(e.target.value)} style={{ flex: '1 1 260px', fontSize: 12, padding: '5px 8px' }}>
-              {conversations.map(c => <option key={c.id} value={c.id}>{c.title} ({c.updated_at})</option>)}
-            </select>
-          )}
-          {selectedConv && onOpenConversation && (
-            <button className="chat-inspect-toggle" style={{ fontSize: 11 }} onClick={() => onOpenConversation(selectedConv)}>
-              im Gespräch öffnen ↗
-            </button>
-          )}
-          <ExportButtons
-            rows={effectiveFragments.map(f => ({ ...f }))}
-            filenameBase="denkfragmente-gespraech"
-            title="Denkfragmente — ein Gespräch"
-            disabled={effectiveFragments.length === 0}
-          />
-        </div>
-
         {seqLoading ? (
           <HudSkeleton variant="chart" />
         ) : seqError ? (
@@ -462,14 +465,14 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
       </div>
 
       {/* ── aggregate: which layers dominate across ALL conversations ─── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-        <div className="obs-section-label" style={{ flex: 1 }}>
-          Ebenen-Verteilung ({distribution ? (RANGE_SUFFIX[distribution.range] ?? distribution.range) : '…'})
-        </div>
-        <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px', marginBottom: 10 }}>
-          {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
+      <HudSectionHeader
+        title={`Ebenen-Verteilung (${distribution ? (RANGE_SUFFIX[distribution.range] ?? distribution.range) : '…'})`}
+        actions={
+          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        }
+      />
       {distLoading ? (
         <HudSkeleton variant="chart" />
       ) : distError ? (

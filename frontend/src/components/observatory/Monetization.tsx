@@ -3,7 +3,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { parseServerTimestamp } from '../../lib/dateGroups'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
-import { HudTile } from './Hud'
+import { HudTile, useHeaderActions } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
 
@@ -138,7 +138,7 @@ export function Monetization() {
         method: 'POST',
       })
       if (!res.ok) {
-        setFormError('Zahlungslink konnte nicht erstellt werden - ist STRIPE_SECRET_KEY gesetzt?')
+        setFormError('Zahlungslink konnte nicht erstellt werden — die Stripe-Anbindung ist vermutlich nicht eingerichtet. Bitte bei der technischen Betreuung melden.')
         return
       }
       await refresh()
@@ -173,6 +173,7 @@ export function Monetization() {
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [ordersLoadingMore, setOrdersLoadingMore] = useState(false)
   const [ordersError, setOrdersError] = useState(false)
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
   const loadOrders = async (offset: number, append: boolean) => {
     if (append) setOrdersLoadingMore(true); else setOrdersLoading(true)
@@ -242,6 +243,26 @@ export function Monetization() {
   const revenueCurrencies = Array.from(new Set(filteredOrders.map(o => o.currency)))
   const revenueCurrency = revenueCurrencies.length === 1 ? revenueCurrencies[0] : null
 
+  useHeaderActions(
+    orders.length > 0 ? (
+      <>
+        <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+          <option value="">Alle Währungen</option>
+          {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
+        </select>
+        <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+          {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <ExportButtons
+          rows={filteredOrders.map(o => ({ ...o }))}
+          filenameBase={`billing-orders-${orderRange}`}
+          title="Bestellungen"
+        />
+      </>
+    ) : null,
+    [orders, orderCurrencyFilter, orderRange, filteredOrders],
+  )
+
   return (
     <div className="obs-panel monetization">
       {/* Real sales, not just the mechanism to sell — every row here comes
@@ -249,69 +270,10 @@ export function Monetization() {
           never a manual entry. Same "Übersicht" + accumulated-list pattern
           as EmergenceMonitor.tsx. Moved above product management: revenue
           visibility is the thing worth seeing first on open, product CRUD
-          is comparatively rare admin housekeeping. */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <div className="obs-section-label" style={{ marginBottom: 0 }}>Bestellungen</div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {orders.length > 0 && (
-            <>
-              <select value={orderCurrencyFilter} onChange={e => setOrderCurrencyFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-                <option value="">Alle Währungen</option>
-                {orderCurrencies.map(c => <option key={c} value={c}>{c.toUpperCase()}</option>)}
-              </select>
-              <select value={orderRange} onChange={e => setOrderRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-                {ORDER_RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <ExportButtons
-                rows={filteredOrders.map(o => ({ ...o }))}
-                filenameBase={`billing-orders-${orderRange}`}
-                title="Bestellungen"
-              />
-            </>
-          )}
-          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowProductForm(s => !s)}>
-            + Produkt
-          </button>
-        </div>
-      </div>
-      {showProductForm && (
-        <div className="obs-card">
-          <div className="obs-form" style={{ marginBottom: 0 }}>
-            <input placeholder="Name, z.B. „State of Emergent Interaction - Q1“" value={name} onChange={e => setName(e.target.value)} />
-            <textarea placeholder="Beschreibung" value={description} onChange={e => setDescription(e.target.value)} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input placeholder="Preis, z.B. 49.00" value={price} onChange={e => setPrice(e.target.value)} style={{ flex: 1 }} />
-              <select value={currency} onChange={e => setCurrency(e.target.value)}>
-                <option value="eur">EUR</option>
-                <option value="usd">USD</option>
-              </select>
-              <select value={mode} onChange={e => setMode(e.target.value as 'payment' | 'subscription')}>
-                <option value="payment">Einmalig</option>
-                <option value="subscription">Abo</option>
-              </select>
-              {mode === 'subscription' && (
-                <select value={interval} onChange={e => setInterval(e.target.value as 'month' | 'year')}>
-                  <option value="month">monatlich</option>
-                  <option value="year">jährlich</option>
-                </select>
-              )}
-              <select value={category} onChange={e => setCategory(e.target.value as 'service' | 'certification')}>
-                <option value="service">Service (Hauptseite)</option>
-                <option value="certification">Zertifizierung</option>
-              </select>
-            </div>
-            <input
-              placeholder="Bereits vorhandener Zahlungslink (optional, z.B. https://buy.stripe.com/...)"
-              value={existingLink}
-              onChange={e => setExistingLink(e.target.value)}
-            />
-            {formError && <div className="obs-warning-note">{formError}</div>}
-            <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
-              {creating ? 'Legt an…' : 'Produkt anlegen'}
-            </button>
-          </div>
-        </div>
-      )}
+          is comparatively rare admin housekeeping. Filter/range/export now
+          live in the shared page header (useHeaderActions) — this label is
+          just the in-page section marker. */}
+      <div className="obs-section-label">Bestellungen</div>
       {ordersTotal !== null && (
         <div className="monetization-bikpi">
           <div className="obs-grid" style={{ marginBottom: 14 }}>
@@ -403,7 +365,16 @@ export function Monetization() {
             {' · '}{o.created_at}
           </div>
           <div className="obs-item-body" style={{ fontSize: 11, color: '#9aa0a8' }}>
-            Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}
+            <button
+              className="chat-inspect-toggle"
+              style={{ fontSize: 11, padding: 0 }}
+              onClick={() => setExpandedOrderId(id => id === o.id ? null : o.id)}
+            >
+              {expandedOrderId === o.id ? 'Details ausblenden' : 'Details anzeigen'}
+            </button>
+            {expandedOrderId === o.id && (
+              <div style={{ marginTop: 4 }}>Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}</div>
+            )}
           </div>
         </div>
       ))}
@@ -421,49 +392,54 @@ export function Monetization() {
         Jede Zeile stammt aus einem echten, signaturgeprüften Stripe-Webhook-Event (checkout.session.completed) - keine manuelle Eingabe, keine Simulation. E-Mail-Adressen sind nur hier, admin-only, sichtbar - nie öffentlich.
       </p>
 
-      <div className="obs-section-label" style={{ marginTop: 28 }}>Neues Produkt</div>
-      <div className="obs-card">
-        <div className="obs-form" style={{ marginBottom: 0 }}>
-          <input placeholder="Name, z.B. „State of Emergent Interaction - Q1“" value={name} onChange={e => setName(e.target.value)} />
-          <textarea placeholder="Beschreibung" value={description} onChange={e => setDescription(e.target.value)} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input placeholder="Preis, z.B. 49.00" value={price} onChange={e => setPrice(e.target.value)} style={{ flex: 1 }} />
-            <select value={currency} onChange={e => setCurrency(e.target.value)}>
-              <option value="eur">EUR</option>
-              <option value="usd">USD</option>
-            </select>
-            <select value={mode} onChange={e => setMode(e.target.value as 'payment' | 'subscription')}>
-              <option value="payment">Einmalig</option>
-              <option value="subscription">Abo</option>
-            </select>
-            {mode === 'subscription' && (
-              <select value={interval} onChange={e => setInterval(e.target.value as 'month' | 'year')}>
-                <option value="month">monatlich</option>
-                <option value="year">jährlich</option>
-              </select>
-            )}
-            <select value={category} onChange={e => setCategory(e.target.value as 'service' | 'certification')}>
-              <option value="service">Service (Hauptseite)</option>
-              <option value="certification">Zertifizierung</option>
-            </select>
-          </div>
-          {/* Optional: attach an already-existing Stripe Payment Link (created
-              directly in the Stripe dashboard) instead of using "Zahlungslink
-              erstellen" below, which mints a brand new Stripe product/price/
-              link via the API — wrong when the link already exists. */}
-          <input
-            placeholder="Bereits vorhandener Zahlungslink (optional, z.B. https://buy.stripe.com/...)"
-            value={existingLink}
-            onChange={e => setExistingLink(e.target.value)}
-          />
-          {formError && <div className="obs-warning-note">{formError}</div>}
-          <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
-            {creating ? 'Legt an…' : 'Produkt anlegen'}
-          </button>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
+        <div className="obs-section-label" style={{ marginBottom: 0 }}>Produkte</div>
+        <button className="panel-add-btn" onClick={() => setShowProductForm(s => !s)}>
+          {showProductForm ? 'Abbrechen' : '+ Produkt'}
+        </button>
       </div>
-
-      <div className="obs-section-label" style={{ marginTop: 24 }}>Produkte</div>
+      {showProductForm && (
+        <div className="obs-card">
+          <div className="obs-form" style={{ marginBottom: 0 }}>
+            <input placeholder="Name, z.B. „State of Emergent Interaction - Q1“" value={name} onChange={e => setName(e.target.value)} />
+            <textarea placeholder="Beschreibung" value={description} onChange={e => setDescription(e.target.value)} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input placeholder="Preis, z.B. 49.00" value={price} onChange={e => setPrice(e.target.value)} style={{ flex: 1 }} />
+              <select value={currency} onChange={e => setCurrency(e.target.value)}>
+                <option value="eur">EUR</option>
+                <option value="usd">USD</option>
+              </select>
+              <select value={mode} onChange={e => setMode(e.target.value as 'payment' | 'subscription')}>
+                <option value="payment">Einmalig</option>
+                <option value="subscription">Abo</option>
+              </select>
+              {mode === 'subscription' && (
+                <select value={interval} onChange={e => setInterval(e.target.value as 'month' | 'year')}>
+                  <option value="month">monatlich</option>
+                  <option value="year">jährlich</option>
+                </select>
+              )}
+              <select value={category} onChange={e => setCategory(e.target.value as 'service' | 'certification')}>
+                <option value="service">Service (Hauptseite)</option>
+                <option value="certification">Zertifizierung</option>
+              </select>
+            </div>
+            {/* Optional: attach an already-existing Stripe Payment Link (created
+                directly in the Stripe dashboard) instead of using "Zahlungslink
+                erstellen" below, which mints a brand new Stripe product/price/
+                link via the API — wrong when the link already exists. */}
+            <input
+              placeholder="Bereits vorhandener Zahlungslink (optional, z.B. https://buy.stripe.com/...)"
+              value={existingLink}
+              onChange={e => setExistingLink(e.target.value)}
+            />
+            {formError && <div className="obs-warning-note">{formError}</div>}
+            <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={createProduct} disabled={creating || !name.trim()}>
+              {creating ? 'Legt an…' : 'Produkt anlegen'}
+            </button>
+          </div>
+        </div>
+      )}
       {loading && <HudSkeleton variant="list" rows={2} />}
       {error && <div className="obs-empty">Konnte nicht geladen werden.</div>}
       {!loading && list.length === 0 && <div className="obs-card"><div className="obs-empty">Noch keine Produkte angelegt.</div></div>}

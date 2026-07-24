@@ -4,6 +4,7 @@ import { API_BASE } from '../../lib/apiBase'
 import { adminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { HudSkeleton } from './HudSkeleton'
+import { SYSTEM_MAP_NODE_LABELS } from '../../lib/labels'
 
 // `legend` is the short, count-independent plain-language line shown in the
 // always-visible legend strip below — previously the ONLY explanation of
@@ -12,11 +13,11 @@ import { HudSkeleton } from './HudSkeleton'
 // makes sense" — you shouldn't have to click all 5 nodes once each just to
 // find out what the diagram is even a diagram OF.
 const NODES = [
-  { id: 'human', label: 'Human', accent: '#22d3ee', legend: 'Deine Nachrichten in Forschungsgesprächen', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
-  { id: 'ai', label: 'AI Systems', accent: '#8b5cf6', legend: 'Jarvis\' Antworten und Werkzeugaufrufe', blurb: (n: number) => `${n} Beobachtungen — Antworten und Werkzeugaufrufe von Jarvis.` },
-  { id: 'organization', label: 'Organization', accent: '#f59e0b', legend: 'Research Notes, Blogpost-Entwürfe, Simulationen', blurb: (n: number) => `${n} Beobachtungen — Research Notes, Blogpost-Entwürfe und Simulationsläufe.` },
-  { id: 'technology', label: 'Technology', accent: '#10b981', legend: 'Hochgeladene Dokumente (RAG)', blurb: (n: number) => `${n} Beobachtungen — hochgeladene Dokumente und daraus erzeugte Chunks.` },
-  { id: 'information', label: 'Information Dynamics', accent: '#14b8a6', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
+  { id: 'human', label: SYSTEM_MAP_NODE_LABELS.human, accent: '#22d3ee', legend: 'Deine Nachrichten in Forschungsgesprächen', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
+  { id: 'ai', label: SYSTEM_MAP_NODE_LABELS.ai, accent: '#8b5cf6', legend: 'Jarvis\' Antworten und Werkzeugaufrufe', blurb: (n: number) => `${n} Beobachtungen — Antworten und Werkzeugaufrufe von Jarvis.` },
+  { id: 'organization', label: SYSTEM_MAP_NODE_LABELS.organization, accent: '#f59e0b', legend: 'Research Notes, Blogpost-Entwürfe, Simulationen', blurb: (n: number) => `${n} Beobachtungen — Research Notes, Blogpost-Entwürfe und Simulationsläufe.` },
+  { id: 'technology', label: SYSTEM_MAP_NODE_LABELS.technology, accent: '#10b981', legend: 'Hochgeladene Dokumente (RAG)', blurb: (n: number) => `${n} Beobachtungen — hochgeladene Dokumente und daraus erzeugte Chunks.` },
+  { id: 'information', label: SYSTEM_MAP_NODE_LABELS.information, accent: '#14b8a6', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
 ]
 
 // Age-decay in [0,1]: a fresh record → 1 (bright, long trail), an old one →
@@ -401,7 +402,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
         )}
       </div>
       <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
-        Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter. „Society" ist bewusst nicht dargestellt — es gibt aktuell keine echte Datenquelle dafür, eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
+        Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter. Eine sechste, gesellschaftliche Kategorie ist hier bewusst nicht dargestellt, weil dafür aktuell keine echte Datenquelle existiert — eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
       </p>
     </div>
   )

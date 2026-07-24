@@ -4,6 +4,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { BLOG_STATUS_LABELS } from '../../lib/labels'
 
 interface BlogPost {
   id: string
@@ -175,7 +176,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
           />
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
             <option value="">Alle Status</option>
-            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{BLOG_STATUS_LABELS[v] ?? v}</option>)}
           </select>
           {/* Exports whatever search/status filter currently narrowed the
               list to (`filtered`), not silently every draft. */}
@@ -252,7 +253,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
             <>
               <div className="obs-item-title">{p.title}</div>
               <div className="obs-item-meta">
-                <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{p.status}</span>
+                <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{BLOG_STATUS_LABELS[p.status] ?? p.status}</span>
                 {' · '}{p.source === 'agent' ? '◆ Jarvis' : 'manuell'} · {p.updated_at}
                 {p.source_conversation_id && onOpenConversation && (
                   <>
