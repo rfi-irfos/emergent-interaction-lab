@@ -106,20 +106,45 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
           <Spark values={spark} color="var(--obs-cyan)" />
         </HudTile>
 
-        {/* 3 — Tokens in/out (real lifetime totals, compared) */}
+        {/* 3 — Tokens in/out (real lifetime totals, compared). Whichever
+            engine answered a turn — the built-in loop or Hermes — writes the
+            same chat_messages row, but only the built-in loop's own API
+            response actually reports token usage (see backend/src/hermes.rs's
+            own doc comment on finalize_turn: Hermes's API doesn't return
+            prompt/completion counts, so those columns are honestly 0 for a
+            Hermes-answered turn, not unmeasured-by-accident). Since Hermes is
+            preferred whenever available, real conversations can end up with
+            zero measured tokens despite real activity — a bare "0" there
+            reads exactly like a broken fetch, so this tile says plainly why
+            once there's real activity to explain. */}
         <HudTile title="Textmenge (Ein-/Ausgabe)" badge="LEBENSLANG" accent="var(--obs-teal)" span={1} className="hud-tile--compact">
-          <CompareBar label="IN" value={promptTok} max={tokenMax} color="var(--obs-teal)" />
-          <CompareBar label="OUT" value={completionTok} max={tokenMax} color="var(--obs-amber)" />
+          {assistant > 0 && promptTok === 0 && completionTok === 0 ? (
+            <div className="obs-empty" style={{ fontSize: 10, lineHeight: 1.4, textAlign: 'left', padding: 0 }}>
+              Nicht gemessen — dein aktueller Antwort-Motor (Hermes) meldet keine Textmengen.
+            </div>
+          ) : (
+            <>
+              <CompareBar label="IN" value={promptTok} max={tokenMax} color="var(--obs-teal)" />
+              <CompareBar label="OUT" value={completionTok} max={tokenMax} color="var(--obs-amber)" />
+            </>
+          )}
         </HudTile>
 
-        {/* 4 — Time spent thinking (reasoning) */}
+        {/* 4 — Time spent thinking (reasoning) — same "Hermes doesn't report
+            it" honesty as the tokens tile above. */}
         <HudTile title="Denkzeit" badge="KUMULIERT" accent="var(--obs-amber)" span={1} className="hud-tile--compact">
-          <HudStat
-            value={reasoningS}
-            label="Reasoning kumuliert"
-            format={v => (v >= 60 ? `${(v / 60).toFixed(1)}m` : `${Math.round(v)}s`)}
-            accent="var(--obs-amber)"
-          />
+          {assistant > 0 && reasoningS === 0 ? (
+            <div className="obs-empty" style={{ fontSize: 10, lineHeight: 1.4, textAlign: 'left', padding: 0 }}>
+              Nicht gemessen — dein aktueller Antwort-Motor (Hermes) meldet keine Denkzeit.
+            </div>
+          ) : (
+            <HudStat
+              value={reasoningS}
+              label="Reasoning kumuliert"
+              format={v => (v >= 60 ? `${(v / 60).toFixed(1)}m` : `${Math.round(v)}s`)}
+              accent="var(--obs-amber)"
+            />
+          )}
         </HudTile>
 
         {/* 5 — Human/AI ratio */}

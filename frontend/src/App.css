@@ -3999,7 +3999,17 @@ button { cursor: pointer; font-family: inherit; }
   width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1; flex-shrink: 0;
 }
 .chat-sidebar-collapse-btn:hover { border-color: #63f0ff; color: #63f0ff; }
-.chat-new-btn-collapsed { width: 30px; height: 30px; margin: 10px auto; padding: 0; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+/* Same size + corner radius as .chat-sidebar-collapse-btn directly above it
+   (both were square-ish but different sizes/radii — 26x26px/6px vs a
+   30x30px/8px inherited from the expanded .chat-new-btn below — reading as
+   two mismatched buttons stacked in a 44px rail rather than one consistent
+   collapsed toolbar). Keeps its own accent color (it's still the primary
+   action, the collapse toggle is secondary/neutral) — same size and shape,
+   different color is a deliberate hierarchy, not an inconsistency. */
+.chat-new-btn-collapsed {
+  width: 26px; height: 26px; margin: 8px auto 0; padding: 0; font-size: 15px; line-height: 1; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
 .chat-new-btn {
   margin: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(99,240,255,.35);
   background: rgba(99,240,255,.12); color: #63f0ff; font-weight: 600; font-size: 13px; cursor: pointer;
@@ -4441,72 +4451,12 @@ button { cursor: pointer; font-family: inherit; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   MONETIZATION — calm BI split (revenue donut + latest-order card)
-   Restyled away from the old "kinderspielplatz" full-width stretched chart:
-   one calm two-column row, dark-glass, no neon. The order card sits
-   directly beside the donut so the revenue split always has a concrete
-   latest charge next to it. */
-.monetization-split {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 16px;
-  margin-bottom: 18px;
-  align-items: stretch;
-}
-.monetization-split .monetization-donut-tile {
-  margin-bottom: 0;
-  display: flex;
-  flex-direction: column;
-}
-.monetization-donut-caption {
-  font-size: 11px;
-  color: var(--gotham-text-dim, #9aa0a8);
-  line-height: 1.6;
-  margin-top: 10px;
-  margin-bottom: 0;
-}
-.monetization-order-card {
-  background: var(--gotham-panel, rgba(11,17,26,.66));
-  border: 1px solid var(--gotham-border, rgba(120,150,170,.16));
-  border-radius: 10px;
-  padding: 18px 18px 20px;
-  box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4);
-  backdrop-filter: blur(6px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border-left: 3px solid var(--obs-green, #10b981);
-}
-.monetization-order-card-head {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: rgba(206,224,232,.6);
-  margin-bottom: 12px;
-}
-.monetization-order-card-product {
-  color: #eefcff;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.35;
-  margin-bottom: 8px;
-}
-.monetization-order-card-amount {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--obs-green, #10b981);
-  line-height: 1;
-  margin-bottom: 10px;
-  font-variant-numeric: tabular-nums;
-}
-.monetization-order-card-meta {
-  font-size: 10.5px;
-  color: var(--gotham-text-dim, rgba(148,190,199,.62));
-  line-height: 1.5;
-  word-break: break-word;
-}
+   MONETIZATION — now uses the shared HudGrid/HudTile/.obs-item-card
+   language throughout instead of its own bespoke dark-glass card + custom
+   grid (that one-off restyle sat next to a HudTile and a plain .obs-item-card
+   list — three different card languages on one screen; confirmed "total
+   chaos" by direct feedback and a follow-up audit). No page-specific card
+   CSS needed anymore. */
 .monetization-bikpi { margin-bottom: 4px; }
 
 /* Calm the Monetization module's own product list + form — reduce the
@@ -4514,6 +4464,3 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .monetization .obs-item-card { margin-bottom: 10px; }
 .observatory-hud .monetization .obs-section-label { margin-top: 18px; }
 
-@media (max-width: 760px) {
-  .monetization-split { grid-template-columns: 1fr; }
-}
