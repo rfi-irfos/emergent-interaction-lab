@@ -41,7 +41,6 @@ export function ResearchPulse({ onNavigate, onOpenConversation }: {
 }) {
   return (
     <div className="obs-panel">
-      <div className="obs-section-label">Notizen</div>
       <ResearchNotesPanel addLabel="Eintrag hinzufügen" placeholder="Titel" onOpenConversation={onOpenConversation} />
 
       <div className="obs-section-label" style={{ marginTop: 8 }}>Simulationen</div>

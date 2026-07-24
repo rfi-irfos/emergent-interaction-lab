@@ -3,6 +3,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 import { RESEARCH_CATEGORY_LABELS, RESEARCH_NOTE_STATUS_LABELS } from '../../lib/labels'
 
 interface NoteOut {
@@ -152,37 +153,42 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
         </div>
       </div>
 
+      {list.length > 0 && (
+        <HudSectionHeader
+          title="Notizen"
+          actions={
+            <>
+              <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+                <option value="">Alle Kategorien</option>
+                {ALL_CATEGORIES.map(c => <option key={c} value={c}>{RESEARCH_CATEGORY_LABELS[c] ?? c}</option>)}
+              </select>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+                <option value="">Alle Status</option>
+                {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{RESEARCH_NOTE_STATUS_LABELS[v] ?? v}</option>)}
+              </select>
+              <ExportButtons
+                rows={filtered.map(n => ({
+                  id: n.id,
+                  category: n.category,
+                  title: n.title,
+                  body: n.body,
+                  tags: n.tags,
+                  status: n.status,
+                  source: n.source,
+                  created_at: n.created_at,
+                  updated_at: n.updated_at,
+                  source_conversation_id: n.source_conversation_id ?? '',
+                }))}
+                filenameBase="research-notes"
+                title="Research Notes"
+              />
+            </>
+          }
+        />
+      )}
       {loading && !data && <HudSkeleton variant="list" />}
       {error && <div className="obs-empty">Fehler beim Laden.</div>}
       {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
-      {list.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, margin: '14px 0', flexWrap: 'wrap' }}>
-          <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
-            <option value="">Alle Kategorien</option>
-            {ALL_CATEGORIES.map(c => <option key={c} value={c}>{RESEARCH_CATEGORY_LABELS[c] ?? c}</option>)}
-          </select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
-            <option value="">Alle Status</option>
-            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{RESEARCH_NOTE_STATUS_LABELS[v] ?? v}</option>)}
-          </select>
-          <ExportButtons
-            rows={filtered.map(n => ({
-              id: n.id,
-              category: n.category,
-              title: n.title,
-              body: n.body,
-              tags: n.tags,
-              status: n.status,
-              source: n.source,
-              created_at: n.created_at,
-              updated_at: n.updated_at,
-              source_conversation_id: n.source_conversation_id ?? '',
-            }))}
-            filenameBase="research-notes"
-            title="Research Notes"
-          />
-        </div>
-      )}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
       {filtered.map((n, i) => {
         const tags = parseTags(n.tags)
