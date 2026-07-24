@@ -95,7 +95,7 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
       {/* A sub-widget inside the Forschung page, not a second page header —
           demoted to a plain eyebrow label so it doesn't compete with the
           real page header above (Lighthouse never stacks two full headers). */}
-      <div className="obs-section-label" title="Echtzeit · nur aus Dialogdaten · kein Framework-KPI">Lauras Nutzerverhalten</div>
+      <div className="obs-section-label" title="Echtzeit · nur aus echten Gesprächsdaten, kein interner Framework-Wert">Lauras Nutzerverhalten</div>
 
       <HudGrid cols={5}>
         {/* 1 — Message-volume trend */}
@@ -106,19 +106,19 @@ export function ForschungKpis({ refreshSignal }: { refreshSignal: number }) {
         </HudTile>
 
         {/* 2 — Prompts total + 7-day sparkline */}
-        <HudTile title="Prompts" badge="GESAMT" accent="var(--obs-cyan)" span={1} className="hud-tile--compact">
+        <HudTile title="Nachrichten gesamt" badge="GESAMT" accent="var(--obs-cyan)" span={1} className="hud-tile--compact">
           <HudStat value={total} label="Nutzernachrichten" accent="var(--obs-cyan)" />
           <Spark values={spark} color="var(--obs-cyan)" />
         </HudTile>
 
         {/* 3 — Tokens in/out (real lifetime totals, compared) */}
-        <HudTile title="Tokens In/Out" badge="LEBENSLANG" accent="var(--obs-teal)" span={1} className="hud-tile--compact">
+        <HudTile title="Textmenge (Ein-/Ausgabe)" badge="LEBENSLANG" accent="var(--obs-teal)" span={1} className="hud-tile--compact">
           <CompareBar label="IN" value={promptTok} max={tokenMax} color="var(--obs-teal)" />
           <CompareBar label="OUT" value={completionTok} max={tokenMax} color="var(--obs-amber)" />
         </HudTile>
 
         {/* 4 — Time spent thinking (reasoning) */}
-        <HudTile title="Denkzeit" badge="REASONING" accent="var(--obs-amber)" span={1} className="hud-tile--compact">
+        <HudTile title="Denkzeit" badge="KUMULIERT" accent="var(--obs-amber)" span={1} className="hud-tile--compact">
           <HudStat
             value={reasoningS}
             label="Reasoning kumuliert"

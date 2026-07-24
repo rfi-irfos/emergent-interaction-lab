@@ -5,6 +5,7 @@ import { ObsChart } from './ObsChart'
 import { HudGrid, HudTile, HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
+import { SYSTEM_SIGNAL_LABELS, SIMULATION_STATUS_LABELS } from '../../lib/labels'
 
 // One typed rollup row, captured automatically after every chat turn — see
 // backend/src/observatory.rs's `capture_system_snapshot` (chained inside
@@ -159,10 +160,10 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
 
               <HudSectionHeader title="Signale" sub="Nach Herkunft — wie viele Beobachtungen aus welchem Kanal." />
               <HudGrid cols={4}>
-                <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.signals_human}</div><div className="obs-stat-label">Human</div></div>
-                <div className="obs-stat c-blue"><div className="obs-stat-value">{selected.signals_ai}</div><div className="obs-stat-label">Signale: AI</div></div>
-                <div className="obs-stat c-teal"><div className="obs-stat-value">{selected.signals_interaction}</div><div className="obs-stat-label">Signale: Interaction</div></div>
-                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.signals_system}</div><div className="obs-stat-label">System</div></div>
+                <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.signals_human}</div><div className="obs-stat-label">{SYSTEM_SIGNAL_LABELS.human}</div></div>
+                <div className="obs-stat c-blue"><div className="obs-stat-value">{selected.signals_ai}</div><div className="obs-stat-label">{SYSTEM_SIGNAL_LABELS.ai}</div></div>
+                <div className="obs-stat c-teal"><div className="obs-stat-value">{selected.signals_interaction}</div><div className="obs-stat-label">{SYSTEM_SIGNAL_LABELS.interaction}</div></div>
+                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.signals_system}</div><div className="obs-stat-label">{SYSTEM_SIGNAL_LABELS.system}</div></div>
               </HudGrid>
 
               <HudSectionHeader title="Emergenz-Indikatoren" sub="CCET-Metriken des ausgewählten Snapshots." />
@@ -174,9 +175,9 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
 
               <HudSectionHeader title="Simulationen" sub="Status der Simulationsläufe zum Snapshot-Zeitpunkt." />
               <HudGrid cols={3}>
-                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.sim_runs_pending}</div><div className="obs-stat-label">Pending</div></div>
-                <div className="obs-stat c-green"><div className="obs-stat-value">{selected.sim_runs_complete}</div><div className="obs-stat-label">Complete</div></div>
-                <div className="obs-stat c-red"><div className="obs-stat-value">{selected.sim_runs_error}</div><div className="obs-stat-label">Error</div></div>
+                <div className="obs-stat c-amber"><div className="obs-stat-value">{selected.sim_runs_pending}</div><div className="obs-stat-label">{SIMULATION_STATUS_LABELS.pending}</div></div>
+                <div className="obs-stat c-green"><div className="obs-stat-value">{selected.sim_runs_complete}</div><div className="obs-stat-label">{SIMULATION_STATUS_LABELS.complete}</div></div>
+                <div className="obs-stat c-red"><div className="obs-stat-value">{selected.sim_runs_error}</div><div className="obs-stat-label">{SIMULATION_STATUS_LABELS.error}</div></div>
               </HudGrid>
 
               <HudSectionHeader title="Aktivität" sub="Jarvis-Output in diesem Zeitfenster." />

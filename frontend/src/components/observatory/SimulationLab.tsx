@@ -4,6 +4,7 @@ import { hudStagger } from '../../lib/hudStagger'
 import type { AdminSection } from '../../types/admin'
 import type { SignalRef } from './SimulationCenter'
 import { HudSkeleton } from './HudSkeleton'
+import { SIMULATION_STATUS_LABELS } from '../../lib/labels'
 
 // One option within a branching decision run ("either the team does A
 // because ..., or B because ..."). Mirrors backend/src/simulation.rs's
@@ -61,7 +62,7 @@ export function BranchesList({ branches }: { branches: BranchOut[] }) {
               className="obs-pill"
               style={{ background: `${STATUS_ACCENT[b.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[b.status] ?? '#3b6bf6' }}
             >
-              {b.status}
+              {SIMULATION_STATUS_LABELS[b.status] ?? b.status}
             </span>
           </div>
           {b.rationale && <div className="obs-item-body" style={{ fontStyle: 'italic' }}>{b.rationale}</div>}
@@ -245,7 +246,7 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
           <div className="obs-item-card" key={r.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>
             <div className="obs-item-title">{r.hypothesis}</div>
             <div className="obs-item-meta">
-              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[r.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>{r.status}</span>
+              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[r.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>{SIMULATION_STATUS_LABELS[r.status] ?? r.status}</span>
               {' · '}{r.created_at}
             </div>
             {related.length > 0 && (

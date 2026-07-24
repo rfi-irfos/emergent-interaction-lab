@@ -203,7 +203,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
     <div className="obs-panel">
       {usingHeuristicEdges && (
         <div className="obs-placeholder-tag">
-          (Platzhalter — heuristische Verknüpfung über gemeinsame Gesprächs-ID/Scope, keine echte Graph-Analyse)
+          (Vorläufig — Verbindungen basieren auf einfachen Übereinstimmungen wie derselben Gesprächs-ID, nicht auf einer echten inhaltlichen Analyse)
         </div>
       )}
       <div className="obs-card obs-map-card mycelium-card" ref={wrapRef} style={{ height: '74vh', minHeight: 420, overflow: 'hidden' }}>

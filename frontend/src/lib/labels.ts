@@ -64,14 +64,15 @@ export const SYSTEM_SIGNAL_LABELS: Record<string, string> = {
   system: 'System',
 }
 
-/// SystemMap's own, DIFFERENT 5-node taxonomy — not the same concept as
+/// SystemMap's own, DIFFERENT 5-node taxonomy (node ids: human/ai/
+/// organization/technology/information) — not the same concept as
 /// SYSTEM_SIGNAL_LABELS above, do not merge the two.
 export const SYSTEM_MAP_NODE_LABELS: Record<string, string> = {
   human: 'Mensch',
-  ai_systems: 'KI-Systeme',
+  ai: 'KI-Systeme',
   organization: 'Organisation',
   technology: 'Technologie',
-  information_dynamics: 'Informationsdynamik',
+  information: 'Informationsdynamik',
 }
 
 /// Colocated here (moved from AgentActivity.tsx, unchanged) so every raw-

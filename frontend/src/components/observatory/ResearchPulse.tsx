@@ -41,11 +41,8 @@ export function ResearchPulse({ onNavigate, onOpenConversation }: {
 }) {
   return (
     <div className="obs-panel">
-      <div className="obs-section-label">Papers &amp; Hypothesen</div>
-      <ResearchNotesPanel categories={['paper', 'hypothesis']} addLabel="Eintrag hinzufügen" placeholder="Titel (Paper oder Hypothese)" onOpenConversation={onOpenConversation} />
-
-      <div className="obs-section-label" style={{ marginTop: 8 }}>Ideen, Konzepte &amp; Frameworks</div>
-      <ResearchNotesPanel categories={['idea', 'concept', 'framework', 'prototype']} addLabel="Idee hinzufügen" placeholder="Titel (Idee, Konzept, Framework oder Prototyp)" onOpenConversation={onOpenConversation} />
+      <div className="obs-section-label">Notizen</div>
+      <ResearchNotesPanel addLabel="Eintrag hinzufügen" placeholder="Titel" onOpenConversation={onOpenConversation} />
 
       <div className="obs-section-label" style={{ marginTop: 8 }}>Simulationen</div>
       <button type="button" className="panel-add-btn" onClick={() => onNavigate('simulationcenter')}>
