@@ -30,3 +30,5 @@ Every team pairs people with an AI agent. The lab's standing *Doppelteam* doctri
 ---
 
 <sub>&copy; 2026 RFI-IRFOS, a regulated Austrian not-for-profit. ZVR 1015608684 · GISA 39261441 · Steuernummer 68 028/0989. At least 90% of surplus is reinvested in the research mission. <a href="https://ternlang.com">ternlang.com</a></sub>
+
+- **Laura Serna Gaviria** ([@EmergentInteractionLab](https://github.com/EmergentInteractionLab)) — Head of Behavioral Intelligence & Human-AI Dynamics, Research Director & Co-Founder
