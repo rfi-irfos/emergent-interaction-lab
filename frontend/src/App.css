@@ -2595,7 +2595,7 @@ button { cursor: pointer; font-family: inherit; }
 .crm-audit-entry:hover { background: rgba(255,255,255,.07); border-left-color: var(--hud-cyan); }
 .crm-audit-entry-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .crm-audit-entry-type {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; font-weight: 700;
+  font-size: 10.5px; font-weight: 700;
   color: #63f0ff; letter-spacing: .01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .crm-audit-entry-time { font-size: 9.5px; color: rgba(255,255,255,.32); flex-shrink: 0; }
@@ -2603,7 +2603,7 @@ button { cursor: pointer; font-family: inherit; }
   font-size: 11px; color: rgba(255,255,255,.72); line-height: 1.4; margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.crm-audit-entry-actor { font-size: 9.5px; color: rgba(255,255,255,.28); margin-top: 3px; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
+.crm-audit-entry-actor { font-size: 9.5px; color: rgba(255,255,255,.28); margin-top: 3px; }
 .crm-audit-entry .mycelium-detail { margin: 8px 0 0; padding: 8px 10px; }
 .crm-audit-entry .mycelium-detail-text { font-size: 10.5px; }
 
@@ -2931,7 +2931,7 @@ button { cursor: pointer; font-family: inherit; }
 .obs-multichart-mini-total { font-size: 12.5px; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
 
 .observatory-hud .obs-multichart-mini-label { color: rgba(226,241,245,.8); }
-.observatory-hud .obs-multichart-mini-total { color: #eefcff; text-shadow: 0 0 10px rgba(34,211,238,.2); }
+.observatory-hud .obs-multichart-mini-total { color: #eefcff; }
 
 .obs-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
 .obs-form input, .obs-form textarea, .obs-form select {
@@ -2964,7 +2964,6 @@ button { cursor: pointer; font-family: inherit; }
 .crm-body select:focus { outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12); }
 .observatory-hud .crm-body select {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
   /* color-scheme: dark alone is necessary but NOT sufficient here — verified
      via real Playwright screenshots that the *opened popup* still painted
      white-on-white in Chromium despite every computed style (color-scheme,
@@ -2985,7 +2984,7 @@ button { cursor: pointer; font-family: inherit; }
   appearance: base-select;
 }
 .observatory-hud .crm-body select:focus {
-  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2);
+  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15);
 }
 /* Belt and suspenders alongside color-scheme: dark above — some engines
    (older WebKit/Firefox) do honor per-option background/color even without
@@ -3013,12 +3012,11 @@ button { cursor: pointer; font-family: inherit; }
 }
 .observatory-hud .crm-body input[type="text"], .observatory-hud .crm-body input[type="date"], .observatory-hud .crm-body input[type="search"] {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
   color-scheme: dark;
 }
 .crm-body input[type="text"]:focus, .crm-body input[type="date"]:focus, .crm-body input[type="search"]:focus { outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12); }
 .observatory-hud .crm-body input[type="text"]:focus, .observatory-hud .crm-body input[type="date"]:focus, .observatory-hud .crm-body input[type="search"]:focus {
-  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2);
+  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15);
 }
 
 /* Simulation Center: side-by-side run comparison — no new schema needed,
@@ -3185,7 +3183,7 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .obs-chart-grid { stroke: rgba(34,211,238,.08); }
 .gotham .obs-chart-crosshair { stroke: rgba(34,211,238,.3); }
 .gotham .obs-multichart-mini-label { color: rgba(226,241,245,.8); }
-.gotham .obs-multichart-mini-total { color: #eefcff; text-shadow: 0 0 10px rgba(34,211,238,.2); }
+.gotham .obs-multichart-mini-total { color: #eefcff; }
 .gotham .panel-add-btn { border-color: rgba(34,211,238,.3); color: var(--hud-cyan, #22d3ee); background: rgba(34,211,238,.06); }
 .gotham .panel-add-btn:hover { border-color: var(--hud-cyan, #22d3ee); background: rgba(34,211,238,.12); }
 .gotham .panel-delete-btn { border-color: rgba(239,68,68,.3); color: #fca5a5; }
@@ -3194,13 +3192,13 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .obs-tech-section { border-top-color: rgba(148,190,199,.16); }
 .gotham .crm-body select {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; color-scheme: dark; appearance: base-select;
+  color-scheme: dark; appearance: base-select;
 }
-.gotham .crm-body select:focus { border-color: var(--hud-cyan, #22d3ee); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2); }
+.gotham .crm-body select:focus { border-color: var(--hud-cyan, #22d3ee); box-shadow: 0 0 0 3px rgba(34,211,238,.15); }
 .gotham .crm-body select option { background-color: #0d141f; color: #eefcff; }
 .gotham .crm-body select::picker(select) { background: #0d141f; border: 1px solid rgba(34,211,238,.35); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .gotham .crm-topbar { background: rgba(7,11,18,.9); border-bottom: 1px solid rgba(34,211,238,.18); backdrop-filter: blur(6px); }
-.gotham .crm-topbar-title { color: #e7fbff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-weight: 700; letter-spacing: .03em; text-shadow: 0 0 12px rgba(34,211,238,.35); }
+.gotham .crm-topbar-title { color: #e7fbff; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700; letter-spacing: -.005em; }
 .gotham .mycelium-detail { background: rgba(7,14,20,.85); border: 1px solid rgba(34,211,238,.2); color: rgba(226,241,245,.85); }
 .gotham .mycelium-detail-text, .gotham .mycelium-detail-tag { color: var(--hud-cyan, #22d3ee); }
 .gotham pre { color: rgba(226,241,245,.85); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
@@ -3251,15 +3249,15 @@ button { cursor: pointer; font-family: inherit; }
   backdrop-filter: blur(8px); position: relative; z-index: 2;
 }
 .gotham .crm-topbar-title {
-  color: #eafdff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: .04em;
-  text-transform: uppercase; font-size: 15px; font-weight: 700; text-shadow: 0 0 14px rgba(52,225,255,.3);
+  color: #eafdff; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; letter-spacing: -.005em;
+  font-size: 15px; font-weight: 700;
 }
 .gotham .crm-topbar-actions .topbar-icon-btn { border-color: rgba(120,150,170,.25); background: rgba(120,150,170,.06); color: var(--gotham-text); }
 .gotham .crm-topbar-actions .topbar-icon-btn:hover { border-color: var(--hud-cyan); color: var(--hud-cyan); background: rgba(52,225,255,.08); }
 .gotham .crm-nav-item { color: var(--gotham-text-dim); }
 .gotham .crm-nav-item:hover { background: rgba(120,150,170,.08); color: var(--gotham-text); }
 .gotham .crm-nav-item.active { background: rgba(52,225,255,.12); color: var(--hud-cyan); }
-.gotham .crm-nav-item.active::before { background: var(--hud-cyan); box-shadow: 0 0 8px var(--hud-cyan); }
+.gotham .crm-nav-item.active::before { background: var(--hud-cyan); }
 .gotham .crm-nav-group-label { color: rgba(140,170,184,.4); }
 .gotham .crm-sidebar { background: rgba(7,11,18,.7); border-right: 1px solid var(--gotham-border); }
 
@@ -3271,15 +3269,14 @@ button { cursor: pointer; font-family: inherit; }
 }
 .gotham .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan)); }
 .gotham .obs-item-title { color: #eefcff; }
-.gotham .obs-item-meta { color: var(--gotham-text-dim); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; }
+.gotham .obs-item-meta { color: var(--gotham-text-dim); font-size: 10.5px; }
 .gotham .obs-item-body { color: rgba(212,231,235,.85); }
-.gotham .obs-stat-value { color: #eefcff; text-shadow: 0 0 14px rgba(52,225,255,.22); }
+.gotham .obs-stat-value { color: #eefcff; }
 .gotham .obs-stat-label { color: var(--gotham-text-dim); }
-.gotham .obs-section-label { color: var(--hud-cyan); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; letter-spacing: .08em; }
+.gotham .obs-section-label { color: var(--hud-cyan); letter-spacing: .04em; }
 .gotham .obs-section-label::after { background: rgba(52,225,255,.14); }
 .gotham .obs-section-sub { color: var(--gotham-text-dim); }
 .gotham .obs-empty { color: var(--gotham-text-dim); }
-.gotham .obs-pill { box-shadow: 0 0 10px currentColor; }
 .gotham .panel-product-name, .gotham .panel-product-meta { color: #eefcff; }
 .gotham .panel-add-btn, .gotham .chat-inspect-toggle { border-color: rgba(52,225,255,.3); color: var(--hud-cyan); }
 .gotham .panel-add-btn:hover, .gotham .chat-inspect-toggle:hover { border-color: var(--hud-cyan); background: rgba(52,225,255,.08); }
@@ -3323,25 +3320,27 @@ button { cursor: pointer; font-family: inherit; }
 .hud-tile-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 .hud-led {
   width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  background: var(--hud-accent); box-shadow: 0 0 8px var(--hud-accent);
-  animation: hud-pulse 2.4s ease-in-out infinite;
+  background: var(--hud-accent);
 }
 .hud-tile-title {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; font-weight: 700;
-  letter-spacing: .09em; text-transform: uppercase; color: rgba(206,224,232,.78); flex: 1; min-width: 0;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: -.005em; color: rgba(228,232,240,.9); flex: 1; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .hud-tile-badge {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 8.5px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--hud-accent);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 9.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--hud-accent);
   border: 1px solid color-mix(in srgb, var(--hud-accent) 40%, transparent); padding: 1px 6px; border-radius: 4px;
 }
 .hud-tile-body { position: relative; height: calc(100% - 24px); display: flex; flex-direction: column; }
-/* Soft accent glow on the frame — replaces the old corner brackets (removed
-   per feedback). The glow is driven by --hud-accent so each tile's hue
-   lights its own edge, reading as a live instrument rather than a boxed label. */
-.hud-tile { box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 18%, transparent), 0 0 18px -6px color-mix(in srgb, var(--hud-accent) 55%, transparent); }
-.hud-tile:hover { box-shadow: inset 0 0 24px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 34%, transparent), 0 0 26px -4px color-mix(in srgb, var(--hud-accent) 70%, transparent); }
+/* Flat surface + a thin accent-tinted edge (color-mix, no blur) — reads as
+   an instrument by its border hue alone, not by glowing. Replaces the
+   earlier box-shadow "halo" (color-mix blur, up to 3 stacked shadows per
+   tile) which read as a neon toy rather than a calm research instrument
+   (Simeon: "kindergarden glowy HUDs"), closer to Lighthouse's own flat
+   token surfaces. Structure (framed tiles, dense grid) is unchanged. */
+.hud-tile { box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 22%, transparent); }
+.hud-tile:hover { box-shadow: 0 4px 12px rgba(0,0,0,.28), 0 0 0 1px color-mix(in srgb, var(--hud-accent) 38%, transparent); }
 
 /* ── PAGE HEADER — one header language for every app, same pattern as
    Lighthouse's PageHeader.tsx: row 1 is title + tabs + right-aligned
@@ -3361,7 +3360,7 @@ button { cursor: pointer; font-family: inherit; }
 .hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
 
 .hud-stat { text-align: left; }
-.hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; text-shadow: 0 0 16px color-mix(in srgb, var(--hud-accent, #34e1ff) 35%, transparent); font-variant-numeric: tabular-nums; }
+.hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .hud-stat-label { font-size: 9.5px; color: var(--gotham-text-dim, rgba(140,170,184,.55)); margin-top: 5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
 
 /* A chart centred inside a tile should never overflow the tile. */
@@ -3376,23 +3375,22 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-activity-label { color: rgba(226,241,245,.85); }
 .observatory-hud .obs-activity-ts { color: rgba(148,190,199,.55); }
 .observatory-hud .obs-bar-track { background: rgba(34,211,238,.08); }
-.observatory-hud .obs-bar-fill { background: linear-gradient(90deg, var(--hud-cyan), #67e8f9); box-shadow: 0 0 8px rgba(34,211,238,.5); }
+.observatory-hud .obs-bar-fill { background: linear-gradient(90deg, var(--hud-cyan), #67e8f9); }
 
 .observatory-hud .obs-form input, .observatory-hud .obs-form textarea, .observatory-hud .obs-form select,
 .observatory-hud .cowriter-prompt {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
 }
 .observatory-hud .obs-form input::placeholder, .observatory-hud .obs-form textarea::placeholder { color: rgba(148,190,199,.45); }
 .observatory-hud .obs-form input:focus, .observatory-hud .obs-form textarea:focus, .observatory-hud .obs-form select:focus {
-  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15), 0 0 16px rgba(34,211,238,.2);
+  border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15);
 }
 .observatory-hud .obs-form select option { background: #0d141f; color: #eefcff; }
 
 .observatory-hud .panel-add-btn {
-  border-color: rgba(34,211,238,.4); color: var(--hud-cyan); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  border-color: rgba(34,211,238,.4); color: var(--hud-cyan);
 }
-.observatory-hud .panel-add-btn:hover:not(:disabled) { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); box-shadow: 0 0 12px rgba(34,211,238,.25); }
+.observatory-hud .panel-add-btn:hover:not(:disabled) { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); }
 .observatory-hud .panel-delete-btn { border-color: rgba(239,68,68,.4); color: #fca5a5; }
 /* Dashboard toolbar (Custom Dashboard): keep the selects/inputs/+ button in
    the dark gotham chrome instead of the light Verwaltung defaults — without
@@ -3400,7 +3398,7 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .dash-toolbar select,
 .observatory-hud .dash-toolbar input {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22);
-  color: #eefcff; font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  color: #eefcff;
 }
 .observatory-hud .dash-toolbar select option { background-color: #0d141f; color: #eefcff; }
 .observatory-hud .dash-toolbar .panel-add-btn { background: rgba(34,211,238,.1); }
@@ -3409,15 +3407,14 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-chart-grid { stroke: rgba(34,211,238,.1); }
 .observatory-hud .obs-chart-crosshair { stroke: rgba(34,211,238,.3); }
 .observatory-hud .obs-chart-axis { color: rgba(148,190,199,.55); }
-.observatory-hud .obs-chart path[stroke], .observatory-hud .obs-chart polyline { filter: drop-shadow(0 0 4px rgba(34,211,238,.5)); }
-.observatory-hud .obs-chart-tooltip { background: #0d141f; border: 1px solid rgba(34,211,238,.3); box-shadow: 0 0 16px rgba(34,211,238,.2); }
+.observatory-hud .obs-chart-tooltip { background: #0d141f; border: 1px solid rgba(34,211,238,.3); box-shadow: 0 6px 20px rgba(0,0,0,.35); }
 
 .observatory-hud .obs-map-toolbar-zoom { color: rgba(148,190,199,.6); }
 .observatory-hud .obs-map-toolbar-btn {
-  border-color: rgba(34,211,238,.28); color: rgba(226,241,245,.85); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+  border-color: rgba(34,211,238,.28); color: rgba(226,241,245,.85);
 }
-.observatory-hud .obs-map-toolbar-btn:hover { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); box-shadow: 0 0 10px rgba(34,211,238,.2); color: #eefcff; }
-.observatory-hud .obs-map-tooltip { background: #0d141f; border: 1px solid rgba(34,211,238,.3); box-shadow: 0 0 16px rgba(34,211,238,.2); }
+.observatory-hud .obs-map-toolbar-btn:hover { background: rgba(34,211,238,.1); border-color: var(--hud-cyan); color: #eefcff; }
+.observatory-hud .obs-map-tooltip { background: #0d141f; border: 1px solid rgba(34,211,238,.3); box-shadow: 0 6px 20px rgba(0,0,0,.35); }
 .observatory-hud .obs-map-tooltip-meta { color: rgba(148,190,199,.6); }
 .observatory-hud .obs-map-tooltip-excerpt { color: rgba(212,231,235,.85); }
 
@@ -3508,8 +3505,8 @@ button { cursor: pointer; font-family: inherit; }
 .forschung-kpis .hud-stat-value { font-size: 22px; }
 .forschung-kpis .obs-empty { min-height: 64px; }
 .forschung-kpis-title {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 11px; font-weight: 800;
-  letter-spacing: .11em; color: rgba(52,225,255,.92); text-shadow: 0 0 14px rgba(52,225,255,.35);
+  font-size: 11px; font-weight: 800;
+  letter-spacing: .06em; text-transform: uppercase; color: rgba(52,225,255,.92);
 }
 .forschung-kpis-sub { font-size: 10.5px; color: rgba(148,190,199,.6); letter-spacing: .03em; }
 
@@ -3577,8 +3574,8 @@ button { cursor: pointer; font-family: inherit; }
   background: rgba(7,14,20,.6); border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 4px;
   animation: hud-card-in .25s ease both;
 }
-.mycelium-detail-tag { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
-.mycelium-detail-text { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; color: rgba(226,241,245,.9); line-height: 1.6; }
+.mycelium-detail-tag { font-size: 11px; font-weight: 800; letter-spacing: .02em; }
+.mycelium-detail-text { font-size: 12.5px; color: rgba(226,241,245,.9); line-height: 1.6; }
 .mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan); }
 
 /* Real per-item drill-down inside a mycelium-detail panel (KnowledgeGraph) —
@@ -3589,7 +3586,7 @@ button { cursor: pointer; font-family: inherit; }
 .mycelium-detail-item { padding: 8px 10px; border-left: 2px solid var(--hud-cyan); background: rgba(255,255,255,.03); border-radius: 0 7px 7px 0; animation: hud-card-in .2s ease both; }
 .mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: #eefcff; margin-bottom: 3px; }
 .mycelium-detail-item-excerpt { font-size: 11.5px; color: rgba(226,241,245,.72); line-height: 1.5; margin-bottom: 4px; }
-.mycelium-detail-item-meta { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10px; color: rgba(148,190,199,.55); }
+.mycelium-detail-item-meta { font-size: 10px; color: rgba(148,190,199,.55); }
 
 /* ── HUD FRAMING — corner brackets + radar/dial accent ────────────────────
    Angular Palantir-style card framing, extending the existing HUD glow
@@ -3775,13 +3772,10 @@ button { cursor: pointer; font-family: inherit; }
    on a donut: multiple differently-hued segments sit only ~2deg apart
    (see ObsDonut.tsx's `gapDeg`), and a 10px blur radius comfortably spans
    that gap — adjacent segments' glows visibly blend into each other,
-   destroying exactly the "where does this category end and the next
-   begin" boundary a donut chart's whole legibility depends on. A donut
-   this blurry isn't a stylistic choice, it's a broken chart. Reduced to a
-   single, tight 2px glow here — enough to still read as "lit up," matching
-   the HUD language, without the blur radius reaching a neighboring slice. */
-.observatory-hud .obs-donut-segment { filter: drop-shadow(0 0 2px currentColor); }
-.observatory-hud .obs-gauge-fill { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor); }
+   Segment/gauge-fill glow removed entirely (see the App.css-wide "adult
+   visualization" pass) — a donut/gauge reads by its flat fill color, not by
+   glowing; a blurred glow on a donut segment also risked bleeding into a
+   neighboring slice's boundary, which is a legibility bug, not a look. */
 .observatory-hud .obs-donut-center { color: #eefcff; }
 .observatory-hud .obs-donut-legend-item { color: rgba(148,190,199,.75); }
 
@@ -3806,16 +3800,8 @@ button { cursor: pointer; font-family: inherit; }
 .obs-radar-svg { display: block; overflow: visible; }
 .obs-radar-ring { fill: none; stroke: rgba(34,211,238,.14); stroke-width: 1; }
 .obs-radar-spoke { stroke: rgba(34,211,238,.14); stroke-width: 1; }
-/* The "ambient life sign" pulse — the SAME hud-pulse keyframe already used
-   elsewhere (see @keyframes hud-pulse above; mycelium-pulse's 2.6s is the
-   slowest existing use), slowed further to ~3.2s here so it reads as steady
-   instrumentation rather than an urgent blink. Glow is the same
-   drop-shadow(currentColor) technique as .obs-donut-segment/.obs-gauge-fill
-   above and .mycelium-node-core earlier in this file. */
 .obs-radar-area {
   fill: currentColor; fill-opacity: .22; stroke: currentColor; stroke-width: 2; stroke-linejoin: round;
-  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor);
-  animation: hud-pulse 3.2s ease-in-out infinite;
 }
 .obs-radar-vertex { cursor: pointer; transition: r .15s ease; }
 .obs-radar-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; justify-content: center; }
@@ -3867,13 +3853,11 @@ button { cursor: pointer; font-family: inherit; }
 .live-card-technical { padding: 6px 11px 5px; box-shadow: none; border-style: dashed; opacity: .7; }
 .live-card-technical .live-card-value { font-size: 13px; }
 .live-card-technical .live-card-label { font-size: 8.5px; }
-/* Telemetry glow on the readout + an accent-lit edge on hover (gotham-wide).
-   The value picks up its own --obs-accent hue so every card's number reads as
-   a lit instrument rather than flat ink. */
+/* Accent-tinted edge on hover (gotham-wide) — flat, no glow (see the
+   App.css-wide "adult visualization" pass: readouts pick up their own
+   --obs-accent hue through color alone, not a lit-instrument text-shadow). */
 .live-card-value {
-  text-shadow: 0 0 14px color-mix(in srgb, var(--obs-accent, #34e1ff) 32%, transparent);
   font-variant-numeric: tabular-nums;
-  transition: text-shadow .2s ease;
 }
 .live-card { transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease; }
 .live-card:hover {
@@ -3881,7 +3865,6 @@ button { cursor: pointer; font-family: inherit; }
   border-color: color-mix(in srgb, var(--obs-accent, #34e1ff) 45%, transparent);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--obs-accent, #34e1ff) 30%, transparent),
-    0 0 22px -6px color-mix(in srgb, var(--obs-accent, #34e1ff) 60%, transparent),
     0 8px 20px rgba(15,23,42,.07);
 }
 
@@ -4323,8 +4306,8 @@ button { cursor: pointer; font-family: inherit; }
 @keyframes dash-breathe { 0%, 100% { outline-color: color-mix(in srgb, var(--dash-accent) 30%, transparent); } 50% { outline-color: color-mix(in srgb, var(--dash-accent) 75%, transparent); } }
 .dash-widget-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .dash-widget-title {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 10.5px; font-weight: 700;
-  letter-spacing: .07em; text-transform: uppercase; color: rgba(206,224,232,.78);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: -.005em; color: rgba(228,232,240,.9);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .dash-widget-actions { display: flex; gap: 4px; flex-shrink: 0; }
@@ -4426,10 +4409,9 @@ button { cursor: pointer; font-family: inherit; }
   border-left: 3px solid var(--obs-green, #10b981);
 }
 .monetization-order-card-head {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: .09em;
+  letter-spacing: .04em;
   text-transform: uppercase;
   color: rgba(206,224,232,.6);
   margin-bottom: 12px;
@@ -4446,12 +4428,11 @@ button { cursor: pointer; font-family: inherit; }
   font-size: 26px;
   font-weight: 800;
   color: var(--obs-green, #10b981);
-  text-shadow: 0 0 14px rgba(16,185,129,.25);
   line-height: 1;
   margin-bottom: 10px;
+  font-variant-numeric: tabular-nums;
 }
 .monetization-order-card-meta {
-  font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
   font-size: 10.5px;
   color: var(--gotham-text-dim, rgba(148,190,199,.62));
   line-height: 1.5;
