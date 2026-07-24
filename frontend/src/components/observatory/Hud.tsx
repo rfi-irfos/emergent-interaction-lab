@@ -17,6 +17,34 @@ export function useHeaderActions(node: ReactNode, deps: React.DependencyList) {
   }, deps)
 }
 
+/// The canonical shape of what goes INTO useHeaderActions — same fixed
+/// left-to-right order every time (search, then filter(s), then the one
+/// export action button), matching Lighthouse's own PageHeader convention.
+/// Any slot that's omitted just doesn't render; this exists so the order
+/// itself can't drift per-app the way it had before (every page composing
+/// its own ad hoc actions row is exactly how the inconsistency crept in).
+export function HudHeaderActions({ search, filters, action }: {
+  search?: { value: string; onChange: (v: string) => void; placeholder?: string }
+  filters?: ReactNode
+  action?: ReactNode
+}) {
+  return (
+    <>
+      {search && (
+        <input
+          type="search"
+          value={search.value}
+          onChange={e => search.onChange(e.target.value)}
+          placeholder={search.placeholder ?? 'Suchen…'}
+          style={{ fontSize: 12, padding: '5px 8px', flex: '0 1 200px' }}
+        />
+      )}
+      {filters}
+      {action}
+    </>
+  )
+}
+
 /// SHARED HUD CARD LANGUAGE — the single source of truth for how every
 /// Observatory/Verwaltung panel and chart is framed. Previously each of the
 /// ~20 surfaces hand-rolled its own `flex + justifyContent:'center'` block
