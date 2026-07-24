@@ -28,6 +28,7 @@ import { SimulationCenter } from './observatory/SimulationCenter'
 import { Denkfragmente } from './observatory/Denkfragmente'
 import { AnomalyLog } from './observatory/AnomalyLog'
 import { Changelog } from './observatory/Changelog'
+import { Ameisenhaufen } from './observatory/Ameisenhaufen'
 
 interface Props {
   content: SiteContent
@@ -487,6 +488,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
             {adminSection === 'anomalies' && (
               <AnomalyLog onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
+            {adminSection === 'ameisenhaufen' && <Ameisenhaufen />}
             </HeaderActionsContext.Provider>
           </div>
         </div>

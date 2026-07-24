@@ -7,6 +7,7 @@ mod authz;
 mod billing;
 mod blog;
 mod chat;
+mod coevolution;
 mod contact;
 mod content;
 mod dashboards;
@@ -398,6 +399,7 @@ async fn main() {
         .route("/api/observatory/emergence/analyze", post(emergence::analyze))
         .route("/api/observatory/emergence/ccet", get(chat::ccet_summary))
         .route("/api/observatory/agent-activity", get(github_activity::agent_activity))
+        .route("/api/observatory/coevolution", get(coevolution::activity))
         .route("/api/observatory/deploy-log", post(github_activity::log_deploy))
         // Flight recorder: one typed rollup row captured automatically after
         // every chat turn (see chat.rs::stream_chat's CCET spawn) — this is

@@ -95,6 +95,13 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   // human/AI framing, so it reads first as a system-level observable.
   { id: 'interaction', label: 'Interaction+Information Dynamics', tier: 'system', icon: I(<><circle cx="9" cy="9" r="3" /><circle cx="17" cy="15" r="3" /><path d="M11 10.5 15 13.5" /></>) },
   { id: 'behavior', label: 'Behavioral Landscape', tier: 'system', icon: I(<><path d="M3 3v18h18" /><path d="M7 15l4-6 4 3 5-8" /></>) },
+  // Ameisenhaufen — Laura's OTHER project (coevolution-factory, a separate
+  // Fly app, 50 standing compliance/risk centers on the lauras-agents
+  // engine), proxied in read-only so she can see her own agents at work
+  // without leaving EIL. Research tier, same reasoning as Denkfragmente:
+  // this is Laura's own research/work, not a rollup of THIS platform's
+  // system health.
+  { id: 'ameisenhaufen', label: 'Ameisenhaufen', tier: 'research', icon: I(<><circle cx="12" cy="12" r="2" /><circle cx="5" cy="7" r="1.6" /><circle cx="19" cy="7" r="1.6" /><circle cx="5" cy="17" r="1.6" /><circle cx="19" cy="17" r="1.6" /><line x1="10.3" y1="10.8" x2="6.3" y2="8.2" /><line x1="13.7" y1="10.8" x2="17.7" y2="8.2" /><line x1="10.3" y1="13.2" x2="6.3" y2="15.8" /><line x1="13.7" y1="13.2" x2="17.7" y2="15.8" /></>) },
 ]
 
 export function groupByTier(modules: ObservatoryModuleDef[] = OBSERVATORY_MODULES): Record<ObservatoryTier, ObservatoryModuleDef[]> {
@@ -135,6 +142,7 @@ export const SECTION_COPY: Record<AdminSection, SectionCopy> = {
   anomalies: { title: 'Anomalie-Log', description: 'Auffälligkeiten, die Jarvis selbst gemeldet hat.' },
   forschungspipeline: { title: 'Forschungspipeline', description: '' },
   changelog: { title: 'Changelog', description: 'Jede Änderung am Lab — nachvollziehbar, mit Kettensignatur.' },
+  ameisenhaufen: { title: 'Ameisenhaufen', description: 'Deine Coevolution Factory — 50 Zentren, live von hier aus sichtbar.' },
 }
 
 /** @deprecated use `SECTION_COPY[x].title` — kept only until every consumer migrates. */
