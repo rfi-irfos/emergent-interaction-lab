@@ -1,10 +1,6 @@
-import { useState } from 'react'
-import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { foldIntoOther } from '../../lib/chartMath'
-import { ExportButtons } from './ExportButtons'
-import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
-import { HudSkeleton } from './HudSkeleton'
+import { HudGrid, HudTile } from './Hud'
 import { ObsDonut } from './ObsDonut'
 
 // "Gesamtübersicht" — Laura's own words, verbatim-translated: "I simply live
@@ -18,27 +14,29 @@ import { ObsDonut } from './ObsDonut'
 // already owns that table — this page invents no new aggregation, it only
 // presents what already exists in one holistic view).
 //
-// Deliberately still SECTIONED into one card per source table, not a flat
-// merged list — Laura should always be able to tell which number came from
-// where, matching every other Observatory module's own provenance
-// conventions (CCET's own definitions_note, Flugschreiber's "no fabricated
-// backfill" framing). An empty section renders its own honest empty state,
-// never a placeholder number.
+// Purely presentational — Analytics.tsx (the actual page owner) fetches
+// `data`, owns the ONE shared range filter + export action for the whole
+// combined page, and renders its own top KPI cards (this module's own three
+// chat cards moved up there too, to avoid showing the same "Gespräche"
+// number twice once both halves of the page share one filter). This module
+// used to fetch its own data and render its own header/filter — that's
+// exactly the "still has its own extra filter" complaint; there is now
+// exactly one filter for the whole page, owned one level up.
 
-interface ConversationSummary { id: string; title: string; created_at: string; updated_at: string }
-interface ChatSection { conversations_total: number; conversations: ConversationSummary[]; user_messages: number; assistant_messages: number }
-interface LevelBucket { level: string; count: number }
-interface EmergenceSection { total: number; by_level: LevelBucket[] }
-interface CategoryBucket { category: string; count: number }
-interface ResearchNotesSection { total: number; by_category: CategoryBucket[] }
-interface CcetSection { cei: number; cep: number; resonance_frequency: number; turns_considered: number; turns_in_range: number; definitions_note: string }
-interface StatusBucket { status: string; count: number }
-interface SimulationRunsSection { total: number; by_status: StatusBucket[] }
-interface SystemSnapshotsSection { total: number; earliest: string | null; latest: string | null }
-interface ToolBucket { tool: string; count: number }
-interface AgentToolCallsSection { total: number; by_tool: ToolBucket[] }
+export interface ConversationSummary { id: string; title: string; created_at: string; updated_at: string }
+export interface ChatSection { conversations_total: number; conversations: ConversationSummary[]; user_messages: number; assistant_messages: number }
+export interface LevelBucket { level: string; count: number }
+export interface EmergenceSection { total: number; by_level: LevelBucket[] }
+export interface CategoryBucket { category: string; count: number }
+export interface ResearchNotesSection { total: number; by_category: CategoryBucket[] }
+export interface CcetSection { cei: number; cep: number; resonance_frequency: number; turns_considered: number; turns_in_range: number; definitions_note: string }
+export interface StatusBucket { status: string; count: number }
+export interface SimulationRunsSection { total: number; by_status: StatusBucket[] }
+export interface SystemSnapshotsSection { total: number; earliest: string | null; latest: string | null }
+export interface ToolBucket { tool: string; count: number }
+export interface AgentToolCallsSection { total: number; by_tool: ToolBucket[] }
 
-interface EverythingData {
+export interface EverythingData {
   range: string
   chat: ChatSection
   emergence_signals: EmergenceSection
@@ -48,19 +46,6 @@ interface EverythingData {
   system_snapshots: SystemSnapshotsSection
   agent_tool_calls: AgentToolCallsSection
 }
-
-// Same `?range=7d|30d|all` convention as every other range-filtered
-// Observatory module (see backend/src/observatory.rs's resolve_range) — the
-// one genuinely different thing about "give me everything from this
-// period" versus the per-module exports Laura already had is that this
-// filter now applies across every section at once, not just one table.
-const RANGE_OPTIONS: { value: string; label: string }[] = [
-  { value: '7d', label: 'Letzte 7 Tage' },
-  { value: '30d', label: 'Letzte 30 Tage' },
-  { value: 'all', label: 'Alle' },
-]
-
-const RANGE_SUFFIX: Record<string, string> = { '7d': 'letzte 7 Tage', '30d': 'letzte 30 Tage', all: 'alle' }
 
 function formatPercent(v: number): string {
   return `${Math.round(v * 100)}%`
@@ -115,74 +100,13 @@ function Bars<T extends { count: number }>({ rows, labelKey, labelMap, color }: 
   )
 }
 
-export function Gesamtuebersicht() {
-  const [range, setRange] = useState('30d')
-  const { data, loading, error } = useAdminFetch<EverythingData>(`/api/observatory/everything?range=${range}`, [range])
-
-  // One combined, single-row export of every section's headline number —
-  // all directly comparable "how much of X happened" totals, so one flat
-  // row is honest here (unlike the per-section breakdown lists below, which
-  // have genuinely different shapes from each other and would just become
-  // a sparse, confusing table if forced into one sheet together).
-  const summaryRow = data ? [{
-    range: data.range,
-    conversations_total: data.chat.conversations_total,
-    user_messages: data.chat.user_messages,
-    assistant_messages: data.chat.assistant_messages,
-    emergence_signals_total: data.emergence_signals.total,
-    research_notes_total: data.research_notes.total,
-    ccet_cei: data.ccet.cei,
-    ccet_cep: data.ccet.cep,
-    ccet_resonance_frequency: data.ccet.resonance_frequency,
-    ccet_turns_in_range: data.ccet.turns_in_range,
-    simulation_runs_total: data.simulation_runs.total,
-    system_snapshots_total: data.system_snapshots.total,
-    agent_tool_calls_total: data.agent_tool_calls.total,
-  }] : []
-
-  // No visible header of its own — this stacks directly below Analytics on
-  // the same page, so a second title/actions block here would read as two
-  // stitched-together apps rather than one coherent page. The range filter
-  // + the one export action button push into the SAME shared top-of-page
-  // header Analytics itself sits under (see useHeaderActions/Hud.tsx),
-  // which is also why the filter/action row now always renders at the true
-  // top of the page rather than floating mid-scroll.
-  useHeaderActions(
-    data ? (
-      <HudHeaderActions
-        filters={
-          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        }
-        action={<ExportButtons rows={summaryRow} filenameBase={`gesamtuebersicht-zusammenfassung-${range}`} title={`Gesamtübersicht — Zusammenfassung (${RANGE_SUFFIX[data.range] ?? data.range})`} />}
-      />
-    ) : null,
-    [range, data],
-  )
-
-  if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
-  if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
-  if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
-
+export function Gesamtuebersicht({ data }: { data: EverythingData }) {
   return (
-    <div className="obs-panel">
-
-      {/* No section label, no separating gap — card directly next to card,
-          flowing straight into the grid below instead of reading as its own
-          boxed-off section. The raw conversation list that used to sit here
-          duplicated what Forschung's own sidebar already shows, zero added
-          value, so it's gone — these three numbers are what's left. */}
-      <div className="obs-grid" style={{ marginBottom: 14 }}>
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.chat.conversations_total}</div><div className="obs-stat-label">Gespräche</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
-      </div>
-
+    <>
       {/* ── Everything else: one uniform 3-across grid of same-size tiles —
           no per-tile export/filter controls (the single range selector +
-          export in the page header above governs the whole page, full
-          stop), no mixed span=4/2/1 sizes. */}
+          export in Analytics' own page header governs the whole combined
+          page, full stop), no mixed span=4/2/1 sizes. */}
       <HudGrid cols={3}>
         <HudTile title="Emergenzsignale" badge="EBENE" accent="var(--obs-purple)" span={1}>
           <div style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 8 }}>{data.emergence_signals.total} Signale gesamt</div>
@@ -271,6 +195,6 @@ export function Gesamtuebersicht() {
         Geschäfts-/Zahlungsdaten (Stripe-Bestellungen) sind hier bewusst nicht enthalten — das ist ein separates
         Verwaltungs-Thema, kein Forschungsinteraktionsdatum. Siehe Monetarisierung → Bestellungen.
       </p>
-    </div>
+    </>
   )
 }
