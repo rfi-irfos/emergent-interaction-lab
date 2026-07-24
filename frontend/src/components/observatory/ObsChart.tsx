@@ -8,7 +8,7 @@ interface ChartPoint { label: string; value: number }
 /// not a custom instrument. Same external prop shape as before this
 /// migration, so every existing caller (Analytics, Flugschreiber,
 /// InteractionDynamics, InformationDynamics, ...) needed zero changes.
-export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, gradientId, showAxis = true }: {
+export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, gradientId, showAxis = true, interactive = true }: {
   data: ChartPoint[]
   color?: string
   height?: number
@@ -17,6 +17,14 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
   /** Hide the bottom label row — for tiny sparklines whose x-axis (bare
    * indices, not real dates) wouldn't mean anything to read anyway. */
   showAxis?: boolean
+  /** Set false for a purely decorative sparkline embedded next to other
+   * content in a small tile (e.g. ForschungKpis' per-stat Spark) — with
+   * `interactive` on, a hover tooltip has genuinely appeared overlapping
+   * the tile's own stat number in that cramped a space (confirmed on the
+   * live page: two numbers rendering on top of each other). No hover
+   * tooltip and no dots at all when off, since there's nothing useful to
+   * hover in a spark that has no visible axis either. */
+  interactive?: boolean
 }) {
   if (!data.length) return <div className="obs-empty">Keine Daten.</div>
 
@@ -54,25 +62,27 @@ export function ObsChart({ data, color = '#3b6bf6', height = 110, valueFormat, g
             />
           )}
           <YAxis hide domain={[0, 'dataMax']} />
-          <Tooltip
-            content={({ active, payload, label }) => {
-              if (!active || !payload || payload.length === 0) return null
-              return (
-                <div className="obs-chart-tooltip">
-                  <div className="obs-chart-tooltip-value">{fmt(payload[0].value as number)}</div>
-                  <div className="obs-chart-tooltip-label">{label}</div>
-                </div>
-              )
-            }}
-          />
+          {interactive && (
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (!active || !payload || payload.length === 0) return null
+                return (
+                  <div className="obs-chart-tooltip">
+                    <div className="obs-chart-tooltip-value">{fmt(payload[0].value as number)}</div>
+                    <div className="obs-chart-tooltip-label">{label}</div>
+                  </div>
+                )
+              }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="value"
             stroke={color}
             strokeWidth={2.5}
             fill={`url(#${gradientId})`}
-            dot={{ r: 2, fill: color, stroke: 'none' }}
-            activeDot={{ r: 4.5, fill: color, stroke: '#fff', strokeWidth: 1.5 }}
+            dot={interactive ? { r: 2, fill: color, stroke: 'none' } : false}
+            activeDot={interactive ? { r: 4.5, fill: color, stroke: '#fff', strokeWidth: 1.5 } : false}
           />
         </AreaChart>
       </ResponsiveContainer>

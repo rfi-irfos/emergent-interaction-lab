@@ -3988,8 +3988,12 @@ button { cursor: pointer; font-family: inherit; }
    desktop window; previously .chat-sidebar had no collapse option at all,
    unlike its sibling .crm-sidebar. */
 .chat-sidebar.collapsed { width: 44px; }
-.chat-sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 0; flex-shrink: 0; }
-.chat-sidebar.collapsed .chat-sidebar-header { justify-content: center; padding: 10px 0 0; }
+/* Top padding matches .chat-topbar's own (12px) exactly — the collapse
+   toggle and the chat title used to sit at very slightly different heights
+   (10px vs 12px), just different enough to read as misaligned since they're
+   right next to each other. */
+.chat-sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 8px 0; flex-shrink: 0; }
+.chat-sidebar.collapsed .chat-sidebar-header { justify-content: center; padding: 12px 0 0; }
 .chat-sidebar-collapse-btn {
   border: 1px solid rgba(148,197,214,.22); background: rgba(255,255,255,.03); color: rgba(233,251,255,.55);
   width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1; flex-shrink: 0;
