@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudGrid, HudTile, HudSectionHeader } from './Hud'
+import { HudGrid, HudTile, HudSectionHeader, useHeaderActions, HudHeaderActions } from './Hud'
 import { ObsRadar } from './ObsRadar'
 import { ObsDonut } from './ObsDonut'
 import { STATUS_ACCENT } from './registry'
@@ -379,6 +379,45 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
   const turns = groupByTurn(effectiveFragments)
   const maxLayerCount = Math.max(...(distribution?.by_layer.map(b => b.count) ?? []), 1)
 
+  // Promoted to the shared page header — the primary, above-the-fold
+  // control on this page (which conversation's timeline to look at). The
+  // aggregate range selector further below stays on its own HudSectionHeader
+  // since it genuinely scopes only that section, not the whole page — two
+  // legitimately different filtering axes, not the same control duplicated.
+  useHeaderActions(
+    <HudHeaderActions
+      filters={
+        convLoading ? (
+          <span style={{ fontSize: 12, color: '#9aa0a8' }}>Lade Gespräche…</span>
+        ) : convError ? (
+          <span style={{ fontSize: 12, color: '#9aa0a8' }}>Gespräche konnten nicht geladen werden.</span>
+        ) : conversations.length === 0 ? (
+          <span style={{ fontSize: 12, color: '#9aa0a8' }}>Noch keine Forschungsgespräche vorhanden.</span>
+        ) : (
+          <select value={selectedConv} onChange={e => setSelectedConv(e.target.value)} style={{ flex: '1 1 260px', fontSize: 12, padding: '5px 8px' }}>
+            {conversations.map(c => <option key={c.id} value={c.id}>{c.title} ({c.updated_at})</option>)}
+          </select>
+        )
+      }
+      action={
+        <>
+          {selectedConv && onOpenConversation && (
+            <button className="chat-inspect-toggle" style={{ fontSize: 11 }} onClick={() => onOpenConversation(selectedConv)}>
+              im Gespräch öffnen ↗
+            </button>
+          )}
+          <ExportButtons
+            rows={effectiveFragments.map(f => ({ ...f }))}
+            filenameBase="denkfragmente-gespraech"
+            title="Denkfragmente — ein Gespräch"
+            disabled={effectiveFragments.length === 0}
+          />
+        </>
+      }
+    />,
+    [convLoading, convError, conversations, selectedConv, effectiveFragments],
+  )
+
   return (
     <div className="obs-panel">
       {/* ── legend: always-visible text labels, not color-only identity — */}
@@ -392,35 +431,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
       </div>
 
       {/* ── per-conversation timeline ────────────────────────────────── */}
-      <HudSectionHeader
-        title="Denkfragmente — Gesprächsverlauf"
-        actions={
-          <>
-            {convLoading ? (
-              <span style={{ fontSize: 12, color: '#9aa0a8' }}>Lade Gespräche…</span>
-            ) : convError ? (
-              <span style={{ fontSize: 12, color: '#9aa0a8' }}>Gespräche konnten nicht geladen werden.</span>
-            ) : conversations.length === 0 ? (
-              <span style={{ fontSize: 12, color: '#9aa0a8' }}>Noch keine Forschungsgespräche vorhanden.</span>
-            ) : (
-              <select value={selectedConv} onChange={e => setSelectedConv(e.target.value)} style={{ flex: '1 1 260px', fontSize: 12, padding: '5px 8px' }}>
-                {conversations.map(c => <option key={c.id} value={c.id}>{c.title} ({c.updated_at})</option>)}
-              </select>
-            )}
-            {selectedConv && onOpenConversation && (
-              <button className="chat-inspect-toggle" style={{ fontSize: 11 }} onClick={() => onOpenConversation(selectedConv)}>
-                im Gespräch öffnen ↗
-              </button>
-            )}
-            <ExportButtons
-              rows={effectiveFragments.map(f => ({ ...f }))}
-              filenameBase="denkfragmente-gespraech"
-              title="Denkfragmente — ein Gespräch"
-              disabled={effectiveFragments.length === 0}
-            />
-          </>
-        }
-      />
+      <div className="obs-section-label">Denkfragmente — Gesprächsverlauf</div>
       <div className="obs-card">
         {seqLoading ? (
           <HudSkeleton variant="chart" />
