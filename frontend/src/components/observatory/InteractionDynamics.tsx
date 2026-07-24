@@ -4,10 +4,9 @@ import { TokenBreakdown, type TokenInfo } from './TokenBreakdown'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
-import { HudTile } from './Hud'
+import { HudTile, HudSectionHeader } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
 
 const RANGE_OPTIONS: { value: string; label: string }[] = [
   { value: '7d', label: 'Letzte 7 Tage' },
@@ -64,17 +63,24 @@ export function InteractionDynamics() {
       )}
 
       {data.messages_by_day.length > 0 && (
-        <HudTile title="Gesprächsentwicklung" badge={RANGE_SUFFIX[data.range] ?? data.range} accent="var(--obs-purple)" span={4}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-            <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-              {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <ExportButtons
-              rows={data.messages_by_day.map(d => ({ ...d }))}
-              filenameBase={`interaction-messages-by-day-${range}`}
-              title={`Interaction Dynamics — Gesprächsentwicklung (${RANGE_SUFFIX[data.range] ?? data.range})`}
-            />
-          </div>
+        <HudTile
+          title="Gesprächsentwicklung"
+          badge={RANGE_SUFFIX[data.range] ?? data.range}
+          accent="var(--obs-purple)"
+          span={4}
+          headerActions={
+            <>
+              <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+                {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <ExportButtons
+                rows={data.messages_by_day.map(d => ({ ...d }))}
+                filenameBase={`interaction-messages-by-day-${range}`}
+                title={`Interaction Dynamics — Gesprächsentwicklung (${RANGE_SUFFIX[data.range] ?? data.range})`}
+              />
+            </>
+          }
+        >
           <ObsChart data={data.messages_by_day.map(d => ({ label: d.day.slice(5), value: d.count }))} color="#8b5cf6" gradientId="interaction-trend" />
         </HudTile>
       )}

@@ -83,39 +83,46 @@ export function InformationDynamics() {
         </HudTile>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, marginBottom: 10 }}>
-        <div className="obs-section-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>Letzte Anfragen</div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
-          <input type="checkbox" checked={gapOnly} onChange={e => setGapOnly(e.target.checked)} />
-          Nur Wissenslücken
-        </label>
-        {/* Exports whatever is currently loaded/filtered (`recent_retrievals`)
-            — same honesty-about-scope principle as elsewhere: with
-            "Nur Wissenslücken" active, the export is the gap-only set, not
-            silently the unfiltered top-10. */}
-        <ExportButtons
-          rows={data.recent_retrievals.map(r => ({ ...r }))}
-          filenameBase={`information-retrievals${gapOnly ? '-gaps' : ''}`}
-          title="Information Dynamics — letzte Anfragen"
-        />
-      </div>
-      {data.recent_retrievals.length === 0
-        ? <div className="obs-card"><div className="obs-empty">{gapOnly ? 'Keine Wissenslücken in den letzten Anfragen.' : 'Noch keine Anfragen protokolliert.'}</div></div>
-        : data.recent_retrievals.map((r, i) => (
-            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: r.is_gap ? '#f59e0b' : '#14b8a6' }}>
-              <div className="obs-item-title">{r.query_text}</div>
-              <div className="obs-item-meta">
-                <span
-                  className="obs-pill"
-                  style={{ background: r.is_gap ? 'rgba(245,158,11,.12)' : 'rgba(20,184,166,.12)', color: r.is_gap ? '#f59e0b' : '#14b8a6' }}
-                >
-                  {r.is_gap ? 'Wissenslücke' : `${r.hit_count} Treffer`}
-                </span>
-                {' · '}Score {r.top_score.toFixed(2)} · {r.created_at}
+      <HudTile
+        title="Letzte Anfragen"
+        accent="var(--obs-teal)"
+        span={4}
+        headerActions={
+          <>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>
+              <input type="checkbox" checked={gapOnly} onChange={e => setGapOnly(e.target.checked)} />
+              Nur Wissenslücken
+            </label>
+            {/* Exports whatever is currently loaded/filtered (`recent_retrievals`)
+                — same honesty-about-scope principle as elsewhere: with
+                "Nur Wissenslücken" active, the export is the gap-only set, not
+                silently the unfiltered top-10. */}
+            <ExportButtons
+              rows={data.recent_retrievals.map(r => ({ ...r }))}
+              filenameBase={`information-retrievals${gapOnly ? '-gaps' : ''}`}
+              title="Information Dynamics — letzte Anfragen"
+            />
+          </>
+        }
+      >
+        {data.recent_retrievals.length === 0
+          ? <div className="obs-card"><div className="obs-empty">{gapOnly ? 'Keine Wissenslücken in den letzten Anfragen.' : 'Noch keine Anfragen protokolliert.'}</div></div>
+          : data.recent_retrievals.map((r, i) => (
+              <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: r.is_gap ? '#f59e0b' : '#14b8a6' }}>
+                <div className="obs-item-title">{r.query_text}</div>
+                <div className="obs-item-meta">
+                  <span
+                    className="obs-pill"
+                    style={{ background: r.is_gap ? 'rgba(245,158,11,.12)' : 'rgba(20,184,166,.12)', color: r.is_gap ? '#f59e0b' : '#14b8a6' }}
+                  >
+                    {r.is_gap ? 'Wissenslücke' : `${r.hit_count} Treffer`}
+                  </span>
+                  {' · '}Score {r.top_score.toFixed(2)} · {r.created_at}
+                </div>
               </div>
-            </div>
-          ))
-      }
+            ))
+        }
+      </HudTile>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
         Wissensbasis und wie gut sie tatsächlich wiederverwendet wird — Score und Trefferzahl zeigen, ob frühere Gespräche und Dokumente aktiv ins Denken einfließen, nicht nur wie viel gespeichert ist. Wissenslücken markieren Anfragen, bei denen keine oder zu schwache Treffer gefunden wurden.
       </p>
