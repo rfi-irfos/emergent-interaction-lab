@@ -168,9 +168,9 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
 
               <HudSectionHeader title="Emergenz-Indikatoren" sub="CCET-Metriken des ausgewählten Snapshots." />
               <HudGrid cols={3}>
-                <div className="obs-stat c-green"><div className="obs-stat-value">{formatPercent(selected.cei)}</div><div className="obs-stat-label">CEI</div></div>
-                <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.cep}</div><div className="obs-stat-label">CEP</div></div>
-                <div className="obs-stat c-teal"><div className="obs-stat-value">{formatPercent(selected.resonance_frequency)}</div><div className="obs-stat-label">Resonance</div></div>
+                <div className="obs-stat c-green"><div className="obs-stat-value">{formatPercent(selected.cei)}</div><div className="obs-stat-label">Stabilität (CEI)</div></div>
+                <div className="obs-stat c-purple"><div className="obs-stat-value">{selected.cep}</div><div className="obs-stat-label">Wendepunkte (CEP)</div></div>
+                <div className="obs-stat c-teal"><div className="obs-stat-value">{formatPercent(selected.resonance_frequency)}</div><div className="obs-stat-label">Rhythmus (Resonanz)</div></div>
               </HudGrid>
 
               <HudSectionHeader title="Simulationen" sub="Status der Simulationsläufe zum Snapshot-Zeitpunkt." />
@@ -220,10 +220,10 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
             <HudTile title="Signale gesamt" badge="FLUG" accent="var(--obs-purple)" span={1}>
               <ObsChart data={chartData(totalSignals)} color="var(--obs-purple)" gradientId="fs-signals" />
             </HudTile>
-            <HudTile title="CEI" badge="CO-EVO" accent="var(--obs-green)" span={1}>
+            <HudTile title="Stabilität (CEI)" badge="CO-EVO" accent="var(--obs-green)" span={1}>
               <ObsChart data={chartData(s => s.cei)} color="var(--obs-green)" gradientId="fs-cei" valueFormat={formatPercent} />
             </HudTile>
-            <HudTile title="Resonance" badge="FREQ" accent="var(--obs-teal)" span={1}>
+            <HudTile title="Rhythmus (Resonanz)" badge="FREQ" accent="var(--obs-teal)" span={1}>
               <ObsChart data={chartData(s => s.resonance_frequency)} color="var(--obs-teal)" gradientId="fs-rf" valueFormat={formatPercent} />
             </HudTile>
             <HudTile title="Simulationen" badge="RUNS" accent="var(--obs-amber)" span={1}>
@@ -250,7 +250,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
             >
               <div className="obs-item-title">{s.created_at}{s.id === selected?.id && <span style={{ fontWeight: 400, color: 'var(--obs-blue)' }}> · ausgewählt</span>}</div>
               <div className="obs-item-meta">
-                Signale: {totalSignals(s)} · CEI {formatPercent(s.cei)} · Simulationen: {totalSimRuns(s)} · Notes: {s.research_notes_total} · Tools (7T): {s.agent_tool_calls_7d}
+                Signale: {totalSignals(s)} · Stabilität (CEI) {formatPercent(s.cei)} · Simulationen: {totalSimRuns(s)} · Notes: {s.research_notes_total} · Tools (7T): {s.agent_tool_calls_7d}
               </div>
             </div>
           ))}

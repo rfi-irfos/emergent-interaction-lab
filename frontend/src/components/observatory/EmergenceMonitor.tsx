@@ -413,24 +413,24 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           ObsGauge slots in next to plain stat tiles without looking like a
           different component family. */}
       <HudGrid cols={4}>
-        <HudTile title="CEI" badge="CO-EVOLUTION" accent="var(--obs-green)" span={1}>
+        <HudTile title="Stabilität (CEI)" badge="CO-EVOLUTION" accent="var(--obs-green)" span={1}>
           {ccet ? (
-            <ObsGauge value={ccet.cei} label="Co-Evolution Index" color="var(--obs-green)" />
+            <ObsGauge value={ccet.cei} label="Stabilität (Co-Evolution Index)" color="var(--obs-green)" />
           ) : (
-            <div className="obs-stat c-green"><div className="obs-stat-value">—</div><div className="obs-stat-label">CEI (Co-Evolution Index)</div></div>
+            <div className="obs-stat c-green"><div className="obs-stat-value">—</div><div className="obs-stat-label">Stabilität (CEI)</div></div>
           )}
         </HudTile>
-        <HudTile title="Resonance" badge="CO-EVOLUTION" accent="var(--obs-teal)" span={1}>
+        <HudTile title="Rhythmus (Resonanz)" badge="CO-EVOLUTION" accent="var(--obs-teal)" span={1}>
           {ccet ? (
-            <ObsGauge value={ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" />
+            <ObsGauge value={ccet.resonance_frequency} label="Rhythmus (Resonanzfrequenz)" color="var(--obs-teal)" />
           ) : (
-            <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Resonance Frequency</div></div>
+            <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Rhythmus (Resonanzfrequenz)</div></div>
           )}
         </HudTile>
-        <HudTile title="CEP" badge="CO-EVOLUTION" accent="var(--obs-purple)" span={2}>
+        <HudTile title="Wendepunkte (CEP)" badge="CO-EVOLUTION" accent="var(--obs-purple)" span={2}>
           <div className="obs-stat c-purple" style={{ flex: '0 1 160px' }}>
             <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
-            <div className="obs-stat-label">CEP (Co-Evolution Points)</div>
+            <div className="obs-stat-label">Wendepunkte (Co-Evolution Points)</div>
           </div>
         </HudTile>
       </HudGrid>

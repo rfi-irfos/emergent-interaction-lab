@@ -255,7 +255,7 @@ function LoopNode({
             <div style={{ display: 'flex', gap: 14 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: ceiDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{ceiDelta >= 0 ? '+' : ''}{fmtPct(Math.abs(ceiDelta))}</div>
-                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>CEI Δ</div>
+                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>Stabilität Δ</div>
               </div>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: resDelta !== null && resDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{(resDelta ?? 0) >= 0 ? '+' : ''}{fmtPct(Math.abs(resDelta ?? 0))}</div>
