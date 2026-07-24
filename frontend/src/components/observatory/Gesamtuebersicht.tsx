@@ -178,8 +178,8 @@ export function Gesamtuebersicht({ data }: { data: EverythingData }) {
           }
         </HudTile>
 
-        <HudTile title="Flugschreiber" badge="SNAP" accent="var(--obs-blue)" span={1}>
-          <div className="obs-stat c-blue" style={{ marginBottom: 8 }}><div className="obs-stat-value">{data.system_snapshots.total}</div><div className="obs-stat-label">Snapshots im Zeitraum</div></div>
+        <HudTile title="Flugschreiber" badge="SNAP" accent="var(--obs-teal)" span={1}>
+          <div className="obs-stat c-teal" style={{ marginBottom: 8 }}><div className="obs-stat-value">{data.system_snapshots.total}</div><div className="obs-stat-label">Snapshots im Zeitraum</div></div>
           {data.system_snapshots.total === 0
             ? <div className="obs-empty">Keine Snapshots in diesem Zeitraum.</div>
             : (
