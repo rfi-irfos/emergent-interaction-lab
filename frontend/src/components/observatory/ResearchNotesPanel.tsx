@@ -3,7 +3,8 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudSectionHeader } from './Hud'
+import { HudTile, useHeaderActions, HudHeaderActions } from './Hud'
+import { ObsDonut } from './ObsDonut'
 import { RESEARCH_CATEGORY_LABELS, RESEARCH_NOTE_STATUS_LABELS } from '../../lib/labels'
 
 interface NoteOut {
@@ -138,8 +139,67 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
     }
   }
 
+  // Promoted to the shared page header (was its own HudSectionHeader mid-
+  // page) — the one real filter on Research Pulse.
+  useHeaderActions(
+    list.length > 0 ? (
+      <HudHeaderActions
+        filters={
+          <>
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+              <option value="">Alle Kategorien</option>
+              {ALL_CATEGORIES.map(c => <option key={c} value={c}>{RESEARCH_CATEGORY_LABELS[c] ?? c}</option>)}
+            </select>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
+              <option value="">Alle Status</option>
+              {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{RESEARCH_NOTE_STATUS_LABELS[v] ?? v}</option>)}
+            </select>
+          </>
+        }
+        action={
+          <ExportButtons
+            rows={filtered.map(n => ({
+              id: n.id,
+              category: n.category,
+              title: n.title,
+              body: n.body,
+              tags: n.tags,
+              status: n.status,
+              source: n.source,
+              created_at: n.created_at,
+              updated_at: n.updated_at,
+              source_conversation_id: n.source_conversation_id ?? '',
+            }))}
+            filenameBase="research-notes"
+            title="Research Notes"
+          />
+        }
+      />
+    ) : null,
+    [list, categoryFilter, statusFilter, filtered],
+  )
+
   return (
     <div className="obs-panel">
+      {/* Category-mix donut — Research Pulse had zero chart at all despite
+          having the exact same shape of categorical data every sibling
+          "activity mix" view (e.g. Behavioral Landscape) already turns into
+          one — confirmed by the last UI/UX audit. */}
+      {list.length > 0 && (
+        <div style={{ marginBottom: 18, maxWidth: 340 }}>
+          <HudTile title="Notizen nach Kategorie" accent="var(--obs-teal)" span={1}>
+            <ObsDonut
+              data={ALL_CATEGORIES.map(c => ({
+                label: RESEARCH_CATEGORY_LABELS[c] ?? c,
+                value: list.filter(n => n.category === c).length,
+                color: CATEGORY_ACCENT[c],
+              }))}
+              gradientIdPrefix="research-notes-category-mix"
+            />
+          </HudTile>
+        </div>
+      )}
+
       <div className="obs-card">
         <div className="obs-form" style={{ marginBottom: 0 }}>
           <input placeholder={placeholder} value={title} onChange={e => setTitle(e.target.value)} />
@@ -153,39 +213,7 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
         </div>
       </div>
 
-      {list.length > 0 && (
-        <HudSectionHeader
-          title="Notizen"
-          actions={
-            <>
-              <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
-                <option value="">Alle Kategorien</option>
-                {ALL_CATEGORIES.map(c => <option key={c} value={c}>{RESEARCH_CATEGORY_LABELS[c] ?? c}</option>)}
-              </select>
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 160px' }}>
-                <option value="">Alle Status</option>
-                {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{RESEARCH_NOTE_STATUS_LABELS[v] ?? v}</option>)}
-              </select>
-              <ExportButtons
-                rows={filtered.map(n => ({
-                  id: n.id,
-                  category: n.category,
-                  title: n.title,
-                  body: n.body,
-                  tags: n.tags,
-                  status: n.status,
-                  source: n.source,
-                  created_at: n.created_at,
-                  updated_at: n.updated_at,
-                  source_conversation_id: n.source_conversation_id ?? '',
-                }))}
-                filenameBase="research-notes"
-                title="Research Notes"
-              />
-            </>
-          }
-        />
-      )}
+      <div className="obs-section-label" style={{ marginTop: 18 }}>Notizen</div>
       {loading && !data && <HudSkeleton variant="list" />}
       {error && <div className="obs-empty">Fehler beim Laden.</div>}
       {list.length === 0 && !loading && !error && <div className="obs-empty">Noch keine Einträge.</div>}
