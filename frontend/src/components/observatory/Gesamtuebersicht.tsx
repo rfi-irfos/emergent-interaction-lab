@@ -6,7 +6,6 @@ import { ExportButtons } from './ExportButtons'
 import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
-import { ObsGauge } from './ObsGauge'
 
 // "Gesamtübersicht" — Laura's own words, verbatim-translated: "I simply live
 // my life, do my projects, and afterward I have ALL my user data spit out
@@ -74,6 +73,22 @@ function formatPercent(v: number): string {
 // table"), so its donut should read identically, not invent a new mapping.
 const LEVEL_DONUT_COLORS: Record<string, string> = {
   human: 'var(--obs-purple)', ai: 'var(--obs-blue)', interaction: 'var(--obs-teal)', system: 'var(--obs-amber)',
+}
+
+// A plain percentage bar row — same .obs-bar-row/.obs-bar-track/.obs-bar-fill
+// language as Bars() below, just for a single already-known 0-1 fraction
+// instead of a list of counts. Replaces CCET's two ObsGauge circles: at
+// this card's actual width (one of three equal cards in a row, not a full-
+// width tile of its own) a gauge's ring was too small for its own center
+// label to align inside it — a bar reads correctly at any width.
+function PercentBar({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="obs-bar-row">
+      <span style={{ width: 76, fontSize: 11, color: '#6b7280', fontWeight: 600, flexShrink: 0 }}>{label}</span>
+      <div className="obs-bar-track"><div className="obs-bar-fill" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, background: color }} /></div>
+      <span style={{ fontSize: 11, fontWeight: 800, color: '#3b6bf6', minWidth: 34, textAlign: 'right' }}>{formatPercent(value)}</span>
+    </div>
+  )
 }
 
 function Bars<T extends { count: number }>({ rows, labelKey, labelMap, color }: {
@@ -153,11 +168,12 @@ export function Gesamtuebersicht() {
   return (
     <div className="obs-panel">
 
-      {/* ── Chat (chat_conversations / chat_messages) — three cards only;
-          the raw conversation list below this used to duplicate what
-          Forschung's own sidebar already shows, with zero added value. */}
-      <div className="obs-section-label">Forschungsgespräche</div>
-      <div className="obs-grid" style={{ marginBottom: 22 }}>
+      {/* No section label, no separating gap — card directly next to card,
+          flowing straight into the grid below instead of reading as its own
+          boxed-off section. The raw conversation list that used to sit here
+          duplicated what Forschung's own sidebar already shows, zero added
+          value, so it's gone — these three numbers are what's left. */}
+      <div className="obs-grid" style={{ marginBottom: 14 }}>
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.chat.conversations_total}</div><div className="obs-stat-label">Gespräche</div></div>
         <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
         <div className="obs-stat c-teal"><div className="obs-stat-value">{data.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
@@ -207,14 +223,27 @@ export function Gesamtuebersicht() {
           }
         </HudTile>
 
-        <HudTile title="CCET — Co-Evolution" badge="KENNZ" accent="var(--obs-green)" span={3}>
-          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-            <ObsGauge value={data.ccet.cei} label="CEI" color="var(--obs-green)" valueFormat={formatPercent} />
-            <ObsGauge value={data.ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" valueFormat={formatPercent} />
-            <div className="obs-stat c-purple" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.cep}</div><div className="obs-stat-label">CEP</div></div>
-            <div className="obs-stat c-amber" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.turns_in_range}</div><div className="obs-stat-label">Turns im Zeitraum</div></div>
+        {/* CCET/Simulationen/Flugschreiber — three equal cards in one row,
+            not one oversized full-width tile plus two mismatched leftovers.
+            CCET's two ObsGauge circles are gone: at one-third-row width a
+            gauge's ring is too small for its own center label to sit inside
+            it cleanly (confirmed broken on the live page) — a percentage
+            bar reads correctly at any width, same idiom Simulationen's own
+            status breakdown already uses. */}
+        <HudTile
+          title="CCET — Co-Evolution"
+          badge="KENNZ"
+          accent="var(--obs-green)"
+          span={1}
+        >
+          <div
+            style={{ fontSize: 11, color: '#9aa0a8', marginBottom: 10, cursor: 'help' }}
+            title={data.ccet.definitions_note}
+          >
+            {data.ccet.turns_in_range} Turns im Zeitraum · {data.ccet.cep} CEP
           </div>
-          <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, margin: 0 }}>{data.ccet.definitions_note}</p>
+          <PercentBar label="CEI" value={data.ccet.cei} color="var(--obs-green)" />
+          <PercentBar label="Resonanz" value={data.ccet.resonance_frequency} color="var(--obs-teal)" />
         </HudTile>
 
         <HudTile title="Simulationen" badge="STATUS" accent="var(--obs-amber)" span={1}>
@@ -225,15 +254,13 @@ export function Gesamtuebersicht() {
           }
         </HudTile>
 
-        <HudTile title="Flugschreiber" badge="SNAP" accent="var(--obs-blue)" span={2}>
-          <div className="obs-grid">
-            <div className="obs-stat c-blue"><div className="obs-stat-value">{data.system_snapshots.total}</div><div className="obs-stat-label">Snapshots im Zeitraum</div></div>
-          </div>
+        <HudTile title="Flugschreiber" badge="SNAP" accent="var(--obs-blue)" span={1}>
+          <div className="obs-stat c-blue" style={{ marginBottom: 8 }}><div className="obs-stat-value">{data.system_snapshots.total}</div><div className="obs-stat-label">Snapshots im Zeitraum</div></div>
           {data.system_snapshots.total === 0
-            ? <div className="obs-empty" style={{ marginTop: 8 }}>Keine Snapshots in diesem Zeitraum.</div>
+            ? <div className="obs-empty">Keine Snapshots in diesem Zeitraum.</div>
             : (
-              <p style={{ fontSize: 12, color: '#9aa0a8', marginTop: 8 }}>
-                Zeitraum der aufgezeichneten Snapshots: {data.system_snapshots.earliest} bis {data.system_snapshots.latest}.
+              <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.5, margin: 0 }}>
+                {data.system_snapshots.earliest} bis {data.system_snapshots.latest}.
               </p>
             )
           }
