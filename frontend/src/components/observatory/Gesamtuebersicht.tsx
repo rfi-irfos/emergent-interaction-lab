@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
-import { hudStagger } from '../../lib/hudStagger'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ExportButtons } from './ExportButtons'
 import { HudGrid, HudTile, HudSectionHeader } from './Hud'
@@ -101,7 +100,7 @@ function Bars<T extends { count: number }>({ rows, labelKey, labelMap, color }: 
   )
 }
 
-export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
+export function Gesamtuebersicht() {
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<EverythingData>(`/api/observatory/everything?range=${range}`, [range])
 
@@ -134,7 +133,6 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
     <div className="obs-panel">
       <HudSectionHeader
         title="Gesamtübersicht"
-        sub="Alles, was diese Plattform über deine Forschungsaktivität aufgezeichnet hat, an einem Ort — nach Quelltabelle getrennt, damit jede Zahl nachvollziehbar bleibt."
         actions={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
@@ -145,47 +143,22 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
         }
       />
 
-      {/* ── Chat (chat_conversations / chat_messages) ─────────────────── */}
+      {/* ── Chat (chat_conversations / chat_messages) — three cards only;
+          the raw conversation list below this used to duplicate what
+          Forschung's own sidebar already shows, with zero added value. */}
       <div className="obs-section-label">Forschungsgespräche</div>
-      <div className="obs-grid" style={{ marginBottom: 8 }}>
+      <div className="obs-grid" style={{ marginBottom: 22 }}>
         <div className="obs-stat c-blue"><div className="obs-stat-value">{data.chat.conversations_total}</div><div className="obs-stat-label">Gespräche</div></div>
         <div className="obs-stat c-purple"><div className="obs-stat-value">{data.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
         <div className="obs-stat c-teal"><div className="obs-stat-value">{data.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
       </div>
-      <div className="obs-card">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-          <ExportButtons rows={data.chat.conversations.map(c => ({ ...c }))} filenameBase={`gesamtuebersicht-gespraeche-${range}`} title="Gesamtübersicht — Forschungsgespräche" />
-        </div>
-        {data.chat.conversations.length === 0
-          ? <div className="obs-empty">Keine Gespräche in diesem Zeitraum.</div>
-          : data.chat.conversations.map((c, i) => (
-              <div className="obs-item-card" key={c.id} style={hudStagger(i)}>
-                <div className="obs-item-title">{c.title}</div>
-                <div className="obs-item-meta">
-                  {c.created_at} · zuletzt aktualisiert {c.updated_at}
-                  {onOpenConversation && (
-                    <>
-                      {' · '}
-                      <button className="chat-inspect-toggle" style={{ fontSize: 11, padding: 0 }} onClick={() => onOpenConversation(c.id)}>
-                        öffnen ↗
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))
-        }
-      </div>
 
-      {/* ── Emergence Signals (emergence_signals) ─────────────────────── */}
-      <HudGrid cols={4}>
-        <HudTile
-          title="Emergenzsignale"
-          badge="EBENE"
-          accent="var(--obs-purple)"
-          span={2}
-          headerActions={<ExportButtons rows={data.emergence_signals.by_level.map(r => ({ ...r }))} filenameBase={`gesamtuebersicht-emergenzsignale-${range}`} title="Gesamtübersicht — Emergenzsignale nach Ebene" />}
-        >
+      {/* ── Everything else: one uniform 3-across grid of same-size tiles —
+          no per-tile export/filter controls (the single range selector +
+          export in the page header above governs the whole page, full
+          stop), no mixed span=4/2/1 sizes. */}
+      <HudGrid cols={3}>
+        <HudTile title="Emergenzsignale" badge="EBENE" accent="var(--obs-purple)" span={1}>
           <div style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 8 }}>{data.emergence_signals.total} Signale gesamt</div>
           {data.emergence_signals.by_level.length === 0
             ? <div className="obs-empty">Keine Emergenzsignale in diesem Zeitraum.</div>
@@ -198,14 +171,7 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
           }
         </HudTile>
 
-        {/* ── Research Notes (research_notes) ────────────────────────────── */}
-        <HudTile
-          title="Research Notes"
-          badge="KAT"
-          accent="var(--obs-blue)"
-          span={2}
-          headerActions={<ExportButtons rows={data.research_notes.by_category.map(r => ({ ...r }))} filenameBase={`gesamtuebersicht-research-notes-${range}`} title="Gesamtübersicht — Research Notes nach Kategorie" />}
-        >
+        <HudTile title="Research Notes" badge="KAT" accent="var(--obs-blue)" span={1}>
           <div style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 8 }}>{data.research_notes.total} Notes gesamt</div>
           {data.research_notes.by_category.length === 0
             ? <div className="obs-empty">Keine Research Notes in diesem Zeitraum.</div>
@@ -217,40 +183,31 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
             )
           }
         </HudTile>
-      </HudGrid>
 
-      {/* ── CCET (ccet_turns) ──────────────────────────────────────────── */}
-      <HudTile
-        title="CCET — Co-Evolution"
-        badge="KENNZ"
-        accent="var(--obs-green)"
-        span={4}
-        headerActions={
-          <ExportButtons
-            rows={[{ cei: data.ccet.cei, cep: data.ccet.cep, resonance_frequency: data.ccet.resonance_frequency, turns_considered: data.ccet.turns_considered, turns_in_range: data.ccet.turns_in_range }]}
-            filenameBase={`gesamtuebersicht-ccet-${range}`}
-            title="Gesamtübersicht — CCET"
-          />
-        }
-      >
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-          <ObsGauge value={data.ccet.cei} label="CEI" color="var(--obs-green)" valueFormat={formatPercent} />
-          <ObsGauge value={data.ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" valueFormat={formatPercent} />
-          <div className="obs-stat c-purple" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.cep}</div><div className="obs-stat-label">CEP</div></div>
-          <div className="obs-stat c-amber" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.turns_in_range}</div><div className="obs-stat-label">Turns im Zeitraum</div></div>
-        </div>
-        <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, margin: 0 }}>{data.ccet.definitions_note}</p>
-      </HudTile>
+        <HudTile title="Jarvis-Werkzeuge" badge="TOOL" accent="var(--obs-red)" span={1}>
+          <div style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 8 }}>{data.agent_tool_calls.total} Aufrufe gesamt</div>
+          {data.agent_tool_calls.by_tool.length === 0
+            ? <div className="obs-empty">Keine Werkzeugaufrufe in diesem Zeitraum.</div>
+            : (
+              <ObsDonut
+                data={foldIntoOther(data.agent_tool_calls.by_tool.map(b => ({ label: TOOL_LABELS[b.tool] ?? b.tool, value: b.count })))}
+                gradientIdPrefix="gesamtuebersicht-tool-calls"
+              />
+            )
+          }
+        </HudTile>
 
-      <HudGrid cols={4}>
-        {/* ── Simulation Runs (simulation_runs) ──────────────────────────── */}
-        <HudTile
-          title="Simulationen"
-          badge="STATUS"
-          accent="var(--obs-amber)"
-          span={2}
-          headerActions={<ExportButtons rows={data.simulation_runs.by_status.map(r => ({ ...r }))} filenameBase={`gesamtuebersicht-simulationen-${range}`} title="Gesamtübersicht — Simulationen nach Status" />}
-        >
+        <HudTile title="CCET — Co-Evolution" badge="KENNZ" accent="var(--obs-green)" span={3}>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+            <ObsGauge value={data.ccet.cei} label="CEI" color="var(--obs-green)" valueFormat={formatPercent} />
+            <ObsGauge value={data.ccet.resonance_frequency} label="Resonance Frequency" color="var(--obs-teal)" valueFormat={formatPercent} />
+            <div className="obs-stat c-purple" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.cep}</div><div className="obs-stat-label">CEP</div></div>
+            <div className="obs-stat c-amber" style={{ flex: '0 1 150px' }}><div className="obs-stat-value">{data.ccet.turns_in_range}</div><div className="obs-stat-label">Turns im Zeitraum</div></div>
+          </div>
+          <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, margin: 0 }}>{data.ccet.definitions_note}</p>
+        </HudTile>
+
+        <HudTile title="Simulationen" badge="STATUS" accent="var(--obs-amber)" span={1}>
           <div style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 8 }}>{data.simulation_runs.total} Simulationen gesamt</div>
           {data.simulation_runs.by_status.length === 0
             ? <div className="obs-empty">Keine Simulationsläufe in diesem Zeitraum.</div>
@@ -258,7 +215,6 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
           }
         </HudTile>
 
-        {/* ── System Snapshots / Flugschreiber (system_snapshots) ────────── */}
         <HudTile title="Flugschreiber" badge="SNAP" accent="var(--obs-blue)" span={2}>
           <div className="obs-grid">
             <div className="obs-stat c-blue"><div className="obs-stat-value">{data.system_snapshots.total}</div><div className="obs-stat-label">Snapshots im Zeitraum</div></div>
@@ -269,26 +225,6 @@ export function Gesamtuebersicht({ onOpenConversation }: { onOpenConversation?: 
               <p style={{ fontSize: 12, color: '#9aa0a8', marginTop: 8 }}>
                 Zeitraum der aufgezeichneten Snapshots: {data.system_snapshots.earliest} bis {data.system_snapshots.latest}.
               </p>
-            )
-          }
-        </HudTile>
-
-        {/* ── Agent Tool Calls (agent_tool_calls) ────────────────────────── */}
-        <HudTile
-          title="Jarvis-Werkzeuge"
-          badge="TOOL"
-          accent="var(--obs-red)"
-          span={2}
-          headerActions={<ExportButtons rows={data.agent_tool_calls.by_tool.map(r => ({ ...r }))} filenameBase={`gesamtuebersicht-werkzeugaufrufe-${range}`} title="Gesamtübersicht — Jarvis-Werkzeugaufrufe" />}
-        >
-          <div style={{ fontSize: 12, color: '#9aa0a8', marginBottom: 8 }}>{data.agent_tool_calls.total} Aufrufe gesamt</div>
-          {data.agent_tool_calls.by_tool.length === 0
-            ? <div className="obs-empty">Keine Werkzeugaufrufe in diesem Zeitraum.</div>
-            : (
-              <ObsDonut
-                data={foldIntoOther(data.agent_tool_calls.by_tool.map(b => ({ label: TOOL_LABELS[b.tool] ?? b.tool, value: b.count })))}
-                gradientIdPrefix="gesamtuebersicht-tool-calls"
-              />
             )
           }
         </HudTile>

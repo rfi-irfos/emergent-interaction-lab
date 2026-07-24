@@ -316,7 +316,6 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               {!sidebarCollapsed && 'Website Kit'}
             </button>
 
-            {!sidebarCollapsed && <div className="crm-nav-group-label">Observatory</div>}
             {(['research', 'system', 'technical'] as ObservatoryTier[]).map(tier => (
               <div key={tier}>
                 {!sidebarCollapsed && <div className="crm-nav-group-label crm-nav-group-label--tier">{TIER_LABELS[tier]}</div>}
@@ -429,7 +428,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
             {/* ── ANALYTICS TAB ──────────────────────────────────────────── */}
             {adminSection === 'analytics' && (
-              <Analytics onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
+              <Analytics />
             )}
 
             {/* ── MONETIZATION TAB ───────────────────────────────────────── */}

@@ -80,7 +80,7 @@ function trendAxisLabel(n: number, i: number, bucket: string): string {
 /// folded in rather than kept as its own top-level sidebar app, so the
 /// sidebar stays leaner. Its own data/fetching is untouched; only its entry
 /// point moved.
-export function Analytics({ onOpenConversation }: { onOpenConversation?: (conversationId: string) => void } = {}) {
+export function Analytics() {
   // Retrospective day/week breakdown (see backend/src/analytics.rs's
   // `?bucket=day|week&days=N`) — everything else on this page is an
   // all-time or fixed-window total; this is the one view that answers "what
@@ -92,7 +92,7 @@ export function Analytics({ onOpenConversation }: { onOpenConversation?: (conver
     [bucket, days],
   )
 
-  const gesamtuebersicht = <Gesamtuebersicht onOpenConversation={onOpenConversation} />
+  const gesamtuebersicht = <Gesamtuebersicht />
 
   if (loading) return <div className="obs-stacked-views"><div className="obs-panel"><HudSkeleton variant="stats" rows={8} /></div>{gesamtuebersicht}</div>
   if (error) return <div className="obs-stacked-views"><div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>{gesamtuebersicht}</div>
