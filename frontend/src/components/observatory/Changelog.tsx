@@ -204,7 +204,17 @@ export function Changelog() {
           className={`crm-audit-chain-badge ${verify.chain_intact ? 'intact' : 'broken'}`}
           title={verify.chain_intact ? `Kette intakt über ${verify.total} Einträge` : `Kette gebrochen bei Eintrag ${verify.broken_at_id}`}
         >
-          {verify.chain_intact ? `Kette intakt ✓ (${verify.total} Einträge)` : `Kette gebrochen ▲ bei Eintrag ${verify.broken_at_id}`}
+          {/* This badge's CSS (.crm-audit-chain-badge) is shared with the small
+              sidebar widget, where `white-space: nowrap; flex-shrink: 0` is fine
+              in a narrow row. Here it sits in an already-packed page header
+              (2 selects, 2 date pickers, a search input, an export button) —
+              the full `broken_at_id` UUID inline would force the whole header
+              to overflow exactly in the one state (a broken hash chain) where
+              this needs to stay readable. Shortened to the ID's first 8 chars;
+              the full ID is still in the `title` tooltip above. */}
+          {verify.chain_intact
+            ? `Kette intakt ✓ (${verify.total} Einträge)`
+            : `Kette gebrochen ▲ bei Eintrag ${verify.broken_at_id?.slice(0, 8) ?? '?'}…`}
         </span>
       )}
       {!verify && !verifying && <span className="obs-item-meta" style={{ margin: 0 }}>Noch nicht geprüft.</span>}
