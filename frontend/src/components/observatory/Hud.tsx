@@ -176,6 +176,69 @@ export function HudSectionHeader({ title, sub, tabs, actions }: {
     </header>
   )
 }
+/// ONE filter control instead of N loose dropdowns crammed into the header
+/// row. Born from EmergenceMonitor's toolbar ("what the hell is this filter?
+/// can there be ONE single filter with dropdowns please?" — Laura's dad,
+/// looking at 5 always-visible `<select>`s wrapping onto their own line).
+/// A single trigger button (shows how many filters are actually active)
+/// opens a popover holding every filter dimension, stacked — the dimensions
+/// themselves are still whatever `children` the caller passes in (plain
+/// `<label className="filter-panel-field">` + `<select>` pairs), this
+/// component only owns the show/hide chrome and the "N active" affordance,
+/// so it's reusable wherever a page has more than one or two filter
+/// dropdowns (Simulation Center, Analytics, etc. can adopt it later without
+/// inventing a second version of this pattern).
+export function FilterPanel({ activeCount, onReset, resetLabel = 'Filter zurücksetzen', children }: {
+  /** How many of the filters inside are currently non-default — drives the trigger's badge. */
+  activeCount: number
+  /** Clears every filter inside at once. Omit if the caller has nothing to reset (rare). */
+  onReset?: () => void
+  resetLabel?: string
+  children?: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="filter-panel" ref={rootRef}>
+      <button
+        type="button"
+        className={`filter-panel-trigger${activeCount > 0 ? ' active' : ''}`}
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+        Filter
+        {activeCount > 0 && <span className="filter-panel-count">{activeCount}</span>}
+      </button>
+      {open && (
+        <div className="filter-panel-popover" role="dialog" aria-label="Filter">
+          <div className="filter-panel-fields">{children}</div>
+          {onReset && activeCount > 0 && (
+            <button type="button" className="filter-panel-reset" onClick={onReset}>{resetLabel}</button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function HudStat({ value, label, format, accent }: {
   value: number
   label: string

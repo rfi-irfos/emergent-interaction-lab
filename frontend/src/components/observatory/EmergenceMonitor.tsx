@@ -4,7 +4,7 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { HudGrid, HudTile, useHeaderActions } from './Hud'
+import { FilterPanel, HudGrid, HudTile, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { STATUS_ACCENT } from './registry'
@@ -294,61 +294,68 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
     }
   }
 
+  const activeFilterCount = [levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter].filter(Boolean).length
+
   // Previously all 5 filters + 2 action buttons + ExportButtons sat in one
-  // flat, unwrapping flex row — "5 filter dropdowns + 2 action buttons
-  // crammed into a single row with no grouping," the worst offender count
-  // in the app per the design review. Split into two visually distinct
-  // clusters (em-toolbar-filters / em-toolbar-actions, see App.css) with a
-  // divider between them, matching the same filters/action separation
-  // HudHeaderActions already models for other apps — and `.em-toolbar`
-  // is allowed to drop onto its own full-width line under the page title
-  // instead of fighting the title/description for the same strict one-line
-  // header row (see the `:has(.em-toolbar)` override in App.css).
+  // flat, unwrapping flex row (then, one round of feedback later, two
+  // clustered-but-still-always-visible rows) — "what the hell is this
+  // filter? can there be ONE single filter with dropdowns please?" per
+  // Laura's dad. Now it's ONE trigger (FilterPanel, see Hud.tsx) holding all
+  // 5 dimensions in a popover, small enough to sit directly among the
+  // action buttons in the normal one-line header actions row like every
+  // other app — no more full-width wrapped toolbar override needed.
   useHeaderActions(
-    <div className="em-toolbar">
-      <div className="em-toolbar-filters">
-        <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Ebenen</option>
-          {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-        </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Status</option>
-          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Konfidenzen</option>
-          {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Verläufe</option>
-          {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
-        </select>
-        <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-          <option value="">Alle Signale</option>
-          <option value="true">Nur verifiziert</option>
-        </select>
-        {filtersActive && (
-          <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
-            Filter zurücksetzen
-          </button>
-        )}
-      </div>
-      <div className="em-toolbar-divider" aria-hidden="true" />
-      <div className="em-toolbar-actions">
-        <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
-          {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
-        </button>
-        <button
-          className="panel-add-btn"
-          disabled={signals.length === 0}
-          onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
-        >
-          ⬇ JSON
-        </button>
-        <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
-      </div>
-    </div>,
-    [levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter, filtersActive, analyzing, signals],
+    <>
+      <FilterPanel activeCount={activeFilterCount} onReset={resetFilters}>
+        <label className="filter-panel-field">
+          <span>Ebene</span>
+          <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)}>
+            <option value="">Alle Ebenen</option>
+            {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
+        </label>
+        <label className="filter-panel-field">
+          <span>Status</span>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="">Alle Status</option>
+            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </label>
+        <label className="filter-panel-field">
+          <span>Konfidenz</span>
+          <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)}>
+            <option value="">Alle Konfidenzen</option>
+            {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </label>
+        <label className="filter-panel-field">
+          <span>Verlauf</span>
+          <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)}>
+            <option value="">Alle Verläufe</option>
+            {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </label>
+        <label className="filter-panel-field">
+          <span>Signale</span>
+          <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)}>
+            <option value="">Alle Signale</option>
+            <option value="true">Nur verifiziert</option>
+          </select>
+        </label>
+      </FilterPanel>
+      <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
+        {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
+      </button>
+      <button
+        className="panel-add-btn"
+        disabled={signals.length === 0}
+        onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
+      >
+        ⬇ JSON
+      </button>
+      <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
+    </>,
+    [levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter, activeFilterCount, analyzing, signals],
   )
 
   if (loading && signals.length === 0) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>

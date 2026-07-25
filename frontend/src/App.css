@@ -3641,28 +3641,61 @@ button { cursor: pointer; font-family: inherit; }
 .hud-section-tabs { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
 .hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; flex-shrink: 0; margin-left: auto; }
 
-/* EmergenceMonitor's toolbar (5 filters + 2 action buttons + export) — the
-   worst "everything crammed in one row" offender in the app. Two visually
-   distinct clusters (filters vs actions) instead of one flat row, and the
-   whole toolbar is allowed to wrap onto its own full-width line below the
-   page title rather than fighting the title/description for the strict
-   one-line .hud-section-actions row every other (much shorter) app header
-   fits fine. */
-.hud-section-actions:has(.em-toolbar) {
-  flex-basis: 100%; flex-wrap: wrap; margin-left: 0; margin-top: 10px;
+/* FilterPanel — ONE trigger instead of N loose `<select>`s crammed into the
+   header row (born from EmergenceMonitor: "what the hell is this filter?
+   can there be ONE single filter with dropdowns please?"). Small enough to
+   sit directly in .hud-section-actions with the other action buttons, no
+   longer needs its own full-width wrapped row the way the old 5-select
+   .em-toolbar did — that's the entire point of collapsing it into one
+   control. See Hud.tsx's `FilterPanel` for the component this styles. */
+.filter-panel { position: relative; flex-shrink: 0; }
+.filter-panel-trigger {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(150,156,170,.08); border: 1px solid rgba(150,156,170,.22);
+  color: var(--panel-text-dim, #4b5563); border-radius: 8px;
+  padding: 6px 12px; font-size: 12.5px; font-weight: 600; transition: .15s;
 }
-.em-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
-.em-toolbar-filters, .em-toolbar-actions {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 6px 10px; border-radius: 9px;
-  background: rgba(150,156,170,.06); border: 1px solid rgba(150,156,170,.14);
+.filter-panel-trigger:hover { border-color: rgba(150,156,170,.4); }
+.filter-panel-trigger.active {
+  background: rgba(59,107,246,.1); border-color: rgba(59,107,246,.4); color: #3b6bf6;
 }
-.observatory-hud .em-toolbar-filters, .observatory-hud .em-toolbar-actions,
-.gotham .em-toolbar-filters, .gotham .em-toolbar-actions {
-  background: rgba(52,225,255,.045); border-color: rgba(52,225,255,.14);
+.observatory-hud .filter-panel-trigger, .gotham .filter-panel-trigger {
+  background: rgba(52,225,255,.045); border-color: rgba(52,225,255,.16); color: rgba(226,241,245,.75);
 }
-.em-toolbar-divider { width: 1px; height: 22px; background: rgba(150,156,170,.2); flex-shrink: 0; }
-@media (max-width: 900px) { .em-toolbar-divider { display: none; } }
+.observatory-hud .filter-panel-trigger:hover, .gotham .filter-panel-trigger:hover { border-color: rgba(52,225,255,.35); }
+.observatory-hud .filter-panel-trigger.active, .gotham .filter-panel-trigger.active {
+  background: rgba(34,211,238,.12); border-color: var(--hud-cyan, #22d3ee); color: var(--hud-cyan, #22d3ee);
+}
+.filter-panel-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  background: currentColor; font-size: 10px; font-weight: 800;
+}
+/* currentColor as the badge fill means the digit itself needs the inverse
+   color, not currentColor again — set explicitly rather than fighting
+   inheritance. */
+.filter-panel-trigger .filter-panel-count { color: #fff; }
+.observatory-hud .filter-panel-trigger.active .filter-panel-count,
+.gotham .filter-panel-trigger.active .filter-panel-count { color: #03141a; }
+.filter-panel-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40;
+  min-width: 240px; padding: 12px; border-radius: 10px;
+  background: #fff; border: 1px solid rgba(15,23,42,.12);
+  box-shadow: 0 12px 32px rgba(0,0,0,.18);
+}
+.observatory-hud .filter-panel-popover, .gotham .filter-panel-popover {
+  background: #0d141f; border-color: rgba(34,211,238,.22); box-shadow: 0 12px 32px rgba(0,0,0,.5);
+}
+.filter-panel-fields { display: flex; flex-direction: column; gap: 10px; }
+.filter-panel-field { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 700; letter-spacing: .02em; color: var(--panel-text-dim, #6b7280); text-transform: uppercase; }
+.observatory-hud .filter-panel-field, .gotham .filter-panel-field { color: rgba(226,241,245,.55); }
+.filter-panel-field select { width: 100%; }
+.filter-panel-reset {
+  width: 100%; margin-top: 10px; padding: 7px 10px; border-radius: 7px;
+  background: transparent; border: 1px solid rgba(150,156,170,.25);
+  color: var(--panel-text-dim, #4b5563); font-size: 12px; font-weight: 600;
+}
+.filter-panel-reset:hover { border-color: rgba(239,68,68,.5); color: #ef4444; }
 @media (max-width: 720px) {
   /* Below this width there's no honest way to keep everything on one line
      without the description disappearing entirely or the actions
