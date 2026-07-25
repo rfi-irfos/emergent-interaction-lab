@@ -6,6 +6,7 @@ import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { useHeaderActions, HudHeaderActions } from './Hud'
 import { BLOG_STATUS_LABELS } from '../../lib/labels'
+import { excerpt } from '../../lib/textExcerpt'
 
 interface BlogPost {
   id: string
@@ -27,21 +28,6 @@ interface BlogPost {
 // Already-absolute URLs (none today, but defensive) pass through untouched.
 function imgSrc(url: string): string {
   return /^https?:\/\//.test(url) ? url : `${API_BASE}${url}`
-}
-
-// A draft's body is a full article — unlike a research note or a chat
-// message, this is realistically several paragraphs long. Rendering it in
-// full inline in the collapsed list view meant a card per multi-paragraph
-// article, and scrolling past even a handful of drafts meant scrolling past
-// thousands of words with no reason to — the full text is already reachable
-// one click away via "Bearbeiten". Excerpted to the first ~220 chars at a
-// word boundary; full body still exports untouched (see rows= below).
-const EXCERPT_LENGTH = 220
-function excerpt(body: string): string {
-  if (body.length <= EXCERPT_LENGTH) return body
-  const cut = body.slice(0, EXCERPT_LENGTH)
-  const lastSpace = cut.lastIndexOf(' ')
-  return `${cut.slice(0, lastSpace > 0 ? lastSpace : EXCERPT_LENGTH)}…`
 }
 
 /// Surfaces the blog_posts table (drafted by Jarvis via draft_blog_post, or

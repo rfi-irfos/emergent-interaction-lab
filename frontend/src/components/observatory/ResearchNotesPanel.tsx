@@ -6,6 +6,7 @@ import { HudSkeleton } from './HudSkeleton'
 import { HudTile, useHeaderActions, HudHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { RESEARCH_CATEGORY_LABELS, RESEARCH_NOTE_STATUS_LABELS } from '../../lib/labels'
+import { excerpt } from '../../lib/textExcerpt'
 
 interface NoteOut {
   id: string
@@ -81,6 +82,13 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
   const [saving, setSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // Unlike BlogDrafts.tsx, a note has no separate edit view that reveals its
+  // full text — this card IS the only place to read it. A paper/hypothesis
+  // note is realistically long-form, so rendering it in full by default made
+  // a real note several screens tall; but simply excerpting it the way
+  // BlogDrafts does would remove the only way to read it. Per-card expand
+  // state instead: excerpt by default, full text on click, no text lost.
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   // Client-side only — the list is already fully loaded (all 6 categories at
   // once) and both status and category have small closed vocabularies, so
   // there's no reason to round-trip to the backend for either filter.
@@ -241,7 +249,22 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
                 </>
               )}
             </div>
-            <div className="obs-item-body">{n.body}</div>
+            <div className="obs-item-body">
+              {expandedId === n.id || n.body.length <= 220 ? n.body : excerpt(n.body)}
+              {n.body.length > 220 && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="chat-inspect-toggle"
+                    style={{ fontSize: 11, padding: 0 }}
+                    onClick={() => setExpandedId(id => (id === n.id ? null : n.id))}
+                  >
+                    {expandedId === n.id ? 'weniger anzeigen' : 'mehr anzeigen'}
+                  </button>
+                </>
+              )}
+            </div>
             {tags.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 9 }}>
                 {tags.map((t, i) => (
