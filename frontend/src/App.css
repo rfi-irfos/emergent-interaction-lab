@@ -2675,9 +2675,25 @@ button { cursor: pointer; font-family: inherit; }
 .crm-body:has(> .forschung-view) { overflow: hidden; padding-bottom: 20px; display: flex; flex-direction: column; }
 /* Website Kit needs a full-bleed, fixed-height two-pane layout (canvas +
    resizable settings panel), unlike every other section which just scrolls
-   inside the padded crm-body — let it take over completely when active. */
-.crm-body:has(> .website-kit) { padding: 0; overflow: hidden; display: flex; }
-.website-kit { display: flex; flex-direction: column; width: 100%; min-height: 0; }
+   inside the padded crm-body — let it take over completely when active.
+   ROOT CAUSE of the "hero title/description squeezed" report (previous fix
+   attempt in c7d82e0 targeted a @container breakpoint deep inside the canvas
+   preview and didn't touch this): this rule set `display: flex` on
+   .crm-body WITHOUT `flex-direction: column`, unlike the otherwise-identical
+   .crm-body:has(> .forschung-view) rule right above it. Flex defaults to
+   ROW, so the page's own <HudSectionHeader> ("Website Kit" title + its
+   description) and the .website-kit builder div became side-by-side flex
+   items instead of stacked — the builder's `width: 100%` demand ate nearly
+   all the row's width, squeezing the header (title butting straight into
+   the description with no room) into a sliver on the left. Adding
+   flex-direction: column stacks them as intended; .website-kit gets
+   flex: 1 1 auto so it still fills the remaining height. Since padding is 0
+   here (by design, for the full-bleed canvas), the header needs its own
+   padding restored so it doesn't sit flush against the viewport edge like
+   every other page's title does. */
+.crm-body:has(> .website-kit) { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.crm-body:has(> .website-kit) .hud-section-header { padding: 18px 28px 0; flex-shrink: 0; }
+.website-kit { display: flex; flex-direction: column; width: 100%; min-height: 0; flex: 1 1 auto; }
 .website-kit .builder-device-switch { margin: 10px 16px; flex-shrink: 0; align-self: flex-start; }
 
 /* ── SIDEBAR COLLAPSE ─────────────────────────────────────────────────────── */
