@@ -276,6 +276,26 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
     }).filter(|s| *s >= 0.0).collect();
     let mean_latency_s = if !latencies.is_empty() { Some(latencies.iter().sum::<f64>() / latencies.len() as f64) } else { None };
 
+    // Reverse direction: assistant message → the NEXT user message in the
+    // same conversation — "time to first response" for the human side, i.e.
+    // how quickly Laura reacts to Jarvis's output. Same pairing convention
+    // as the forward query above (proximity within the conversation, not id
+    // linkage), same sample cap, same parse-and-filter pipeline — only the
+    // roles are swapped. Read as the human half of the pacing signal.
+    let reverse_pairs: Vec<(String,String,String,String)> = sqlx::query_as(
+        "SELECT a.conversation_id, a.created_at, b.role, b.created_at FROM chat_messages a
+         JOIN chat_messages b ON b.conversation_id = a.conversation_id AND b.created_at > a.created_at
+         WHERE a.role='assistant' AND b.role='user'
+         AND b.created_at = (SELECT MIN(c.created_at) FROM chat_messages c WHERE c.conversation_id = a.conversation_id AND c.created_at > a.created_at AND c.role='user')
+         ORDER BY a.created_at DESC LIMIT 100"
+    ).fetch_all(db).await.unwrap_or_default();
+    let reverse_latencies: Vec<f64> = reverse_pairs.iter().filter_map(|(_, asst_ts, _, user_ts)| {
+        let a = chrono::NaiveDateTime::parse_from_str(asst_ts, "%Y-%m-%d %H:%M:%S").ok()?;
+        let u = chrono::NaiveDateTime::parse_from_str(user_ts, "%Y-%m-%d %H:%M:%S").ok()?;
+        Some((u - a).num_milliseconds() as f64 / 1000.0)
+    }).filter(|s| *s >= 0.0).collect();
+    let reverse_latency_s = if !reverse_latencies.is_empty() { Some(reverse_latencies.iter().sum::<f64>() / reverse_latencies.len() as f64) } else { None };
+
     // Lifetime token + reasoning accounting for the Forschung KPI wall's
     // "Token & Reasoning" tile. All-time (same convention as the other
     // `*_messages` totals above — these back a cumulative KPI, not the
@@ -316,6 +336,8 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "mean_token_confidence": mean_confidence,
         "mean_latency_seconds": mean_latency_s,
         "latency_sample_size": latencies.len(),
+        "reverse_latency_seconds": reverse_latency_s,
+        "reverse_latency_sample_size": reverse_latencies.len(),
         "total_prompt_tokens": total_prompt_tokens,
         "total_completion_tokens": total_completion_tokens,
         "total_reasoning_ms": total_reasoning_ms,
@@ -1165,6 +1187,62 @@ mod tests {
         assert_eq!(body["range"], "30d");
         let day_total: i64 = body["messages_by_day"].as_array().unwrap().iter().map(|d| d["count"].as_i64().unwrap()).sum();
         assert_eq!(day_total, 0, "the 400-day-old message must not count under the 30d default: {body}");
+    }
+
+    // ── human_ai: reverse latency (assistant → next user, "time to first
+    //    response" in the human direction) ─────────────────────────────────
+
+    #[tokio::test]
+    async fn test_reverse_latency_computes_gap() {
+        let state = test_state().await;
+        // user 10:00:00 → assistant 10:00:05 (forward gap 5s)
+        //               → next user 10:01:05 (reverse gap 60s)
+        for (id, role, ts) in [
+            ("m1", "user", "2026-07-20 10:00:00"),
+            ("m2", "assistant", "2026-07-20 10:00:05"),
+            ("m3", "user", "2026-07-20 10:01:05"),
+        ] {
+            sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES (?1,'c1',?2,'x',?3)")
+                .bind(id).bind(role).bind(ts)
+                .execute(&state.db).await.unwrap();
+        }
+
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(HumanAiQuery { range: None }))
+            .await
+            .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert_eq!(body["mean_latency_seconds"].as_f64().unwrap(), 5.0, "forward gap unchanged: {body}");
+        assert_eq!(
+            body["reverse_latency_seconds"].as_f64().unwrap(), 60.0,
+            "assistant at 10:00:05 → next user at 10:01:05 is a 60s reverse gap: {body}"
+        );
+        assert_eq!(body["reverse_latency_sample_size"], 1, "{body}");
+    }
+
+    #[tokio::test]
+    async fn test_reverse_latency_null_without_a_user_reply_after_assistant() {
+        let state = test_state().await;
+        // Only user → assistant; the human never reacted, so there is no
+        // reverse pair and the field must honestly be null, not 0.
+        for (id, role, ts) in [
+            ("m1", "user", "2026-07-20 10:00:00"),
+            ("m2", "assistant", "2026-07-20 10:00:05"),
+        ] {
+            sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES (?1,'c1',?2,'x',?3)")
+                .bind(id).bind(role).bind(ts)
+                .execute(&state.db).await.unwrap();
+        }
+
+        let res = human_ai(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxQuery(HumanAiQuery { range: None }))
+            .await
+            .into_response();
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert!(body["reverse_latency_seconds"].is_null(), "{body}");
+        assert_eq!(body["reverse_latency_sample_size"], 0, "{body}");
     }
 
     /// Shared fixture for the two tests above: one message 400 days old,
