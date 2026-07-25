@@ -29,6 +29,21 @@ function imgSrc(url: string): string {
   return /^https?:\/\//.test(url) ? url : `${API_BASE}${url}`
 }
 
+// A draft's body is a full article — unlike a research note or a chat
+// message, this is realistically several paragraphs long. Rendering it in
+// full inline in the collapsed list view meant a card per multi-paragraph
+// article, and scrolling past even a handful of drafts meant scrolling past
+// thousands of words with no reason to — the full text is already reachable
+// one click away via "Bearbeiten". Excerpted to the first ~220 chars at a
+// word boundary; full body still exports untouched (see rows= below).
+const EXCERPT_LENGTH = 220
+function excerpt(body: string): string {
+  if (body.length <= EXCERPT_LENGTH) return body
+  const cut = body.slice(0, EXCERPT_LENGTH)
+  const lastSpace = cut.lastIndexOf(' ')
+  return `${cut.slice(0, lastSpace > 0 ? lastSpace : EXCERPT_LENGTH)}…`
+}
+
 /// Surfaces the blog_posts table (drafted by Jarvis via draft_blog_post, or
 /// by a human here directly) — previously invisible: the backend had full
 /// CRUD from day one, but nothing in the frontend ever listed these rows.
@@ -274,7 +289,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                   </>
                 )}
               </div>
-              <div className="obs-item-body">{p.body}</div>
+              <div className="obs-item-body">{excerpt(p.body)}</div>
               {p.images && p.images.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
                   {p.images.map(url => (
