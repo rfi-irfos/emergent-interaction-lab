@@ -1,6 +1,8 @@
 mod agent;
 mod analytics;
 mod analytics_communication;
+mod analytics_decisions;
+mod analytics_resolution;
 mod anomaly;
 mod auditlog;
 mod auth;

@@ -322,6 +322,22 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
     }).filter(|s| *s >= 0.0).collect();
     let reverse_latency_s = if !reverse_latencies.is_empty() { Some(reverse_latencies.iter().sum::<f64>() / reverse_latencies.len() as f64) } else { None };
 
+    // Decision-Making (Wave 1 / Task 6, framework v2.1 Dimension 2) and
+    // Dyad clarification-efficiency (Wave 1 / Task 8) — folded across every
+    // conversation (human_ai is conversation-agnostic; the per-conversation
+    // shapes live in analytics_decisions/analytics_resolution for a future
+    // drilldown). accept_modify_reject is the {accepted,modified,rejected,
+    // total,modify_ratio,reject_ratio} object over message_revisions;
+    // decision_latency_seconds is the mean gap from an AI reply to the
+    // revision that reacted to it. clarification_efficiency_seconds is the
+    // mean gap from a hallucination 'mismatch' to Laura's next message;
+    // repair_success_ratio is the fraction of error/mismatch events a prompt
+    // human turn followed. All None/null on honest-empty, never fabricated.
+    let accept_modify_reject = crate::analytics_decisions::accept_modify_reject_global(db).await;
+    let decision_latency_s = crate::analytics_decisions::decision_latency_global(db).await;
+    let clarification_efficiency_s = crate::analytics_resolution::clarification_efficiency_global(db).await;
+    let repair_success_ratio = crate::analytics_resolution::repair_success_global(db).await;
+
     // Lifetime token + reasoning accounting for the Forschung KPI wall's
     // "Token & Reasoning" tile. All-time (same convention as the other
     // `*_messages` totals above — these back a cumulative KPI, not the
@@ -364,6 +380,10 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "latency_sample_size": latencies.len(),
         "reverse_latency_seconds": reverse_latency_s,
         "reverse_latency_sample_size": reverse_latencies.len(),
+        "accept_modify_reject": accept_modify_reject,
+        "decision_latency_seconds": decision_latency_s,
+        "clarification_efficiency_seconds": clarification_efficiency_s,
+        "repair_success_ratio": repair_success_ratio,
         "avg_prompt_length": avg_prompt_length,
         "avg_structured_prompt_ratio": avg_structured_prompt_ratio,
         "avg_constraint_density": avg_constraint_density,
