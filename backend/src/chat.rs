@@ -413,6 +413,132 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+
+    // Session/task boundary (deep self-analysis, Wave 1 Task 7). Before this
+    // column a conversation had NO notion of a task ever starting or ending —
+    // only created_at/updated_at — so Dimension 8 (Persistence) metrics like
+    // task-completion-rate had literally nothing to read. Values:
+    //   'open'      — conversation exists, no task activity observed yet
+    //   'active'    — a task/exchange is in flight (last user message was a
+    //                 normal turn, within the idle boundary)
+    //   'completed' — closed heuristically: either the user signalled done
+    //                 ("fertig"/"done"/"erledigt"/"danke"/"thanks") or the
+    //                 conversation sat 'active' past TASK_IDLE_BOUNDARY
+    //   'abandoned' — reserved for future explicit-abandon signals (e.g. a
+    //                 message_revisions 'abandon' row); never set
+    //                 automatically yet, but part of the declared state space
+    //                 so readers don't have to migrate later.
+    // Heuristic, honestly labelled as such — same doctrine as the anomaly
+    // watchdog's refusal keyword-scan (see anomaly.rs). Additive, same
+    // convention as chat_conversations.kind above.
+    sqlx::query("ALTER TABLE chat_conversations ADD COLUMN task_state TEXT NOT NULL DEFAULT 'open'")
+        .execute(db)
+        .await
+        .ok();
+}
+
+// ── session/task boundary heuristics (deep self-analysis, Wave 1 Task 7) ────
+
+/// The idle gap after which an 'active' conversation is considered done with
+/// its task: no follow-up inside this window means the exchange concluded.
+/// Expressed as an SQLite datetime modifier so the comparison happens in the
+/// DB against the same clock that wrote `updated_at`.
+const TASK_IDLE_BOUNDARY: &str = "-30 minutes";
+
+/// Keyword heuristic for explicit completion intent in a user message. A
+/// deliberate keyword scan, not NLU — same honesty contract as the anomaly
+/// watchdog's `refusal_triggered` heuristic (anomaly.rs). Matched on word
+/// boundaries (alphanumeric tokens) so "done" never fires inside
+/// "abandoned" or "condone".
+fn message_signals_completion(text: &str) -> bool {
+    const COMPLETION_MARKERS: [&str; 5] = ["fertig", "done", "erledigt", "danke", "thanks"];
+    let lower = text.to_lowercase();
+    lower
+        .split(|c: char| !c.is_alphanumeric())
+        .any(|token| COMPLETION_MARKERS.contains(&token))
+}
+
+/// Applies the session/task state transitions triggered by a new USER
+/// message. Called from `stream_chat` right after the user's turn is
+/// persisted (and before `updated_at` is bumped, so the idle check below
+/// still sees the conversation's PREVIOUS activity timestamp).
+///
+/// Two steps, both best-effort (`let _ =` — a missing column on an older DB
+/// must never block the reply, matching every other instrumentation write in
+/// this file):
+///  1. Idle-gap sweep: every conversation still marked 'active' whose last
+///     activity is older than `TASK_IDLE_BOUNDARY` gets closed to
+///     'completed' — the task ended when the human walked away, we just
+///     record it now, on the next observable event. This includes the
+///     current conversation itself: returning after a >30 min gap closes
+///     the OLD task before the new turn re-opens one.
+///  2. The current conversation is then marked from THIS message: explicit
+///     completion intent → 'completed', anything else → 'active'.
+pub(crate) async fn apply_task_state_on_user_message(
+    state: &AppState,
+    conversation_id: &str,
+    user_message: &str,
+) {
+    let _ = sqlx::query(
+        "UPDATE chat_conversations SET task_state = 'completed' \
+         WHERE task_state = 'active' AND updated_at < datetime('now', ?1)",
+    )
+    .bind(TASK_IDLE_BOUNDARY)
+    .execute(&state.db)
+    .await;
+
+    let new_state = if message_signals_completion(user_message) { "completed" } else { "active" };
+    let _ = sqlx::query("UPDATE chat_conversations SET task_state = ?1 WHERE id = ?2")
+        .bind(new_state)
+        .bind(conversation_id)
+        .execute(&state.db)
+        .await;
+}
+
+/// Dimension 8 (Persistence) read: task-completion-rate and
+/// session-continuation-rate over `kind = 'chat'` conversations. Standalone
+/// (not wired into an endpoint here) so `observatory::human_ai` — being
+/// reworked in parallel — can bind it with a one-line call:
+/// `crate::chat::persistence_task_metrics(&state.db).await`.
+///
+/// - `task_completion_rate`: fraction of chat conversations whose
+///   `task_state` is 'completed' (the heuristic boundary above — disclosed
+///   as heuristic, not a certified outcome measure).
+/// - `session_continuation_rate`: fraction of chat conversations where the
+///   user RETURNED after a >30 min gap between two of their own messages —
+///   i.e. the conversation outlived a session boundary at least once.
+pub(crate) async fn persistence_task_metrics(db: &SqlitePool) -> serde_json::Value {
+    let (total,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM chat_conversations WHERE kind = 'chat'")
+            .fetch_one(db)
+            .await
+            .unwrap_or((0,));
+    let (completed,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM chat_conversations WHERE kind = 'chat' AND task_state = 'completed'",
+    )
+    .fetch_one(db)
+    .await
+    .unwrap_or((0,));
+    // A conversation "continued" when some user message follows another user
+    // message in the same conversation by more than the idle boundary.
+    let (continued,): (i64,) = sqlx::query_as(
+        "SELECT COUNT(DISTINCT m1.conversation_id) FROM chat_messages m1 \
+         JOIN chat_messages m2 ON m2.conversation_id = m1.conversation_id \
+           AND m1.role = 'user' AND m2.role = 'user' \
+           AND m2.created_at > datetime(m1.created_at, '+30 minutes') \
+         JOIN chat_conversations c ON c.id = m1.conversation_id AND c.kind = 'chat'",
+    )
+    .fetch_one(db)
+    .await
+    .unwrap_or((0,));
+
+    let rate = |n: i64| if total > 0 { n as f64 / total as f64 } else { 0.0 };
+    json!({
+        "conversations_total": total,
+        "conversations_completed": completed,
+        "task_completion_rate": rate(completed),
+        "session_continuation_rate": rate(continued),
+    })
 }
 
 
@@ -1681,6 +1807,13 @@ pub async fn stream_chat(
         .bind(&user_message)
         .execute(&state.db)
         .await;
+
+    // Session/task boundary bookkeeping (Wave 1 Task 7) — MUST run before the
+    // updated_at bumps below, because the idle-gap sweep inside compares
+    // against the conversation's PREVIOUS activity timestamp. Engine-agnostic
+    // (sits above the Hermes fork), best-effort like every other
+    // instrumentation write here.
+    apply_task_state_on_user_message(&state, &conversation_id, &user_message).await;
 
     let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chat_messages WHERE conversation_id = ?1")
         .bind(&conversation_id)
@@ -4124,5 +4257,81 @@ mod tests {
             assistant_count, 1,
             "the assistant turn must be durably persisted regardless of the anomaly-watchdog spawn's fate"
         );
+    }
+
+    // ── session/task boundary + completion state (deep self-analysis, Wave 1 Task 7) ──
+
+    async fn task_state_of(state: &AppState, id: &str) -> String {
+        let (ts,): (String,) = sqlx::query_as("SELECT task_state FROM chat_conversations WHERE id = ?1")
+            .bind(id)
+            .fetch_one(&state.db)
+            .await
+            .expect("chat_conversations.task_state must exist and be readable");
+        ts
+    }
+
+    /// Explicit completion intent: a user message containing a done-marker
+    /// ("fertig", "done", "erledigt", ...) flips the conversation's
+    /// task_state to 'completed'.
+    #[tokio::test]
+    async fn test_session_completion_marked() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-ts1", "Task-State-Test", "erste Nachricht").await;
+        assert_eq!(task_state_of(&state, "conv-ts1").await, "open", "fresh conversation must default to 'open'");
+
+        apply_task_state_on_user_message(&state, "conv-ts1", "passt so, das ist fertig — danke!").await;
+        assert_eq!(task_state_of(&state, "conv-ts1").await, "completed");
+    }
+
+    /// A normal (non-completion) user message marks the conversation's task
+    /// 'active', and the idle-gap sweep closes OTHER conversations that have
+    /// been sitting in 'active' past the 30-minute boundary.
+    #[tokio::test]
+    async fn test_session_completion_idle_gap() {
+        let state = test_state().await;
+        // an old conversation, mid-task, last touched 40 minutes ago
+        sqlx::query(
+            "INSERT INTO chat_conversations (id, title, kind, task_state, updated_at) \
+             VALUES ('conv-ts-idle', 'x', 'chat', 'active', datetime('now', '-40 minutes'))",
+        )
+        .execute(&state.db)
+        .await
+        .unwrap();
+        // a fresh conversation receiving a normal message now
+        seed_conversation(&state, "conv-ts-new", "x", "hi").await;
+
+        apply_task_state_on_user_message(&state, "conv-ts-new", "kannst du mir bei der Analyse helfen?").await;
+
+        assert_eq!(
+            task_state_of(&state, "conv-ts-idle").await,
+            "completed",
+            "an 'active' conversation idle past the 30-minute boundary must be swept to 'completed'"
+        );
+        assert_eq!(
+            task_state_of(&state, "conv-ts-new").await,
+            "active",
+            "the conversation receiving a normal message begins/continues an active task"
+        );
+    }
+
+    /// The standalone persistence metrics read (Dimension 8): completion rate
+    /// is the literal fraction of 'chat' conversations with
+    /// task_state = 'completed'.
+    #[tokio::test]
+    async fn test_session_completion_rate_metric() {
+        let state = test_state().await;
+        seed_conversation(&state, "conv-tm1", "x", "a").await;
+        seed_conversation(&state, "conv-tm2", "x", "b").await;
+        sqlx::query("UPDATE chat_conversations SET task_state = 'completed' WHERE id = 'conv-tm1'")
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        let metrics = persistence_task_metrics(&state.db).await;
+        assert_eq!(metrics["conversations_total"], 2, "{metrics}");
+        assert_eq!(metrics["conversations_completed"], 1, "{metrics}");
+        assert!((metrics["task_completion_rate"].as_f64().unwrap() - 0.5).abs() < 1e-9, "{metrics}");
+        // no user message pair >30min apart anywhere → nothing was continued
+        assert!((metrics["session_continuation_rate"].as_f64().unwrap() - 0.0).abs() < 1e-9, "{metrics}");
     }
 }
