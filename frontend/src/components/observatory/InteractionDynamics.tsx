@@ -4,7 +4,7 @@ import { TokenBreakdown, type TokenInfo } from './TokenBreakdown'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
-import { HudTile, HudSectionHeader } from './Hud'
+import { HudTile, HudSectionHeader, useHeaderActions, HudHeaderActions } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 
@@ -44,6 +44,29 @@ export function InteractionDynamics() {
   const [range, setRange] = useState('30d')
   const { data, loading, error } = useAdminFetch<InteractionData>(`/api/observatory/human-ai?range=${range}`, [range])
 
+  // Promoted to the shared page header — same top-right range+export
+  // placement as Behavioral Landscape/Flugschreiber's own range selectors,
+  // rather than pinned to just the one tile it scopes (`messages_by_day`).
+  useHeaderActions(
+    data ? (
+      <HudHeaderActions
+        filters={
+          <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+            {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        }
+        action={
+          <ExportButtons
+            rows={data.messages_by_day.map(d => ({ ...d }))}
+            filenameBase={`interaction-messages-by-day-${range}`}
+            title={`Interaction Dynamics — Gesprächsentwicklung (${RANGE_SUFFIX[data.range] ?? data.range})`}
+          />
+        }
+      />
+    ) : null,
+    [data, range],
+  )
+
   if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!data) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
@@ -68,18 +91,6 @@ export function InteractionDynamics() {
           badge={RANGE_SUFFIX[data.range] ?? data.range}
           accent="var(--obs-purple)"
           span={4}
-          headerActions={
-            <>
-              <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-                {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <ExportButtons
-                rows={data.messages_by_day.map(d => ({ ...d }))}
-                filenameBase={`interaction-messages-by-day-${range}`}
-                title={`Interaction Dynamics — Gesprächsentwicklung (${RANGE_SUFFIX[data.range] ?? data.range})`}
-              />
-            </>
-          }
         >
           <ObsChart data={data.messages_by_day.map(d => ({ label: d.day.slice(5), value: d.count }))} color="#8b5cf6" gradientId="interaction-trend" />
         </HudTile>

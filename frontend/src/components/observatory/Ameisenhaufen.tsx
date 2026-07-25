@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
-import { HudGrid, HudTile } from './Hud'
+import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
+import { ExportButtons } from './ExportButtons'
 
 interface CenterCashflow {
   name: string
@@ -65,6 +67,48 @@ const STAGE_LABELS: Record<string, string> = {
 export function Ameisenhaufen() {
   const { data: res, loading, error } = useAdminFetch<CoevolutionResponse>('/api/observatory/coevolution', [], 30000)
 
+  // The 51-center roster ("Alle Zentren" below) had no way to search or
+  // narrow to just active/inactive centers — the only other Observatory
+  // table of comparable size (Monetization's product list) already gets
+  // both. Client-side, same as every other read-only-proxy filter in this
+  // app: there's no `?search=`/`?status=` on the upstream coevolution-
+  // factory endpoint to push this down to.
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'' | 'active' | 'inactive'>('')
+
+  const allCentersRaw = res?.data
+    ? Object.entries(res.data.cashflow).sort((a, b) => b[1].sessions - a[1].sessions || a[1].name.localeCompare(b[1].name))
+    : []
+  const allCenters = allCentersRaw.filter(([, c]) => {
+    if (statusFilter === 'active' && c.sessions === 0) return false
+    if (statusFilter === 'inactive' && c.sessions > 0) return false
+    if (search.trim() && !c.name.toLowerCase().includes(search.trim().toLowerCase())) return false
+    return true
+  })
+
+  useHeaderActions(
+    res?.data ? (
+      <HudHeaderActions
+        search={{ value: search, onChange: setSearch, placeholder: 'Zentrum suchen…' }}
+        filters={
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as '' | 'active' | 'inactive')} style={{ fontSize: 12, padding: '5px 8px' }}>
+            <option value="">Alle Status</option>
+            <option value="active">Aktiv</option>
+            <option value="inactive">Inaktiv</option>
+          </select>
+        }
+        action={
+          <ExportButtons
+            rows={allCenters.map(([, c]) => ({ ...c }))}
+            filenameBase="ameisenhaufen-zentren"
+            title="Ameisenhaufen — Alle Zentren"
+          />
+        }
+      />
+    ) : null,
+    [res, search, statusFilter, allCenters],
+  )
+
   if (loading) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
   if (error) return <div className="obs-panel"><div className="obs-empty">Fehler beim Laden.</div></div>
   if (!res) return <div className="obs-panel"><div className="obs-empty">Keine Daten verfügbar.</div></div>
@@ -81,19 +125,6 @@ export function Ameisenhaufen() {
     .filter(([, c]) => c.sessions > 0)
     .sort((a, b) => b[1].sessions - a[1].sessions)
     .slice(0, 10)
-
-  // The FULL center roster — every one of the 51 keys coevolution-factory's
-  // /observatory endpoint returns in `cashflow`, not just the handful with
-  // sessions > 0 that "Aktivste Zentren" (above) leaderboards. Confirmed via
-  // a live fetch: the upstream payload already carries all 51 (name,
-  // sessions, revenue, stripe_link) per center — nothing aggregated-only —
-  // so this is a real per-center list, not a fabrication. "gets the shape
-  // it deserves" per Laura's own feedback ("should also show the list of
-  // all coevolution factories, nothing loads"): sorted busiest-first so the
-  // handful of active ones still lead, but every idle center is genuinely
-  // visible and countable now instead of silently dropped.
-  const allCenters = Object.entries(data.cashflow)
-    .sort((a, b) => b[1].sessions - a[1].sessions || a[1].name.localeCompare(b[1].name))
 
   const staged = Object.entries(data.spawn_candidates ?? {})
 
@@ -159,36 +190,44 @@ export function Ameisenhaufen() {
       {/* The full 51-center roster, not just the top-10 leaderboard above —
           scrolls internally past a comfortable viewing height rather than
           pushing the rest of the page down, same reasoning as every other
-          dense table in the app (see .obs-table-wrap's own doc comment). */}
-      <div className="obs-section-label" style={{ marginTop: 16 }}>Alle Zentren ({allCenters.length})</div>
-      <div className="obs-table-wrap" style={{ maxHeight: 420, overflowY: 'auto' }}>
-        <table className="obs-table">
-          <thead>
-            <tr>
-              <th>Zentrum</th>
-              <th>Status</th>
-              <th>Sitzungen</th>
-              <th>Umsatz</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allCenters.map(([slug, c]) => (
-              <tr key={slug}>
-                <td className="obs-table-name">{c.name}</td>
-                <td>
-                  {c.sessions > 0 ? (
-                    <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>Aktiv</span>
-                  ) : (
-                    <span className="obs-pill" style={{ background: 'rgba(150,156,170,.14)', color: 'var(--panel-text-dim, #8a8f98)' }}>Inaktiv</span>
-                  )}
-                </td>
-                <td>{c.sessions}</td>
-                <td>{c.revenue_eur > 0 ? `${c.revenue_eur.toLocaleString('de-AT', { minimumFractionDigits: 2 })} €` : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          dense table in the app (see .obs-table-wrap's own doc comment).
+          Search/status filter live in the shared page header
+          (useHeaderActions above) — this label shows filtered/total. */}
+      <div className="obs-section-label" style={{ marginTop: 16 }}>
+        Alle Zentren ({allCenters.length}{allCenters.length !== allCentersRaw.length ? ` / ${allCentersRaw.length}` : ''})
       </div>
+      {allCenters.length === 0 ? (
+        <div className="obs-card"><div className="obs-empty">Keine Zentren für diesen Filter.</div></div>
+      ) : (
+        <div className="obs-table-wrap" style={{ maxHeight: 420, overflowY: 'auto' }}>
+          <table className="obs-table">
+            <thead>
+              <tr>
+                <th>Zentrum</th>
+                <th>Status</th>
+                <th>Sitzungen</th>
+                <th>Umsatz</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allCenters.map(([slug, c]) => (
+                <tr key={slug}>
+                  <td className="obs-table-name">{c.name}</td>
+                  <td>
+                    {c.sessions > 0 ? (
+                      <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>Aktiv</span>
+                    ) : (
+                      <span className="obs-pill" style={{ background: 'rgba(150,156,170,.14)', color: 'var(--panel-text-dim, #8a8f98)' }}>Inaktiv</span>
+                    )}
+                  </td>
+                  <td>{c.sessions}</td>
+                  <td>{c.revenue_eur > 0 ? `${c.revenue_eur.toLocaleString('de-AT', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {(data.debates_total > 0 || staged.length > 0) && (
         <div className="obs-section-label" style={{ marginTop: 16 }}>Zusammenarbeit zwischen Zentren</div>
