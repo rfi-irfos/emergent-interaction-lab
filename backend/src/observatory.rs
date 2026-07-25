@@ -494,6 +494,32 @@ pub async fn hallucination_full_list(State(state): State<AppState>, headers: Hea
     Json(out).into_response()
 }
 
+// ── Mutual-Flagging Matrix (Wave 2 / Task 15) ───────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct FlaggingQuery {
+    /// Optional conversation scope; omitted = global matrix.
+    pub conversation_id: Option<String>,
+}
+
+/// The meta-layer "who flagged whom": Laura's modify/reject flags on Jarvis
+/// (`message_revisions`) vs Jarvis's machine-side flags (`hallucination_checks`
+/// `mismatch` verdicts + `agent_anomalies`), plus whether each flag was
+/// followed by further dialogue (resolved) or was the conversation's last
+/// word (open). Computation lives in `analytics_flagging`; this is the thin
+/// admin-only HTTP binding, same pattern as `tool_call_details`.
+/// `?conversation_id=` scopes the matrix; `flag_resolution` is always global.
+pub async fn flagging(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Query(q): Query<FlaggingQuery>) -> impl IntoResponse {
+    guard!(state, headers, jar);
+    let db = &state.db;
+    let matrix = crate::analytics_flagging::mutual_flagging_matrix(db, q.conversation_id.as_deref()).await;
+    let resolution = crate::analytics_flagging::flag_resolution_type(db).await;
+    Json(json!({
+        "matrix": matrix,
+        "flag_resolution": resolution,
+    })).into_response()
+}
+
 // ── Scope trends (System State citing real Interaction Dynamics data) ──────
 // For each scope emergence_signals has observed, the message-volume trend
 // of the specific conversations that scope's signals came from — a real,
