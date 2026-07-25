@@ -309,7 +309,7 @@ export function Monetization() {
       )}
       {ordersTotal !== null && (
         <HudGrid cols={2}>
-          <HudTile title="Umsatz nach Produkt" badge="REV" accent="var(--obs-green)" span={1}>
+          <HudTile title="Umsatz nach Produkt" accent="var(--obs-green)" span={1}>
             <ObsDonut
               data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
               valueFormat={(v, _t, pct) =>
@@ -353,7 +353,7 @@ export function Monetization() {
       {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
       {!ordersLoading && !ordersError && orders.length === 0 && (
         <div className="obs-card" style={{ paddingTop: 6, paddingBottom: 6 }}>
-          <div className="obs-empty" style={{ padding: '6px 0' }}>Noch keine Bestellungen — Filter/Currency oben wählen, sobald Stripe meldet.</div>
+          <div className="obs-empty" style={{ padding: '6px 0' }}>Noch keine Bestellungen — sie erscheinen hier automatisch, sobald jemand über einen Zahlungslink zahlt.</div>
         </div>
       )}
       {orders.length > 0 && filteredOrders.length === 0 && (
@@ -455,39 +455,63 @@ export function Monetization() {
       {loading && <HudSkeleton variant="list" rows={2} />}
       {error && <div className="obs-empty">Konnte nicht geladen werden.</div>}
       {!loading && list.length === 0 && <div className="obs-card"><div className="obs-empty">Noch keine Produkte angelegt.</div></div>}
-      {list.map((p, i) => (
-        <div className="obs-item-card" key={p.id} style={hudStagger(i)}>
-          <div className="obs-item-title">{p.name}</div>
-          <div className="obs-item-meta">
-            <span className="obs-pill" style={{ background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>
-              {formatPrice(p.price_cents, p.currency)}{p.mode === 'subscription' ? ` / ${p.recurring_interval === 'year' ? 'Jahr' : 'Monat'}` : ''}
-            </span>
-            {' '}
-            <span className="obs-pill" style={{ background: 'rgba(148,163,184,.14)', color: '#9aa0a8' }}>
-              {p.category === 'certification' ? 'Zertifizierung' : 'Service'}
-            </span>
-            {' · '}{p.created_at}
-          </div>
-          {p.description && <div className="obs-item-body">{p.description}</div>}
-          <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
-            {p.payment_link_url ? (
-              <a href={p.payment_link_url} target="_blank" rel="noreferrer" className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}>
-                Zahlungslink öffnen ↗
-              </a>
-            ) : (
-              <button
-                className="panel-add-btn"
-                style={{ fontSize: 11, padding: '4px 10px' }}
-                onClick={() => createPaymentLink(p.id)}
-                disabled={linkingId === p.id}
-              >
-                {linkingId === p.id ? 'Erstellt…' : 'Zahlungslink erstellen'}
-              </button>
-            )}
-            <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => deleteProduct(p.id, p.name)}>Löschen</button>
-          </div>
+      {/* A real table, not 23 stacked full-height cards — confirmed live via
+          screenshot that the old .obs-item-card-per-product rendering meant
+          15+ screens of scrolling for what is fundamentally a price list.
+          .obs-item-card stays the right shape for the orders feed above
+          (timestamped events, variable body text) — this is genuinely
+          tabular data (name/price/type), so it gets .obs-table instead. */}
+      {list.length > 0 && (
+        <div className="obs-table-wrap">
+          <table className="obs-table">
+            <thead>
+              <tr>
+                <th>Produkt</th>
+                <th>Preis</th>
+                <th>Typ</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map(p => (
+                <tr key={p.id}>
+                  <td>
+                    <div className="obs-table-name">{p.name}</div>
+                    {p.description && <div className="obs-table-desc" title={p.description}>{p.description}</div>}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {formatPrice(p.price_cents, p.currency)}{p.mode === 'subscription' ? ` / ${p.recurring_interval === 'year' ? 'Jahr' : 'Monat'}` : ''}
+                  </td>
+                  <td>
+                    <span className="obs-pill" style={{ background: 'rgba(148,163,184,.14)', color: '#9aa0a8' }}>
+                      {p.category === 'certification' ? 'Zertifizierung' : 'Service'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="obs-table-actions">
+                      {p.payment_link_url ? (
+                        <a href={p.payment_link_url} target="_blank" rel="noreferrer" className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}>
+                          Zahlungslink öffnen ↗
+                        </a>
+                      ) : (
+                        <button
+                          className="panel-add-btn"
+                          style={{ fontSize: 11, padding: '4px 10px' }}
+                          onClick={() => createPaymentLink(p.id)}
+                          disabled={linkingId === p.id}
+                        >
+                          {linkingId === p.id ? 'Erstellt…' : 'Zahlungslink erstellen'}
+                        </button>
+                      )}
+                      <button className="panel-delete-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => deleteProduct(p.id, p.name)}>Löschen</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      )}
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
         Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
       </p>
