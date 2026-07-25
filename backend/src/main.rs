@@ -392,6 +392,13 @@ async fn main() {
         .route("/api/observatory/behavior", get(observatory::behavior))
         .route("/api/observatory/information", get(observatory::information))
         .route("/api/observatory/human-ai", get(observatory::human_ai))
+        // Per-conversation drilldowns (Wave 0 / Task 4): raw tool-call
+        // args/results and the full hallucination_checks verdict list (all
+        // verdicts, not just the 'mismatch' ones the anomaly log surfaces) —
+        // the record-level detail behind the aggregate tool_distribution /
+        // hallucination-checks feeds above.
+        .route("/api/observatory/tool-calls/:conversation_id", get(observatory::tool_call_details))
+        .route("/api/observatory/hallucinations/:conversation_id", get(observatory::hallucination_full_list))
         .route("/api/observatory/scope-trends", get(observatory::scope_trends))
         .route("/api/observatory/ai-activity", get(observatory::ai_activity))
         .route("/api/observatory/organization", get(observatory::organization))

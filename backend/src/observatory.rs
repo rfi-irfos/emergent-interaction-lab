@@ -1,4 +1,4 @@
-use axum::{extract::{Query, State}, http::{HeaderMap, HeaderValue, StatusCode}, response::IntoResponse, Json};
+use axum::{extract::{Path, Query, State}, http::{HeaderMap, HeaderValue, StatusCode}, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::SqlitePool;
@@ -381,6 +381,80 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
             "created_at": created_at,
         })).collect::<Vec<_>>(),
     })).into_response()
+}
+
+// ── Tool-call + hallucination drilldown (Wave 0 / Task 4) ───────────────────
+// The aggregate feeds elsewhere in this module (behavior::tool_distribution,
+// hallucination::list_checks) only ever surface counts or one-line details.
+// These two admin-only, per-conversation reads expose the RAW records so the
+// Observatory can drill into exactly what a tool call was handed and returned,
+// and every hallucination verdict a conversation produced — not just the
+// `mismatch` ones the anomaly log already surfaces. Both return a plain
+// `Vec<serde_json::Value>` (UI-agnostic row shapes), same honest-empty
+// convention as the rest of this file (a missing table or no rows degrades to
+// an empty list, never a panic or a fabricated row).
+
+/// Every tool call a conversation made, oldest-first — raw arguments and
+/// result JSON included verbatim so the frontend can render them in a
+/// `<pre>` block. Admin-only.
+pub async fn tool_call_details(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(conversation_id): Path<String>) -> impl IntoResponse {
+    guard!(state, headers, jar);
+    let db = &state.db;
+    let rows: Vec<(String, String, String, Option<String>, String, String)> = sqlx::query_as(
+        "SELECT id, tool_name, arguments, result, status, created_at FROM agent_tool_calls \
+         WHERE conversation_id = ?1 ORDER BY created_at",
+    )
+    .bind(&conversation_id)
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+    let out: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(id, tool_name, arguments, result, status, created_at)| json!({
+            "id": id,
+            "tool_name": tool_name,
+            "arguments": arguments,
+            "result": result,
+            "status": status,
+            "created_at": created_at,
+        }))
+        .collect();
+    Json(out).into_response()
+}
+
+/// The full hallucination_checks verdict list for a conversation, oldest-first
+/// — every `match`/`mismatch`/`unverifiable` row (not just the `mismatch`
+/// ones the anomaly log reuses), joined to the tool call it checked so the
+/// UI can show which tool the verdict is about. Admin-only.
+pub async fn hallucination_full_list(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar, Path(conversation_id): Path<String>) -> impl IntoResponse {
+    guard!(state, headers, jar);
+    let db = &state.db;
+    // hallucination_checks has no conversation_id column of its own — it links
+    // via tool_call_id → agent_tool_calls.conversation_id (see
+    // hallucination.rs's schema/check_message). Join through that to scope to
+    // one conversation, same linkage the tracker itself uses.
+    let rows: Vec<(String, String, String, String, String, Option<String>)> = sqlx::query_as(
+        "SELECT hc.id, hc.chat_message_id, hc.tool_call_id, hc.verdict, hc.detail, hc.created_at \
+         FROM hallucination_checks hc \
+         JOIN agent_tool_calls atc ON atc.id = hc.tool_call_id \
+         WHERE atc.conversation_id = ?1 ORDER BY hc.created_at",
+    )
+    .bind(&conversation_id)
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+    let out: Vec<serde_json::Value> = rows
+        .into_iter()
+        .map(|(id, chat_message_id, tool_call_id, verdict, detail, created_at)| json!({
+            "id": id,
+            "chat_message_id": chat_message_id,
+            "tool_call_id": tool_call_id,
+            "verdict": verdict,
+            "detail": detail,
+            "created_at": created_at,
+        }))
+        .collect();
+    Json(out).into_response()
 }
 
 // ── Scope trends (System State citing real Interaction Dynamics data) ──────
