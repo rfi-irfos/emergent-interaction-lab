@@ -3,6 +3,29 @@ import ForceGraph2D from 'react-force-graph-2d'
 import { API_BASE } from '../../lib/apiBase'
 import { adminFetch } from '../../lib/adminApi'
 import { HudSkeleton } from './HudSkeleton'
+import { tuneForceGraph, reheatOnDrag } from '../../lib/forceGraphTuning'
+import { useForceGraphPopupAnchor } from '../../hooks/useForceGraphPopupAnchor'
+
+// Node core radius, shared between the canvas painter and the collision
+// force below so "how big a node LOOKS" and "how much space it RESERVES"
+// never drift apart.
+function nodeCoreRadius(node: any): number {
+  return 8 + Math.min(node.count ?? 0, 20) * 0.9
+}
+// Collision radius = core bubble + an estimate of the label's half-width
+// (monospace-ish ~6.2px/char at the 11px font nodePaint uses) + the count
+// line below it. This is what was missing entirely before: with no
+// collision force at all, d3-force only keeps NODE CENTERS apart via
+// charge/link forces, which does nothing to stop two labels' TEXT from
+// drawing on top of each other once there are more than a handful of nodes
+// — exactly the "15-20 labels stacked illegibly" bug. A per-node radius
+// (not one fixed value) means a long label like "KI-Systeme und Treiber der
+// Emergenz" reserves real room, and a short one like "Docs" doesn't waste it.
+function nodeCollideRadius(node: any): number {
+  const label = String(node.label ?? '')
+  const halfLabelWidth = (label.length * 6.2) / 2
+  return Math.max(nodeCoreRadius(node) + 10, halfLabelWidth + 6)
+}
 
 interface SignalRow { id: string; pattern: string; observation: string; scope: string | null; source_conversation_id: string | null; created_at: string }
 interface BlogRow { id: string; title: string; body: string; source_conversation_id: string | null; updated_at: string }
@@ -158,6 +181,28 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
 
   const graphData = useMemo(() => ({ nodes: nodes.map(n => ({ ...n })), links }), [nodes, links])
 
+  // Tune the physics as soon as data lands (or changes) and after the graph
+  // has had one paint to mount — no collision force at all was the actual
+  // bug behind the illegible stacked-label screenshot, see forceGraphTuning.ts.
+  useEffect(() => {
+    const id = window.setTimeout(() => tuneForceGraph(fgRef.current, nodeCollideRadius), 0)
+    return () => window.clearTimeout(id)
+  }, [graphData])
+
+  // IMPORTANT: read the live node off `graphData.nodes` (the exact array
+  // instance handed to ForceGraph2D, which the simulation mutates in place
+  // with real x/y every tick), never off the plain `nodes` list above —
+  // that one is rebuilt fresh every render via `.map(n => ({...n}))` and
+  // never carries simulation coordinates, which is exactly why the old
+  // "anchored" detail popup had nothing real to anchor to and fell back to
+  // a fixed corner. Called unconditionally, before the early returns below,
+  // same Rules-of-Hooks reasoning as the rest of this file.
+  // Cast to `any`: ForceGraph2D mutates each node object in place with real
+  // x/y every simulation tick, but the plain node type above (built for the
+  // React render, not the graph engine) never declared those fields.
+  const liveExpandedNode = (expanded ? graphData.nodes.find(n => n.id === expanded) : null) as { x?: number; y?: number; id?: string } | null
+  const popupPos = useForceGraphPopupAnchor(fgRef, liveExpandedNode)
+
   if (error && !API_BASE) {
     return (
       <div className="obs-panel">
@@ -181,7 +226,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const expandedItems: DetailItem[] = itemsForNode(expandedNode)
 
   const nodePaint = (node: any, ctx: CanvasRenderingContext2D) => {
-    const r = 8 + Math.min(node.count, 20) * 0.9
+    const r = nodeCoreRadius(node)
     const x = node.x ?? 0, y = node.y ?? 0
     // glow
     ctx.beginPath()
@@ -224,21 +269,40 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
           nodeRelSize={1}
           nodeCanvasObject={nodePaint}
           nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
-            const r = 8 + Math.min(node.count, 20) * 0.9 + 6
+            const r = nodeCoreRadius(node) + 6
             ctx.fillStyle = color
             ctx.beginPath()
             ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI)
             ctx.fill()
           }}
-          linkColor={() => 'rgba(34,211,238,.22)'}
+          linkColor={() => 'rgba(34,211,238,.32)'}
           linkWidth={(link: any) => 1.2 + Math.min(link.value ?? 0, 8) * 0.9}
           cooldownTicks={120}
+          onEngineStop={() => { try { fgRef.current?.zoomToFit?.(400, 46) } catch { /* canvas may already be unmounted */ } }}
           onNodeClick={(node: any) => { try { setExpanded(cur => cur === node?.id ? null : node?.id) } catch { /* ignore click errors */ } }}
+          onNodeDrag={() => reheatOnDrag(fgRef.current)}
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
         />
 
-        {expandedNode && (
-          <div className="mycelium-detail" style={{ borderLeftColor: expandedNode.accent, position: 'absolute', right: 14, top: 14, left: 'auto', maxWidth: 360, zIndex: 5 }}>
+        {/* Anchored to the real clicked node's live screen position (see
+            useForceGraphPopupAnchor) — not a fixed corner. A CSS-triangle
+            tail plus a translate that keeps the card fully on-canvas even
+            near an edge makes the "this popup belongs to that node" link
+            visually obvious without hunting for a thin connector line. */}
+        {expandedNode && popupPos && (
+          <div
+            className="mycelium-detail mycelium-detail-anchored"
+            style={{
+              borderLeftColor: expandedNode.accent,
+              position: 'absolute',
+              left: Math.min(Math.max(popupPos.x, 190), dims.w - 190),
+              top: Math.min(Math.max(popupPos.y + 22, 14), dims.h - 40),
+              transform: 'translateX(-50%)',
+              right: 'auto',
+              maxWidth: 360,
+              zIndex: 5,
+            }}
+          >
             <span className="mycelium-detail-tag" style={{ color: expandedNode.accent }}>#{expandedNode.label}</span>
             <span className="mycelium-detail-text">
               {expandedNode.kind === 'scope' && (

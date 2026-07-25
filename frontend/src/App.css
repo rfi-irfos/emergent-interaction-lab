@@ -41,6 +41,25 @@ button { cursor: pointer; font-family: inherit; }
   --obs-amber: #f59e0b;
   --obs-green: #10b981;
   --obs-red: #ef4444;
+
+  /* Semantic status tokens — the ONE small fixed taxonomy every KPI accent,
+     badge, pill, and status tag in the admin/Observatory surface reads from
+     (see the stage-1 note above .obs-stat below). Never add a 7th; if a new
+     use case doesn't fit one of these five, it's decorative, not semantic,
+     and should use --obs-accent-neutral or a plain --gotham-text-dim tone. */
+  --sem-success: #10b981;   /* confirmed / verified / positive outcome */
+  --sem-warning: #f59e0b;   /* heuristic / uncertain / needs attention */
+  --sem-danger: #ef4444;    /* error / mismatch / failed */
+  --sem-info: #3b6bf6;      /* neutral factual label, category, or count */
+  --sem-neutral: #8a93a6;   /* inactive / pending / not-yet-applicable */
+
+  /* Light-mode default for the shell chrome (sidebar/topbar) — previously
+     these only had a hardcoded DARK fallback baked into var(--panel-shell-bg,
+     #0a0e1a), so even with crmTheme==='light' the shell chrome never
+     actually went light (the fallback fired every time because nothing
+     defined the light value). Defining it here means .gotham's own dark
+     override (see below) is the only thing that changes it now. */
+  --panel-shell-bg: #eef2f4;
 }
 
 /* ── Loading / Error ─────────────────────────────────────────────────────────── */
@@ -2761,6 +2780,14 @@ button { cursor: pointer; font-family: inherit; }
    each node means was locked behind hovering/clicking it first; this is
    plain-language and needs no interaction at all to read. */
 .mycelium-legend { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(15,23,42,.08); }
+/* Normal-flow legend card ABOVE the SystemMap graph canvas (see
+   SystemMap.tsx) — replaces the old position:absolute overlay that used to
+   physically collide with a node drifting toward the top-left corner of the
+   canvas underneath it (confirmed live: "Informationsdynamik" node landing
+   directly on its own legend line). Reuses .mycelium-legend-title/-sub/
+   -items/-item/-dot verbatim; only the outer wrapper changes shape (no
+   bottom border needed now — .obs-card already draws its own boundary). */
+.mycelium-legend-card { margin-bottom: 16px; }
 .mycelium-legend-title { display: block; font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 2px; }
 .mycelium-legend-sub { display: block; font-size: 11.5px; color: #6b7280; margin-bottom: 8px; }
 .mycelium-legend-items { display: flex; flex-wrap: wrap; gap: 6px 16px; }
@@ -3686,6 +3713,23 @@ button { cursor: pointer; font-family: inherit; }
 .mycelium-detail-tag { font-size: 11px; font-weight: 800; letter-spacing: .02em; }
 .mycelium-detail-text { font-size: 12.5px; color: rgba(226,241,245,.9); line-height: 1.6; }
 .mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan); }
+
+/* Floating variant, absolutely positioned right next to the node that
+   opened it (see useForceGraphPopupAnchor) instead of the plain in-flow
+   card above — needs its own opaque backdrop + shadow + a small pointer
+   tail so "this popup belongs to that node" reads instantly, not via a
+   thin connector line nobody would notice. */
+.mycelium-detail-anchored {
+  margin-top: 0; background: rgba(6,11,18,.94); border: 1px solid rgba(34,211,238,.22);
+  box-shadow: 0 10px 28px rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  max-height: 60%; overflow-y: auto;
+}
+.mycelium-detail-anchored::before {
+  content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+  width: 12px; height: 12px; background: rgba(6,11,18,.94);
+  border-left: 1px solid rgba(34,211,238,.22); border-top: 1px solid rgba(34,211,238,.22);
+  rotate: 45deg;
+}
 
 /* Real per-item drill-down inside a mycelium-detail panel (KnowledgeGraph) —
    the aggregate blurb above stays, this lists the actual signals/posts/

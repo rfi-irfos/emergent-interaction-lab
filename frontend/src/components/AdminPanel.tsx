@@ -5,7 +5,7 @@ import type { AdminSection } from '../types/admin'
 import { WebsiteKit } from './WebsiteKit'
 import { ResearchChat } from './ResearchChat'
 import { useAdminFetch } from '../lib/adminApi'
-import { OBSERVATORY_MODULES, SECTION_COPY, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
+import { SECTION_COPY, TIER_LABELS, groupByTier, type ObservatoryTier } from './observatory/registry'
 import { HudSectionHeader, HeaderActionsContext } from './observatory/Hud'
 import type { ReactNode } from 'react'
 import { Analytics } from './observatory/Analytics'
@@ -223,18 +223,20 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
   const editingNewsItem = editingNews ? draft.news?.items?.find(n => n.id === editingNews) : null
 
-  // Same condition `.crm-main` uses below — applied directly to the topbar
-  // itself (NOT to `.builder`) via a self-referencing class, same pattern
-  // as `.gotham.crm-main`/`.observatory-hud.crm-main`. Putting these classes
-  // on `.builder` instead would make it an ancestor of `.crm-sidebar` too —
-  // `.gotham .crm-sidebar`/`.observatory-hud .crm-sidebar` exist in App.css
-  // and were never reachable before (the sidebar was always a sibling of
-  // `.crm-main`, never its descendant), so that leaks unfinished/half theme
-  // styling onto the sidebar on every page instead of just the intended
-  // topbar (confirmed live: washed-out grey sidebar on the light Verwaltung
-  // pages, since only `.gotham` — not the accompanying `.observatory-hud`
-  // polish — reached it there).
-  const isObservatoryHud = crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog'
+  // The sun/moon topbar toggle previously had ZERO visible effect on almost
+  // every section: `gotham` (the dark shell class — dark backgrounds on
+  // .crm-main/.crm-sidebar/.crm-page-topbar, see App.css) used to be a
+  // hardcoded literal in the className template, applied unconditionally
+  // regardless of crmTheme, with only the extra `observatory-hud` glow/scan
+  // polish gated on the theme. Since almost every section is an Observatory
+  // module (or Changelog), that gate was true almost everywhere anyway, so
+  // toggling to "light" never did anything a user could see. Both classes
+  // now key off crmTheme alone, applied to `.crm-layout` (the shared
+  // ancestor of both the sidebar and `.crm-main`) so `.gotham .crm-sidebar` /
+  // `.observatory-hud .crm-sidebar` in App.css actually reach the sidebar
+  // too, not just the topbar/main column.
+  const isDark = crmTheme === 'dark'
+  const themeClasses = `gotham ${isDark ? 'observatory-hud' : ''}`
 
   return (
     <div className="builder">
@@ -247,7 +249,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           block right above crm-body below), matching Lighthouse's own
           PageHeader component (title+description rendered per-route, inside
           <main>, never in the shared chrome). ── */}
-      <div className={`crm-page-topbar gotham ${isObservatoryHud ? 'observatory-hud' : ''}`}>
+      <div className={`crm-page-topbar ${themeClasses}`}>
         <div className="crm-topbar-brand-block">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="crm-topbar-icon" />
           <span className="crm-topbar-brand">{draft.nav?.brand || 'Emergent Interaction Lab'}</span>
@@ -277,7 +279,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
         </div>
       </div>
 
-      <div className="crm-layout">
+      <div className={`crm-layout ${themeClasses}`}>
         <aside className={`crm-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           {/* Brand/logo lives in the page-level topbar now. Collapse toggle
               sits in normal flow on the same row as the first group label
@@ -345,7 +347,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           </nav>
         </aside>
 
-        <div className={`crm-main gotham ${(crmTheme === 'dark' || OBSERVATORY_MODULES.some(m => m.id === adminSection) || adminSection === 'changelog') ? 'observatory-hud' : ''}`}>
+        <div className={`crm-main ${themeClasses}`}>
           <div className="crm-body">
             {/* Page header — title + description, same PageHeader shape as
                 Lighthouse (router.tsx's topbar carries only the brand; the

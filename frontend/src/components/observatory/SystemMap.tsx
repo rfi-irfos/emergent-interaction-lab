@@ -5,6 +5,22 @@ import { adminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { HudSkeleton } from './HudSkeleton'
 import { SYSTEM_MAP_NODE_LABELS } from '../../lib/labels'
+import { tuneForceGraph, reheatOnDrag } from '../../lib/forceGraphTuning'
+import { useForceGraphPopupAnchor } from '../../hooks/useForceGraphPopupAnchor'
+
+// Same core-radius/collision-radius shape as KnowledgeGraph.tsx's
+// nodeCoreRadius/nodeCollideRadius (see forceGraphTuning.ts for the shared
+// tuning helper) — a per-node collision radius derived from label length so
+// the force sim actually reserves room for rendered TEXT, not just the dot.
+// `node.size` is already computed at graph-build time from the real count,
+// reused here rather than recomputed.
+function collideRadiusFor(node: any): number {
+  if (node.isCore) {
+    const label = String(node.label ?? '')
+    return Math.max((node.size ?? 14) + 16, (label.length * 6) / 2 + 12)
+  }
+  return (node.size ?? 4) + 8
+}
 
 // `legend` is the short, count-independent plain-language line shown in the
 // always-visible legend strip below — previously the ONLY explanation of
@@ -264,6 +280,21 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
       count: counts?.[n.id] ?? 0, size: 14 + Math.min((counts?.[n.id] ?? 0) / maxCount, 1) * 22,
     }))
     const links: any[] = []
+    // Structural "same lab" mesh between the 5 core subsystems — always
+    // present, independent of live satellite data. Previously the ONLY
+    // links in this graph were core→own-satellite, so a core node with zero
+    // recent activity (e.g. no documents uploaded yet) had literally no
+    // edge to anything and just drifted alone — the reported "5 random dots
+    // floating in dead space with no connecting lines" bug. These are a
+    // conceptual scaffold (drawn fainter/thinner than pheromone trails, see
+    // linkColor/linkWidth below, and distinguished via `structural: true`),
+    // not fabricated observation data — the copy on this page already
+    // claims all 5 are subsystems of the one lab it studies, so the 5 of
+    // them being visibly one connected network is honest, not invented.
+    for (let i = 0; i < NODES.length; i++) {
+      const next = NODES[(i + 1) % NODES.length]
+      links.push({ source: NODES[i].id, target: next.id, structural: true })
+    }
     for (const n of NODES) {
       const sats = (satellites[n.id] ?? []).slice(0, 5)
       sats.forEach((s) => {
@@ -273,11 +304,27 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           conf: s.confidence ?? 0.5, decay: ageDecay(s.createdAt),
           conversationId: s.conversationId, createdAt: s.createdAt, size: 4,
         })
-        links.push({ source: n.id, target: id })
+        links.push({ source: n.id, target: id, structural: false })
       })
     }
     return { nodes, links }
   }, [counts, satellites, maxCount])
+
+  // Tune physics (incl. the collision force that was entirely missing
+  // before — see collideRadiusFor above) once data lands, and keep the
+  // simulation reheatable through drags — see forceGraphTuning.ts.
+  useEffect(() => {
+    const id = window.setTimeout(() => tuneForceGraph(fgRef.current, collideRadiusFor, { linkDistance: 120 }), 0)
+    return () => window.clearTimeout(id)
+  }, [graphData])
+
+  // Live node (with real simulation x/y) for the currently expanded core or
+  // satellite — read off graphData.nodes (the mutated instance), same
+  // reasoning as KnowledgeGraph.tsx's liveExpandedNode. Called unconditionally
+  // before the early-return below.
+  const liveDetailId = expandedSatellite ? `${expandedSatellite.nodeId}-sat-${expandedSatellite.itemId}` : expanded
+  const liveDetailNode = liveDetailId ? graphData.nodes.find(n => n.id === liveDetailId) : null
+  const popupPos = useForceGraphPopupAnchor(fgRef, liveDetailNode)
 
   if (!counts) {
     if (!API_BASE) {
@@ -319,24 +366,28 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
 
   return (
     <div className="obs-panel">
-      <div className="obs-card obs-map-card mycelium-card" ref={wrapRef} style={{ height: '74vh', minHeight: 420, overflow: 'hidden' }}>
-        {/* Always-visible legend — what the diagram below actually shows,
-            before any hovering/clicking. One line per node, same accent
-            color as its dot/thread, so the mapping between "this colored
-            thing" and "this is what it means" doesn't require guessing. */}
-        <div className="mycelium-legend" style={{ position: 'absolute', left: 14, top: 14, right: 'auto', maxWidth: 380, zIndex: 5, pointerEvents: 'none' }}>
-          <span className="mycelium-legend-title">Was zeigt dieses Netzwerk?</span>
-          <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem; die Ausläufer sind Pheromon-Spuren echter Einzelereignisse — Länge/Helligkeit = Alter (frisch → hell, alt → verblasst), Dicke/Leuchten = Konfidenz. Knoten oder Spur anklicken für Details.</span>
-          <div className="mycelium-legend-items">
-            {NODES.map(n => (
-              <span key={n.id} className="mycelium-legend-item">
-                <span className="mycelium-legend-dot" style={{ background: n.accent }} />
-                <strong>{n.label}</strong>: {n.legend}
-              </span>
-            ))}
-          </div>
+      {/* Always-visible legend — what the diagram below actually shows,
+          before any hovering/clicking. Previously an absolutely-positioned
+          overlay sitting ON TOP of the graph canvas, which meant a node
+          drifting to the top-left (confirmed live: "Informationsdynamik")
+          rendered directly over its own matching legend line — both
+          unreadable at the overlap. Now a real card in normal document flow,
+          fully above the canvas, so the two can never physically collide
+          regardless of node count or layout. */}
+      <div className="obs-card mycelium-legend-card">
+        <span className="mycelium-legend-title">Was zeigt dieses Netzwerk?</span>
+        <span className="mycelium-legend-sub">Jeder Knoten ist ein Teilsystem, alle fünf sind über die zentrale Kreis-Verbindung als EIN Netzwerk verknüpft — die Ausläufer daran sind Pheromon-Spuren echter Einzelereignisse. Länge/Helligkeit = Alter (frisch → hell, alt → verblasst), Dicke/Leuchten = Konfidenz. Knoten oder Spur anklicken für Details.</span>
+        <div className="mycelium-legend-items">
+          {NODES.map(n => (
+            <span key={n.id} className="mycelium-legend-item">
+              <span className="mycelium-legend-dot" style={{ background: n.accent }} />
+              <strong>{n.label}</strong>: {n.legend}
+            </span>
+          ))}
         </div>
+      </div>
 
+      <div className="obs-card obs-map-card mycelium-card" ref={wrapRef} style={{ height: '68vh', minHeight: 380, overflow: 'hidden' }}>
         <ForceGraph2D
           ref={fgRef}
           width={dims.w}
@@ -350,10 +401,15 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
             ctx.fillStyle = color
             ctx.beginPath(); ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI); ctx.fill()
           }}
-          linkColor={() => 'rgba(148,197,214,.18)'}
-          linkWidth={1}
+          // Structural core↔core mesh renders as a slightly brighter, steady
+          // line (this IS the network, always there); pheromone core↔
+          // satellite trails stay faint, matching the "Ausläufer" language
+          // in the legend above.
+          linkColor={(link: any) => link.structural ? 'rgba(148,197,214,.34)' : 'rgba(148,197,214,.18)'}
+          linkWidth={(link: any) => link.structural ? 1.6 : 1}
           onNodeHover={(node: any) => setHoverNodeId(node ? node.id : null)}
           cooldownTicks={140}
+          onEngineStop={() => { try { fgRef.current?.zoomToFit?.(400, 50) } catch { /* canvas may already be unmounted */ } }}
           onNodeClick={(node: any) => {
             try {
               if (node?.isCore) {
@@ -367,6 +423,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
               }
             } catch { /* ignore click errors — never crash the OS on a node click */ }
           }}
+          onNodeDrag={() => reheatOnDrag(fgRef.current)}
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
         />
 
@@ -383,8 +440,22 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           </div>
         ) : null}
 
-        {detailNode && (
-          <div className="mycelium-detail" style={{ borderLeftColor: detailNode.accent, position: 'absolute', right: 14, bottom: 14, left: 'auto', maxWidth: 360, zIndex: 6 }}>
+        {/* Anchored to the real clicked node's live screen position (see
+            useForceGraphPopupAnchor) instead of a fixed bottom-right corner
+            with only a thin connector line — Simeon: "Laura would never
+            peer at a tiny grey line." */}
+        {detailNode && popupPos && (
+          <div
+            className="mycelium-detail mycelium-detail-anchored"
+            style={{
+              borderLeftColor: detailNode.accent,
+              position: 'absolute',
+              left: Math.min(Math.max(popupPos.x, 190), dims.w - 190),
+              top: Math.min(Math.max(popupPos.y + 22, 14), dims.h - 40),
+              transform: 'translateX(-50%)',
+              right: 'auto', bottom: 'auto', maxWidth: 360, zIndex: 6,
+            }}
+          >
             <span className="mycelium-detail-tag" style={{ color: detailNode.accent }}>#{detailNode.label}</span>
             <span className="mycelium-detail-text">
               {typed}<span className="mycelium-caret">▌</span>
