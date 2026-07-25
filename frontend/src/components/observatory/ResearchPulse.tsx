@@ -2,8 +2,17 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { ResearchNotesPanel } from './ResearchNotesPanel'
 import { HudSkeleton } from './HudSkeleton'
 import type { AdminSection } from '../../types/admin'
+import { BLOG_STATUS_LABELS } from '../../lib/labels'
 
 interface BlogPost { id: string; title: string; status: string; source: string; updated_at: string }
+
+// draft/published is a real 2-value status, not a rotating identity —
+// previously this badge carried no color of its own, so it fell straight
+// through to .obs-activity-kind's positional nth-child(4n+…) rotation
+// (blue/purple/teal/amber purely by ROW INDEX), the exact "no shared
+// meaning" anti-pattern the design pass targeted. draft = still in
+// progress (--sem-warning), published = done (--sem-success).
+const BLOG_STATUS_ACCENT: Record<string, string> = { draft: 'var(--sem-warning)', published: 'var(--sem-success)' }
 
 function BlogActivity() {
   // 18s poll — Jarvis's draft_blog_post/revise_blog_post tools write here
@@ -18,7 +27,7 @@ function BlogActivity() {
     <div className="obs-card">
       {posts.map(p => (
         <div className="obs-activity-row" key={p.id}>
-          <span className="obs-activity-kind">{p.status}</span>
+          <span className="obs-activity-kind" style={{ background: BLOG_STATUS_ACCENT[p.status] ?? 'var(--sem-neutral)' }}>{BLOG_STATUS_LABELS[p.status] ?? p.status}</span>
           <span className="obs-activity-label">{p.source === 'agent' ? '◆ ' : ''}{p.title}</span>
           <span className="obs-activity-ts">{p.updated_at}</span>
         </div>

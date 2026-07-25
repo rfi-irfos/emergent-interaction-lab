@@ -255,7 +255,13 @@ export function Analytics() {
           {data.top_paths.length > 0 ? (
             data.top_paths.map((p, i) => (
               <div className="obs-activity-row" key={p.label}>
-                <span className="obs-activity-kind">#{i + 1}</span>
+                {/* A pure ordinal (#1, #2, …) has no category of its own —
+                    left with no explicit color, this fell straight into
+                    .obs-activity-kind's positional nth-child rotation
+                    (blue/purple/teal/amber by ROW INDEX, i.e. by pure
+                    coincidence of rank), which is the exact anti-pattern
+                    this pass targets. One fixed neutral tone instead. */}
+                <span className="obs-activity-kind" style={{ background: 'var(--sem-neutral)' }}>#{i + 1}</span>
                 <span className="obs-activity-label" style={{ fontFamily: 'monospace' }}>{p.label || '/'}</span>
                 <span className="obs-activity-ts">{p.count}</span>
               </div>
@@ -265,9 +271,16 @@ export function Analytics() {
 
         <HudTile title="Laufende Aktivität" badge="LIVE" accent="var(--hud-cyan)" span={2}>
           {data.recent_activity.length === 0 && <div className="obs-empty">Noch keine Aktivität.</div>}
+          {/* `kind` is a free-form backend string (page_view/chat_message/
+              tool_call/…, mirrors activity_trend's own keys), not a fixed
+              enum this frontend owns — rather than inventing a guessed
+              mapping, or leaving it to the same positional rotation bug as
+              the rank list above, it gets the tile's own "LIVE" identity
+              color: this whole feed is one thing (a live activity stream),
+              not several statuses competing for attention. */}
           {data.recent_activity.map((a, i) => (
             <div className="obs-activity-row" key={i}>
-              <span className="obs-activity-kind">{a.kind}</span>
+              <span className="obs-activity-kind" style={{ background: 'var(--hud-cyan)' }}>{a.kind}</span>
               <span className="obs-activity-label">{a.label}</span>
               <span className="obs-activity-ts">{a.created_at}</span>
             </div>

@@ -282,24 +282,30 @@ export function Monetization() {
       <div className="obs-section-label">Bestellungen</div>
       {ordersTotal !== null && (
         <div className="monetization-bikpi">
+          {/* Real meaning now drives each tile's color instead of a
+              green/purple/blue rotation: a plain count and a filter-scope
+              ratio are both just informational (--sem-info); revenue is
+              the one figure here that's genuinely good news, so it earns
+              --sem-success rather than sharing an arbitrary blue with the
+              other two. */}
           <div className="obs-grid" style={{ marginBottom: 14 }}>
-            <div className="obs-stat c-green">
+            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
               <div className="obs-stat-value">{ordersTotal}</div>
               <div className="obs-stat-label">Bestellungen gesamt</div>
             </div>
-            <div className="obs-stat c-purple">
+            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
               <div className="obs-stat-value">{filteredOrders.length} / {orders.length}</div>
               <div className="obs-stat-label">sichtbar von geladen (Filter)</div>
             </div>
             {Object.entries(totalRevenueByCurrency).length > 0 ? (
               Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
-                <div className="obs-stat c-blue" key={cur}>
+                <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }} key={cur}>
                   <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
                   <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
                 </div>
               ))
             ) : (
-              <div className="obs-stat c-blue">
+              <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}>
                 <div className="obs-stat-value">{formatPrice(0, 'eur')}</div>
                 <div className="obs-stat-label">Umsatz, sichtbar (EUR)</div>
               </div>
@@ -403,11 +409,16 @@ export function Monetization() {
           {showProductForm ? 'Abbrechen' : '+ Produkt'}
         </button>
       </div>
+      {/* Already-meaningful mapping (total = info, has a working payment
+          link = success, still needs one = warning/needs-attention) —
+          kept, just routed through the shared --sem-* tokens instead of
+          the c-blue/c-green/c-amber categorical classes so it reads from
+          the same palette as every other semantic tile in the app. */}
       {!loading && list.length > 0 && (
         <div className="obs-grid" style={{ marginBottom: 14 }}>
-          <div className="obs-stat c-blue"><div className="obs-stat-value">{list.length}</div><div className="obs-stat-label">Produkte gesamt</div></div>
-          <div className="obs-stat c-green"><div className="obs-stat-value">{list.filter(p => p.payment_link_url).length}</div><div className="obs-stat-label">mit Zahlungslink</div></div>
-          <div className="obs-stat c-amber"><div className="obs-stat-value">{list.filter(p => !p.payment_link_url).length}</div><div className="obs-stat-label">ohne Zahlungslink</div></div>
+          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{list.length}</div><div className="obs-stat-label">Produkte gesamt</div></div>
+          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}><div className="obs-stat-value">{list.filter(p => p.payment_link_url).length}</div><div className="obs-stat-label">mit Zahlungslink</div></div>
+          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-warning)' }}><div className="obs-stat-value">{list.filter(p => !p.payment_link_url).length}</div><div className="obs-stat-label">ohne Zahlungslink</div></div>
         </div>
       )}
       {showProductForm && (

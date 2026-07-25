@@ -87,11 +87,18 @@ export function Ameisenhaufen() {
   return (
     <div className="obs-panel">
       <div className="obs-section-label">Übersicht</div>
+      {/* Four different counts of the same system, none of them a real
+          success/warning/danger status — previously purple/blue/teal/green
+          purely by position, same "arbitrary rotation with zero semantic
+          meaning" pattern flagged in Monetization's KPI rows. One shared
+          neutral/info tone instead of inventing a false distinction between
+          four counts that are all just "how big is this part of the
+          system." */}
       <div className="obs-grid">
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{data.centers_active} / {data.centers_total}</div><div className="obs-stat-label">Zentren aktiv</div></div>
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_sessions}</div><div className="obs-stat-label">Sitzungen gesamt</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.leads_total}</div><div className="obs-stat-label">Anfragen (Leads)</div></div>
-        <div className="obs-stat c-green"><div className="obs-stat-value">{data.daughters_total}</div><div className="obs-stat-label">Neue Zentren entstanden</div></div>
+        <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{data.centers_active} / {data.centers_total}</div><div className="obs-stat-label">Zentren aktiv</div></div>
+        <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{data.total_sessions}</div><div className="obs-stat-label">Sitzungen gesamt</div></div>
+        <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{data.leads_total}</div><div className="obs-stat-label">Anfragen (Leads)</div></div>
+        <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{data.daughters_total}</div><div className="obs-stat-label">Neue Zentren entstanden</div></div>
       </div>
       <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 8 }}>
         Deine Coevolution Factory — 50 eigenständige Zentren, die selbstständig arbeiten. Diese Seite zeigt nur an, was dort passiert; Änderungen macht man dort, nicht hier.
