@@ -280,6 +280,11 @@ export function Monetization() {
           live in the shared page header (useHeaderActions) — this label is
           just the in-page section marker. */}
       <div className="obs-section-label">Bestellungen</div>
+      {/* Order KPIs + product KPIs together at the top — Simeon's 2026-07-25
+          layout call: "Bestellungen und Produkte" as one KPI block first,
+          then revenue-per-product + latest order, then the (scroll-capped)
+          product table. The product tiles keep their meaningful mapping
+          (total = info, has link = success, missing link = warning). */}
       {ordersTotal !== null && (
         <div className="monetization-bikpi">
           {/* Real meaning now drives each tile's color instead of a
@@ -311,6 +316,13 @@ export function Monetization() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {!loading && list.length > 0 && (
+        <div className="obs-grid" style={{ marginBottom: 14 }}>
+          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{list.length}</div><div className="obs-stat-label">Produkte gesamt</div></div>
+          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}><div className="obs-stat-value">{list.filter(p => p.payment_link_url).length}</div><div className="obs-stat-label">mit Zahlungslink</div></div>
+          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-warning)' }}><div className="obs-stat-value">{list.filter(p => !p.payment_link_url).length}</div><div className="obs-stat-label">ohne Zahlungslink</div></div>
         </div>
       )}
       {ordersTotal !== null && (
@@ -399,9 +411,6 @@ export function Monetization() {
           </button>
         </div>
       )}
-      <div className="obs-provenance-note">
-        Jede Zeile stammt aus einem echten, signaturgeprüften Stripe-Webhook-Event (checkout.session.completed) - keine manuelle Eingabe, keine Simulation. E-Mail-Adressen sind nur hier, admin-only, sichtbar - nie öffentlich.
-      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Produkte</div>
@@ -409,18 +418,6 @@ export function Monetization() {
           {showProductForm ? 'Abbrechen' : '+ Produkt'}
         </button>
       </div>
-      {/* Already-meaningful mapping (total = info, has a working payment
-          link = success, still needs one = warning/needs-attention) —
-          kept, just routed through the shared --sem-* tokens instead of
-          the c-blue/c-green/c-amber categorical classes so it reads from
-          the same palette as every other semantic tile in the app. */}
-      {!loading && list.length > 0 && (
-        <div className="obs-grid" style={{ marginBottom: 14 }}>
-          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{list.length}</div><div className="obs-stat-label">Produkte gesamt</div></div>
-          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}><div className="obs-stat-value">{list.filter(p => p.payment_link_url).length}</div><div className="obs-stat-label">mit Zahlungslink</div></div>
-          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-warning)' }}><div className="obs-stat-value">{list.filter(p => !p.payment_link_url).length}</div><div className="obs-stat-label">ohne Zahlungslink</div></div>
-        </div>
-      )}
       {showProductForm && (
         <div className="obs-card">
           <div className="obs-form" style={{ marginBottom: 0 }}>
@@ -471,9 +468,11 @@ export function Monetization() {
           15+ screens of scrolling for what is fundamentally a price list.
           .obs-item-card stays the right shape for the orders feed above
           (timestamped events, variable body text) — this is genuinely
-          tabular data (name/price/type), so it gets .obs-table instead. */}
+          tabular data (name/price/type), so it gets .obs-table instead.
+          Height-capped to ~5 rows (Simeon, 2026-07-25): beyond that the
+          wrap scrolls internally instead of growing the page. */}
       {list.length > 0 && (
-        <div className="obs-table-wrap">
+        <div className="obs-table-wrap" style={{ maxHeight: 320, overflowY: 'auto' }}>
           <table className="obs-table">
             <thead>
               <tr>
@@ -523,9 +522,6 @@ export function Monetization() {
           </table>
         </div>
       )}
-      <div className="obs-provenance-note">
-        Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
-      </div>
     </div>
   )
 }

@@ -268,7 +268,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                   just more stacked text. */}
               <div className="blog-draft-badges">
                 <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{BLOG_STATUS_LABELS[p.status] ?? p.status}</span>
-                <span className="obs-pill" style={{ background: p.source === 'agent' ? 'color-mix(in srgb, var(--obs-purple, #8b5cf6) 16%, transparent)' : 'rgba(148,163,184,.16)', color: p.source === 'agent' ? 'var(--obs-purple, #8b5cf6)' : 'var(--sem-neutral)' }}>
+                <span className="obs-pill" style={{ background: p.source === 'agent' ? 'color-mix(in srgb, var(--sem-info) 16%, transparent)' : 'rgba(148,163,184,.16)', color: p.source === 'agent' ? 'var(--sem-info)' : 'var(--sem-neutral)' }}>
                   {p.source === 'agent' ? '◆ Jarvis' : 'Manuell'}
                 </span>
               </div>
