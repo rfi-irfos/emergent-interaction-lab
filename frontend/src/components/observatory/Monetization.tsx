@@ -243,8 +243,11 @@ export function Monetization() {
   const revenueCurrencies = Array.from(new Set(filteredOrders.map(o => o.currency)))
   const revenueCurrency = revenueCurrencies.length === 1 ? revenueCurrencies[0] : null
 
+  // Always rendered once the first orders page has loaded — zero orders
+  // (or zero orders matching the current filter) is a body-level empty
+  // state below, not a reason to hide the filter/export controls.
   useHeaderActions(
-    orders.length > 0 ? (
+    !ordersLoading || orders.length > 0 ? (
       <HudHeaderActions
         filters={
           <>
@@ -266,144 +269,15 @@ export function Monetization() {
         }
       />
     ) : null,
-    [orders, orderCurrencyFilter, orderRange, filteredOrders],
+    [ordersLoading, orders, orderCurrencyFilter, orderRange, filteredOrders],
   )
 
   return (
     <div className="obs-panel monetization">
-      {/* Real sales, not just the mechanism to sell — every row here comes
-          from a verified Stripe webhook event (checkout.session.completed),
-          never a manual entry. Same "Übersicht" + accumulated-list pattern
-          as EmergenceMonitor.tsx. Moved above product management: revenue
-          visibility is the thing worth seeing first on open, product CRUD
-          is comparatively rare admin housekeeping. Filter/range/export now
-          live in the shared page header (useHeaderActions) — this label is
-          just the in-page section marker. */}
-      <div className="obs-section-label">Bestellungen</div>
-      {ordersTotal !== null && (
-        <div className="monetization-bikpi">
-          {/* Real meaning now drives each tile's color instead of a
-              green/purple/blue rotation: a plain count and a filter-scope
-              ratio are both just informational (--sem-info); revenue is
-              the one figure here that's genuinely good news, so it earns
-              --sem-success rather than sharing an arbitrary blue with the
-              other two. */}
-          <div className="obs-grid" style={{ marginBottom: 14 }}>
-            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
-              <div className="obs-stat-value">{ordersTotal}</div>
-              <div className="obs-stat-label">Bestellungen gesamt</div>
-            </div>
-            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
-              <div className="obs-stat-value">{filteredOrders.length} / {orders.length}</div>
-              <div className="obs-stat-label">sichtbar von geladen (Filter)</div>
-            </div>
-            {Object.entries(totalRevenueByCurrency).length > 0 ? (
-              Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
-                <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }} key={cur}>
-                  <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
-                  <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
-                </div>
-              ))
-            ) : (
-              <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}>
-                <div className="obs-stat-value">{formatPrice(0, 'eur')}</div>
-                <div className="obs-stat-label">Umsatz, sichtbar (EUR)</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {ordersTotal !== null && (
-        <HudGrid cols={2}>
-          <HudTile title="Umsatz nach Produkt" accent="var(--obs-green)" span={1}>
-            <ObsDonut
-              data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
-              valueFormat={(v, _t, pct) =>
-                revenueCurrency ? `${formatPrice(v, revenueCurrency)} · ${Math.round(pct * 100)}%` : `${v.toLocaleString('de-AT')} Cent · ${Math.round(pct * 100)}%`
-              }
-              gradientIdPrefix="monetization-revenue-by-product"
-            />
-            <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
-              Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}) — kein serverseitiges
-              Gesamt-Grouping nach Produkt, siehe „Weitere laden" oben.
-              {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
-            </p>
-          </HudTile>
-          {/* Same .obs-item-card language the orders list below already uses
-              — this used to be a bespoke dark-glass card with its own
-              colors/radius/shadow, sitting next to a HudTile and above a
-              plain-list .obs-item-card further down: three different card
-              languages on one screen ("total chaos", confirmed by audit). */}
-          <HudTile title="Letzte Bestellung" accent="var(--obs-green)" span={1}>
-            {filteredOrders.length > 0 ? (
-              (() => {
-                const o = filteredOrders[filteredOrders.length - 1]
-                return (
-                  <div className="obs-item-card">
-                    <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
-                    <div className="obs-stat-value" style={{ color: 'var(--obs-green)', fontSize: 22, margin: '6px 0' }}>{formatPrice(o.amount_cents, o.currency)}</div>
-                    <div className="obs-item-meta">
-                      {o.created_at}
-                      {o.customer_email ? ` · ${o.customer_email}` : ' · keine E-Mail übermittelt'}
-                    </div>
-                  </div>
-                )
-              })()
-            ) : (
-              <div className="obs-empty">Noch keine Bestellung im Filter.</div>
-            )}
-          </HudTile>
-        </HudGrid>
-      )}
-      {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
-      {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
-      {!ordersLoading && !ordersError && orders.length === 0 && (
-        <div className="obs-card" style={{ paddingTop: 6, paddingBottom: 6 }}>
-          <div className="obs-empty" style={{ padding: '6px 0' }}>Noch keine Bestellungen — sie erscheinen hier automatisch, sobald jemand über einen Zahlungslink zahlt.</div>
-        </div>
-      )}
-      {orders.length > 0 && filteredOrders.length === 0 && (
-        <div className="obs-card"><div className="obs-empty">Keine Treffer für diesen Filter unter den geladenen Bestellungen.</div></div>
-      )}
-      {filteredOrders.map((o, i) => (
-        <div className="obs-item-card" key={o.id} style={hudStagger(i)}>
-          <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
-          <div className="obs-item-meta">
-            <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>
-              {formatPrice(o.amount_cents, o.currency)}
-            </span>
-            {' · '}{o.customer_email ?? 'keine E-Mail übermittelt'}
-            {' · '}{o.created_at}
-          </div>
-          <div className="obs-item-body" style={{ fontSize: 11, color: '#9aa0a8' }}>
-            <button
-              className="chat-inspect-toggle"
-              style={{ fontSize: 11, padding: 0 }}
-              onClick={() => setExpandedOrderId(id => id === o.id ? null : o.id)}
-            >
-              {expandedOrderId === o.id ? 'Details ausblenden' : 'Details anzeigen'}
-            </button>
-            {expandedOrderId === o.id && (
-              <div style={{ marginTop: 4 }}>Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}</div>
-            )}
-          </div>
-        </div>
-      ))}
-      {ordersError && orders.length > 0 && (
-        <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Nachladen.</div>
-      )}
-      {ordersTotal !== null && orders.length < ordersTotal && (
-        <div style={{ textAlign: 'center', marginTop: 8 }}>
-          <button className="panel-add-btn" onClick={loadMoreOrders} disabled={ordersLoadingMore}>
-            {ordersLoadingMore ? 'Lädt…' : `Weitere laden (${orders.length} / ${ordersTotal})`}
-          </button>
-        </div>
-      )}
-      <div className="obs-provenance-note">
-        Jede Zeile stammt aus einem echten, signaturgeprüften Stripe-Webhook-Event (checkout.session.completed) - keine manuelle Eingabe, keine Simulation. E-Mail-Adressen sind nur hier, admin-only, sichtbar - nie öffentlich.
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
+      {/* Product management + product KPIs render first, order data below —
+          "so alles zusammen ist": what's for sale, and what's sold, read
+          top-to-bottom in that order rather than sales-before-catalog. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Produkte</div>
         <button className="panel-add-btn" onClick={() => setShowProductForm(s => !s)}>
           {showProductForm ? 'Abbrechen' : '+ Produkt'}
@@ -523,9 +397,130 @@ export function Monetization() {
           </table>
         </div>
       )}
-      <div className="obs-provenance-note">
-        Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
-      </div>
+
+      {/* Order data — accumulated-list pattern as EmergenceMonitor.tsx.
+          Filter/range/export live in the shared page header
+          (useHeaderActions) — this label is just the in-page section
+          marker. */}
+      <div className="obs-section-label" style={{ marginTop: 28 }}>Bestellungen</div>
+      {ordersTotal !== null && (
+        <div className="monetization-bikpi">
+          {/* Real meaning now drives each tile's color instead of a
+              green/purple/blue rotation: a plain count and a filter-scope
+              ratio are both just informational (--sem-info); revenue is
+              the one figure here that's genuinely good news, so it earns
+              --sem-success rather than sharing an arbitrary blue with the
+              other two. */}
+          <div className="obs-grid" style={{ marginBottom: 14 }}>
+            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
+              <div className="obs-stat-value">{ordersTotal}</div>
+              <div className="obs-stat-label">Bestellungen gesamt</div>
+            </div>
+            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
+              <div className="obs-stat-value">{filteredOrders.length} / {orders.length}</div>
+              <div className="obs-stat-label">sichtbar von geladen (Filter)</div>
+            </div>
+            {Object.entries(totalRevenueByCurrency).length > 0 ? (
+              Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
+                <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }} key={cur}>
+                  <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
+                  <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
+                </div>
+              ))
+            ) : (
+              <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}>
+                <div className="obs-stat-value">{formatPrice(0, 'eur')}</div>
+                <div className="obs-stat-label">Umsatz, sichtbar (EUR)</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {ordersTotal !== null && (
+        <HudGrid cols={2}>
+          <HudTile title="Umsatz nach Produkt" accent="var(--obs-green)" span={1}>
+            <ObsDonut
+              data={Object.entries(revenueByProduct).map(([label, value]) => ({ label, value }))}
+              valueFormat={(v, _t, pct) =>
+                revenueCurrency ? `${formatPrice(v, revenueCurrency)} · ${Math.round(pct * 100)}%` : `${v.toLocaleString('de-AT')} Cent · ${Math.round(pct * 100)}%`
+              }
+              gradientIdPrefix="monetization-revenue-by-product"
+            />
+            <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+              Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}).
+              {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
+            </p>
+          </HudTile>
+          {/* Same .obs-item-card language the orders list below already uses
+              — this used to be a bespoke dark-glass card with its own
+              colors/radius/shadow, sitting next to a HudTile and above a
+              plain-list .obs-item-card further down: three different card
+              languages on one screen ("total chaos", confirmed by audit). */}
+          <HudTile title="Letzte Bestellung" accent="var(--obs-green)" span={1}>
+            {filteredOrders.length > 0 ? (
+              (() => {
+                const o = filteredOrders[filteredOrders.length - 1]
+                return (
+                  <div className="obs-item-card">
+                    <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
+                    <div className="obs-stat-value" style={{ color: 'var(--obs-green)', fontSize: 22, margin: '6px 0' }}>{formatPrice(o.amount_cents, o.currency)}</div>
+                    <div className="obs-item-meta">
+                      {o.created_at}
+                      {o.customer_email ? ` · ${o.customer_email}` : ' · keine E-Mail übermittelt'}
+                    </div>
+                  </div>
+                )
+              })()
+            ) : (
+              <div className="obs-empty">Noch keine Bestellung im Filter.</div>
+            )}
+          </HudTile>
+        </HudGrid>
+      )}
+      {ordersLoading && orders.length === 0 && <div className="obs-card"><HudSkeleton variant="list" rows={2} /></div>}
+      {ordersError && orders.length === 0 && <div className="obs-card"><div className="obs-empty">Bestellungen konnten nicht geladen werden.</div></div>}
+      {!ordersLoading && !ordersError && orders.length === 0 && (
+        <div className="obs-card" style={{ paddingTop: 6, paddingBottom: 6 }}>
+          <div className="obs-empty" style={{ padding: '6px 0' }}>Noch keine Bestellungen — sie erscheinen hier automatisch, sobald jemand über einen Zahlungslink zahlt.</div>
+        </div>
+      )}
+      {orders.length > 0 && filteredOrders.length === 0 && (
+        <div className="obs-card"><div className="obs-empty">Keine Treffer für diesen Filter unter den geladenen Bestellungen.</div></div>
+      )}
+      {filteredOrders.map((o, i) => (
+        <div className="obs-item-card" key={o.id} style={hudStagger(i)}>
+          <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
+          <div className="obs-item-meta">
+            <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>
+              {formatPrice(o.amount_cents, o.currency)}
+            </span>
+            {' · '}{o.customer_email ?? 'keine E-Mail übermittelt'}
+            {' · '}{o.created_at}
+          </div>
+          <div className="obs-item-body" style={{ fontSize: 11, color: '#9aa0a8' }}>
+            <button
+              className="chat-inspect-toggle"
+              style={{ fontSize: 11, padding: 0 }}
+              onClick={() => setExpandedOrderId(id => id === o.id ? null : o.id)}
+            >
+              {expandedOrderId === o.id ? 'Details ausblenden' : 'Details anzeigen'}
+            </button>
+            {expandedOrderId === o.id && (
+              <div style={{ marginTop: 4 }}>Stripe Session {o.stripe_session_id} · Event {o.stripe_event_id}</div>
+            )}
+          </div>
+        </div>
+      ))}
+      {ordersError && orders.length > 0 && (
+        <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Nachladen.</div>
+      )}
+      {ordersTotal !== null && orders.length < ordersTotal && (
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <button className="panel-add-btn" onClick={loadMoreOrders} disabled={ordersLoadingMore}>
+            {ordersLoadingMore ? 'Lädt…' : `Weitere laden (${orders.length} / ${ordersTotal})`}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
