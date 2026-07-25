@@ -143,8 +143,12 @@ export function Inbox() {
   // with nothing in it yet." All three now render the same full-height,
   // centered placeholder shell instead, so the view is fully designed
   // before a single message ever arrives, not just once one does.
+  // Rendered as soon as data has loaded, independent of whether the inbox
+  // currently has any messages — an empty inbox still needs its filter/
+  // export controls visible (they just act on an empty set), the empty
+  // state itself is a body-level placeholder below (see InboxPlaceholder).
   useHeaderActions(
-    list.length > 0 ? (
+    data ? (
       <>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '0 1 180px' }}>
           <option value="">Alle Status</option>
@@ -159,7 +163,7 @@ export function Inbox() {
         />
       </>
     ) : null,
-    [list, statusFilter, filteredList],
+    [data, statusFilter, filteredList],
   )
 
   if (loading && !data) {

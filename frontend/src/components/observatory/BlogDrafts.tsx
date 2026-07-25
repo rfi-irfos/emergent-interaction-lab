@@ -162,38 +162,39 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
   // Promoted to the shared page header — this is the one real filter/export
   // on the whole Blog tab (the manual-news section above has no filter of
   // its own, a small always-visible list), matching the "one filter per
-  // page" pattern every other canonical app follows.
+  // page" pattern every other canonical app follows. Always rendered
+  // regardless of whether `list` currently has entries — an empty result
+  // set is a body-level empty-state message, not a reason to hide the
+  // ability to search/filter/export altogether.
   useHeaderActions(
-    list.length > 0 ? (
-      <HudHeaderActions
-        search={{ value: search, onChange: setSearch, placeholder: 'Suche in Titel oder Inhalt…' }}
-        filters={
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-            <option value="">Alle Status</option>
-            {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{BLOG_STATUS_LABELS[v] ?? v}</option>)}
-          </select>
-        }
-        action={
-          <ExportButtons
-            rows={filtered.map(p => ({
-              id: p.id,
-              title: p.title,
-              status: p.status,
-              source: p.source,
-              body: p.body,
-              created_at: p.created_at,
-              updated_at: p.updated_at,
-              published_at: p.published_at ?? '',
-              source_conversation_id: p.source_conversation_id ?? '',
-              images: (p.images ?? []).join(', '),
-            }))}
-            filenameBase="blog-drafts"
-            title="Blog-Entwürfe"
-          />
-        }
-      />
-    ) : null,
-    [list, search, statusFilter, filtered],
+    <HudHeaderActions
+      search={{ value: search, onChange: setSearch, placeholder: 'Suche in Titel oder Inhalt…' }}
+      filters={
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+          <option value="">Alle Status</option>
+          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{BLOG_STATUS_LABELS[v] ?? v}</option>)}
+        </select>
+      }
+      action={
+        <ExportButtons
+          rows={filtered.map(p => ({
+            id: p.id,
+            title: p.title,
+            status: p.status,
+            source: p.source,
+            body: p.body,
+            created_at: p.created_at,
+            updated_at: p.updated_at,
+            published_at: p.published_at ?? '',
+            source_conversation_id: p.source_conversation_id ?? '',
+            images: (p.images ?? []).join(', '),
+          }))}
+          filenameBase="blog-drafts"
+          title="Blog-Entwürfe"
+        />
+      }
+    />,
+    [search, statusFilter, filtered],
   )
 
   if (loading && !posts) return <HudSkeleton variant="list" />

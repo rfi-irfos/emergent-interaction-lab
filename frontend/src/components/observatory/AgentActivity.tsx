@@ -97,8 +97,11 @@ export function AgentActivity() {
 
   const items = data ? (kindFilter ? data.items.filter(i => i.kind === kindFilter) : data.items) : []
 
+  // Always rendered once data has loaded — zero items after filtering (or
+  // zero items overall) is a body-level empty state, not a reason to hide
+  // the filter/export controls themselves.
   useHeaderActions(
-    data && data.items.length > 0 ? (
+    data ? (
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <select value={kindFilter} onChange={e => setKindFilter(e.target.value as '' | ActivityItem['kind'])} style={{ flex: '0 1 180px' }}>
           <option value="">Alle Typen</option>

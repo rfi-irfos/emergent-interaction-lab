@@ -148,9 +148,12 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
   }
 
   // Promoted to the shared page header (was its own HudSectionHeader mid-
-  // page) — the one real filter on Research Pulse.
+  // page) — the one real filter on Research Pulse. Rendered as soon as data
+  // has loaded, independent of whether the list currently has entries — an
+  // empty result is a body-level empty state, not a reason to hide the
+  // filter/export controls.
   useHeaderActions(
-    list.length > 0 ? (
+    data ? (
       <HudHeaderActions
         filters={
           <>
@@ -184,7 +187,7 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
         }
       />
     ) : null,
-    [list, categoryFilter, statusFilter, filtered],
+    [data, categoryFilter, statusFilter, filtered],
   )
 
   return (
