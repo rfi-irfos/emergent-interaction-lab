@@ -139,14 +139,22 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const docNode = { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: '#10b981', count: safeDocs.length, scope: null as string | null }
   const nodes = [hub, ...scopeNodes, noteNode, docNode] as Array<{ id: string; label: string; accent: string; count: number; kind: any; scope: string | null }>
 
+  // `linkedPosts` count per scope actually drives the rendered stroke width
+  // below (see `linkWidth`) — the caption under the graph claims "Kantenstärke
+  // = Anzahl verknüpfter Blogposts", but until this, every edge was drawn at
+  // the same hardcoded 1.2px regardless of `value` because nothing set it:
+  // the caption described an encoding the graph never actually drew. Notes
+  // and docs nodes have no "linked posts" concept, so they get a plain 0.
   const links = useMemo(() => {
     const ls: any[] = []
     for (const n of nodes) {
       if (n.id === 'hub') continue
-      ls.push({ source: 'hub', target: n.id })
+      const value = n.kind === 'scope' && n.scope ? linkedPosts(n.scope).length : 0
+      ls.push({ source: 'hub', target: n.id, value })
     }
     return ls
-  }, [nodes.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, safePosts, safeSignals])
 
   const graphData = useMemo(() => ({ nodes: nodes.map(n => ({ ...n })), links }), [nodes, links])
 
@@ -223,7 +231,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
             ctx.fill()
           }}
           linkColor={() => 'rgba(34,211,238,.22)'}
-          linkWidth={1.2}
+          linkWidth={(link: any) => 1.2 + Math.min(link.value ?? 0, 8) * 0.9}
           cooldownTicks={120}
           onNodeClick={(node: any) => { try { setExpanded(cur => cur === node?.id ? null : node?.id) } catch { /* ignore click errors */ } }}
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
