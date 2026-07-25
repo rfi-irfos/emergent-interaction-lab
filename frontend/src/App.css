@@ -1212,11 +1212,68 @@ button { cursor: pointer; font-family: inherit; }
 .builder-canvas-pane {
   flex: 1; overflow-y: auto; overflow-x: hidden; background: #f8f9fa;
   border-right: 1px solid #e4e4e4; min-width: 0; isolation: isolate;
+  /* Same container-query treatment as .device-frame below (container-name
+     "dev") — this pane is a resizable-by-dragging-the-panel, arbitrary-width
+     box that is almost never as wide as the real browser viewport, but the
+     real site's hero/nav responsive rules are all @media (viewport-width)
+     queries. Without its own container context those queries never fire in
+     here regardless of how narrow this pane actually gets, so the hero's
+     fixed 72px title + 18px description (sized for a full desktop viewport)
+     render at full size in a much narrower box and visually bleed into each
+     other — the reported "title and description squeeze together" bug.
+     Bug, not missing gap: the fix is giving this pane the same @container
+     reflow the Desktop/Tablet/Mobile device-frame preview already has. */
+  container-type: inline-size; container-name: canvas;
 }
 .builder-canvas-pane .site { max-width: 100%; min-height: 100%; }
 .builder-canvas-pane .site-nav { position: sticky; top: 0; z-index: 200; }
 .builder-canvas-pane .site-hero { margin-top: 0; }
 .builder-canvas-pane .site-whatsapp-btn { display: none; }
+
+/* Canvas-pane reflow — same breakpoints/rules as the @container dev block
+   further down (device-frame preview), scoped to "canvas" instead of "dev"
+   so the always-on edit-mode canvas gets the identical fix. */
+@container canvas (max-width: 1024px) {
+  .site-nav { padding: 0 28px; }
+  .site-section { padding: 70px 32px; }
+  .site-hero-inner { padding: 0 40px 60px; }
+  .site-hero-h1 { font-size: 52px; }
+  .site-cat-grid, .site-product-grid, .site-usp-grid, .site-news-grid { grid-template-columns: repeat(2, 1fr); }
+  .site-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .site-trust { gap: 28px; padding: 20px 28px; }
+  .site-main-nav, .site-nav-desktop { display: none; }
+  .site-nav-burger { display: flex; }
+  .site-nav-lang-topbar { display: flex; align-items: center; }
+}
+@container canvas (max-width: 680px) {
+  .site-main-nav, .site-nav-desktop { display: none; }
+  .site-nav-burger { display: flex; }
+  .site-nav-lang-topbar { display: flex; align-items: center; }
+  .site-nav { padding: 0 18px; height: 62px; }
+  .site-logo-img { height: 40px; }
+  .site-usp-pillar .site-usp-grid { grid-template-columns: 1fr; }
+  .site-usp-pillar-head { flex-direction: column; gap: 4px; }
+  .site-hero { min-height: 520px !important; }
+  .site-hero-inner { padding: 0 22px 48px; max-width: 100%; }
+  .site-hero-h1 { font-size: 36px; }
+  .site-hero-sub { font-size: 16px; margin-bottom: 28px; }
+  .site-hero-btns { flex-direction: column; align-items: stretch; }
+  .site-btn-lime-lg, .site-btn-ghost-lg { text-align: center; padding: 14px 24px; }
+  .site-section { padding: 52px 18px; }
+  .site-section-title { font-size: 28px; margin-bottom: 36px; }
+  .site-products-top { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .site-products-h2 { font-size: 28px; }
+  .site-tabs { flex-wrap: wrap; }
+  .site-cat-grid, .site-product-grid, .site-usp-grid, .site-news-grid { grid-template-columns: 1fr; }
+  .site-trust { gap: 16px 28px; padding: 18px 20px; }
+  .site-location { grid-template-columns: 1fr; }
+  .site-location-info { padding: 48px 24px; }
+  .site-location-h2 { font-size: 28px; }
+  .site-contact-form-row { grid-template-columns: 1fr; }
+  .site-footer { padding: 44px 22px 26px; }
+  .site-footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  .site-footer-bottom { flex-direction: column; align-items: flex-start; gap: 14px; }
+}
 
 /* Right: settings panel */
 .builder-panel {
