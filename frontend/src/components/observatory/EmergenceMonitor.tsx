@@ -6,7 +6,6 @@ import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { FilterPanel, HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
-import { ObsGauge } from './ObsGauge'
 import { STATUS_ACCENT } from './registry'
 
 interface Signal {
@@ -418,14 +417,10 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           "geladen" note below, honest about that now that this list is
           paginated instead of always holding everything up to the old cap. */}
       <div className="obs-section-label">
-        {/* Two donuts replace the old flat per-level stat-tile row — framed in
-            fixed-size HUD tiles so they read as instruments, not one chart
-            stretched across the viewport. Each tile sizes itself; the grid
-            keeps several per row on desktop, stacking only when narrow. */}
         Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
       </div>
       <HudGrid cols={4}>
-        <HudTile title="Ebenen-Mix" badge="SIGNALE" accent="var(--obs-purple)" span={2}>
+        <HudTile title="Ebenen-Mix" badge="SIGNALE" accent="var(--obs-purple)" span={1}>
           <ObsDonut
             data={visibleSections.map(section => ({
               label: section.label,
@@ -436,7 +431,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
             gradientIdPrefix="emergence-level-mix"
           />
         </HudTile>
-        <HudTile title="Status-Mix" badge="SIGNALE" accent="var(--obs-blue)" span={2}>
+        <HudTile title="Status-Mix" badge="SIGNALE" accent="var(--obs-blue)" span={1}>
           <ObsDonut
             data={visibleStatuses.map(status => ({
               label: status,
@@ -446,45 +441,33 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
             gradientIdPrefix="emergence-status-mix"
           />
         </HudTile>
-      </HudGrid>
-      <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #9aa0a8)', marginTop: -4, marginBottom: 14 }}>
-        Ebenen- und Status-Verteilung der aktuell geladenen Signale (siehe "geladen" oben) — kein serverseitiges Gesamt-Grouping.
-      </p>
-
-      <div
-        className="obs-badge-experimental"
-        title={ccet ? `${ccet.definitions_note} Basis: die letzten ${ccet.turns_considered} analysierten Turns, Stabilitätsschwelle (Kosinus-Ähnlichkeit) ${formatPercent(ccet.stability_threshold)}.` : undefined}
-      >
-        Eigene Operationalisierung — nicht wörtlich aus Lauras Paper
-      </div>
-      {/* CEI and Resonance Frequency are real 0-1 fractions — gauges. CEP is
-          a plain point count, not a fraction, so it stays a plain .obs-stat
-          tile rather than being forced into a gauge it doesn't fit; sitting
-          right beside the two gauges is also the literal demonstration that
-          ObsGauge slots in next to plain stat tiles without looking like a
-          different component family. */}
-      <HudGrid cols={4}>
         <HudTile title="Stabilität (CEI)" badge="CO-EVOLUTION" accent="var(--obs-green)" span={1}>
           {ccet ? (
-            <ObsGauge value={ccet.cei} label="Stabilität (Co-Evolution Index)" color="var(--obs-green)" />
+            <ObsDonut
+              data={[{ label: 'CEI', value: Math.round(ccet.cei * 1000), color: 'var(--obs-green)' }, { label: 'Rest', value: Math.max(0, 1000 - Math.round(ccet.cei * 1000)), color: 'rgba(255,255,255,0.08)' }]}
+              centerLabel={`${formatPercent(ccet.cei)}\nCEI`}
+              gradientIdPrefix="emergence-cei"
+            />
           ) : (
             <div className="obs-stat c-green"><div className="obs-stat-value">—</div><div className="obs-stat-label">Stabilität (CEI)</div></div>
           )}
         </HudTile>
         <HudTile title="Rhythmus (Resonanz)" badge="CO-EVOLUTION" accent="var(--obs-teal)" span={1}>
           {ccet ? (
-            <ObsGauge value={ccet.resonance_frequency} label="Rhythmus (Resonanzfrequenz)" color="var(--obs-teal)" />
+            <ObsDonut
+              data={[{ label: 'Resonanz', value: Math.round(ccet.resonance_frequency * 1000), color: 'var(--obs-teal)' }, { label: 'Rest', value: Math.max(0, 1000 - Math.round(ccet.resonance_frequency * 1000)), color: 'rgba(255,255,255,0.08)' }]}
+              centerLabel={`${formatPercent(ccet.resonance_frequency)}\nResonanz`}
+              gradientIdPrefix="emergence-resonance"
+            />
           ) : (
-            <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Rhythmus (Resonanzfrequenz)</div></div>
+            <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Rhythmus (Resonanz)</div></div>
           )}
         </HudTile>
-        <HudTile title="Wendepunkte (CEP)" badge="CO-EVOLUTION" accent="var(--obs-purple)" span={2}>
-          <div className="obs-stat c-purple" style={{ flex: '0 1 160px' }}>
-            <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
-            <div className="obs-stat-label">Wendepunkte (Co-Evolution Points)</div>
-          </div>
-        </HudTile>
       </HudGrid>
+      <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #9aa0a8)', marginTop: -4, marginBottom: 14, lineHeight: 1.5 }}>
+        Eigene Operationalisierung — nicht wörtlich aus Lauras Paper (CEI/Resonanz sind projekteigene, keine verifizierten Paper-Werte).
+        Ebenen- und Status-Verteilung der aktuell geladenen Signale — kein serverseitiges Gesamt-Grouping.
+      </p>
 
       <div className="obs-section-label">Geteiltes Feld — Dyad & Meta (META-Layer)</div>
       <HudGrid cols={4}>
@@ -529,81 +512,72 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         </HudTile>
       </HudGrid>
 
-      {signals.length === 0 && !loading && (
-        <div className="obs-card">
-          <div className="obs-empty">
-            {filtersActive
-              ? 'Keine Signale für diese Filterkombination.'
-              : 'Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.'}
+      <div className="obs-section-label">Signale <span style={{ opacity: .6, fontWeight: 400 }}>(max. 5 sichtbar, Rest scrollbar)</span></div>
+      <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
+        {signals.length === 0 && !loading ? (
+          <div className="obs-card">
+            <div className="obs-empty">
+              {filtersActive
+                ? 'Keine Signale für diese Filterkombination.'
+                : 'Noch keine Signale erkannt — sie entstehen automatisch nach jedem Forschungsgespräch.'}
+              {!filtersActive && total !== null && total > 0 && ' (Filter aktiv?)'}
+            </div>
           </div>
-        </div>
-      )}
-      {signals.length > 0 && visibleSections.map(section => {
-        const levelSignals = signals.filter(s => s.level === section.key)
-        return (
-          <div key={section.key} style={{ marginBottom: 8 }}>
-            <div className="obs-section-label">{section.label}</div>
-            {levelSignals.length === 0 ? (
-              <div className="obs-empty" style={{ padding: '12px 0', textAlign: 'left' }}>{section.empty}</div>
-            ) : (
-              levelSignals.map((s, i) => (
-                <div
-                  className="obs-item-card obs-item-card-clickable"
-                  key={s.id}
-                  style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}
-                  onClick={() => setExpandedSignal(s)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedSignal(s) } }}
-                >
-                  {/* The "measured emergence" gate's own verdict, per-card —
-                      mirrors the Research page's own "gemessene Emergenz"
-                      vs. "Beobachtung" vocabulary exactly (content.json,
-                      page id `research`, "Wann gilt Emergenz als
-                      gemessen?"): a signal only reads as measured emergence
-                      once it has actually recurred across ≥3 distinct
-                      conversations with real CCET data behind it (see
-                      emergence.rs's verify_recurrence) — every other signal
-                      is honestly still just an observation, exactly as the
-                      site's own methodology page has always defined the
-                      line, now finally enforced instead of asserted. */}
-                  {s.verified_emergence ? (
-                    <div className="obs-badge-verified">
-                      ✓ Verifizierte Emergenz (gesehen in {s.recurrence_count} Gesprächen)
-                    </div>
-                  ) : (
-                    <div className="obs-placeholder-tag">Beobachtung — noch nicht als gemessene Emergenz bestätigt</div>
-                  )}
-                  <div className="obs-item-title">{s.pattern}</div>
-                  <div className="obs-item-meta">
-                    <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>
-                    {' · '}Konfidenz: {s.confidence}
-                    {' · '}Verlauf: {EVOLUTION_ARROW[s.evolution] ?? '?'} {s.evolution}
-                    {s.scope && <> · {s.scope}</>}
-                    {' · '}{s.created_at}
-                    {s.source_conversation_id && onOpenConversation && (
-                      <>
-                        {' · '}
-                        <button
-                          className="chat-inspect-toggle"
-                          style={{ fontSize: 11, padding: 0 }}
-                          onClick={e => { e.stopPropagation(); onOpenConversation(s.source_conversation_id!) }}
-                        >
-                          aus Gespräch ↗
-                        </button>
-                      </>
+        ) : (
+          visibleSections.map(section => {
+            const levelSignals = signals.filter(s => s.level === section.key).slice(0, 5)
+            if (levelSignals.length === 0) return null
+            return (
+              <div key={section.key} style={{ marginBottom: 8 }}>
+                <div className="obs-section-label" style={{ fontSize: 11 }}>{section.label}</div>
+                {levelSignals.map((s, i) => (
+                  <div
+                    className="obs-item-card obs-item-card-clickable"
+                    key={s.id}
+                    style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}
+                    onClick={() => setExpandedSignal(s)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedSignal(s) } }}
+                  >
+                    {s.verified_emergence ? (
+                      <div className="obs-badge-verified">
+                        ✓ Verifizierte Emergenz (gesehen in {s.recurrence_count} Gesprächen)
+                      </div>
+                    ) : (
+                      <div className="obs-placeholder-tag">Beobachtung — noch nicht als gemessene Emergenz bestätigt</div>
                     )}
+                    <div className="obs-item-title">{s.pattern}</div>
+                    <div className="obs-item-meta">
+                      <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>
+                      {' · '}Konfidenz: {s.confidence}
+                      {' · '}Verlauf: {EVOLUTION_ARROW[s.evolution] ?? '?'} {s.evolution}
+                      {s.scope && <> · {s.scope}</>}
+                      {' · '}{s.created_at}
+                      {s.source_conversation_id && onOpenConversation && (
+                        <>
+                          {' · '}
+                          <button
+                            className="chat-inspect-toggle"
+                            style={{ fontSize: 11, padding: 0 }}
+                            onClick={e => { e.stopPropagation(); onOpenConversation(s.source_conversation_id!) }}
+                          >
+                            aus Gespräch ↗
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="obs-item-body">
+                      {previewText(s.observation)}
+                      {s.observation.length > PREVIEW_CHARS && <span className="obs-item-more"> Details ansehen →</span>}
+                    </div>
                   </div>
-                  <div className="obs-item-body">
-                    {previewText(s.observation)}
-                    {s.observation.length > PREVIEW_CHARS && <span className="obs-item-more"> Details ansehen →</span>}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )
-      })}
+                ))}
+              </div>
+            )
+          })
+        )}
+      </div>
 
       {/* Only reached once some signals are already showing — the full-page
           error state above already covers a failure on the very first load. */}
