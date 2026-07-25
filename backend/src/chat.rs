@@ -383,6 +383,35 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Organically growing shared vocabulary for the CCET terms_reused /
+    // Resonance-Frequency metric. Historically this was ONLY the hardcoded
+    // `CCET_FRAMEWORK_TERMS` const below; that const is now merely the SEED
+    // (inserted once, `INSERT OR IGNORE`, so old behavior is preserved and
+    // existing `terms_reused` values in ccet_turns stay valid — the new
+    // logic is strictly additive). New terms are added by
+    // `track_organic_shared_terms`: a distinctive term that shows up on
+    // BOTH sides of an exchange (user AND assistant) within a conversation
+    // gets inserted / its frequency bumped. `frequency` counts how often a
+    // term was re-observed crossing that user↔assistant boundary; seeds
+    // start at 0 (never organically observed yet).
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS shared_terms (
+            term TEXT PRIMARY KEY,
+            first_seen DATETIME NOT NULL DEFAULT (datetime('now')),
+            frequency INTEGER NOT NULL DEFAULT 1
+        )",
+    )
+    .execute(db)
+    .await
+    .expect("create shared_terms");
+    for term in CCET_FRAMEWORK_TERMS {
+        sqlx::query("INSERT OR IGNORE INTO shared_terms (term, frequency) VALUES (?1, 0)")
+            .bind(term)
+            .execute(db)
+            .await
+            .ok();
+    }
+
     // Snapshot-before-delete: every time edit-and-resend (see
     // delete_message_and_after) or an outright abandon removes a message, the
     // old content is preserved here BEFORE the DELETE, so the human-side deep
@@ -763,23 +792,128 @@ const CCET_FRAMEWORK_TERMS: &[&str] = &[
     "technische ebene",
 ];
 
-fn framework_terms_in(text: &str) -> std::collections::HashSet<&'static str> {
+/// Which of the given vocabulary terms appear (lowercase, substring) in
+/// `text`. Parameterized over the vocabulary — historically this only ever
+/// scanned the hardcoded `CCET_FRAMEWORK_TERMS`; now the caller passes in
+/// whatever `load_shared_terms` read from the organically growing
+/// `shared_terms` table (which is seeded with exactly those const terms, so
+/// old `terms_reused` semantics are preserved and the new terms are purely
+/// additive).
+fn terms_in<'a>(text: &str, vocab: &'a [String]) -> std::collections::HashSet<&'a str> {
     let lower = text.to_lowercase();
-    CCET_FRAMEWORK_TERMS.iter().copied().filter(|term| lower.contains(term)).collect()
+    vocab.iter().map(String::as_str).filter(|term| lower.contains(*term)).collect()
 }
 
 /// Resonance Frequency's per-turn primitive: does the CURRENT assistant
-/// turn reuse at least one of this app's own established framework terms
-/// that ALSO appeared in the immediately preceding assistant turn — i.e.
+/// turn reuse at least one shared-vocabulary term (seeded framework terms
+/// plus organically tracked ones — see `track_organic_shared_terms`) that
+/// ALSO appeared in the immediately preceding assistant turn — i.e.
 /// vocabulary the model is carrying forward on its own ("without
 /// prompting"), rather than a term merely appearing once in isolation.
-fn shares_framework_term(current: &str, previous: &str) -> bool {
-    let current_terms = framework_terms_in(current);
+fn shares_framework_term(current: &str, previous: &str, vocab: &[String]) -> bool {
+    let current_terms = terms_in(current, vocab);
     if current_terms.is_empty() {
         return false;
     }
-    let previous_terms = framework_terms_in(previous);
+    let previous_terms = terms_in(previous, vocab);
     current_terms.intersection(&previous_terms).next().is_some()
+}
+
+/// The full shared vocabulary as currently persisted. Falls back to the
+/// hardcoded seed list if the table is missing or empty (e.g. a bare test
+/// DB that never ran `init_schema`) so `terms_reused` never silently
+/// degrades to matching nothing.
+async fn load_shared_terms(db: &SqlitePool) -> Vec<String> {
+    let rows: Vec<(String,)> = sqlx::query_as("SELECT term FROM shared_terms")
+        .fetch_all(db)
+        .await
+        .unwrap_or_default();
+    if rows.is_empty() {
+        return CCET_FRAMEWORK_TERMS.iter().map(|s| s.to_string()).collect();
+    }
+    rows.into_iter().map(|(t,)| t).collect()
+}
+
+/// Minimum length (chars) for a word to count as a "distinctive" organic
+/// shared-vocabulary candidate — filters out most function words outright.
+const ORGANIC_TERM_MIN_LEN: usize = 5;
+
+/// Stopwords (German + English, this app speaks both) that clear the
+/// length bar but are still far too generic to ever count as shared
+/// project vocabulary. Deliberately small and dumb — deterministic, no
+/// LLM involved anywhere in this pipeline.
+const ORGANIC_STOPWORDS: &[&str] = &[
+    "aber", "alle", "alles", "als", "also", "andere", "anderen", "auch", "beide", "beim", "bitte",
+    "dann", "dass", "deine", "diese", "dieselbe", "diesem", "diesen", "dieser", "dieses", "doch",
+    "durch", "einem", "einen", "einer", "eines", "etwas", "genau", "gerne", "haben", "hatte",
+    "hier", "ihre", "immer", "jetzt", "kann", "keine", "können", "machen", "meine", "nach",
+    "nicht", "noch", "nur", "oder", "schon", "sein", "sich", "sind", "sowie", "unser", "unter",
+    "viel", "vielleicht", "wieder", "wurde", "zwischen", "übrigens",
+    "about", "after", "again", "because", "been", "before", "being", "between", "could", "does",
+    "doing", "either", "every", "having", "here", "into", "maybe", "might", "other", "please",
+    "really", "shall", "should", "since", "still", "their", "there", "these", "they", "things",
+    "think", "those", "through", "under", "until", "very", "wants", "were", "what", "when",
+    "where", "which", "while", "will", "with", "without", "would", "your",
+];
+
+/// The deterministic candidate extractor behind organic vocabulary growth:
+/// lowercase words of at least `ORGANIC_TERM_MIN_LEN` chars that contain a
+/// letter and aren't stopwords. Simple by design — a term only ever makes
+/// it into `shared_terms` when BOTH sides of a conversation used it (see
+/// `track_organic_shared_terms`), which is the actual signal; this function
+/// just proposes candidates.
+fn organic_candidate_terms(text: &str) -> std::collections::HashSet<String> {
+    text.to_lowercase()
+        .split(|c: char| !c.is_alphanumeric() && c != '-')
+        .filter(|w| w.chars().count() >= ORGANIC_TERM_MIN_LEN)
+        .filter(|w| w.chars().any(|c| c.is_alphabetic()))
+        .filter(|w| !ORGANIC_STOPWORDS.contains(w))
+        .map(str::to_string)
+        .collect()
+}
+
+/// Organic shared-vocabulary growth: any distinctive candidate term (see
+/// `organic_candidate_terms`) of the current turn that ALSO appears in a
+/// message from the OTHER role in the same conversation is genuinely
+/// "shared" vocabulary — the two sides of the dyad both used it — and gets
+/// inserted into `shared_terms` (or its `frequency` bumped if already
+/// there). Covers both directions: called on an assistant turn it checks
+/// against prior user messages, and vice versa. Purely additive to the
+/// seeded framework terms; never removes or rewrites anything, so existing
+/// `terms_reused` values in old `ccet_turns` rows stay valid.
+async fn track_organic_shared_terms(
+    db: &SqlitePool,
+    conversation_id: &str,
+    current_text: &str,
+    current_role: &str,
+) {
+    let current_terms = organic_candidate_terms(current_text);
+    if current_terms.is_empty() {
+        return;
+    }
+    let other_role = if current_role == "assistant" { "user" } else { "assistant" };
+    let rows: Vec<(String,)> = sqlx::query_as(
+        "SELECT content FROM chat_messages WHERE conversation_id = ?1 AND role = ?2",
+    )
+    .bind(conversation_id)
+    .bind(other_role)
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+    let mut other_terms: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for (content,) in &rows {
+        other_terms.extend(organic_candidate_terms(content));
+    }
+    for term in current_terms.intersection(&other_terms) {
+        sqlx::query(
+            "INSERT INTO shared_terms (term) VALUES (?1) \
+             ON CONFLICT(term) DO UPDATE SET frequency = frequency + 1",
+        )
+        .bind(term)
+        .execute(db)
+        .await
+        .ok();
+    }
 }
 
 fn is_stable_turn(similarity: f32) -> bool {
@@ -903,13 +1037,19 @@ async fn record_ccet_turn(state: &AppState, conversation_id: &str, current_text:
         }
     };
 
+    // Grow the shared vocabulary organically BEFORE loading it, so a term
+    // this very turn establishes across the user/assistant boundary can
+    // already count toward this turn's terms_reused check.
+    track_organic_shared_terms(&state.db, conversation_id, current_text, "assistant").await;
+    let vocab = load_shared_terms(&state.db).await;
+
     let (similarity, stable, prev_stable, terms_reused) = match (&prev_row, &prev_assistant_text) {
         (Some((prev_blob, prev_stable_int)), Some((prev_text,))) => {
             let prev_embedding = decode_embedding(prev_blob);
             let similarity = cosine(&current_embedding, &prev_embedding);
             let stable = is_stable_turn(similarity);
             let prev_stable = *prev_stable_int != 0;
-            let terms_reused = shares_framework_term(current_text, prev_text);
+            let terms_reused = shares_framework_term(current_text, prev_text, &vocab);
             (Some(similarity), stable, Some(prev_stable), terms_reused)
         }
         // No previous turn recorded yet for this conversation — honest
@@ -3825,30 +3965,38 @@ mod tests {
         assert_eq!(compute_resonance_frequency(&[]), 0.0);
     }
 
+    /// The historical hardcoded vocabulary as an owned Vec — what
+    /// `load_shared_terms` seeds and what these tests always meant.
+    fn seed_vocab() -> Vec<String> {
+        CCET_FRAMEWORK_TERMS.iter().map(|s| s.to_string()).collect()
+    }
+
     #[test]
     fn shares_framework_term_requires_overlap_not_just_presence_in_either_turn() {
+        let vocab = seed_vocab();
         assert!(
-            shares_framework_term("Das ist ein klarer Fall von Emergenz.", "Wir sehen hier echte Emergenz im System."),
+            shares_framework_term("Das ist ein klarer Fall von Emergenz.", "Wir sehen hier echte Emergenz im System.", &vocab),
             "both turns mention the same term"
         );
         assert!(
-            !shares_framework_term("Das ist Drift.", "Hier war nichts Besonderes."),
+            !shares_framework_term("Das ist Drift.", "Hier war nichts Besonderes.", &vocab),
             "current turn's term never appeared in the previous turn"
         );
         assert!(
-            !shares_framework_term("Ganz gewöhnliche Antwort ohne Fachbegriff.", "Wir beobachten Drift im Interaction Field."),
+            !shares_framework_term("Ganz gewöhnliche Antwort ohne Fachbegriff.", "Wir beobachten Drift im Interaction Field.", &vocab),
             "current turn doesn't reuse anything, even though the PREVIOUS turn had framework terms"
         );
     }
 
     #[test]
     fn shares_framework_term_matching_is_case_insensitive() {
-        assert!(shares_framework_term("EMERGENZ tritt auf.", "emergenz wurde erkannt."));
+        assert!(shares_framework_term("EMERGENZ tritt auf.", "emergenz wurde erkannt.", &seed_vocab()));
     }
 
     #[test]
     fn framework_terms_in_finds_multiple_distinct_terms() {
-        let found = framework_terms_in("Auf der Systemebene sehen wir Drift und eine neue Emergenz.");
+        let vocab = seed_vocab();
+        let found = terms_in("Auf der Systemebene sehen wir Drift und eine neue Emergenz.", &vocab);
         assert!(found.contains("systemebene"));
         assert!(found.contains("drift"));
         assert!(found.contains("emergenz"));
@@ -3941,6 +4089,87 @@ mod tests {
             (parsed["resonance_frequency"].as_f64().unwrap() - (1.0 / 3.0)).abs() < 0.01,
             "only BETA reuses a framework term ('Emergenz') seen in the immediately preceding turn: {parsed}"
         );
+    }
+
+    /// Organic shared-vocabulary growth: a distinctive term ("kristallgitter")
+    /// that appears in BOTH a user message and a later assistant turn must
+    /// land in `shared_terms`, and a second cross-boundary observation must
+    /// bump its `frequency`. Also pins the seeding: the hardcoded framework
+    /// terms are present (frequency 0) after `init_schema`, so old
+    /// terms_reused semantics are preserved.
+    #[tokio::test]
+    async fn test_organic_shared_terms() {
+        let state = test_state().await;
+
+        // Seeding: every hardcoded framework term is already in the table.
+        for term in CCET_FRAMEWORK_TERMS {
+            let row: Option<(i64,)> = sqlx::query_as("SELECT frequency FROM shared_terms WHERE term = ?1")
+                .bind(term)
+                .fetch_optional(&state.db)
+                .await
+                .unwrap();
+            assert_eq!(row, Some((0,)), "seed term {term:?} missing or wrong frequency");
+        }
+
+        let conv_id = "organic-conv-1";
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, 'Organic Test', 'chat')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        // User introduces a distinctive term...
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES ('om-1', ?1, 'user', 'Erklär mir bitte das Kristallgitter im Detail.')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        // ...assistant picks it up: crossed the user↔assistant boundary →
+        // tracked (frequency 1, the INSERT default).
+        track_organic_shared_terms(
+            &state.db,
+            conv_id,
+            "Ein Kristallgitter ist die periodische Anordnung von Atomen.",
+            "assistant",
+        )
+        .await;
+        let row: Option<(i64,)> = sqlx::query_as("SELECT frequency FROM shared_terms WHERE term = 'kristallgitter'")
+            .fetch_optional(&state.db)
+            .await
+            .unwrap();
+        assert_eq!(row, Some((1,)), "term shared across user→assistant must be tracked");
+
+        // Other direction too: assistant said it (message above must be
+        // persisted for the lookup), user reuses it → frequency incremented.
+        sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content) VALUES ('om-2', ?1, 'assistant', 'Ein Kristallgitter ist die periodische Anordnung von Atomen.')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+        track_organic_shared_terms(&state.db, conv_id, "Und wie stabil ist so ein Kristallgitter?", "user").await;
+        let row: Option<(i64,)> = sqlx::query_as("SELECT frequency FROM shared_terms WHERE term = 'kristallgitter'")
+            .fetch_optional(&state.db)
+            .await
+            .unwrap();
+        assert_eq!(row, Some((2,)), "second cross-boundary observation must increment frequency");
+
+        // Stopwords / short words never make it in, even when both sides use them.
+        let stop: Option<(i64,)> = sqlx::query_as("SELECT frequency FROM shared_terms WHERE term = 'bitte'")
+            .fetch_optional(&state.db)
+            .await
+            .unwrap();
+        assert_eq!(stop, None, "stopword must not be tracked");
+
+        // And the grown vocabulary feeds terms_reused: shares_framework_term
+        // now matches on the organically learned term.
+        let vocab = load_shared_terms(&state.db).await;
+        assert!(vocab.iter().any(|t| t == "kristallgitter"));
+        assert!(shares_framework_term(
+            "Das Kristallgitter bleibt stabil.",
+            "Wir sprachen über das Kristallgitter.",
+            &vocab
+        ));
     }
 
     // ── Hallucination Tracker v1: tool-call ↔ message linkage + spawn isolation ──
