@@ -3495,6 +3495,29 @@ button { cursor: pointer; font-family: inherit; }
 }
 .hud-section-tabs { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
 .hud-section-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; flex-shrink: 0; margin-left: auto; }
+
+/* EmergenceMonitor's toolbar (5 filters + 2 action buttons + export) — the
+   worst "everything crammed in one row" offender in the app. Two visually
+   distinct clusters (filters vs actions) instead of one flat row, and the
+   whole toolbar is allowed to wrap onto its own full-width line below the
+   page title rather than fighting the title/description for the strict
+   one-line .hud-section-actions row every other (much shorter) app header
+   fits fine. */
+.hud-section-actions:has(.em-toolbar) {
+  flex-basis: 100%; flex-wrap: wrap; margin-left: 0; margin-top: 10px;
+}
+.em-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.em-toolbar-filters, .em-toolbar-actions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 6px 10px; border-radius: 9px;
+  background: rgba(150,156,170,.06); border: 1px solid rgba(150,156,170,.14);
+}
+.observatory-hud .em-toolbar-filters, .observatory-hud .em-toolbar-actions,
+.gotham .em-toolbar-filters, .gotham .em-toolbar-actions {
+  background: rgba(52,225,255,.045); border-color: rgba(52,225,255,.14);
+}
+.em-toolbar-divider { width: 1px; height: 22px; background: rgba(150,156,170,.2); flex-shrink: 0; }
+@media (max-width: 900px) { .em-toolbar-divider { display: none; } }
 @media (max-width: 720px) {
   /* Below this width there's no honest way to keep everything on one line
      without the description disappearing entirely or the actions

@@ -294,44 +294,59 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
     }
   }
 
+  // Previously all 5 filters + 2 action buttons + ExportButtons sat in one
+  // flat, unwrapping flex row — "5 filter dropdowns + 2 action buttons
+  // crammed into a single row with no grouping," the worst offender count
+  // in the app per the design review. Split into two visually distinct
+  // clusters (em-toolbar-filters / em-toolbar-actions, see App.css) with a
+  // divider between them, matching the same filters/action separation
+  // HudHeaderActions already models for other apps — and `.em-toolbar`
+  // is allowed to drop onto its own full-width line under the page title
+  // instead of fighting the title/description for the same strict one-line
+  // header row (see the `:has(.em-toolbar)` override in App.css).
   useHeaderActions(
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-      <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-        <option value="">Alle Ebenen</option>
-        {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-      </select>
-      <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-        <option value="">Alle Status</option>
-        {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
-      <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-        <option value="">Alle Konfidenzen</option>
-        {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
-      <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-        <option value="">Alle Verläufe</option>
-        {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
-      <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
-        <option value="">Alle Signale</option>
-        <option value="true">Nur verifiziert</option>
-      </select>
-      {filtersActive && (
-        <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
-          Filter zurücksetzen
+    <div className="em-toolbar">
+      <div className="em-toolbar-filters">
+        <select value={levelFilter} onChange={e => setLevelFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Ebenen</option>
+          {LEVEL_SECTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Status</option>
+          {Object.keys(STATUS_ACCENT).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Konfidenzen</option>
+          {CONFIDENCE_LEVELS.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={evolutionFilter} onChange={e => setEvolutionFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Verläufe</option>
+          {Object.keys(EVOLUTION_ARROW).map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={verifiedFilter} onChange={e => setVerifiedFilter(e.target.value)} style={{ flex: '1 1 140px' }}>
+          <option value="">Alle Signale</option>
+          <option value="true">Nur verifiziert</option>
+        </select>
+        {filtersActive && (
+          <button type="button" className="chat-inspect-toggle" style={{ fontSize: 12 }} onClick={resetFilters}>
+            Filter zurücksetzen
+          </button>
+        )}
+      </div>
+      <div className="em-toolbar-divider" aria-hidden="true" />
+      <div className="em-toolbar-actions">
+        <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
+          {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
         </button>
-      )}
-      <button className="panel-add-btn" onClick={requestAnalysis} disabled={analyzing}>
-        {analyzing ? 'Analysiert…' : '⟳ Jetzt erneut analysieren'}
-      </button>
-      <button
-        className="panel-add-btn"
-        disabled={signals.length === 0}
-        onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
-      >
-        ⬇ JSON
-      </button>
-      <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
+        <button
+          className="panel-add-btn"
+          disabled={signals.length === 0}
+          onClick={() => downloadJson(`emergence-signals-${new Date().toISOString().slice(0, 10)}.json`, signals)}
+        >
+          ⬇ JSON
+        </button>
+        <ExportButtons rows={signals.map(s => ({ ...s }))} filenameBase="emergence-signals" title="Emergence-Signale" />
+      </div>
     </div>,
     [levelFilter, statusFilter, confidenceFilter, evolutionFilter, verifiedFilter, filtersActive, analyzing, signals],
   )
