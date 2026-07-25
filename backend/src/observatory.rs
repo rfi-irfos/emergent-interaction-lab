@@ -337,6 +337,7 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
     let decision_latency_s = crate::analytics_decisions::decision_latency_global(db).await;
     let clarification_efficiency_s = crate::analytics_resolution::clarification_efficiency_global(db).await;
     let repair_success_ratio = crate::analytics_resolution::repair_success_global(db).await;
+    let task_metrics = crate::chat::persistence_task_metrics(db).await;
 
     // Lifetime token + reasoning accounting for the Forschung KPI wall's
     // "Token & Reasoning" tile. All-time (same convention as the other
@@ -384,6 +385,8 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "decision_latency_seconds": decision_latency_s,
         "clarification_efficiency_seconds": clarification_efficiency_s,
         "repair_success_ratio": repair_success_ratio,
+        "task_completion_rate": task_metrics.get("task_completion_rate"),
+        "session_continuation_rate": task_metrics.get("session_continuation_rate"),
         "avg_prompt_length": avg_prompt_length,
         "avg_structured_prompt_ratio": avg_structured_prompt_ratio,
         "avg_constraint_density": avg_constraint_density,
