@@ -3122,6 +3122,33 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-signal-modal-observation { color: rgba(226,241,245,.85); }
 .obs-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
 
+/* ── Dense data table — for genuinely tabular catalogs (Monetization's
+   product list: 23+ rows, name/price/type/actions, no rich per-row content),
+   as opposed to .obs-item-card's feed/activity rows (timestamped events with
+   variable-length body text). One full-height card per row doesn't scale
+   past a handful of items — a real table does. First use: Monetization.tsx's
+   Produkte list, which used to render each product as a full obs-item-card
+   (confirmed live via screenshot: 23 products = 15+ screens of scrolling
+   for what is fundamentally a price list). */
+.obs-table-wrap { overflow-x: auto; border: 1px solid rgba(15,23,42,.08); border-radius: 11px; }
+.obs-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.obs-table th {
+  text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #8a8f98; padding: 9px 12px; border-bottom: 1px solid rgba(15,23,42,.08); white-space: nowrap;
+}
+.obs-table td { padding: 10px 12px; border-bottom: 1px solid rgba(15,23,42,.06); vertical-align: top; }
+.obs-table tr:last-child td { border-bottom: none; }
+.obs-table tr:hover td { background: rgba(59,107,246,.03); }
+.obs-table-name { font-weight: 700; color: #111827; }
+.obs-table-desc { color: #6b7280; font-size: 11.5px; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-table-actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+.observatory-hud .obs-table-wrap, .gotham .obs-table-wrap { border-color: rgba(150,156,170,.12); }
+.observatory-hud .obs-table th, .gotham .obs-table th { color: rgba(138,152,184,.85); border-bottom-color: rgba(150,156,170,.14); }
+.observatory-hud .obs-table td, .gotham .obs-table td { border-bottom-color: rgba(150,156,170,.08); }
+.observatory-hud .obs-table tr:hover td, .gotham .obs-table tr:hover td { background: rgba(56,217,204,.05); }
+.observatory-hud .obs-table-name, .gotham .obs-table-name { color: #e4e8f0; }
+.observatory-hud .obs-table-desc, .gotham .obs-table-desc { color: rgba(212,219,235,.6); }
+
 /* ── OBSERVATORY HUD THEME ────────────────────────────────────────────────
    Reskinned to match the Lighthouse OS standard (see projects/lighthouse
    frontend/src/styles.css [data-theme="dark"]): deep midnight navy, off-white
