@@ -368,6 +368,37 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+
+    // Snapshot-before-delete: every time edit-and-resend (see
+    // delete_message_and_after) or an outright abandon removes a message, the
+    // old content is preserved here BEFORE the DELETE, so the human-side deep
+    // analysis (accept/modify/reject rate, decision latency, revision cycles,
+    // edit distance, rewrite/delete ratio) has a trace to work from. Without
+    // this the hard-delete left no record that the message ever existed.
+    // `action` is 'edit' when the deleted message is (or is followed by)
+    // content the caller re-sends, and 'abandon' when the deleted message was
+    // the LAST message in the conversation (nothing after it to re-edit).
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS message_revisions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            message_id TEXT NOT NULL,
+            old_content TEXT NOT NULL,
+            action TEXT NOT NULL CHECK (action IN ('edit', 'abandon')),
+            created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+        )",
+    )
+    .execute(db)
+    .await
+    .expect("create message_revisions");
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_mr_conv ON message_revisions(conversation_id, created_at)")
+        .execute(db)
+        .await
+        .ok();
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_mr_message ON message_revisions(message_id)")
+        .execute(db)
+        .await
+        .ok();
 }
 
 
@@ -1168,8 +1199,8 @@ pub async fn delete_message_and_after(
         return StatusCode::UNAUTHORIZED.into_response();
     }
 
-    let target: Option<(i64, String)> = sqlx::query_as(
-        "SELECT rowid, created_at FROM chat_messages WHERE id = ?1 AND conversation_id = ?2",
+    let target: Option<(i64, String, String)> = sqlx::query_as(
+        "SELECT rowid, created_at, content FROM chat_messages WHERE id = ?1 AND conversation_id = ?2",
     )
     .bind(&message_id)
     .bind(&conversation_id)
@@ -1178,9 +1209,47 @@ pub async fn delete_message_and_after(
     .ok()
     .flatten();
 
-    let Some((target_rowid, target_created_at)) = target else {
+    let Some((target_rowid, target_created_at, target_content)) = target else {
         return StatusCode::NOT_FOUND.into_response();
     };
+
+    // Snapshot-before-delete (see message_revisions in init_schema): preserve
+    // the target message's old content BEFORE the hard-delete so the human-
+    // side deep analysis (accept/modify/reject rate, decision latency,
+    // revision cycles, edit distance, rewrite/delete ratio) has a trace of
+    // what was there. `action` is decided by whether the target is the LAST
+    // message in the conversation: if anything exists strictly after it, this
+    // is the normal edit-and-resend cutoff (the caller re-sends a replacement
+    // right after — see this function's own doc comment and get_conversation's
+    // note on the edit-and-resend pattern), logged 'edit'; if nothing follows
+    // it, the message is simply being abandoned with no replacement, logged
+    // 'abandon'. Best-effort: a failure here (e.g. the table not existing on
+    // an older DB) must never block the delete the caller asked for — same
+    // convention as the RAG/retrieval cleanup below.
+    let has_later: Option<(i64,)> = sqlx::query_as(
+        "SELECT rowid FROM chat_messages
+         WHERE conversation_id = ?1
+           AND (created_at > ?2 OR (created_at = ?2 AND rowid > ?3))
+         LIMIT 1",
+    )
+    .bind(&conversation_id)
+    .bind(&target_created_at)
+    .bind(target_rowid)
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten();
+    let action = if has_later.is_some() { "edit" } else { "abandon" };
+    let _ = sqlx::query(
+        "INSERT INTO message_revisions (conversation_id, message_id, old_content, action) \
+         VALUES (?1, ?2, ?3, ?4)",
+    )
+    .bind(&conversation_id)
+    .bind(&message_id)
+    .bind(&target_content)
+    .bind(action)
+    .execute(&state.db)
+    .await;
 
     let message_ids: Vec<(String,)> = sqlx::query_as(
         "SELECT id FROM chat_messages
@@ -3351,6 +3420,86 @@ mod tests {
         .await
         .into_response();
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+
+    /// Snapshot-before-delete: deleting a message must first preserve its old
+    /// content in `message_revisions` (unblocks accept/modify/reject rate,
+    /// decision latency, revision cycles, edit distance, rewrite/delete ratio).
+    /// A middle message with content after it is the normal edit-and-resend
+    /// cutoff → action 'edit'; the LAST message with nothing after it is an
+    /// outright abandon → action 'abandon'. Both must land a row with the
+    /// original (non-null) content.
+    #[tokio::test]
+    async fn test_delete_snapshots_revision() {
+        let state = test_state().await;
+        let conv_id = "conv-snapshot";
+        sqlx::query("INSERT INTO chat_conversations (id, title, kind) VALUES (?1, 'x', 'chat')")
+            .bind(conv_id)
+            .execute(&state.db)
+            .await
+            .unwrap();
+
+        for (id, role, content, created_at) in [
+            ("s1", "user", "Frage 1", "2026-07-11 10:00:00"),
+            ("s2", "assistant", "Antwort 1", "2026-07-11 10:00:05"),
+            ("s3", "user", "Frage 2 ORIGINAL CONTENT", "2026-07-11 10:00:10"),
+            ("s4", "assistant", "Antwort 2", "2026-07-11 10:00:15"),
+        ] {
+            sqlx::query("INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES (?1,?2,?3,?4,?5)")
+                .bind(id)
+                .bind(conv_id)
+                .bind(role)
+                .bind(content)
+                .bind(created_at)
+                .execute(&state.db)
+                .await
+                .unwrap();
+        }
+
+        // Delete a MIDDLE message (s3): content follows it (s4) → 'edit'.
+        let resp = delete_message_and_after(
+            AxState(state.clone()),
+            HeaderMap::new(), CookieJar::new(),
+            Path((conv_id.to_string(), "s3".to_string())),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        let rev: Option<(String, String)> = sqlx::query_as(
+            "SELECT old_content, action FROM message_revisions WHERE message_id = ?1 AND conversation_id = ?2",
+        )
+        .bind("s3")
+        .bind(conv_id)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap();
+        let (old_content, action) = rev.expect("a message_revisions row must exist for the deleted message");
+        assert_eq!(old_content, "Frage 2 ORIGINAL CONTENT", "the old content must be snapshotted before the hard-delete, not lost");
+        assert!(!old_content.is_empty(), "old_content must be non-null/non-empty");
+        assert_eq!(action, "edit", "a message with content after it is the edit-and-resend cutoff → 'edit'");
+
+        // Now delete the LAST remaining message (s2): nothing after it → 'abandon'.
+        let resp = delete_message_and_after(
+            AxState(state.clone()),
+            HeaderMap::new(), CookieJar::new(),
+            Path((conv_id.to_string(), "s2".to_string())),
+        )
+        .await
+        .into_response();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        let rev2: Option<(String, String)> = sqlx::query_as(
+            "SELECT old_content, action FROM message_revisions WHERE message_id = ?1 AND conversation_id = ?2",
+        )
+        .bind("s2")
+        .bind(conv_id)
+        .fetch_optional(&state.db)
+        .await
+        .unwrap();
+        let (old_content2, action2) = rev2.expect("the abandoned last message must also be snapshotted");
+        assert_eq!(old_content2, "Antwort 1");
+        assert_eq!(action2, "abandon", "the last message with nothing after it is an outright abandon → 'abandon'");
     }
 
     // ── CCET (Continuous Co-Evolution Tracker) — pure-function tests
