@@ -99,12 +99,16 @@ export function BehavioralLandscape({ onOpenConversation }: { onOpenConversation
       {data.recent_tool_calls.length === 0
         ? <div className="obs-card"><div className="obs-empty">Noch keine Werkzeugaufrufe protokolliert.</div></div>
         : data.recent_tool_calls.map((c, i) => (
-            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: c.status === 'ok' ? '#8b5cf6' : '#ef4444' }}>
+            // A tool call's own ok/error outcome is a genuine binary status,
+            // not a category — routes through the shared success/danger
+            // tokens (was an ad hoc purple/red pair unrelated to the rest of
+            // the app's status vocabulary).
+            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: c.status === 'ok' ? 'var(--sem-success)' : 'var(--sem-danger)' }}>
               <div className="obs-item-title">{TOOL_LABELS[c.tool_name] ?? c.tool_name}</div>
               <div className="obs-item-meta">
                 <span
                   className="obs-pill"
-                  style={{ background: c.status === 'ok' ? 'rgba(139,92,246,.12)' : 'rgba(239,68,68,.12)', color: c.status === 'ok' ? '#8b5cf6' : '#ef4444' }}
+                  style={{ background: c.status === 'ok' ? 'color-mix(in srgb, var(--sem-success) 14%, transparent)' : 'color-mix(in srgb, var(--sem-danger) 14%, transparent)', color: c.status === 'ok' ? 'var(--sem-success)' : 'var(--sem-danger)' }}
                 >
                   {c.status === 'ok' ? 'ok' : 'Fehler'}
                 </span>

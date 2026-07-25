@@ -108,12 +108,16 @@ export function InformationDynamics() {
         {data.recent_retrievals.length === 0
           ? <div className="obs-card"><div className="obs-empty">{gapOnly ? 'Keine Wissenslücken in den letzten Anfragen.' : 'Noch keine Anfragen protokolliert.'}</div></div>
           : data.recent_retrievals.map((r, i) => (
-              <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: r.is_gap ? '#f59e0b' : '#14b8a6' }}>
+              // A knowledge gap is a genuine "this needs attention" signal
+              // (--sem-warning), not just another category — a real hit
+              // stays the page's own teal identity color, since that one
+              // isn't a status, just "retrieval happened."
+              <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: r.is_gap ? 'var(--sem-warning)' : '#14b8a6' }}>
                 <div className="obs-item-title">{r.query_text}</div>
                 <div className="obs-item-meta">
                   <span
                     className="obs-pill"
-                    style={{ background: r.is_gap ? 'rgba(245,158,11,.12)' : 'rgba(20,184,166,.12)', color: r.is_gap ? '#f59e0b' : '#14b8a6' }}
+                    style={{ background: r.is_gap ? 'color-mix(in srgb, var(--sem-warning) 14%, transparent)' : 'rgba(20,184,166,.12)', color: r.is_gap ? 'var(--sem-warning)' : '#14b8a6' }}
                   >
                     {r.is_gap ? 'Wissenslücke' : `${r.hit_count} Treffer`}
                   </span>
