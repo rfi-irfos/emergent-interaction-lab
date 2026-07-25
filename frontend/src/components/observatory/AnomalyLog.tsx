@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
@@ -24,6 +24,15 @@ interface Anomaly {
   created_at: string
 }
 
+interface HallucinationCheck {
+  id?: string
+  chat_message_id?: string
+  tool_call_id?: string
+  verdict?: string
+  detail?: string
+  created_at?: string
+}
+
 const KIND_LABELS: Record<Anomaly['kind'], string> = {
   tool_error: 'Werkzeug-Fehler',
   iteration_cap: 'Runden-Obergrenze erreicht',
@@ -36,6 +45,45 @@ const KIND_COLORS: Record<Anomaly['kind'], string> = {
   iteration_cap: '#f59e0b',
   refusal_triggered: '#3b6bf6',
   hallucination_mismatch: '#8b5cf6',
+}
+
+function verdictColor(verdict: string): string {
+  const v = verdict.toLowerCase()
+  if (v === 'match') return '#10b981'
+  if (v === 'mismatch') return '#ef4444'
+  return '#f59e0b'
+}
+
+const DRILLDOWN_INPUT_STYLE = {
+  flex: '1 1 220px',
+  minWidth: 160,
+  fontSize: 12,
+  padding: '6px 8px',
+  background: '#0e1116',
+  color: '#e8eaed',
+  border: '1px solid #2a2f37',
+  borderRadius: 6,
+}
+
+const HAL_TABLE_STYLE: CSSProperties = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  fontSize: 12,
+}
+
+const HAL_TH_STYLE: CSSProperties = {
+  textAlign: 'left',
+  padding: '8px 10px',
+  color: '#9aa0a8',
+  borderBottom: '1px solid #1f242c',
+  fontWeight: 600,
+}
+
+const HAL_TD_STYLE: CSSProperties = {
+  padding: '8px 10px',
+  borderBottom: '1px solid #161b21',
+  verticalAlign: 'top',
+  color: '#c8cdd4',
 }
 
 // Click-to-expand detail view — same .pem-overlay/.pem shell as the other
@@ -93,6 +141,30 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
   const [error, setError] = useState(false)
   const [kindFilter, setKindFilter] = useState<'' | Anomaly['kind']>('')
   const [expandedItem, setExpandedItem] = useState<Anomaly | null>(null)
+
+  // Task 4 (Wave 0) drilldown: the FULL hallucination_checks verdict list for
+  // a conversation — every match/mismatch/unverifiable row, not just the
+  // mismatch ones this anomaly log already surfaces as rows. No
+  // conversation_id source exists on this component, so the user supplies one.
+  const [halConvId, setHalConvId] = useState('')
+  const [hallucinations, setHallucinations] = useState<HallucinationCheck[]>([])
+  const [halLoading, setHalLoading] = useState(false)
+  const [halError, setHalError] = useState(false)
+
+  const loadHallucinations = async () => {
+    const id = halConvId.trim()
+    if (!id) return
+    setHalLoading(true); setHalError(false); setHallucinations([])
+    try {
+      const res = await adminFetch(`/api/observatory/hallucinations/${encodeURIComponent(id)}`, {})
+      if (!res.ok) throw new Error(String(res.status))
+      setHallucinations(await res.json())
+    } catch {
+      setHalError(true)
+    } finally {
+      setHalLoading(false)
+    }
+  }
 
   const load = async (offset: number, append: boolean) => {
     if (append) setLoadingMore(true); else setLoading(true)
@@ -210,6 +282,47 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
       {expandedItem && (
         <AnomalyModal item={expandedItem} onClose={() => setExpandedItem(null)} onOpenConversation={onOpenConversation} />
       )}
+      <div className="obs-section-label" style={{ marginTop: 18 }}>Halluzinations-Prüfungen (Drilldown)</div>
+      <div className="obs-card">
+        <div className="obs-item-meta" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            value={halConvId}
+            onChange={e => setHalConvId(e.target.value)}
+            placeholder="Conversation-ID"
+            style={DRILLDOWN_INPUT_STYLE}
+          />
+          <button className="panel-add-btn" onClick={loadHallucinations} disabled={halLoading || !halConvId.trim()}>
+            {halLoading ? 'Lädt…' : 'Laden'}
+          </button>
+        </div>
+        {halError && <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Laden.</div>}
+        {!halLoading && !halError && hallucinations.length === 0 && (
+          <div className="obs-empty">Noch keine Halluzinations-Prüfungen geladen. Conversation-ID eingeben und „Laden“.</div>
+        )}
+        {hallucinations.length > 0 && (
+          <table style={HAL_TABLE_STYLE}>
+            <thead>
+              <tr>
+                <th style={HAL_TH_STYLE}>Zeit</th>
+                <th style={HAL_TH_STYLE}>Verdict</th>
+                <th style={HAL_TH_STYLE}>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hallucinations.map((h, i) => (
+                <tr key={h.id ?? i}>
+                  <td style={HAL_TD_STYLE}>{h.created_at ?? '—'}</td>
+                  <td style={HAL_TD_STYLE}>
+                    <span className="obs-pill" style={{ background: `${verdictColor(h.verdict ?? '')}1a`, color: verdictColor(h.verdict ?? '') }}>{h.verdict ?? '—'}</span>
+                  </td>
+                  <td style={HAL_TD_STYLE}>{h.detail ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }

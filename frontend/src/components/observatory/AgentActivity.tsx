@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useAdminFetch } from '../../lib/adminApi'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { useAdminFetch, adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
@@ -20,6 +20,15 @@ interface AgentActivityData {
   items: ActivityItem[]
 }
 
+interface ToolCallRow {
+  id?: string
+  tool_name?: string
+  arguments?: unknown
+  result?: unknown
+  status?: string
+  created_at?: string
+}
+
 const KIND_COLORS: Record<ActivityItem['kind'], string> = {
   pull_request: '#3b6bf6',
   commit: '#8b5cf6',
@@ -32,6 +41,49 @@ function statusColor(item: ActivityItem): string {
   if (s === 'failure' || s === 'error' || s === 'closed') return '#ef4444'
   if (s === 'merged' || s === 'success' || s === 'deployed') return '#10b981'
   return KIND_COLORS[item.kind]
+}
+
+function safeParseJson(s: string): unknown {
+  try { return JSON.parse(s) } catch { return s }
+}
+
+function prettyJson(value: unknown): string {
+  const v = typeof value === 'string' ? safeParseJson(value) : value
+  try { return JSON.stringify(v, null, 2) } catch { return typeof value === 'string' ? value : String(value) }
+}
+
+function toolStatusColor(status: string): string {
+  const s = status.toLowerCase()
+  if (s === 'error' || s === 'failure' || s === 'failed') return '#ef4444'
+  if (s === 'success' || s === 'ok' || s === 'done') return '#10b981'
+  if (s === 'running' || s === 'pending') return '#f59e0b'
+  return '#9aa0a8'
+}
+
+const DROPDOWN_PRE_STYLE: CSSProperties = {
+  fontSize: 11,
+  lineHeight: 1.5,
+  color: '#c8cdd4',
+  background: '#0a0d12',
+  border: '1px solid #1f242c',
+  borderRadius: 6,
+  padding: 10,
+  overflowX: 'auto',
+  maxHeight: 280,
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  margin: 0,
+}
+
+const DRILLDOWN_INPUT_STYLE = {
+  flex: '1 1 220px',
+  minWidth: 160,
+  fontSize: 12,
+  padding: '6px 8px',
+  background: '#0e1116',
+  color: '#e8eaed',
+  border: '1px solid #2a2f37',
+  borderRadius: 6,
 }
 
 // Click-to-expand detail view, same .pem-overlay/.pem shell as
@@ -94,6 +146,31 @@ export function AgentActivity() {
   // already and there's nothing to gain from a server round-trip here.
   const [kindFilter, setKindFilter] = useState<'' | ActivityItem['kind']>('')
   const [expandedItem, setExpandedItem] = useState<ActivityItem | null>(null)
+
+  // Task 4 (Wave 0) drilldown: per-conversation RAW tool calls. The
+  // aggregate feed above only shows GitHub-level activity; this reaches into
+  // the agent_tool_calls table for the actual arguments/result JSON a
+  // conversation handed to and got back from each tool. No conversation_id
+  // source exists on this component, so the user supplies one.
+  const [toolConvId, setToolConvId] = useState('')
+  const [toolCalls, setToolCalls] = useState<ToolCallRow[]>([])
+  const [toolLoading, setToolLoading] = useState(false)
+  const [toolError, setToolError] = useState(false)
+
+  const loadToolCalls = async () => {
+    const id = toolConvId.trim()
+    if (!id) return
+    setToolLoading(true); setToolError(false); setToolCalls([])
+    try {
+      const res = await adminFetch(`/api/observatory/tool-calls/${encodeURIComponent(id)}`, {})
+      if (!res.ok) throw new Error(String(res.status))
+      setToolCalls(await res.json())
+    } catch {
+      setToolError(true)
+    } finally {
+      setToolLoading(false)
+    }
+  }
 
   const items = data ? (kindFilter ? data.items.filter(i => i.kind === kindFilter) : data.items) : []
 
@@ -169,6 +246,41 @@ export function AgentActivity() {
         Was tatsächlich am Code passiert ist — keine Erzählung aus dem Chat, sondern echte Einträge aus der
         Versionsverwaltung dieses Projekts. Veröffentlichungen werden separat erfasst, da sie dort nicht automatisch sichtbar sind.
       </p>
+      <div className="obs-section-label" style={{ marginTop: 18 }}>Werkzeug-Aufrufe (Drilldown)</div>
+      <div className="obs-card">
+        <div className="obs-item-meta" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text"
+            value={toolConvId}
+            onChange={e => setToolConvId(e.target.value)}
+            placeholder="Conversation-ID"
+            style={DRILLDOWN_INPUT_STYLE}
+          />
+          <button className="panel-add-btn" onClick={loadToolCalls} disabled={toolLoading || !toolConvId.trim()}>
+            {toolLoading ? 'Lädt…' : 'Laden'}
+          </button>
+        </div>
+        {toolError && <div className="obs-empty" style={{ padding: '8px 0' }}>Fehler beim Laden.</div>}
+        {!toolLoading && !toolError && toolCalls.length === 0 && (
+          <div className="obs-empty">Noch keine Werkzeug-Aufrufe geladen. Conversation-ID eingeben und „Laden“.</div>
+        )}
+        {toolCalls.map((tc, i) => (
+          <div className="obs-item-card" key={tc.id ?? i} style={{ ...hudStagger(i) }}>
+            <div className="obs-item-title">
+              <span className="obs-pill" style={{ background: '#3b6bf61a', color: '#3b6bf6' }}>{tc.tool_name ?? '—'}</span>
+              <span className="obs-pill" style={{ background: `${toolStatusColor(tc.status ?? '')}1a`, color: toolStatusColor(tc.status ?? '') }}>{tc.status ?? '—'}</span>
+            </div>
+            {tc.created_at && <div className="obs-item-meta" style={{ marginTop: 4 }}>{tc.created_at}</div>}
+            <div style={{ marginTop: 8 }}>
+              <div className="obs-item-meta" style={{ marginBottom: 2 }}>Argumente</div>
+              <pre style={DROPDOWN_PRE_STYLE}>{prettyJson(tc.arguments)}</pre>
+              <div className="obs-item-meta" style={{ margin: '8px 0 2px' }}>Ergebnis</div>
+              <pre style={DROPDOWN_PRE_STYLE}>{prettyJson(tc.result)}</pre>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {expandedItem && <AgentActivityModal item={expandedItem} onClose={() => setExpandedItem(null)} />}
     </div>
   )
