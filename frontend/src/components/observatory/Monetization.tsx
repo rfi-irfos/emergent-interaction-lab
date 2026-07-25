@@ -393,9 +393,9 @@ export function Monetization() {
           </button>
         </div>
       )}
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
+      <div className="obs-provenance-note">
         Jede Zeile stammt aus einem echten, signaturgeprüften Stripe-Webhook-Event (checkout.session.completed) - keine manuelle Eingabe, keine Simulation. E-Mail-Adressen sind nur hier, admin-only, sichtbar - nie öffentlich.
-      </p>
+      </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
         <div className="obs-section-label" style={{ marginBottom: 0 }}>Produkte</div>
@@ -512,9 +512,9 @@ export function Monetization() {
           </table>
         </div>
       )}
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 16 }}>
+      <div className="obs-provenance-note">
         Jeder Zahlungslink ist ein echter Stripe Payment Link - keine Simulation. Löschen entfernt nur den lokalen Eintrag, ein bereits erstellter Zahlungslink bleibt bei Stripe aktiv, bis er dort separat deaktiviert wird.
-      </p>
+      </div>
     </div>
   )
 }
