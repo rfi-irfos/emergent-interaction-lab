@@ -3670,47 +3670,25 @@ button { cursor: pointer; font-family: inherit; }
 .mycelium-detail-item-excerpt { font-size: 11.5px; color: rgba(226,241,245,.72); line-height: 1.5; margin-bottom: 4px; }
 .mycelium-detail-item-meta { font-size: 10px; color: rgba(148,190,199,.55); }
 
-/* ── HUD FRAMING — corner brackets + radar/dial accent ────────────────────
-   Angular Palantir-style card framing, extending the existing HUD glow
-   language (drop-shadow glow, hud-card-in, hud-pulse, the mycelium node
-   glow above) rather than inventing a second system. `.hud-corner-frame` is
-   the reusable primitive — self-contained via `--corner-c` (falls back
-   through --hud-cyan, then the public site's own --brand-cyan, then a
-   literal default) so the exact same class works both inside the admin
-   Observatory and, opted into by hand, on the public site's own cards (see
-   PublicSite.tsx). Applied automatically — no markup changes needed — to
-   every shared HUD card primitive already in use across Observatory
-   modules: .obs-card/.obs-item-card/.obs-map-card/.obs-stat/.live-card.
-
-   One ::after per card carries the whole decoration as stacked background
-   layers (8 short linear-gradients, one per bracket arm) rather than 4 real
-   corner elements, since an element only has 2 pseudo-element slots and
-   ::before is already the accent bar on .obs-stat/.live-card. `isolation:
-   isolate` + `z-index: -1` keeps that ::after correctly sandwiched between
-   the card's own background and its real (text) children — without it, a
-   negative z-index child can escape to the nearest ancestor stacking
-   context and paint behind unrelated content instead of just this card. */
-.hud-corner-frame,
-.observatory-hud .obs-card,
-.observatory-hud .obs-item-card,
-.observatory-hud .obs-map-card,
-.observatory-hud .obs-stat,
-.observatory-hud .live-card {
+/* ── HUD FRAMING — dead corner-bracket/radar primitive, kept for the public
+   site only ────────────────────────────────────────────────────────────
+   `.hud-corner-frame` is opted into by hand on the public site's own cards
+   (see PublicSite.tsx) — a dark-background decoration that needs a dark
+   backdrop to read as intentional (see the light/hc overrides below). It
+   used to auto-apply to every admin Observatory card too
+   (.obs-card/.obs-item-card/.obs-map-card/.obs-stat/.live-card) via a glowing
+   box-shadow + a radar-ring radial-gradient tucked into each card's
+   top-right corner — confirmed live via screenshot as the exact "kindergarten
+   glowy HUD" artifact Stage 7's glow-removal pass was meant to kill but
+   missed (that pass only touched .hud-tile/.live-card hover halos, not this
+   separate ruleset). Removed the admin selectors entirely rather than
+   flattening the glow to something calmer — the shared card chrome
+   (border/hover lift) already does the "this is a card" job without it. */
+.hud-corner-frame {
   position: relative;
   isolation: isolate;
 }
-/* Soft accent glow — replaces the old corner-bracket decoration (removed
-   per feedback). Each card gets a faint halo in its own accent hue
-   (--hud-accent on the Observatory, --brand-cyan on the public site) plus a
-   still radar ring tucked into the top-right — instrumentation, not a boxed
-   label. One ::after per card (the corner brackets used 8 gradient layers we
-   no longer want). */
-.hud-corner-frame::after,
-.observatory-hud .obs-card::after,
-.observatory-hud .obs-item-card::after,
-.observatory-hud .obs-map-card::after,
-.observatory-hud .obs-stat::after,
-.observatory-hud .live-card::after {
+.hud-corner-frame::after {
   content: '';
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
   --corner-c: var(--hud-accent, var(--hud-cyan, var(--brand-cyan, #22d3ee)));
@@ -3723,12 +3701,7 @@ button { cursor: pointer; font-family: inherit; }
   opacity: .85;
   transition: opacity .2s ease, box-shadow .2s ease;
 }
-.hud-corner-frame:hover::after,
-.observatory-hud .obs-card:hover::after,
-.observatory-hud .obs-item-card:hover::after,
-.observatory-hud .obs-map-card:hover::after,
-.observatory-hud .obs-stat:hover::after,
-.observatory-hud .live-card:hover::after {
+.hud-corner-frame:hover::after {
   opacity: 1;
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--corner-c) 30%, transparent),
