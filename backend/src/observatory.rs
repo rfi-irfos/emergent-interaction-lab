@@ -238,6 +238,32 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "SELECT date(created_at) as day, COUNT(*) FROM chat_messages WHERE created_at > datetime('now', ?1) GROUP BY day ORDER BY day"
     ).bind(&window).fetch_all(db).await.unwrap_or_default();
 
+    // Communication metrics (Wave 0 / Task 3) — over the range window's
+    // user-role messages only (Laura's own prompts, not Jarvis's replies).
+    // Three pure heuristics from analytics_communication.rs, averaged across
+    // the sampled prompts: how long she writes, how structured her prompts
+    // are (list/header/code-fence ratio), and how constraint-heavy they are
+    // (spec/negation words per 100 chars). All `None` when there are no user
+    // prompts in the window (honest empty, never a fabricated 0.0 average).
+    let user_contents: Vec<(String,)> = sqlx::query_as(
+        "SELECT content FROM chat_messages WHERE role='user' AND created_at > datetime('now', ?1) ORDER BY created_at DESC LIMIT 500"
+    ).bind(&window).fetch_all(db).await.unwrap_or_default();
+    let (avg_prompt_length, avg_structured_prompt_ratio, avg_constraint_density) = if user_contents.is_empty() {
+        (None, None, None)
+    } else {
+        let n = user_contents.len() as f64;
+        let mut len_sum = 0.0f64;
+        let mut struct_sum = 0.0f64;
+        let mut constraint_sum = 0.0f64;
+        for (content,) in &user_contents {
+            len_sum += crate::analytics_communication::prompt_length(content) as f64;
+            struct_sum += crate::analytics_communication::structured_prompt_ratio(content);
+            constraint_sum += crate::analytics_communication::constraint_density(content);
+        }
+        (Some(len_sum / n), Some(struct_sum / n), Some(constraint_sum / n))
+    };
+
+
     // Mean token-confidence over the most recent assistant messages that
     // actually carry token_info (capped sample to bound compute).
     let recent: Vec<(Option<String>,)> = sqlx::query_as(
@@ -338,6 +364,10 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "latency_sample_size": latencies.len(),
         "reverse_latency_seconds": reverse_latency_s,
         "reverse_latency_sample_size": reverse_latencies.len(),
+        "avg_prompt_length": avg_prompt_length,
+        "avg_structured_prompt_ratio": avg_structured_prompt_ratio,
+        "avg_constraint_density": avg_constraint_density,
+        "communication_sample_size": user_contents.len(),
         "total_prompt_tokens": total_prompt_tokens,
         "total_completion_tokens": total_completion_tokens,
         "total_reasoning_ms": total_reasoning_ms,
