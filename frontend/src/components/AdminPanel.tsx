@@ -29,6 +29,9 @@ import { Denkfragmente } from './observatory/Denkfragmente'
 import { AnomalyLog } from './observatory/AnomalyLog'
 import { Changelog } from './observatory/Changelog'
 import { Ameisenhaufen } from './observatory/Ameisenhaufen'
+import { MindDashboard } from './observatory/MindDashboard'
+import { MachineDashboard } from './observatory/MachineDashboard'
+import { DyadDashboard } from './observatory/DyadDashboard'
 
 interface Props {
   content: SiteContent
@@ -528,6 +531,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               <AnomalyLog onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }} />
             )}
             {adminSection === 'ameisenhaufen' && <Ameisenhaufen />}
+            {adminSection === 'mind' && <MindDashboard />}
+            {adminSection === 'machine' && <MachineDashboard />}
+            {adminSection === 'dyad' && <DyadDashboard />}
             </HeaderActionsContext.Provider>
           </div>
         </div>

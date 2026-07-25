@@ -102,6 +102,13 @@ export const OBSERVATORY_MODULES: ObservatoryModuleDef[] = [
   // this is Laura's own research/work, not a rollup of THIS platform's
   // system health.
   { id: 'ameisenhaufen', label: 'Ameisenhaufen', tier: 'research', icon: I(<><circle cx="12" cy="12" r="2" /><circle cx="5" cy="7" r="1.6" /><circle cx="19" cy="7" r="1.6" /><circle cx="5" cy="17" r="1.6" /><circle cx="19" cy="17" r="1.6" /><line x1="10.3" y1="10.8" x2="6.3" y2="8.2" /><line x1="13.7" y1="10.8" x2="17.7" y2="8.2" /><line x1="10.3" y1="13.2" x2="6.3" y2="15.8" /><line x1="13.7" y1="13.2" x2="17.7" y2="15.8" /></>) },
+  // Deep Self-Analysis (40/40/20) — Bucket 1 / Bucket 2 / Bucket 3+META as
+  // three sibling apps. Forschungsebene, same reasoning as Denkfragmente:
+  // research observables about Laura, Jarvis and their dyad — never platform
+  // health. Head icon (mind), CPU frame (machine), interlocked rings (dyad).
+  { id: 'mind', label: 'Mind', tier: 'research', icon: I(<><path d="M9 3a6 6 0 0 1 6 6c0 1.5-.5 2.5-1.2 3.6-.5.8-.8 1.4-.8 2.4v1a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-.6c0-.9-.3-1.6-.9-2.3A6.5 6.5 0 0 1 4 9a6 6 0 0 1 5-5.9" /><path d="M10 21h4" /></>) },
+  { id: 'machine', label: 'Machine', tier: 'research', icon: I(<><rect x="6" y="6" width="12" height="12" rx="2" /><rect x="10" y="10" width="4" height="4" /><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" /></>) },
+  { id: 'dyad', label: 'Dyad + Meta', tier: 'research', icon: I(<><circle cx="9" cy="12" r="5" /><circle cx="15" cy="12" r="5" /></>) },
 ]
 
 export function groupByTier(modules: ObservatoryModuleDef[] = OBSERVATORY_MODULES): Record<ObservatoryTier, ObservatoryModuleDef[]> {
@@ -143,6 +150,9 @@ export const SECTION_COPY: Record<AdminSection, SectionCopy> = {
   forschungspipeline: { title: 'Forschungspipeline', description: '' },
   changelog: { title: 'Changelog', description: 'Jede Änderung am Lab — nachvollziehbar, mit Kettensignatur.' },
   ameisenhaufen: { title: 'Ameisenhaufen', description: 'Deine Coevolution Factory — 50 Zentren, live von hier aus sichtbar.' },
+  mind: { title: 'Mind', description: 'Dein eigener Kopf als beobachtbares Verhalten — Tippen, Entscheiden, Reflektieren.' },
+  machine: { title: 'Machine', description: 'Jarvis von innen — Reasoning-Volumen, Werkzeuge, Selbstkontrolle.' },
+  dyad: { title: 'Dyad + Meta', description: 'Wer prägt wen — Einfluss, gemeinsames Vokabular, gegenseitige Flags.' },
 }
 
 /** @deprecated use `SECTION_COPY[x].title` — kept only until every consumer migrates. */
