@@ -1,5 +1,6 @@
 mod agent;
 mod analytics;
+mod analytics_behavior;
 mod analytics_communication;
 mod analytics_decisions;
 mod analytics_resolution;
