@@ -293,7 +293,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
           <div
             className="mycelium-detail mycelium-detail-anchored"
             style={{
-              borderLeftColor: expandedNode.accent,
+              borderColor: expandedNode.accent,
               position: 'absolute',
               left: Math.min(Math.max(popupPos.x, 190), dims.w - 190),
               top: Math.min(Math.max(popupPos.y + 22, 14), dims.h - 40),
@@ -317,7 +317,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
             {expandedItems.length > 0 && (
               <div className="mycelium-detail-list">
                 {expandedItems.map(item => (
-                  <div className="mycelium-detail-item" key={`${item.kind}-${item.id}`} style={{ borderLeftColor: expandedNode.accent }}>
+                  <div className="mycelium-detail-item" key={`${item.kind}-${item.id}`} style={{ borderColor: expandedNode.accent }}>
                     <div className="mycelium-detail-item-title">{KIND_LABEL[item.kind]}: {item.title}</div>
                     {item.excerpt && <div className="mycelium-detail-item-excerpt">{truncate(item.excerpt)}</div>}
                     <div className="mycelium-detail-item-meta">

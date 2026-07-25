@@ -2554,11 +2554,11 @@ button { cursor: pointer; font-family: inherit; }
 }
 .crm-nav-item { transition: background .15s ease, color .15s ease, transform .1s ease; }
 .crm-nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+/* Active sidebar item reads from its full background tint + colored
+   text/icon (below) — no one-edge stripe (see feedback_no_single_side_kpi_
+   stripe.md, and the same rule now applies here: "the sidebar nav's
+   active-item indicator has a colored left-border stripe … we hate that"). */
 .crm-nav-item.active { background: rgba(99,240,255,.14); color: #63f0ff; font-weight: 600; }
-.crm-nav-item.active::before {
-  content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
-  width: 3px; height: 16px; border-radius: 3px; background: #63f0ff;
-}
 .crm-nav-item:active { transform: scale(.98); }
 .crm-nav-item svg { flex-shrink: 0; opacity: .85; }
 .crm-nav-item.active svg { stroke: #63f0ff; opacity: 1; }
@@ -2699,14 +2699,19 @@ button { cursor: pointer; font-family: inherit; }
 .obs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
 .obs-stat {
   --obs-accent: var(--obs-blue);
-  background: #fff; border: 1px solid rgba(15,23,42,.06); border-radius: 12px; padding: 16px 18px 15px;
+  /* Color lives on the BOX (background tint + border), never on the digit —
+     "those KPI widgets across the app shall be normal white written, but
+     the boxes shall have the color effect, not the metric" (explicit
+     correction from the earlier "colored figure, neutral frame" version of
+     this rule, which colored the number instead — see .obs-stat-value
+     below). No single-side accent stripe either (standing rule): the tint
+     covers the whole card, not one edge. */
+  --obs-stat-bg: color-mix(in srgb, var(--obs-accent) 8%, #fff);
+  --obs-stat-border: color-mix(in srgb, var(--obs-accent) 26%, rgba(15,23,42,.08));
+  background: var(--obs-stat-bg); border: 1px solid var(--obs-stat-border); border-radius: 12px; padding: 16px 18px 15px;
   box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03);
   position: relative; overflow: hidden; transition: box-shadow .18s ease, transform .18s ease;
 }
-/* No single-side accent stripe (standing rule — reads as unfinished, not
-   designed). The card stays neutral; the accent color lives on the number
-   itself instead — same "colored figure, neutral frame" convention as most
-   real BI dashboards. */
 .obs-stat:hover { box-shadow: 0 2px 6px rgba(15,23,42,.07), 0 10px 24px rgba(15,23,42,.06); transform: translateY(-1px); }
 .obs-stat.c-blue { --obs-accent: var(--obs-blue); }
 .obs-stat.c-purple { --obs-accent: var(--obs-purple); }
@@ -2727,7 +2732,7 @@ button { cursor: pointer; font-family: inherit; }
   background: linear-gradient(180deg, #fffbeb, #fef3c7); border: 1px solid rgba(245,158,11,.3);
   border-radius: 11px; padding: 12px 16px;
 }
-.obs-stat-value { font-size: 27px; font-weight: 800; color: var(--obs-accent, #111827); letter-spacing: -.01em; line-height: 1.1; }
+.obs-stat-value { font-size: 27px; font-weight: 800; color: #111827; letter-spacing: -.01em; line-height: 1.1; }
 .obs-stat-label { font-size: 10.5px; color: #8a8f98; margin-top: 5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 
 .obs-section-label {
@@ -3118,8 +3123,13 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-compare-label { color: rgba(148,190,199,.6); }
 .observatory-hud .obs-compare-pre { color: rgba(212,231,235,.8); }
 
+/* No one-edge accent stripe (standing rule — see feedback_no_single_side_
+   kpi_stripe.md, now extended to item cards/modals/sidebar per Simeon's
+   "we hate that"): the per-item accent lives in a soft full-card background
+   tint + a matching tinted border instead of a single colored edge. */
 .obs-item-card {
-  background: #fff; border: 1px solid rgba(15,23,42,.07); border-left: 3px solid var(--obs-accent, var(--obs-blue));
+  background: color-mix(in srgb, var(--obs-accent, var(--obs-blue)) 4%, #fff);
+  border: 1px solid color-mix(in srgb, var(--obs-accent, var(--obs-blue)) 22%, rgba(15,23,42,.07));
   border-radius: 11px; padding: 14px 16px; margin-bottom: 11px;
   box-shadow: 0 1px 2px rgba(15,23,42,.03), 0 4px 10px rgba(15,23,42,.02); transition: box-shadow .15s, transform .15s;
 }
@@ -3133,17 +3143,15 @@ button { cursor: pointer; font-family: inherit; }
    the card visibly invites the click instead of looking identically static
    to a card with no interaction at all. */
 .obs-item-card-clickable { cursor: pointer; }
-.obs-item-card-clickable:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08), 0 10px 26px rgba(15,23,42,.06); transform: translateY(-2px); border-left-width: 4px; }
+.obs-item-card-clickable:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08), 0 10px 26px rgba(15,23,42,.06); transform: translateY(-2px); border-width: 1.5px; }
 .obs-item-card-clickable:focus-visible { outline: 2px solid var(--obs-accent, var(--obs-blue)); outline-offset: 2px; }
 .obs-item-more { color: var(--obs-accent, var(--obs-blue)); font-weight: 700; white-space: nowrap; }
 .observatory-hud .obs-item-more { color: var(--hud-cyan); }
 /* The modal itself reuses .pem/.pem-overlay wholesale (see
-   SignalDetailModal's own doc comment) — these three rules are only the
-   signal-specific additions layered on top: a thicker accent-colored left
-   edge so the modal visibly carries the same status color as the card it
-   came from, and larger, more readable type for the full (untruncated)
-   observation text than the compact .obs-item-body it replaces here. */
-.obs-signal-modal { border-left: 4px solid var(--obs-accent, var(--obs-blue)); }
+   SignalDetailModal's own doc comment) — this signal-specific addition on
+   top is a soft accent-tinted background (matching .obs-item-card's own
+   treatment above), not the one-edge stripe this used to be. */
+.obs-signal-modal { background: color-mix(in srgb, var(--obs-accent, var(--obs-blue)) 6%, var(--panel-bg, #0d141f)); }
 .obs-signal-modal-body { display: block; }
 .obs-signal-modal-observation { font-size: 14.5px; line-height: 1.75; white-space: pre-wrap; }
 .observatory-hud .obs-signal-modal-observation { color: rgba(226,241,245,.85); }
@@ -3222,7 +3230,10 @@ button { cursor: pointer; font-family: inherit; }
   box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   animation: hud-card-in .3s ease both;
 }
-.observatory-hud .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan)); }
+.observatory-hud .obs-item-card { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 8%, #12172b); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 28%, rgba(150,156,170,.1)); }
+/* KPI tiles: color lives in the box (tinted fill+border), the digit itself
+   stays neutral off-white — see the base .obs-stat comment above. */
+.observatory-hud .obs-stat { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 10%, #12172b); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 30%, rgba(150,156,170,.1)); }
 .observatory-hud .obs-item-card:hover, .observatory-hud .obs-stat:hover {
   border-color: rgba(56,217,204,.35);
   box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.45);
@@ -3230,7 +3241,7 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-item-title { color: #e4e8f0; }
 .observatory-hud .obs-item-meta { color: rgba(138,152,184,.8); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11px; letter-spacing: .03em; }
 .observatory-hud .obs-item-body { color: rgba(212,219,235,.88); }
-.observatory-hud .obs-stat-value { color: var(--obs-accent, #e4e8f0); }
+.observatory-hud .obs-stat-value { color: #eefcff; }
 .observatory-hud .obs-stat-label { color: rgba(138,152,184,.85); }
 .observatory-hud .obs-pill { opacity: .95; }
 .observatory-hud .obs-status-pill.ok { background: rgba(52,211,153,.14); color: #6ee7b7; }
@@ -3247,7 +3258,8 @@ button { cursor: pointer; font-family: inherit; }
   border: 1px solid rgba(150,156,170,.1);
   box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
 }
-.gotham .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan, #38d9cc)); }
+.gotham .obs-item-card { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan, #38d9cc)) 8%, #12172b); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan, #38d9cc)) 28%, rgba(150,156,170,.1)); }
+.gotham .obs-stat { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan, #38d9cc)) 10%, #12172b); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan, #38d9cc)) 30%, rgba(150,156,170,.1)); }
 .gotham .obs-item-card:hover, .gotham .obs-stat:hover {
   border-color: rgba(56,217,204,.35);
   box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.45);
@@ -3255,7 +3267,7 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .obs-item-title { color: #e4e8f0; }
 .gotham .obs-item-meta { color: rgba(138,152,184,.8); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 11px; letter-spacing: .03em; }
 .gotham .obs-item-body { color: rgba(212,219,235,.88); }
-.gotham .obs-stat-value { color: var(--obs-accent, #e4e8f0); }
+.gotham .obs-stat-value { color: #eefcff; }
 .gotham .obs-stat-label { color: rgba(138,152,184,.85); }
 .gotham .obs-pill { opacity: .95; }
 .gotham .obs-status-pill.ok { background: rgba(52,211,153,.14); color: #6ee7b7; }
@@ -3372,7 +3384,6 @@ button { cursor: pointer; font-family: inherit; }
 .gotham .crm-nav-item { color: rgba(255,255,255,.68); }
 .gotham .crm-nav-item:hover { background: rgba(120,150,170,.08); color: var(--gotham-text); }
 .gotham .crm-nav-item.active { background: rgba(52,225,255,.12); color: var(--hud-cyan); }
-.gotham .crm-nav-item.active::before { background: var(--hud-cyan); }
 .gotham .crm-nav-group-label { color: rgba(255,255,255,.5); }
 .gotham .crm-sidebar { background: var(--panel-shell-bg); border-right: 1px solid var(--gotham-border); }
 
@@ -3382,11 +3393,12 @@ button { cursor: pointer; font-family: inherit; }
   border-radius: 10px; box-shadow: 0 0 0 1px rgba(52,225,255,.04), 0 8px 22px rgba(0,0,0,.45);
   backdrop-filter: blur(6px); color: var(--gotham-text); animation: hud-card-in .3s ease both;
 }
-.gotham .obs-item-card { border-left: 3px solid var(--obs-accent, var(--hud-cyan)); }
+.gotham .obs-item-card { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 9%, var(--gotham-panel)); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 30%, var(--gotham-border)); }
+.gotham .obs-stat { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 11%, var(--gotham-panel)); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 32%, var(--gotham-border)); }
 .gotham .obs-item-title { color: #eefcff; }
 .gotham .obs-item-meta { color: var(--gotham-text-dim); font-size: 10.5px; }
 .gotham .obs-item-body { color: rgba(212,231,235,.85); }
-.gotham .obs-stat-value { color: var(--obs-accent, #eefcff); }
+.gotham .obs-stat-value { color: #eefcff; }
 .gotham .obs-stat-label { color: var(--gotham-text-dim); }
 .gotham .obs-section-label { color: var(--hud-cyan); letter-spacing: .04em; }
 .gotham .obs-section-label::after { background: rgba(52,225,255,.14); }
@@ -3706,8 +3718,8 @@ button { cursor: pointer; font-family: inherit; }
   to { opacity: 1; transform: scale(1); }
 }
 .mycelium-detail {
-  margin-top: 16px; padding: 12px 16px; border-left: 3px solid var(--hud-cyan);
-  background: rgba(7,14,20,.6); border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 4px;
+  margin-top: 16px; padding: 12px 16px; border: 1px solid rgba(34,211,238,.25);
+  background: rgba(7,14,20,.6); border-radius: 8px; display: flex; flex-direction: column; gap: 4px;
   animation: hud-card-in .25s ease both;
 }
 .mycelium-detail-tag { font-size: 11px; font-weight: 800; letter-spacing: .02em; }
@@ -3736,7 +3748,7 @@ button { cursor: pointer; font-family: inherit; }
    notes/documents behind it, scrollable so a large scope doesn't blow out
    the panel height. */
 .mycelium-detail-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
-.mycelium-detail-item { padding: 8px 10px; border-left: 2px solid var(--hud-cyan); background: rgba(255,255,255,.03); border-radius: 0 7px 7px 0; animation: hud-card-in .2s ease both; }
+.mycelium-detail-item { padding: 8px 10px; border: 1px solid var(--hud-cyan); background: rgba(255,255,255,.04); border-radius: 7px; animation: hud-card-in .2s ease both; }
 .mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: #eefcff; margin-bottom: 3px; }
 .mycelium-detail-item-excerpt { font-size: 11.5px; color: rgba(226,241,245,.72); line-height: 1.5; margin-bottom: 4px; }
 .mycelium-detail-item-meta { font-size: 10px; color: rgba(148,190,199,.55); }

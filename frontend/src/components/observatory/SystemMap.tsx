@@ -448,7 +448,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           <div
             className="mycelium-detail mycelium-detail-anchored"
             style={{
-              borderLeftColor: detailNode.accent,
+              borderColor: detailNode.accent,
               position: 'absolute',
               left: Math.min(Math.max(popupPos.x, 190), dims.w - 190),
               top: Math.min(Math.max(popupPos.y + 22, 14), dims.h - 40),

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { groupByDate, parseServerTimestamp } from '../../lib/dateGroups'
 import { ExportButtons } from './ExportButtons'
@@ -16,7 +16,66 @@ export interface ContactMessage {
 }
 
 const STATUS_LABEL: Record<string, string> = { new: 'Neu', replied: 'Beantwortet', done: 'Erledigt' }
-const STATUS_COLOR: Record<string, string> = { new: '#ef4444', replied: '#f59e0b', done: '#10b981' }
+// Routed through the shared semantic tokens (App.css :root) instead of
+// hardcoded hex — the mapping itself was already the right one (new =
+// needs attention, replied = in progress, done = resolved), it just wasn't
+// reading from the one shared palette every other status pill in the app
+// now uses.
+const STATUS_COLOR: Record<string, string> = { new: 'var(--sem-danger)', replied: 'var(--sem-warning)', done: 'var(--sem-success)' }
+
+/// Full-message view — clicking a message card previously did nothing
+/// beyond the inline Antworten/Erledigt buttons (the message text itself
+/// was already fully visible inline, but there was nowhere to go to read it
+/// distraction-free or see all its metadata at once). Reuses the exact
+/// `.pem-overlay`/`.pem` modal shell EmergenceMonitor.tsx's SignalDetailModal
+/// already established (same scrim/close/Escape/click-outside behavior,
+/// already dark-HUD-themed) rather than building a second modal system.
+function InboxMessageModal({ message, onClose, onReply, onSetStatus, busy }: {
+  message: ContactMessage
+  onClose: () => void
+  onReply: () => void
+  onSetStatus: (status: string) => void
+  busy: boolean
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="pem-overlay" onClick={onClose}>
+      <div className="pem" onClick={e => e.stopPropagation()} style={{ ['--obs-accent' as string]: STATUS_COLOR[message.status] ?? 'var(--sem-neutral)' }}>
+        <div className="pem-header">
+          <span className="pem-title">{message.name}</span>
+          <button className="pem-close" onClick={onClose} title="Schließen (Esc)">✕</button>
+        </div>
+        <div className="pem-body">
+          <div className="obs-item-meta" style={{ marginBottom: 10 }}>
+            <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_COLOR[message.status] ?? 'var(--sem-neutral)'} 16%, transparent)`, color: STATUS_COLOR[message.status] ?? 'var(--sem-neutral)' }}>
+              {STATUS_LABEL[message.status] ?? message.status}
+            </span>
+            {' · '}<a href={`mailto:${message.email}`} style={{ color: 'var(--hud-cyan, #22d3ee)' }}>{message.email}</a>
+            {message.phone && <> · {message.phone}</>}
+            {' · '}{parseServerTimestamp(message.created_at).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          </div>
+          <p style={{ fontSize: 13.5, lineHeight: 1.7, color: 'var(--panel-text, rgba(226,241,245,.9))', whiteSpace: 'pre-wrap' }}>
+            {message.message || '(Kein Nachrichtentext übermittelt.)'}
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
+            {message.status === 'done' ? (
+              <button className="panel-add-btn" disabled={busy} onClick={() => onSetStatus('new')}>Wieder öffnen</button>
+            ) : (
+              <>
+                <a href={`mailto:${message.email}?subject=Re: Ihre Anfrage`} className="panel-add-btn" style={{ textDecoration: 'none' }} onClick={onReply}>Antworten</a>
+                <button className="panel-delete-btn" disabled={busy} onClick={() => onSetStatus('done')}>Erledigt</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function InboxPlaceholder({ icon, text, sub }: { icon: string; text: string; sub?: string }) {
   return (
@@ -58,6 +117,7 @@ export function Inbox() {
   // that fetching everything and filtering here (before grouping by date)
   // is simpler than adding backend support for it.
   const [statusFilter, setStatusFilter] = useState('')
+  const [openMessageId, setOpenMessageId] = useState<string | null>(null)
   const list = data ?? []
   const filteredList = statusFilter ? list.filter(m => m.status === statusFilter) : list
   const groups = groupByDate(filteredList, m => m.created_at)
@@ -122,15 +182,23 @@ export function Inbox() {
               {group.label}
             </div>
             {group.items.map(item => (
-              <div key={item.id} style={{ background: 'var(--obs-card, rgba(11,17,26,.6))', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid rgba(34,211,238,.16)' }}>
+              <div
+                key={item.id}
+                className="obs-item-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenMessageId(item.id)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenMessageId(item.id) } }}
+                style={{ background: 'var(--obs-card, rgba(11,17,26,.6))', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid rgba(34,211,238,.16)', cursor: 'pointer' }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
-                    <a href={`mailto:${item.email}`} style={{ fontSize: 12, color: 'var(--hud-cyan, #22d3ee)' }}>{item.email}</a>
+                    <a href={`mailto:${item.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: 'var(--hud-cyan, #22d3ee)' }}>{item.email}</a>
                     {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, rgba(148,190,199,.6))' }}>{item.phone}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: `${STATUS_COLOR[item.status] ?? '#999'}1a`, color: STATUS_COLOR[item.status] ?? '#999' }}>
+                    <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_COLOR[item.status] ?? 'var(--sem-neutral)'} 16%, transparent)`, color: STATUS_COLOR[item.status] ?? 'var(--sem-neutral)' }}>
                       {STATUS_LABEL[item.status] ?? item.status}
                     </span>
                     <div style={{ fontSize: 10, color: 'var(--panel-text-dim, rgba(148,190,199,.6))', whiteSpace: 'nowrap' }}>
@@ -138,8 +206,8 @@ export function Inbox() {
                     </div>
                   </div>
                 </div>
-                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, rgba(226,241,245,.75))', lineHeight: 1.5 }}>{item.message}</p>}
-                <div style={{ display: 'flex', gap: 8 }}>
+                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, rgba(226,241,245,.75))', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.message}</p>}
+                <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                   {item.status === 'done' ? (
                     <button
                       className="panel-add-btn"
@@ -175,6 +243,18 @@ export function Inbox() {
           </div>
         ))
       )}
+      {openMessageId && (() => {
+        const openMessage = list.find(m => m.id === openMessageId)
+        return openMessage ? (
+          <InboxMessageModal
+            message={openMessage}
+            onClose={() => setOpenMessageId(null)}
+            busy={updatingId === openMessage.id}
+            onReply={() => { if (openMessage.status === 'new') setStatus(openMessage.id, 'replied') }}
+            onSetStatus={status => setStatus(openMessage.id, status)}
+          />
+        ) : null
+      })()}
     </div>
   )
 }
