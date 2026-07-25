@@ -2830,11 +2830,62 @@ button { cursor: pointer; font-family: inherit; }
    manually-managed news list above it in the same Blog tab — a background
    tint + rounded border read as "a separate module," not just another row
    in the same list, since the two buttons above/below this line write to
-   completely different data (draft.news.items vs blog_posts). */
-.blog-jarvis-section {
-  margin-top: 26px; padding: 18px 18px 6px; border-radius: 12px;
-  background: rgba(59,107,246,.035); border: 1px solid rgba(59,107,246,.12);
+   completely different data (draft.news.items vs blog_posts). Previously
+   ONLY this half had any container at all — the manual section above it
+   (.blog-manual-section) was a bare, unboxed list floating directly in the
+   page, so the page didn't read as "two parallel sections," it read as
+   "a flat list, then a random box appears." Both now share the same card
+   language (border-radius/padding/header shape), just different accent
+   hues (info-blue = manual/human-authored, purple = AI-authored) so the
+   *kind* of content still reads at a glance without needing to reopen the
+   old "just a dashed line + diamond icon" treatment. */
+.blog-manual-section, .blog-jarvis-section {
+  margin-top: 22px; padding: 18px 20px 20px; border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03);
 }
+.blog-manual-section {
+  background: color-mix(in srgb, var(--sem-info) 4%, #fff);
+  border: 1px solid color-mix(in srgb, var(--sem-info) 18%, rgba(15,23,42,.07));
+}
+.blog-jarvis-section {
+  background: color-mix(in srgb, var(--obs-purple, #8b5cf6) 5%, #fff);
+  border: 1px solid color-mix(in srgb, var(--obs-purple, #8b5cf6) 20%, rgba(15,23,42,.07));
+}
+.observatory-hud .blog-manual-section, .gotham .blog-manual-section {
+  background: color-mix(in srgb, var(--sem-info) 8%, #12172b);
+  border-color: color-mix(in srgb, var(--sem-info) 26%, rgba(150,156,170,.12));
+}
+.observatory-hud .blog-jarvis-section, .gotham .blog-jarvis-section {
+  background: color-mix(in srgb, var(--obs-purple, #8b5cf6) 9%, #12172b);
+  border-color: color-mix(in srgb, var(--obs-purple, #8b5cf6) 28%, rgba(150,156,170,.12));
+}
+/* Real section header — icon-badge + title + one-line plain-language sub,
+   shared by both halves, instead of the bare .obs-section-label + "◆" glyph
+   this used to be. */
+.blog-section-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.blog-section-icon {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.blog-manual-section .blog-section-icon { background: color-mix(in srgb, var(--sem-info) 16%, transparent); color: var(--sem-info); }
+.blog-jarvis-section .blog-section-icon { background: color-mix(in srgb, var(--obs-purple, #8b5cf6) 16%, transparent); color: var(--obs-purple, #8b5cf6); }
+.blog-section-title { font-size: 13.5px; font-weight: 700; color: #111827; margin-bottom: 2px; }
+.observatory-hud .blog-section-title, .gotham .blog-section-title { color: #eefcff; }
+.blog-section-sub { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+.observatory-hud .blog-section-sub, .gotham .blog-section-sub { color: rgba(148,190,199,.65); }
+
+/* Per-draft card hierarchy (BlogDrafts.tsx) — status+source now sit as
+   their own badge row ABOVE the title (the two facts a draft list gets
+   triaged by), title is the visually heaviest line, and a hairline divider
+   sets the actions row off as a real footer instead of just more stacked
+   text with no weight difference from everything above it. */
+.blog-draft-badges { display: flex; gap: 6px; margin-bottom: 8px; }
+.blog-draft-title { font-size: 15.5px; font-weight: 800; margin-bottom: 4px; }
+.blog-draft-actions {
+  display: flex; gap: 8px; align-items: center; margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid rgba(15,23,42,.07);
+}
+.observatory-hud .blog-draft-actions, .gotham .blog-draft-actions { border-top-color: rgba(150,156,170,.14); }
 .obs-map-card { background: linear-gradient(180deg, #fbfcfe, #f5f7fb); padding: 24px 20px 16px; position: relative; }
 
 /* Always-visible legend above the mycelium diagram (SystemMap.tsx) — Laura:

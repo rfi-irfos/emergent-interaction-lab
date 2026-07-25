@@ -378,9 +378,19 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                     to look like one system: this section edits draft.news.items
                     (the manually-managed public news list), while "Jarvis-
                     Entwürfe" further down is the blog_posts table Jarvis writes
-                    to via draft_blog_post/revise_blog_post. Labelled + boxed
-                    off below so it's clear which button touches which data. */}
-                <div className="obs-section-label">Manuell · Themen</div>
+                    to via draft_blog_post/revise_blog_post. Both halves now get
+                    the same real-card treatment (.blog-manual-section /
+                    .blog-jarvis-section, see App.css) — previously only the
+                    Jarvis half had a container at all, so the page read as one
+                    flat list with a random box appended, not two sections. */}
+                <div className="blog-manual-section">
+                <div className="blog-section-head">
+                  <span className="blog-section-icon">✎</span>
+                  <div>
+                    <div className="blog-section-title">Manuell · Themen &amp; Beiträge</div>
+                    <div className="blog-section-sub">Von dir direkt gepflegt — Themen-Tags und die klassische News-Liste der öffentlichen Website.</div>
+                  </div>
+                </div>
                 {/* Own local classes, not the shared .pem-tag (a warm
                     beige/brown chip with no dark-theme override at all —
                     the single most jarring element on this page, sitting at
@@ -436,8 +446,15 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Blogbeitrag hinzufügen (manuell)
                 </button>
+                </div>
                 <div className="obs-section blog-jarvis-section">
-                  <div className="obs-section-label">◆ Von Jarvis generiert</div>
+                  <div className="blog-section-head">
+                    <span className="blog-section-icon">◆</span>
+                    <div>
+                      <div className="blog-section-title">Von Jarvis generiert</div>
+                      <div className="blog-section-sub">Entwürfe aus dem Forschungstab (draft_blog_post/revise_blog_post) — eigene Tabelle, eigener Freigabe-Schritt.</div>
+                    </div>
+                  </div>
                   <BlogDrafts
                     onPromoteToSite={promoteBlogPostToSite}
                     onOpenConversation={(id) => { setOpenConversationId(id); setAdminSection('forschung') }}

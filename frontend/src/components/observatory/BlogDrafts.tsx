@@ -258,10 +258,23 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
             </div>
           ) : (
             <>
-              <div className="obs-item-title">{p.title}</div>
-              <div className="obs-item-meta">
+              {/* Clearer hierarchy than a flat title→meta→body→actions stack
+                  with no visual weight difference between them ("zum
+                  Kotzen," reads as a raw DB dump): status + source badges
+                  now sit as a distinct top row above the title (the two
+                  facts you triage a draft list BY), the title itself is
+                  visually the heaviest element, and the actions row gets a
+                  hairline divider so it reads as a distinct footer, not
+                  just more stacked text. */}
+              <div className="blog-draft-badges">
                 <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{BLOG_STATUS_LABELS[p.status] ?? p.status}</span>
-                {' · '}{p.source === 'agent' ? '◆ Jarvis' : 'manuell'} · {p.updated_at}
+                <span className="obs-pill" style={{ background: p.source === 'agent' ? 'color-mix(in srgb, var(--obs-purple, #8b5cf6) 16%, transparent)' : 'rgba(148,163,184,.16)', color: p.source === 'agent' ? 'var(--obs-purple, #8b5cf6)' : 'var(--sem-neutral)' }}>
+                  {p.source === 'agent' ? '◆ Jarvis' : 'Manuell'}
+                </span>
+              </div>
+              <div className="obs-item-title blog-draft-title">{p.title}</div>
+              <div className="obs-item-meta">
+                {p.updated_at}
                 {p.source_conversation_id && onOpenConversation && (
                   <>
                     {' · '}
@@ -283,7 +296,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                   ))}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <div className="blog-draft-actions">
                 {p.status === 'draft' && (
                   <>
                     <button className="panel-add-btn" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => publish(p)}>
