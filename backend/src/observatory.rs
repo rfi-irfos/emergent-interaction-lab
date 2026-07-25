@@ -339,6 +339,17 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
     let repair_success_ratio = crate::analytics_resolution::repair_success_global(db).await;
     let task_metrics = crate::chat::persistence_task_metrics(db).await;
 
+    // Keystroke-behavior layer (Wave 2 / Task 11, framework v2.1 Dimension 3
+    // Cognitive Load + Dimension 1 Attention) — global folds over the
+    // human_behavior raw-event table human_behavior::ingest captures.
+    // typing_velocity_cpm is the true mean of every per-minute CPM sample;
+    // backspace_ratio is total backspaces / total key events; mean_idle_seconds
+    // averages paired idle_start→idle_end windows. All None/null until the
+    // browser capture path has actually shipped events (honest empty).
+    let typing_velocity_cpm = crate::analytics_behavior::typing_velocity_global(db).await;
+    let behavior_backspace_ratio = crate::analytics_behavior::backspace_ratio_global(db).await;
+    let mean_idle_seconds = crate::analytics_behavior::mean_idle_seconds_global(db).await;
+
     // Lifetime token + reasoning accounting for the Forschung KPI wall's
     // "Token & Reasoning" tile. All-time (same convention as the other
     // `*_messages` totals above — these back a cumulative KPI, not the
@@ -387,6 +398,9 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "repair_success_ratio": repair_success_ratio,
         "task_completion_rate": task_metrics.get("task_completion_rate"),
         "session_continuation_rate": task_metrics.get("session_continuation_rate"),
+        "typing_velocity_cpm": typing_velocity_cpm,
+        "backspace_ratio": behavior_backspace_ratio,
+        "mean_idle_seconds": mean_idle_seconds,
         "avg_prompt_length": avg_prompt_length,
         "avg_structured_prompt_ratio": avg_structured_prompt_ratio,
         "avg_constraint_density": avg_constraint_density,
