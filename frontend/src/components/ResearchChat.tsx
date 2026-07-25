@@ -4,6 +4,7 @@ import { TOOL_LABELS } from '../lib/toolLabels'
 import { renderMarkdown } from '../lib/markdown'
 import { groupByDate, type DateGroup } from '../lib/dateGroups'
 import { downloadText } from '../lib/export'
+import { KeystrokeCapture } from '../lib/keystroke'
 import { TokenBreakdown, type TokenInfo } from './observatory/TokenBreakdown'
 
 // `kind` — 'chat' (a conversation Laura started), 'agent' (ambient Jarvis
@@ -541,6 +542,11 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLTextAreaElement>(null)
+  // Wave 2 Task 10 — Laura's typing-behavior capture (keystroke/idle/scroll),
+  // batched to POST /api/human-behavior/:conversation_id. Best-effort sidecar;
+  // never affects chat UX. See lib/keystroke.ts.
+  const keystrokeCaptureRef = useRef<KeystrokeCapture | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const baseTitleRef = useRef(document.title)
   const sendingRef = useRef(false)
@@ -568,6 +574,18 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
   // either way at realistic list sizes, but avoids re-walking the (already
   // sorted) list on unrelated re-renders like a streaming delta landing.
   const conversationGroups = useMemo(() => groupConversationsByDate(conversations), [conversations])
+
+  // Wave 2 Task 10 — arm keystroke/idle/scroll capture on the composer for the
+  // currently open conversation. Re-arms when activeId changes (start() tears
+  // down the prior session first) and disarms on unmount. Best-effort: a lazily
+  // created singleton capture whose flush failures never surface to the user.
+  useEffect(() => {
+    const el = composerRef.current
+    if (!el || !activeId) return
+    if (!keystrokeCaptureRef.current) keystrokeCaptureRef.current = new KeystrokeCapture()
+    keystrokeCaptureRef.current.start(el, activeId, scrollRef.current)
+    return () => { keystrokeCaptureRef.current?.stop() }
+  }, [activeId])
 
   // Backgrounded/inactive browser tabs don't get repainted until they're
   // focused again — the reply has already arrived and rendered into the DOM,
@@ -1232,6 +1250,7 @@ export function ResearchChat({ siteContent, onMessageComplete, openConversationI
 
         <div className="chat-composer">
           <textarea
+            ref={composerRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
