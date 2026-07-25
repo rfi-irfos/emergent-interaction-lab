@@ -278,6 +278,20 @@ pub async fn init_schema(db: &SqlitePool) {
         .await
         .ok();
 
+    // Additive: which CHAT_MODEL_CANDIDATES rung actually produced this
+    // assistant row (deep self-analysis, Wave 0 Task 1). Before this column
+    // the winning candidate only ever existed as a transient
+    // `tracing::info!("chat round served by model ...")` line — after a
+    // fallback nobody could tell from the data whether nemotron-49b or the
+    // final safety net wrote a given reply. NULL for user rows, for
+    // assistant rows persisted before this column existed, and for turns
+    // where no model was resolved (e.g. interrupted messages); the Hermes
+    // engine writes its own engine marker instead of an NVIDIA candidate.
+    sqlx::query("ALTER TABLE chat_messages ADD COLUMN model_candidate TEXT")
+        .execute(db)
+        .await
+        .ok();
+
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS chat_documents (
             id TEXT PRIMARY KEY,
@@ -1488,6 +1502,7 @@ pub(crate) async fn finalize_turn(
     tool_call_ids: Vec<String>,
     errored_tool_calls: Vec<(String, String)>,
     hit_iteration_cap: bool,
+    model_candidate: Option<String>,
 ) {
     let assistant_id = Uuid::new_v4().to_string();
     let token_info = serde_json::to_string(&final_tokens).unwrap_or_default();
@@ -1514,7 +1529,7 @@ pub(crate) async fn finalize_turn(
     let tool_call_ids_json: Option<String> =
         if tool_call_ids.is_empty() { None } else { serde_json::to_string(&tool_call_ids).ok() };
     let _ = sqlx::query(
-        "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids, prompt_tokens, completion_tokens, reasoning_ms) VALUES (?1,?2,'assistant',?3,?4,?5,?6,?7,?8)",
+        "INSERT INTO chat_messages (id, conversation_id, role, content, token_info, tool_call_ids, prompt_tokens, completion_tokens, reasoning_ms, model_candidate) VALUES (?1,?2,'assistant',?3,?4,?5,?6,?7,?8,?9)",
     )
     .bind(&assistant_id)
     .bind(&conversation_id)
@@ -1524,6 +1539,7 @@ pub(crate) async fn finalize_turn(
     .bind(prompt_tokens)
     .bind(completion_tokens)
     .bind(reasoning_ms)
+    .bind(&model_candidate)
     .execute(&state.db)
     .await;
     let _ = sqlx::query("UPDATE chat_conversations SET updated_at = datetime('now') WHERE id = ?1")
@@ -2169,6 +2185,12 @@ pub async fn stream_chat(
             yield Ok(Event::default().data(json!({ "delta": final_full_text, "tokens": Vec::<serde_json::Value>::new() }).to_string()));
         }
 
+        // The winning candidate after the ladder loop (ladder_pos points at
+        // the model that actually served this turn). Persist it honestly —
+        // never fabricate a model name when the engine is Hermes (see the
+        // hermes.rs call site, which passes Some("hermes")).
+        let winning_model: Option<String> =
+            ladder.get(ladder_pos).map(|idx| CHAT_MODEL_CANDIDATES[*idx].to_string());
         finalize_turn(
             state.clone(),
             conversation_id.clone(),
@@ -2181,6 +2203,7 @@ pub async fn stream_chat(
             tool_call_ids,
             errored_tool_calls,
             hit_iteration_cap,
+            winning_model,
         )
         .await;
 
@@ -3021,6 +3044,101 @@ mod tests {
         assert!(
             body.contains("Hallo aus dem Mock") && body.contains("event: done"),
             "an unconfigured Hermes must degrade to a working built-in reply, not an error: {body:?}"
+        );
+    }
+
+    // ── Model-candidate logging (deep self-analysis, Wave 0 Task 1) ─────────
+    // Which CHAT_MODEL_CANDIDATES rung actually answered a turn used to be
+    // visible only in a transient tracing::info! line — never persisted, so
+    // nobody could later tell whether nemotron-49b or a deep fallback wrote a
+    // given reply. These tests pin the new `chat_messages.model_candidate`
+    // column: finalize_turn must write exactly the model string it was handed,
+    // and stream_chat must hand it the rung that really served the exchange.
+
+    /// Unit-level: finalize_turn persists the resolved candidate string into
+    /// the assistant row's `model_candidate` column, non-null and verbatim.
+    #[tokio::test]
+    async fn test_finalize_turn_logs_model_candidate() {
+        // Mock NVIDIA base so store_chunks' embedding call inside
+        // finalize_turn hits the local mock's /v1/embeddings instead of the
+        // real API (same reason the e2e tests below do this).
+        let base = start_mock_nvidia(MockNvidiaConfig { hang_models: vec![], success_model: None }).await;
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+        seed_conversation(&state, "conv-model-cand", "hey", "welches Modell antwortet hier?").await;
+
+        finalize_turn(
+            state.clone(),
+            "conv-model-cand".to_string(),
+            "conv-model-cand-msg".to_string(),
+            "welches Modell antwortet hier?".to_string(),
+            "Antwort vom ersten Kandidaten.".to_string(),
+            Vec::new(),
+            0,
+            0,
+            Vec::new(),
+            Vec::new(),
+            false,
+            Some(CHAT_MODEL_CANDIDATES[0].to_string()),
+        )
+        .await;
+
+        let (model_candidate,): (Option<String>,) = sqlx::query_as(
+            "SELECT model_candidate FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant'",
+        )
+        .bind("conv-model-cand")
+        .fetch_one(&state.db)
+        .await
+        .unwrap();
+        assert_eq!(
+            model_candidate.as_deref(),
+            Some(CHAT_MODEL_CANDIDATES[0]),
+            "finalize_turn must persist the exact candidate string it was handed"
+        );
+    }
+
+    /// End-to-end wiring: stream_chat must capture the rung that actually
+    /// served the exchange — here the first candidate 401s (mock's default
+    /// for non-success models) and the second one answers, so the persisted
+    /// model_candidate must be the SECOND rung, not the first.
+    #[tokio::test]
+    async fn test_stream_chat_persists_winning_ladder_candidate() {
+        let base = start_mock_nvidia(MockNvidiaConfig {
+            hang_models: vec![],
+            success_model: Some("meta/llama-3.1-70b-instruct"),
+        })
+        .await;
+
+        let mut state = test_state().await;
+        state.nvidia_api_base = base;
+        state.nvidia_api_key = "test-key".to_string();
+
+        let req = StreamChatReq {
+            conversation_id: "conv-model-cand-e2e".to_string(),
+            message: "hallo, wer antwortet?".to_string(),
+            current_module: None,
+            site_content: None,
+            reasoning_requested: None,
+            engine: None,
+        };
+        let resp = stream_chat(AxState(state.clone()), HeaderMap::new(), CookieJar::new(), AxJson(req))
+            .await
+            .into_response();
+        let body = read_sse_body_bounded(resp).await;
+        assert!(body.contains("event: done"), "exchange must complete: {body:?}");
+
+        let (model_candidate,): (Option<String>,) = sqlx::query_as(
+            "SELECT model_candidate FROM chat_messages WHERE conversation_id = ?1 AND role = 'assistant'",
+        )
+        .bind("conv-model-cand-e2e")
+        .fetch_one(&state.db)
+        .await
+        .unwrap();
+        assert_eq!(
+            model_candidate.as_deref(),
+            Some("meta/llama-3.1-70b-instruct"),
+            "the persisted candidate must be the rung that actually answered, not the first rung tried"
         );
     }
 

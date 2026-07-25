@@ -484,6 +484,10 @@ pub(crate) async fn stream_turn(
             tool_call_ids,
             errored_tool_calls,
             false,
+            // Not an NVIDIA CHAT_MODEL_CANDIDATES rung — an honest engine
+            // marker: Hermes doesn't expose which underlying model served
+            // the turn, and pretending otherwise would fabricate data.
+            Some("hermes".to_string()),
         )
         .await;
 
