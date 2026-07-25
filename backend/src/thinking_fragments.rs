@@ -75,6 +75,25 @@ pub async fn init_schema(db: &SqlitePool) {
         .execute(db)
         .await
         .ok();
+    // Laura-state extension (additive, 2026-07): its own table, its own
+    // closed vocabulary — never mixed into the `thinking_fragments` table's
+    // CHECK'd 8-layer vocabulary above.
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS laura_states (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            message_id TEXT NOT NULL,
+            state TEXT NOT NULL CHECK(state IN ('doubt','frustration','flow','aha','mistrust')),
+            created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+        )",
+    )
+    .execute(db)
+    .await
+    .expect("create laura_states");
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_ls_conv ON laura_states(conversation_id, created_at)")
+        .execute(db)
+        .await
+        .ok();
 }
 
 /// The closed vocabulary — same 8 keys as content.json's "8-Layer Model"
@@ -111,6 +130,149 @@ fn format_classify_prompt(user_text: &str) -> String {
 Beitrag:\n\"{user_text}\"\n\n\
 Antworte NUR mit dem JSON-Array, kein weiterer Text."
     )
+}
+
+// ── Laura-state extension (Task 12, additive) ────────────────────────────
+//
+// **Behavioral proxies only — NOT inferred mental states.** The governing
+// constraint of this project's framework (same doctrine as the module doc
+// comment above): observable, log-reproducible behavior only. Each of the
+// five labels below is defined EXCLUSIVELY as "this turn's text contains
+// one of these literal linguistic markers" — a deterministic, replayable
+// string-matching rule over the logged turn text, never a claim about what
+// Laura actually felt or thought. Re-running the classifier over the same
+// log always yields the same labels. The labels are named after the
+// colloquial reading of the marker families (doubt/frustration/flow/aha/
+// mistrust) purely for dashboard legibility; they assert the presence of
+// language markers, nothing more. Markers cover both German and English —
+// Laura writes in both.
+
+/// The closed Laura-state vocabulary — separate from `LAYER_KEYS`, never
+/// mixed into the 8-layer taxonomy (additive extension, existing layers
+/// untouched).
+pub(crate) const LAURA_STATE_KEYS: &[&str] = &["doubt", "frustration", "flow", "aha", "mistrust"];
+
+/// Disclosure for the Laura-state labels, same convention as
+/// `DEFINITIONS_NOTE` above: behavioral proxies from linguistic markers,
+/// not psychological diagnosis.
+#[allow(dead_code)]
+pub(crate) const LAURA_STATE_NOTE: &str = "Die Laura-Zustandslabels (doubt, frustration, flow, aha, mistrust) sind rein verhaltensbasierte Proxies: deterministische Sprachmarker-Treffer im geloggten Text eines Beitrags (Deutsch und Englisch), reproduzierbar aus dem Log. Sie sind KEINE abgeleiteten mentalen Zustände und kein validiertes psychologisches Instrument.";
+
+/// (state, marker) pairs — the entire definition of each label. Lowercase;
+/// matching is substring-based on the lowercased turn text. Deliberately a
+/// flat, auditable table rather than regexes or an LLM call: anyone can
+/// replay a classification from the log by eye.
+const LAURA_STATE_MARKERS: &[(&str, &[&str])] = &[
+    (
+        "doubt",
+        &[
+            "ich bin mir nicht sicher",
+            "bin nicht sicher",
+            "weiß nicht, ob",
+            "weiss nicht, ob",
+            "vielleicht irre ich mich",
+            "keine ahnung, ob",
+            "i'm not sure",
+            "i am not sure",
+            "not sure if",
+            "i doubt",
+            "maybe i'm wrong",
+        ],
+    ),
+    (
+        "frustration",
+        &[
+            "schon wieder",
+            "immer noch nicht",
+            "funktioniert nicht",
+            "das nervt",
+            "warum geht das nicht",
+            "zum wiederholten mal",
+            "again?!",
+            "still doesn't work",
+            "still not working",
+            "this is annoying",
+            "why does this keep",
+        ],
+    ),
+    (
+        "flow",
+        &[
+            "weiter so",
+            "genau so",
+            "passt, weiter",
+            "und dann direkt",
+            "machen wir gleich",
+            "exactly, and",
+            "yes, and then",
+            "let's keep going",
+            "next, let's",
+            "genau, und",
+        ],
+    ),
+    (
+        "aha",
+        &[
+            "ach so",
+            "achso",
+            "jetzt verstehe ich",
+            "jetzt versteh ich",
+            "das erklärt",
+            "aha",
+            "oh, i see",
+            "now i get it",
+            "that explains",
+            "i see now",
+        ],
+    ),
+    (
+        "mistrust",
+        &[
+            "glaub ich dir nicht",
+            "glaube ich nicht",
+            "das stimmt nicht",
+            "bist du sicher",
+            "hast du das erfunden",
+            "beweis es",
+            "i don't believe you",
+            "that's not true",
+            "are you sure",
+            "did you make that up",
+            "prove it",
+        ],
+    ),
+];
+
+/// Deterministic marker scan — the Laura-state classifier itself. Pure
+/// function of the turn text: lowercases once, then checks every marker of
+/// every state; a state is emitted iff at least one of its markers occurs
+/// as a substring. Output order follows `LAURA_STATE_KEYS` order, each
+/// state at most once. Unlike the 8-layer path this never calls an LLM —
+/// the log-reproducibility constraint is satisfied by construction.
+pub(crate) fn classify_laura_states(user_text: &str) -> Vec<String> {
+    let lowered = user_text.to_lowercase();
+    let mut out = Vec::new();
+    for (state, markers) in LAURA_STATE_MARKERS {
+        if markers.iter().any(|m| lowered.contains(m)) {
+            out.push((*state).to_string());
+        }
+    }
+    out
+}
+
+/// Persists one row per detected state into `laura_states` — same
+/// one-row-per-label grain as `persist_fragments`. Empty input writes
+/// nothing (honest silence, no default row).
+async fn persist_laura_states(db: &SqlitePool, conversation_id: &str, message_id: &str, states: &[String]) {
+    for state in states {
+        let _ = sqlx::query("INSERT INTO laura_states (id, conversation_id, message_id, state) VALUES (?1,?2,?3,?4)")
+            .bind(Uuid::new_v4().to_string())
+            .bind(conversation_id)
+            .bind(message_id)
+            .bind(state)
+            .execute(db)
+            .await;
+    }
 }
 
 #[derive(Deserialize)]
@@ -239,7 +401,16 @@ async fn persist_fragments(db: &SqlitePool, conversation_id: &str, message_id: &
 /// `emergence::analyze_recent_interactions`'s own "erfinde nichts"
 /// instruction).
 pub(crate) async fn classify_turn(state: &AppState, conversation_id: &str, message_id: &str, user_text: &str) {
-    if state.nvidia_api_key.is_empty() || user_text.trim().is_empty() {
+    if user_text.trim().is_empty() {
+        return;
+    }
+    // Laura-state pass first: fully deterministic marker scan, needs no API
+    // key and no network — runs even when the LLM 8-layer pass below cannot.
+    let laura_states = classify_laura_states(user_text);
+    if !laura_states.is_empty() {
+        persist_laura_states(&state.db, conversation_id, message_id, &laura_states).await;
+    }
+    if state.nvidia_api_key.is_empty() {
         return;
     }
     let ladder = crate::chat::build_model_ladder(false);
@@ -734,5 +905,81 @@ mod tests {
     fn sanitize_layers_is_case_and_whitespace_tolerant() {
         let out = sanitize_layers(vec![" Facts ".to_string(), "BLIND_SPOT".to_string()]);
         assert_eq!(out, vec!["facts".to_string(), "blind_spot".to_string()]);
+    }
+
+    // ── Laura-state classifier: deterministic behavioral-proxy markers ──
+
+    #[test]
+    fn test_laura_state_classification() {
+        // German markers, one state each.
+        assert_eq!(classify_laura_states("Ich bin mir nicht sicher, ob das stimmt."), vec!["doubt".to_string()]);
+        assert_eq!(classify_laura_states("Schon wieder derselbe Fehler."), vec!["frustration".to_string()]);
+        assert_eq!(classify_laura_states("Genau so, und dann direkt den nächsten Schritt."), vec!["flow".to_string()]);
+        assert_eq!(classify_laura_states("Ach so! Das erklärt einiges."), vec!["aha".to_string()]);
+        assert_eq!(classify_laura_states("Das glaub ich dir nicht."), vec!["mistrust".to_string()]);
+
+        // English markers — Laura writes in both languages.
+        assert_eq!(classify_laura_states("I'm not sure this holds."), vec!["doubt".to_string()]);
+        assert_eq!(classify_laura_states("It still doesn't work."), vec!["frustration".to_string()]);
+        assert_eq!(classify_laura_states("Yes, and then we wire the endpoint."), vec!["flow".to_string()]);
+        assert_eq!(classify_laura_states("Oh, I see. Now I get it."), vec!["aha".to_string()]);
+        assert_eq!(classify_laura_states("I don't believe you. Prove it."), vec!["mistrust".to_string()]);
+
+        // Multiple marker families in one turn -> multiple labels, in
+        // LAURA_STATE_KEYS order, each at most once.
+        assert_eq!(
+            classify_laura_states("Schon wieder kaputt, und das glaub ich dir nicht."),
+            vec!["frustration".to_string(), "mistrust".to_string()]
+        );
+
+        // Case-insensitive.
+        assert_eq!(classify_laura_states("ICH BIN MIR NICHT SICHER."), vec!["doubt".to_string()]);
+
+        // Neutral text with none of the literal markers -> honest empty
+        // result, never a defaulted/fabricated label.
+        assert!(classify_laura_states("Der Bericht umfasst drei Kapitel.").is_empty());
+        assert!(classify_laura_states("").is_empty());
+
+        // The closed vocabulary itself: every marker table entry is one of
+        // the five keys, and every key has at least one marker.
+        for (state, markers) in LAURA_STATE_MARKERS {
+            assert!(LAURA_STATE_KEYS.contains(state), "marker table state {state} must be in the closed vocabulary");
+            assert!(!markers.is_empty());
+        }
+        assert_eq!(LAURA_STATE_KEYS.len(), LAURA_STATE_MARKERS.len());
+    }
+
+    /// End-to-end through `classify_turn`: the Laura-state pass is
+    /// deterministic and network-free, so it must write rows even with no
+    /// NVIDIA key configured (while the LLM 8-layer pass writes nothing).
+    #[tokio::test]
+    async fn classify_turn_persists_laura_states_without_any_network() {
+        let state = test_state().await; // empty nvidia_api_key
+        seed_message(&state.db, "conv-ls", "msg-ls", "Ich bin mir nicht sicher, aber ach so, das erklärt es!").await;
+
+        classify_turn(&state, "conv-ls", "msg-ls", "Ich bin mir nicht sicher, aber ach so, das erklärt es!").await;
+
+        let rows: Vec<(String, String, String)> =
+            sqlx::query_as("SELECT conversation_id, message_id, state FROM laura_states ORDER BY state")
+                .fetch_all(&state.db)
+                .await
+                .unwrap();
+        assert_eq!(rows.len(), 2, "doubt + aha markers -> exactly 2 rows, one per state");
+        assert_eq!(rows[0], ("conv-ls".to_string(), "msg-ls".to_string(), "aha".to_string()));
+        assert_eq!(rows[1], ("conv-ls".to_string(), "msg-ls".to_string(), "doubt".to_string()));
+
+        let layer_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM thinking_fragments").fetch_one(&state.db).await.unwrap();
+        assert_eq!(layer_count.0, 0, "8-layer pass must still stay silent without an API key");
+    }
+
+    #[tokio::test]
+    async fn classify_turn_writes_no_laura_state_rows_for_neutral_text() {
+        let state = test_state().await;
+        seed_message(&state.db, "conv-ls2", "msg-ls2", "Der Bericht umfasst drei Kapitel.").await;
+
+        classify_turn(&state, "conv-ls2", "msg-ls2", "Der Bericht umfasst drei Kapitel.").await;
+
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM laura_states").fetch_one(&state.db).await.unwrap();
+        assert_eq!(count.0, 0, "no marker hit -> no row, never a fabricated default state");
     }
 }
