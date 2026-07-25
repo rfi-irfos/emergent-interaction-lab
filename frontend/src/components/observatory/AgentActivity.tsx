@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
@@ -34,6 +34,50 @@ function statusColor(item: ActivityItem): string {
   return KIND_COLORS[item.kind]
 }
 
+// Click-to-expand detail view, same .pem-overlay/.pem shell as
+// Inbox/EmergenceMonitor/SystemState's own modals — a focused single-item
+// read (larger type, no neighboring rows) rather than nothing happening
+// beyond the inline row itself.
+function AgentActivityModal({ item, onClose }: { item: ActivityItem; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="pem-overlay" onClick={onClose}>
+      <div className="pem obs-signal-modal" onClick={e => e.stopPropagation()} style={{ ['--obs-accent' as string]: statusColor(item) }}>
+        <div className="pem-header">
+          <span className="pem-title">{item.title}</span>
+          <button className="pem-close" onClick={onClose} title="Schließen (Esc)">✕</button>
+        </div>
+        <div className="pem-body obs-signal-modal-body">
+          <div className="obs-item-meta" style={{ margin: '4px 0 12px' }}>
+            <span className="obs-pill" style={{ background: `${KIND_COLORS[item.kind]}1a`, color: KIND_COLORS[item.kind] }}>
+              {AGENT_ACTIVITY_KIND_LABELS[item.kind] ?? item.kind}
+            </span>
+            {item.status && (
+              <>
+                {' '}
+                <span className="obs-pill" style={{ background: `${statusColor(item)}1a`, color: statusColor(item) }}>
+                  {AGENT_ACTIVITY_STATUS_LABELS[item.status] ?? item.status}
+                </span>
+              </>
+            )}
+          </div>
+          {item.detail && <div className="obs-signal-modal-observation" style={{ marginBottom: 10 }}>{item.detail}</div>}
+          <div className="obs-item-meta">{item.timestamp}</div>
+          {item.url && (
+            <a href={item.url} target="_blank" rel="noreferrer" className="panel-add-btn" style={{ marginTop: 16, display: 'inline-block', textDecoration: 'none' }}>
+              Auf GitHub ansehen ↗
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /// Real git/GitHub-level transparency: recent pull requests, commits on
 /// main, GitHub Actions workflow runs (covers the GitHub Pages frontend
 /// deploy), and this app's own deploy_log entries (covers `fly deploy`,
@@ -49,6 +93,7 @@ export function AgentActivity() {
   // backend/src/github_activity.rs), so everything is fetched in one shot
   // already and there's nothing to gain from a server round-trip here.
   const [kindFilter, setKindFilter] = useState<'' | ActivityItem['kind']>('')
+  const [expandedItem, setExpandedItem] = useState<ActivityItem | null>(null)
 
   const items = data ? (kindFilter ? data.items.filter(i => i.kind === kindFilter) : data.items) : []
 
@@ -79,10 +124,18 @@ export function AgentActivity() {
         : items.length === 0
         ? <div className="obs-card"><div className="obs-empty">Keine Treffer.</div></div>
         : items.map((item, i) => (
-            <div className="obs-item-card" key={i} style={{ ...hudStagger(i), ['--obs-accent' as string]: statusColor(item) }}>
+            <div
+              className="obs-item-card obs-item-card-clickable"
+              key={i}
+              style={{ ...hudStagger(i), ['--obs-accent' as string]: statusColor(item) }}
+              role="button"
+              tabIndex={0}
+              onClick={() => setExpandedItem(item)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedItem(item) } }}
+            >
               <div className="obs-item-title">
                 {item.url
-                  ? <a href={item.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{item.title}</a>
+                  ? <a href={item.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>{item.title}</a>
                   : item.title}
               </div>
               <div className="obs-item-meta">
@@ -102,7 +155,7 @@ export function AgentActivity() {
                 {item.url && (
                   <>
                     {' · '}
-                    <a href={item.url} target="_blank" rel="noreferrer" className="chat-inspect-toggle" style={{ fontSize: 11, padding: 0 }}>
+                    <a href={item.url} target="_blank" rel="noreferrer" className="chat-inspect-toggle" style={{ fontSize: 11, padding: 0 }} onClick={e => e.stopPropagation()}>
                       auf GitHub ansehen ↗
                     </a>
                   </>
@@ -116,6 +169,7 @@ export function AgentActivity() {
         Was tatsächlich am Code passiert ist — keine Erzählung aus dem Chat, sondern echte Einträge aus der
         Versionsverwaltung dieses Projekts. Veröffentlichungen werden separat erfasst, da sie dort nicht automatisch sichtbar sind.
       </p>
+      {expandedItem && <AgentActivityModal item={expandedItem} onClose={() => setExpandedItem(null)} />}
     </div>
   )
 }

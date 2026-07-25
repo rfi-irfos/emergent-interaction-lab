@@ -38,6 +38,40 @@ const KIND_COLORS: Record<Anomaly['kind'], string> = {
   hallucination_mismatch: '#8b5cf6',
 }
 
+// Click-to-expand detail view — same .pem-overlay/.pem shell as the other
+// Observatory detail modals (Inbox/EmergenceMonitor/SystemState/AgentActivity).
+function AnomalyModal({ item, onClose, onOpenConversation }: {
+  item: Anomaly
+  onClose: () => void
+  onOpenConversation?: (conversationId: string) => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="pem-overlay" onClick={onClose}>
+      <div className="pem obs-signal-modal" onClick={e => e.stopPropagation()} style={{ ['--obs-accent' as string]: KIND_COLORS[item.kind] }}>
+        <div className="pem-header">
+          <span className="pem-title">{KIND_LABELS[item.kind]}</span>
+          <button className="pem-close" onClick={onClose} title="Schließen (Esc)">✕</button>
+        </div>
+        <div className="pem-body obs-signal-modal-body">
+          <div className="obs-signal-modal-observation" style={{ marginBottom: 12 }}>{item.detail}</div>
+          <div className="obs-item-meta">{item.created_at} · Gespräch {item.conversation_id}</div>
+          {item.chat_message_id && <div className="obs-item-meta" style={{ marginTop: 4 }}>Nachricht {item.chat_message_id}</div>}
+          {onOpenConversation && (
+            <button className="panel-add-btn" style={{ marginTop: 16 }} onClick={() => { onOpenConversation(item.conversation_id); onClose() }}>
+              Aus Gespräch öffnen ↗
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Backend default page size for GET /api/observatory/anomalies (see
 // DEFAULT_LIMIT in anomaly.rs) — kept in sync so the first page loaded here
 // matches what the backend would return anyway.
@@ -58,6 +92,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState(false)
   const [kindFilter, setKindFilter] = useState<'' | Anomaly['kind']>('')
+  const [expandedItem, setExpandedItem] = useState<Anomaly | null>(null)
 
   const load = async (offset: number, append: boolean) => {
     if (append) setLoadingMore(true); else setLoading(true)
@@ -120,7 +155,15 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
             Geloggte Anomalien <span style={{ fontWeight: 400 }}>(geladen: {items.length} von {total ?? '…'})</span>
           </div>
           {items.map((item, i) => (
-            <div className="obs-item-card" key={item.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: KIND_COLORS[item.kind] }}>
+            <div
+              className="obs-item-card obs-item-card-clickable"
+              key={item.id}
+              style={{ ...hudStagger(i), ['--obs-accent' as string]: KIND_COLORS[item.kind] }}
+              role="button"
+              tabIndex={0}
+              onClick={() => setExpandedItem(item)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedItem(item) } }}
+            >
               <div className="obs-item-title">
                 <span className="obs-pill" style={{ background: `${KIND_COLORS[item.kind]}1a`, color: KIND_COLORS[item.kind] }}>
                   {KIND_LABELS[item.kind]}
@@ -135,7 +178,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
                     <button
                       className="chat-inspect-toggle"
                       style={{ fontSize: 11, padding: 0 }}
-                      onClick={() => onOpenConversation(item.conversation_id)}
+                      onClick={e => { e.stopPropagation(); onOpenConversation(item.conversation_id) }}
                     >
                       aus Gespräch ↗
                     </button>
@@ -163,6 +206,9 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
             menschlichen Durchsicht, kein bewiesener Befund.
           </p>
         </>
+      )}
+      {expandedItem && (
+        <AnomalyModal item={expandedItem} onClose={() => setExpandedItem(null)} onOpenConversation={onOpenConversation} />
       )}
     </div>
   )

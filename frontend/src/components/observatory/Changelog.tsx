@@ -73,6 +73,39 @@ function formatDateTime(iso: string): string {
   return d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'medium' })
 }
 
+type ChangelogRow =
+  | { kind: 'entry'; entry: AuditLogEntry }
+  | { kind: 'login-group'; actor: string; entries: AuditLogEntry[] }
+
+// A busy admin session can log a dozen `admin_login` rows back to back
+// (every tab reload re-authenticates) that drown out the substantive events
+// (a deleted post, a broken chain) sitting right next to them in the same
+// flat list. Collapses a RUN of ≥3 consecutive same-actor admin_login rows
+// (consecutive in the already-loaded, already-filtered/sorted `items` —
+// nothing server-side changes) into one condensed row; runs of 1-2 stay as
+// plain individual entries, since collapsing "you logged in twice" into a
+// group reads as more confusing than the two rows it replaces.
+function groupLoginNoise(items: AuditLogEntry[]): ChangelogRow[] {
+  const rows: ChangelogRow[] = []
+  let i = 0
+  while (i < items.length) {
+    const item = items[i]
+    if (item.event_type === 'admin_login') {
+      let j = i + 1
+      while (j < items.length && items[j].event_type === 'admin_login' && items[j].actor === item.actor) j++
+      const run = items.slice(i, j)
+      if (run.length >= 3) {
+        rows.push({ kind: 'login-group', actor: item.actor, entries: run })
+        i = j
+        continue
+      }
+    }
+    rows.push({ kind: 'entry', entry: item })
+    i++
+  }
+  return rows
+}
+
 export function Changelog() {
   const [items, setItems] = useState<AuditLogEntry[]>([])
   const [total, setTotal] = useState<number | null>(null)
@@ -267,18 +300,50 @@ export function Changelog() {
           <div className="obs-section-label">
             Einträge <span style={{ fontWeight: 400 }}>(geladen: {items.length} von {total ?? '…'})</span>
           </div>
-          {items.map((entry, i) => (
+          {groupLoginNoise(items).map((row, i) => row.kind === 'login-group' ? (
             <div
               className="obs-item-card obs-item-card-clickable"
-              key={entry.id}
+              key={`login-group-${row.entries[0].id}`}
               style={hudStagger(i)}
-              onClick={() => setExpandedId(id => (id === entry.id ? null : entry.id))}
+              onClick={() => setExpandedId(id => (id === row.entries[0].id ? null : row.entries[0].id))}
               role="button"
               tabIndex={0}
               onKeyDown={e => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  setExpandedId(id => (id === entry.id ? null : entry.id))
+                  setExpandedId(id => (id === row.entries[0].id ? null : row.entries[0].id))
+                }
+              }}
+            >
+              <div className="obs-item-title">
+                <span className="obs-pill" style={{ background: 'rgba(148,163,184,.14)', color: 'var(--sem-neutral)' }}>
+                  {row.entries.length}× {EVENT_TYPE_LABELS.admin_login}
+                </span>
+              </div>
+              <div className="obs-item-meta" style={{ marginTop: 6, marginBottom: 0 }}>
+                {row.actor} · {formatDateTime(row.entries[row.entries.length - 1].created_at)} – {formatDateTime(row.entries[0].created_at)}
+              </div>
+              {expandedId === row.entries[0].id && (
+                <div className="mycelium-detail">
+                  <div className="mycelium-detail-tag">EINZELNE ANMELDUNGEN</div>
+                  <div className="mycelium-detail-text">
+                    {row.entries.map(e => <div key={e.id}>{formatDateTime(e.created_at)}</div>)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              className="obs-item-card obs-item-card-clickable"
+              key={row.entry.id}
+              style={hudStagger(i)}
+              onClick={() => setExpandedId(id => (id === row.entry.id ? null : row.entry.id))}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setExpandedId(id => (id === row.entry.id ? null : row.entry.id))
                 }
               }}
             >
@@ -287,19 +352,19 @@ export function Changelog() {
                   className="obs-pill"
                   style={{ background: 'rgba(99,240,255,.12)', color: '#63f0ff' }}
                 >
-                  {EVENT_TYPE_LABELS[entry.event_type] ?? entry.event_type}
+                  {EVENT_TYPE_LABELS[row.entry.event_type] ?? row.entry.event_type}
                 </span>
               </div>
-              <div className="obs-item-body">{entry.summary}</div>
+              <div className="obs-item-body">{row.entry.summary}</div>
               <div className="obs-item-meta" style={{ marginTop: 6, marginBottom: 0 }}>
-                {formatDateTime(entry.created_at)} · {entry.actor}
+                {formatDateTime(row.entry.created_at)} · {row.entry.actor}
               </div>
-              {expandedId === entry.id && (
+              {expandedId === row.entry.id && (
                 <div className="mycelium-detail">
                   <div className="mycelium-detail-tag">META</div>
                   <div className="mycelium-detail-text">
                     <pre style={{ margin: 0, fontFamily: 'inherit', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {entry.meta ? JSON.stringify(entry.meta, null, 2) : '– kein Metadaten-Objekt –'}
+                      {row.entry.meta ? JSON.stringify(row.entry.meta, null, 2) : '– kein Metadaten-Objekt –'}
                     </pre>
                   </div>
                 </div>

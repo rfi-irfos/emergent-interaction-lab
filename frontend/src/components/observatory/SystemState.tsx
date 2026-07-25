@@ -23,8 +23,21 @@ interface Signal {
   created_at: string
 }
 
-function AlertRow({ signal, onOpen }: { signal: Signal; onOpen: (s: Signal) => void }) {
-  const accent = STATUS_ACCENT[signal.status] ?? '#f59e0b'
+// Badge taxonomy fix: this row used to render the literal text "Achtung" on
+// EVERY alert regardless of what actually triggered it — an emerging
+// research signal and "database unreachable" got the exact same badge,
+// same color (the signal's own `status='emerging'` accent, misapplied to
+// the technical rows too even though nothing about a DB outage is an
+// "emerging" pattern). Real differentiation: `kind` says WHAT KIND of alert
+// this is (research signal vs platform/technical), which drives both the
+// badge text and which semantic color it earns — a technical failure is a
+// real, present problem (--sem-danger), an emerging signal is "notice this,
+// not proven yet" (--sem-warning), matching the meanings already
+// established elsewhere in this app rather than borrowing the signal
+// pipeline's own status vocabulary for a fundamentally different kind of row.
+function AlertRow({ signal, kind, onOpen }: { signal: Signal; kind: 'signal' | 'technical'; onOpen: (s: Signal) => void }) {
+  const accent = kind === 'technical' ? 'var(--sem-danger)' : 'var(--sem-warning)'
+  const badgeLabel = kind === 'technical' ? 'Technisch' : 'Emergent'
   return (
     <div
       className="obs-activity-row obs-item-card-clickable"
@@ -34,7 +47,7 @@ function AlertRow({ signal, onOpen }: { signal: Signal; onOpen: (s: Signal) => v
       onClick={() => onOpen(signal)}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(signal) } }}
     >
-      <span className="obs-activity-kind" style={{ background: accent }}>Achtung</span>
+      <span className="obs-activity-kind" style={{ background: accent }}>{badgeLabel}</span>
       <span className="obs-activity-label">{signal.pattern}</span>
       <span className="obs-activity-ts">{signal.scope ?? 'Allgemein'}</span>
     </div>
@@ -91,12 +104,20 @@ function SystemStateModal({ scope, signal, count, trend, onClose }: {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+  // Same technical-vs-signal distinction as AlertRow above (see its comment)
+  // — a synthetic diag alert (id prefixed 'diag-', status='technical') gets
+  // its own honest badge here too, not the raw internal `status` string
+  // (which for real signals is meaningful jargon like "emerging"/"stable",
+  // but for a diag row was never anything but a borrowed placeholder value).
+  const isTechnical = signal.id.startsWith('diag-')
+  const modalAccent = isTechnical ? 'var(--sem-danger)' : (STATUS_ACCENT[signal.status] ?? '#3b6bf6')
+  const statusLabel = isTechnical ? 'Technisch' : signal.status
   return (
     <div className="pem-overlay" onClick={onClose}>
       <div
         className="pem obs-signal-modal"
         onClick={e => e.stopPropagation()}
-        style={{ ['--obs-accent' as string]: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}
+        style={{ ['--obs-accent' as string]: modalAccent }}
       >
         <div className="pem-header">
           <span className="pem-title">{scope}</span>
@@ -104,7 +125,7 @@ function SystemStateModal({ scope, signal, count, trend, onClose }: {
         </div>
         <div className="pem-body obs-signal-modal-body">
           <div className="obs-item-meta" style={{ margin: '4px 0 12px' }}>
-            <span className="obs-pill" style={{ background: `${STATUS_ACCENT[signal.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>{signal.status}</span>
+            <span className="obs-pill" style={{ background: `color-mix(in srgb, ${modalAccent} 16%, transparent)`, color: modalAccent }}>{statusLabel}</span>
             {' · '}Konfidenz: {signal.confidence}
             {' · '}Entwicklung: {signal.evolution}
             {' · '}{count} Beobachtungen in diesem Bereich
@@ -201,8 +222,8 @@ export function SystemState() {
         <>
           <div className="obs-section-label">Signale mit erhöhter Aufmerksamkeit</div>
           <div className="obs-card" style={{ marginBottom: 22 }}>
-            {emergingSignals.map(s => <AlertRow key={s.id} signal={s} onOpen={setExpandedSignal} />)}
-            {diagAlerts.map((a, i) => <AlertRow key={`diag-${i}`} signal={{ id: `diag-${i}`, pattern: a.label, status: 'emerging', confidence: '—', evolution: '—', observation: a.label, scope: a.detail, created_at: '—' }} onOpen={setExpandedSignal} />)}
+            {emergingSignals.map(s => <AlertRow key={s.id} signal={s} kind="signal" onOpen={setExpandedSignal} />)}
+            {diagAlerts.map((a, i) => <AlertRow key={`diag-${i}`} signal={{ id: `diag-${i}`, pattern: a.label, status: 'technical', confidence: '—', evolution: '—', observation: a.label, scope: a.detail, created_at: '—' }} kind="technical" onOpen={setExpandedSignal} />)}
           </div>
         </>
       )}
