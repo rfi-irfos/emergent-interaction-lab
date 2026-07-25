@@ -2864,37 +2864,28 @@ button { cursor: pointer; font-family: inherit; }
 }
 
 /* Boxes the Jarvis-generated blog drafts (blog_posts table) off from the
-   manually-managed news list above it in the same Blog tab — a background
-   tint + rounded border read as "a separate module," not just another row
-   in the same list, since the two buttons above/below this line write to
-   completely different data (draft.news.items vs blog_posts). Previously
-   ONLY this half had any container at all — the manual section above it
-   (.blog-manual-section) was a bare, unboxed list floating directly in the
-   page, so the page didn't read as "two parallel sections," it read as
-   "a flat list, then a random box appears." Both now share the same card
-   language (border-radius/padding/header shape), just different accent
-   hues (info-blue = manual/human-authored, purple = AI-authored) so the
-   *kind* of content still reads at a glance without needing to reopen the
-   old "just a dashed line + diamond icon" treatment. */
+   manually-managed news list above it in the same Blog tab — a rounded
+   container reads as "a separate module," not just another row in the same
+   list, since the two buttons above/below this line write to completely
+   different data (draft.news.items vs blog_posts). Both sections share the
+   exact same neutral surface as every other container in the app (.obs-card
+   — see above/below), the same card language used everywhere else
+   (border-radius/padding/shadow). Which data source a section holds is
+   *not* semantic meaning (status/severity) the way color is reserved for
+   elsewhere in this app, so it isn't tinted into the panel background or
+   border — the small .blog-section-icon badge below carries the
+   manual/Jarvis distinction at a glance instead, the appropriately
+   small-scale place for that accent. */
 .blog-manual-section, .blog-jarvis-section {
   margin-top: 22px; padding: 18px 20px 20px; border-radius: 14px;
+  background: #fff; border: 1px solid rgba(15,23,42,.06);
   box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(15,23,42,.03);
 }
-.blog-manual-section {
-  background: color-mix(in srgb, var(--sem-info) 4%, #fff);
-  border: 1px solid color-mix(in srgb, var(--sem-info) 18%, rgba(15,23,42,.07));
-}
-.blog-jarvis-section {
-  background: color-mix(in srgb, var(--obs-purple, #8b5cf6) 5%, #fff);
-  border: 1px solid color-mix(in srgb, var(--obs-purple, #8b5cf6) 20%, rgba(15,23,42,.07));
-}
-.observatory-hud .blog-manual-section, .gotham .blog-manual-section {
-  background: color-mix(in srgb, var(--sem-info) 8%, #12172b);
-  border-color: color-mix(in srgb, var(--sem-info) 26%, rgba(150,156,170,.12));
-}
+.observatory-hud .blog-manual-section, .gotham .blog-manual-section,
 .observatory-hud .blog-jarvis-section, .gotham .blog-jarvis-section {
-  background: color-mix(in srgb, var(--obs-purple, #8b5cf6) 9%, #12172b);
-  border-color: color-mix(in srgb, var(--obs-purple, #8b5cf6) 28%, rgba(150,156,170,.12));
+  background: #12172b;
+  border-color: rgba(150,156,170,.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
 }
 /* Real section header — icon-badge + title + one-line plain-language sub,
    shared by both halves, instead of the bare .obs-section-label + "◆" glyph
