@@ -520,6 +520,16 @@ pub async fn flagging(State(state): State<AppState>, headers: HeaderMap, jar: Co
     })).into_response()
 }
 
+/// Direction-of-Influence graph (who shapes whom): Laura→Jarvis vocabulary
+/// adoption vs Jarvis→Laura adoption + correction pressure. Computation
+/// lives in `analytics_influence`; this is the thin admin-only HTTP binding,
+/// same pattern as `flagging`.
+pub async fn influence(State(state): State<AppState>, headers: HeaderMap, jar: CookieJar) -> impl IntoResponse {
+    guard!(state, headers, jar);
+    let v = crate::analytics_influence::direction_of_influence(&state.db).await;
+    Json(v).into_response()
+}
+
 // ── Scope trends (System State citing real Interaction Dynamics data) ──────
 // For each scope emergence_signals has observed, the message-volume trend
 // of the specific conversations that scope's signals came from — a real,

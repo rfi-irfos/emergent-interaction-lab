@@ -4,6 +4,7 @@ mod analytics_behavior;
 mod analytics_communication;
 mod analytics_decisions;
 mod analytics_flagging;
+mod analytics_influence;
 mod analytics_resolution;
 mod anomaly;
 mod auditlog;
@@ -412,6 +413,7 @@ async fn main() {
         .route("/api/observatory/tool-calls/:conversation_id", get(observatory::tool_call_details))
         .route("/api/observatory/hallucinations/:conversation_id", get(observatory::hallucination_full_list))
         .route("/api/observatory/flagging", get(observatory::flagging))
+        .route("/api/observatory/influence", get(observatory::influence))
         .route("/api/observatory/scope-trends", get(observatory::scope_trends))
         .route("/api/observatory/ai-activity", get(observatory::ai_activity))
         .route("/api/observatory/organization", get(observatory::organization))
