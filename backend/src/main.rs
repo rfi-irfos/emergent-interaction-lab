@@ -19,6 +19,7 @@ mod emergence;
 mod github_activity;
 mod hallucination;
 mod hermes;
+mod human_behavior;
 mod inspect;
 mod mcp;
 mod observatory;
@@ -273,6 +274,9 @@ async fn main() {
     // module doc comment; no dependency on any table above, placed last
     // simply as the newest addition.
     dashboards::init_schema(&db).await;
+    // Browser→server behavioral capture (Wave 2 / Task 9) — human_behavior
+    // raw-event table; no dependency on any table above.
+    human_behavior::init_schema(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
@@ -394,6 +398,10 @@ async fn main() {
         .route("/api/observatory/behavior", get(observatory::behavior))
         .route("/api/observatory/information", get(observatory::information))
         .route("/api/observatory/human-ai", get(observatory::human_ai))
+        // Behavioral capture ingest (Wave 2 / Task 9): admin-gated batch
+        // POST from the browser — keystroke timing/idle/scroll/visibility
+        // metadata only, never typed content (see human_behavior.rs).
+        .route("/api/human-behavior/:conversation_id", post(human_behavior::ingest))
         // Per-conversation drilldowns (Wave 0 / Task 4): raw tool-call
         // args/results and the full hallucination_checks verdict list (all
         // verdicts, not just the 'mismatch' ones the anomaly log surfaces) —
