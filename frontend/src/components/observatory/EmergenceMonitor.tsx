@@ -4,7 +4,7 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { FilterPanel, HudGrid, HudTile, useHeaderActions } from './Hud'
+import { FilterPanel, HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { STATUS_ACCENT } from './registry'
@@ -82,6 +82,22 @@ const CONFIDENCE_LEVELS = ['experimental', 'tentative', 'moderate']
 // sees is unchanged; `offset` (via "Weitere laden") is what makes the rest
 // of the table reachable now (see backend/src/emergence.rs).
 const PAGE_SIZE = 50
+
+/// Simple horizontal proportion bar for the two influence directions —
+/// existing CSS vars only (copied from the old Dyad+Meta dashboard, now
+/// folded into this module).
+function DirectionBar({ label, value, max, accent }: { label: string; value: number; max: number; accent: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+      <span style={{ flex: '0 0 130px', color: '#9aa0a8' }}>{label}</span>
+      <span style={{ flex: 1, background: 'color-mix(in srgb, currentColor 8%, transparent)', borderRadius: 3, overflow: 'hidden', height: 8 }}>
+        <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: accent, transition: 'width .4s ease' }} />
+      </span>
+      <span style={{ flex: '0 0 28px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+    </div>
+  )
+}
 
 function formatPercent(v: number): string {
   return `${Math.round(v * 100)}%`
@@ -183,6 +199,19 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
   const [expandedSignal, setExpandedSignal] = useState<Signal | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const { data: ccet } = useAdminFetch<CcetSummary>('/api/observatory/emergence/ccet', [refreshKey])
+  const { data: influence } = useAdminFetch<{
+    balance: { laura_to_jarvis_count: number; jarvis_to_laura_count: number; ratio: number | null }
+    laura_to_jarvis: { count: number; terms: { term: string }[] }
+    jarvis_to_laura: { adopted_terms: { count: number; terms: { term: string }[] }; correction_pressure: number }
+  }>('/api/observatory/influence', [refreshKey])
+  const { data: flagging } = useAdminFetch<{
+    matrix: {
+      laura_flags_jarvis: { modify: number; reject: number; total: number }
+      jarvis_flags: { hallucination_mismatch: number; anomalies: number; total: number }
+      total_flags: number
+    }
+    flag_resolution: { resolved: number; open: number; total: number; resolved_ratio: number }
+  }>('/api/observatory/flagging', [refreshKey])
   const [analyzing, setAnalyzing] = useState(false)
 
   // Real pagination + filters (see backend/src/emergence.rs's list_signals):
@@ -454,6 +483,49 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
             <div className="obs-stat-value">{ccet ? ccet.cep : '—'}</div>
             <div className="obs-stat-label">Wendepunkte (Co-Evolution Points)</div>
           </div>
+        </HudTile>
+      </HudGrid>
+
+      <div className="obs-section-label">Geteiltes Feld — Dyad & Meta (META-Layer)</div>
+      <HudGrid cols={4}>
+        <HudTile title="Einfluss-Richtung" badge="TRAIT" accent="var(--obs-purple)" span={2}>
+          {influence && (influence.balance.laura_to_jarvis_count > 0 || influence.balance.jarvis_to_laura_count > 0) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <DirectionBar label="Laura → Jarvis" value={influence.balance.laura_to_jarvis_count} max={Math.max(influence.balance.laura_to_jarvis_count, influence.balance.jarvis_to_laura_count)} accent="var(--obs-purple)" />
+              <DirectionBar label="Jarvis → Laura" value={influence.balance.jarvis_to_laura_count} max={Math.max(influence.balance.laura_to_jarvis_count, influence.balance.jarvis_to_laura_count)} accent="var(--obs-teal)" />
+              {influence.balance.ratio != null && <p style={{ fontSize: 11, color: '#9aa0a8', margin: 0 }}>Verhältnis: {influence.balance.ratio.toFixed(2)}</p>}
+            </div>
+          ) : <div className="obs-empty">Noch keine gerichtete Einfluss-Beobachtung.</div>}
+        </HudTile>
+
+        <HudTile title="Laura flaggt Jarvis" badge="META" accent="var(--sem-warning, var(--obs-amber))" span={2}>
+          {flagging && flagging.matrix.laura_flags_jarvis.total > 0 ? (
+            <div style={{ display: 'flex', gap: 18 }}>
+              <HudStat value={flagging.matrix.laura_flags_jarvis.modify} label="Modify" />
+              <HudStat value={flagging.matrix.laura_flags_jarvis.reject} label="Reject" />
+              <HudStat value={flagging.matrix.laura_flags_jarvis.total} label="Gesamt" />
+            </div>
+          ) : <div className="obs-empty">Noch kein Flag von Laura.</div>}
+        </HudTile>
+
+        <HudTile title="Jarvis flaggt" badge="META" accent="var(--sem-danger)" span={2}>
+          {flagging && flagging.matrix.jarvis_flags.total > 0 ? (
+            <div style={{ display: 'flex', gap: 18 }}>
+              <HudStat value={flagging.matrix.jarvis_flags.hallucination_mismatch} label="Mismatch (Selbst)" />
+              <HudStat value={flagging.matrix.jarvis_flags.anomalies} label="Anomalien" />
+              <HudStat value={flagging.matrix.jarvis_flags.total} label="Gesamt" />
+            </div>
+          ) : <div className="obs-empty">Noch kein maschinelles Flag.</div>}
+        </HudTile>
+
+        <HudTile title="Flag-Auflösung" badge="META" accent="var(--sem-success)" span={2}>
+          {flagging && flagging.flag_resolution.total > 0 ? (
+            <div style={{ display: 'flex', gap: 18 }}>
+              <HudStat value={flagging.flag_resolution.resolved} label="aufgelöst" />
+              <HudStat value={flagging.flag_resolution.open} label="offen" />
+              <HudStat value={flagging.flag_resolution.resolved_ratio * 100} label="Quote" format={v => `${Math.round(v)} %`} />
+            </div>
+          ) : <div className="obs-empty">Noch keine Flags.</div>}
         </HudTile>
       </HudGrid>
 
