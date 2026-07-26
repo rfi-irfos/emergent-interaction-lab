@@ -5,6 +5,7 @@
 // discipline as ObsDonut).
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import { ObsChartFrame } from './ObsChartFrame'
+import { resolveObsColor } from './obsColors'
 
 export interface BarSegment { label: string; value: number; color?: string }
 
@@ -47,7 +48,7 @@ export function ObsBarStack({
             formatter={((v: unknown, name: unknown) => [`${v} (${Math.round((Number(v) / total) * 100)}%)`, String(name)]) as never}
           />
           {flat.map((s, i) => (
-            <Bar key={s.name} dataKey={s.name} stackId="status" fill={s.color} radius={i === 0 ? [3, 0, 0, 3] : i === flat.length - 1 ? [0, 3, 3, 0] : 0} />
+            <Bar key={s.name} dataKey={s.name} stackId="status" fill={resolveObsColor(s.color)} radius={i === 0 ? [3, 0, 0, 3] : i === flat.length - 1 ? [0, 3, 3, 0] : 0} />
           ))}
         </BarChart>
       </ObsChartFrame>

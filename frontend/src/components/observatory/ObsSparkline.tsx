@@ -4,6 +4,7 @@
 // HudTile body so it never sits misaligned next to the other instruments.
 import { AreaChart, Area, YAxis, Tooltip } from 'recharts'
 import { ObsChartFrame } from './ObsChartFrame'
+import { resolveObsColor } from './obsColors'
 
 export function ObsSparkline({
   points, color = 'var(--obs-teal)', height = 150,
@@ -19,8 +20,8 @@ export function ObsSparkline({
       <AreaChart data={data} margin={{ top: 6, right: 4, bottom: 6, left: 4 }}>
         <defs>
           <linearGradient id="obs-spark-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.28} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
+            <stop offset="0%" stopColor={resolveObsColor(color)} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={resolveObsColor(color)} stopOpacity={0} />
           </linearGradient>
         </defs>
         <YAxis hide domain={['dataMin', 'dataMax']} />
@@ -33,7 +34,7 @@ export function ObsSparkline({
         <Area
           type="monotone"
           dataKey="v"
-          stroke={color}
+          stroke={resolveObsColor(color)}
           strokeWidth={2}
           fill="url(#obs-spark-fill)"
           isAnimationActive={true}
