@@ -1,13 +1,14 @@
 // Shared responsive frame for all Observatory chart widgets. Wraps Recharts'
 // ResponsiveContainer so every instrument fills the HudTile body consistently
-// and stays centered — no hand-rolled flex/absolute positioning per widget.
+// and stays centered.
 //
-// CRITICAL: .hud-tile-body is `display: flex; flex-direction: column`. A flex
-// child with only an inline `height` will collapse to 0 unless it's pinned
-// with `flex: 0 0 <h>px` (flex-shrink: 0) — without that, Recharts'
-// ResponsiveContainer measures its parent as 0px tall and renders nothing,
-// leaving only the legend/label visible (the exact "empty tile" bug seen on
-// Status-Mix / Volumen/Tag). pinning the frame height via flex-basis fixes it.
+// NOTE: .hud-tile-body is `display: flex; flex-direction: column`, and a flex
+// child with `height="100%"` collapses ResponsiveContainer to 0 (it measures
+// the parent as 0 tall) — that was the "legend-only / empty tile" bug on
+// Status-Mix / Volumen/Tag. We therefore pass an explicit numeric pixel
+// height to ResponsiveContainer (NOT "100%") so it always has a concrete box
+// to render into. The width stays "100%" (ResponsiveContainer handles width
+// fine); only height must be concrete here.
 import { ResponsiveContainer } from 'recharts'
 
 export function ObsChartFrame({
@@ -21,13 +22,12 @@ export function ObsChartFrame({
       style={{
         width: '100%',
         height,
-        flex: `0 0 ${height}px`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={height}>
         {children}
       </ResponsiveContainer>
     </div>
