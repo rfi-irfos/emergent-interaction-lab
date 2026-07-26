@@ -113,9 +113,6 @@ export function InteractionDynamics() {
           </div>
         </div>
       </HudTile>
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Konfidenz und Antwort-Tempo sind Signale über Anpassung und Rhythmus des Gesprächs, keine Leistungsmessung. Klick auf ein Token oben für die Alternativen, die das Modell erwogen hat.
-      </p>
     </div>
   )
 }

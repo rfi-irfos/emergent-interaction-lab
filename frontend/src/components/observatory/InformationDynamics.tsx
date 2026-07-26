@@ -76,10 +76,6 @@ export function InformationDynamics() {
             ]}
             gradientIdPrefix="information-retrieval-quality"
           />
-          <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
-            Basis: die {data.recent_retrievals.length} aktuell geladenen Anfragen{gapOnly ? ' (nur Wissenslücken)' : ''} — kein
-            serverseitiges Gesamt-Grouping über alle jemals gestellten Anfragen, siehe "Letzte Anfragen" unten.
-          </p>
         </HudTile>
       )}
 
@@ -127,9 +123,6 @@ export function InformationDynamics() {
             ))
         }
       </HudTile>
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Wissensbasis und wie gut sie tatsächlich wiederverwendet wird — Score und Trefferzahl zeigen, ob frühere Gespräche und Dokumente aktiv ins Denken einfließen, nicht nur wie viel gespeichert ist. Wissenslücken markieren Anfragen, bei denen keine oder zu schwache Treffer gefunden wurden.
-      </p>
     </div>
   )
 }

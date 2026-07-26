@@ -6,6 +6,9 @@ import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { FilterPanel, HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
+import { ObsGauge } from './ObsGauge'
+import { ObsBarStack } from './ObsBarStack'
+import { ObsSparkline } from './ObsSparkline'
 import { STATUS_ACCENT } from './registry'
 
 interface Signal {
@@ -98,16 +101,6 @@ function DirectionBar({ label, value, max, accent }: { label: string; value: num
   )
 }
 
-function formatPercent(v: number): string {
-  return `${Math.round(v * 100)}%`
-}
-
-// A signal's observation text used to render in full, inline, on every card
-// at once — the single biggest source of "hardly anything makes sense, too
-// much data" on this page (Laura's own words). Truncating the inline card to
-// a preview and pushing the full text + full meta behind a click both
-// declutters the list AND gives individual signals somewhere to actually
-// "pop" into, rather than sitting flat and static on the page.
 const PREVIEW_CHARS = 130
 function previewText(text: string): string {
   if (text.length <= PREVIEW_CHARS) return text
@@ -146,9 +139,7 @@ function SignalDetailModal({ signal, onClose, onOpenConversation }: {
             <div className="obs-badge-verified">
               ✓ Verifizierte Emergenz (gesehen in {signal.recurrence_count} Gesprächen)
             </div>
-          ) : (
-            <div className="obs-placeholder-tag">Beobachtung — noch nicht als gemessene Emergenz bestätigt</div>
-          )}
+          ) : null}
           <div className="obs-item-meta" style={{ margin: '10px 0' }}>
             <span className="obs-pill" style={{ background: `${STATUS_ACCENT[signal.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>{signal.status}</span>
             {' · '}Ebene: {LEVEL_SECTIONS.find(l => l.key === signal.level)?.label ?? signal.level}
@@ -403,6 +394,18 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
   // read as "no signals of that status exist" rather than "filtered out".
   const visibleStatuses = statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)
 
+  // Signal volume per day — derived purely from loaded signals' created_at,
+  // bucketed by calendar day (DE locale), for the sparkline widget.
+  const dayBuckets = new Map<string, number>()
+  for (const s of signals) {
+    const day = s.created_at.slice(0, 10)
+    dayBuckets.set(day, (dayBuckets.get(day) ?? 0) + 1)
+  }
+  const sparklineDays = dayBuckets.size
+  const sparklinePoints = Array.from(dayBuckets.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, c]) => c)
+
   return (
     <div className="obs-panel">
 
@@ -420,6 +423,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
       </div>
       <HudGrid cols={4}>
+        {/* 1) DONUT — Ebenen-Mix */}
         <HudTile title="Ebenen-Mix" badge="SIGNALE" accent="var(--obs-purple)" span={1}>
           <ObsDonut
             data={visibleSections.map(section => ({
@@ -431,36 +435,36 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
             gradientIdPrefix="emergence-level-mix"
           />
         </HudTile>
+
+        {/* 2) BAR STACK — Status-Mix */}
         <HudTile title="Status-Mix" badge="SIGNALE" accent="var(--obs-blue)" span={1}>
-          <ObsDonut
+          <ObsBarStack
             data={visibleStatuses.map(status => ({
               label: status,
               value: signals.filter(s => s.status === status).length,
               color: STATUS_ACCENT[status] ?? '#3b6bf6',
             }))}
-            gradientIdPrefix="emergence-status-mix"
           />
         </HudTile>
-        <HudTile title="Stabilität (CEI)" badge="CO-EVOLUTION" accent="var(--obs-green)" span={1}>
-          {ccet ? (
-            <ObsDonut
-              data={[{ label: 'CEI', value: Math.round(ccet.cei * 1000), color: 'var(--obs-green)' }, { label: 'Rest', value: Math.max(0, 1000 - Math.round(ccet.cei * 1000)), color: 'rgba(255,255,255,0.08)' }]}
-              centerLabel={`${formatPercent(ccet.cei)}\nCEI`}
-              gradientIdPrefix="emergence-cei"
-            />
+
+        {/* 3) SPARKLINE — Signal-Volumen pro Tag */}
+        <HudTile title="Volumen / Tag" badge="VERLAUF" accent="var(--obs-teal)" span={1}>
+          {sparklinePoints.length > 1 ? (
+            <ObsSparkline points={sparklinePoints} color="var(--obs-teal)" />
           ) : (
-            <div className="obs-stat c-green"><div className="obs-stat-value">—</div><div className="obs-stat-label">Stabilität (CEI)</div></div>
+            <div className="obs-empty">Zu wenig Zeitpunkte.</div>
           )}
+          <div className="obs-stat-label" style={{ marginTop: 6 }}>
+            {signals.length} Signale · {sparklineDays} Tage
+          </div>
         </HudTile>
-        <HudTile title="Rhythmus (Resonanz)" badge="CO-EVOLUTION" accent="var(--obs-teal)" span={1}>
+
+        {/* 4) GAUGE RING — Resonanz (0–1) */}
+        <HudTile title="Rhythmus (Resonanz)" badge="CO-EVOLUTION" accent="var(--obs-amber)" span={1}>
           {ccet ? (
-            <ObsDonut
-              data={[{ label: 'Resonanz', value: Math.round(ccet.resonance_frequency * 1000), color: 'var(--obs-teal)' }, { label: 'Rest', value: Math.max(0, 1000 - Math.round(ccet.resonance_frequency * 1000)), color: 'rgba(255,255,255,0.08)' }]}
-              centerLabel={`${formatPercent(ccet.resonance_frequency)}\nResonanz`}
-              gradientIdPrefix="emergence-resonance"
-            />
+            <ObsGauge value={ccet.resonance_frequency} label="Resonanz" color="var(--obs-amber)" size={132} />
           ) : (
-            <div className="obs-stat c-teal"><div className="obs-stat-value">—</div><div className="obs-stat-label">Rhythmus (Resonanz)</div></div>
+            <div className="obs-stat c-amber"><div className="obs-stat-value">—</div><div className="obs-stat-label">Rhythmus (Resonanz)</div></div>
           )}
         </HudTile>
       </HudGrid>

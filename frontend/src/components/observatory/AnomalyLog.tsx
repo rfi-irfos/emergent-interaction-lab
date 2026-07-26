@@ -217,8 +217,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
           <div className="obs-empty">
             Noch keine Anomalien protokolliert — das Log füllt sich automatisch, sobald ein Werkzeugaufruf
             fehlschlägt, die Werkzeug-Runden-Obergrenze erreicht wird, die Ablehnungs-Instruktion heuristisch
-            anschlägt, oder der Hallucination Tracker eine echte Falschbehauptung findet. Kein Eintrag heißt hier
-            ehrlich: bisher nichts aufgefallen — nicht "wurde nicht überprüft".
+            anschlägt, oder der Hallucination Tracker eine echte Falschbehauptung findet.
           </div>
         </div>
       ) : (
@@ -269,14 +268,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
                 {loadingMore ? 'Lädt…' : `Weitere laden (${items.length} / ${total})`}
               </button>
             </div>
-          )}
-
-          <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6, marginTop: 14 }}>
-            Vier mechanische Signale, kein zertifizierter Erkenner: ein fehlgeschlagener Werkzeugaufruf, eine
-            erreichte Werkzeug-Runden-Obergrenze, ein heuristischer Stichwort-Treffer auf Ablehnungssprache in der
-            Antwort, oder ein "mismatch"-Befund des Hallucination Trackers. Jeder Eintrag ist ein Hinweis zur
-            menschlichen Durchsicht, kein bewiesener Befund.
-          </p>
+            )}
         </>
       )}
       {expandedItem && (

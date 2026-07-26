@@ -298,13 +298,8 @@ function IntrachatLoop({ conversationId }: { conversationId: string }) {
   if (turns.length === 0) return null
   return (
     <div style={{ marginTop: 8 }}>
-      <div className="obs-section-label">Intrachat-Schleife — Laura → Modell → System</div>
-      <p style={{ fontSize: 11.5, color: 'rgba(148,190,199,.6)', margin: '0 0 12px', lineHeight: 1.5 }}>
-        Der geschlossene Kreis: was Laura eingibt (Transmis­sion) → welche ihrer 8 Denkebenen feuert → welche Emergenz-Signale das Gespräch
-        in diesem Moment auslöst → wie sich der Systemzustand (CEI / Resonanz) verschiebt. Wie ein Handbuch übers Fliegen schreiben, während
-        man die Maschine baut und fliegt.
-      </p>
-      {loading ? <HudSkeleton variant="list" rows={3} /> : (
+    <div className="obs-section-label">Intrachat-Schleife — Laura → Modell → System</div>
+    {loading ? <HudSkeleton variant="list" rows={3} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {turns.map((turn, i) => (
             <LoopNode
@@ -445,8 +440,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
           // simply hasn't landed yet (it runs as a background task after
           // each turn, see thinking_fragments.rs).
           <div className="obs-empty">
-            Für dieses Gespräch gibt es noch keine Denkfragment-Historie — entweder ist es älter als dieses Feature, oder die
-            Klassifizierung eines gerade abgeschlossenen Turns läuft noch im Hintergrund.
+            Für dieses Gespräch gibt es noch keine Denkfragment-Historie.
           </div>
         ) : (
           <>
@@ -466,11 +460,6 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: 11.5, color: '#9aa0a8', marginTop: 10, marginBottom: 0 }}>
-              {turns.length} klassifizierte{turns.length === 1 ? 'r Turn' : ' Turns'} — links nach rechts in Gesprächsreihenfolge; ein
-              geteiltes Segment heißt, der Turn wurde mehreren Ebenen zugeordnet. Zum Anzeigen der Ebenen und eines Textausschnitts mit
-              der Maus über ein Segment fahren.
-            </p>
           </>
         )}
       </div>
@@ -536,10 +525,6 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
           </HudTile>
         </HudGrid>
       )}
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Verteilung über alle Forschungsgespräche hinweg, nicht nur das oben gewählte — zeigt, welche Denkebenen (nach Lauras eigenem
-        8-Layer-Model) über die Zeit dominieren.
-      </p>
 
       {/* ── INTRACHAT LOOP: the missing 90% — Laura's own data shown as a
           live closed loop, not just classified. Rendered for the currently

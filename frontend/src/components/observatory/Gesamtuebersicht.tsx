@@ -190,11 +190,6 @@ export function Gesamtuebersicht({ data }: { data: EverythingData }) {
           }
         </HudTile>
       </HudGrid>
-
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Geschäfts-/Zahlungsdaten (Stripe-Bestellungen) sind hier bewusst nicht enthalten — das ist ein separates
-        Verwaltungs-Thema, kein Forschungsinteraktionsdatum. Siehe Monetarisierung → Bestellungen.
-      </p>
     </>
   )
 }

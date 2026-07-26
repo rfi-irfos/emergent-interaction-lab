@@ -125,10 +125,6 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   // single load — this was the actual crash behind "die laden aber GARNICH
   // nicht" (verified live: same class of bug found+fixed in SystemMap.tsx).
   // every edge below is inferred from shared fields, not a curated linkage.
-  // The day a real relationship store exists, swap this constant for that
-  // check and the placeholder tag disappears on its own.
-  const usingHeuristicEdges = true
-
   const safeSignals = signals ?? []
   const safePosts = posts ?? []
   const safeNotes = notes ?? []
@@ -254,11 +250,6 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
 
   return (
     <div className="obs-panel">
-      {usingHeuristicEdges && (
-        <div className="obs-placeholder-tag">
-          (Vorläufig — Verbindungen basieren auf einfachen Übereinstimmungen wie derselben Gesprächs-ID, nicht auf einer echten inhaltlichen Analyse)
-        </div>
-      )}
       <div className="obs-card obs-map-card mycelium-card" ref={wrapRef} style={{ height: '74vh', minHeight: 420, overflow: 'hidden' }}>
         <ForceGraph2D
           ref={fgRef}

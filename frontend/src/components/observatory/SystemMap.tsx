@@ -473,7 +473,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
         )}
       </div>
       <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
-        Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter. Eine sechste, gesellschaftliche Kategorie ist hier bewusst nicht dargestellt, weil dafür aktuell keine echte Datenquelle existiert — eine erfundene Zahl wäre schlechter als eine ehrliche Lücke.
+        Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter.
       </p>
     </div>
   )

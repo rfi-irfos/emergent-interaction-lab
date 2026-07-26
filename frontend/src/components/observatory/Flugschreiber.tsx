@@ -146,8 +146,6 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
         <div className="obs-card">
           <div className="obs-empty">
             Noch keine Snapshots in diesem Zeitraum - sie werden automatisch nach jedem Gesprächsturn aufgezeichnet.
-            Ältere Gespräche, die vor dieser Funktion stattfanden, haben ehrlich keine Aufzeichnungshistorie, statt sie
-            nachträglich zu erfinden.
           </div>
         </div>
       ) : (
@@ -209,7 +207,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
               <p style={{ fontSize: 12, color: 'rgba(148,190,199,.65)', marginBottom: 22 }}>
                 {selected.trigger_turn_id
                   ? <> · CCET-Turn {selected.trigger_turn_id}</>
-                  : ' · kein CCET-Turn verknüpft (z. B. weil zu diesem Zeitpunkt keine NVIDIA-Anbindung konfiguriert war)'}
+                  : ''}
                 .
                 {onOpenConversation && (
                   <>

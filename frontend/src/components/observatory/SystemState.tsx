@@ -278,7 +278,6 @@ export function SystemState() {
           divider rule, a plain sentence instead of an obs-card wrapper. */}
       <div className="obs-tech-section">
         <div className="obs-tech-label">Technische Systemgesundheit</div>
-        <p className="obs-section-sub">Das betrifft die Plattform selbst — Server, Datenbank, API-Zugänge — nicht deine Forschung.</p>
         {diagLoading && <HudSkeleton variant="stats" rows={2} />}
         {diagError && <div className="obs-empty">Fehler beim Laden.</div>}
         {diag && (
