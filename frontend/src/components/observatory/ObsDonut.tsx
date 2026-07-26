@@ -89,8 +89,10 @@ export function ObsDonut({
           </PieChart>
         </ResponsiveContainer>
         {centerLabel !== undefined && (
-          <div className="obs-donut-center" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', whiteSpace: 'pre-line', textAlign: 'center' }}>
-            {centerLabel}
+          <div className="obs-donut-center" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', textAlign: 'center', lineHeight: 1.15 }}>
+            {centerLabel.split('\n').map((line, i) => (
+              <span key={i} style={{ fontSize: i === 0 ? 22 : 11, fontWeight: i === 0 ? 800 : 600, letterSpacing: i === 0 ? '-.01em' : '.04em', opacity: i === 0 ? 1 : .7, textTransform: i === 0 ? 'none' : 'uppercase' }}>{line}</span>
+            ))}
           </div>
         )}
       </div>
