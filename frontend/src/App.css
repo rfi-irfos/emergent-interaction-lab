@@ -41,6 +41,7 @@ button { cursor: pointer; font-family: inherit; }
   --obs-amber: #f59e0b;
   --obs-green: #10b981;
   --obs-red: #ef4444;
+  --obs-cyan: #0e8a9c;   /* dashboard cyan accent (SIM/telemetry tiles) — defined so var(--obs-cyan) resolves instead of rendering transparent */
 
   /* Semantic status tokens — the ONE small fixed taxonomy every KPI accent,
      badge, pill, and status tag in the admin/Observatory surface reads from
@@ -2767,7 +2768,7 @@ button { cursor: pointer; font-family: inherit; }
   --obs-amber: #f59e0b; --obs-green: #10b981; --obs-red: #ef4444;
 }
 .obs-panel { padding: 18px 4px; }
-.obs-panel { --obs-blue: #3b6bf6; --obs-purple: #8b5cf6; --obs-teal: #14b8a6; --obs-amber: #f59e0b; --obs-green: #10b981; --obs-red: #ef4444; }
+.obs-panel { --obs-blue: #3b6bf6; --obs-purple: #8b5cf6; --obs-teal: #14b8a6; --obs-amber: #f59e0b; --obs-green: #10b981; --obs-red: #ef4444; --obs-cyan: #0e8a9c; }
 
 .obs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
 .obs-stat {
@@ -2856,7 +2857,14 @@ button { cursor: pointer; font-family: inherit; }
    Dynamics, Analytics+Gesamtübersicht) — both halves stacked and always
    visible, one under the other, no toggle. A toggle hid one half behind a
    click every time, which read as "missing," not "consolidated." */
-.obs-stacked-views { display: flex; flex-direction: column; gap: 28px; }
+.obs-stacked-views { display: flex; flex-direction: column; gap: 36px; }
+/* When two formerly-separate apps are merged into one sidebar slot
+   (Knowledge+System Map, Interaction+Information Dynamics), give each
+   stacked sub-view its own breathing room + a hairline divider so they
+   read as TWO distinct panels, not one undifferentiated blob. */
+.obs-stacked-views > * + * { padding-top: 36px; border-top: 1px solid rgba(120,150,170,.16); }
+.observatory-hud .obs-stacked-views > * + * { border-top-color: rgba(148,190,199,.16); }
+.gotham .obs-stacked-views > * + * { border-top-color: rgba(148,190,199,.16); }
 
 .obs-card {
   background: #fff; border: 1px solid rgba(15,23,42,.06); border-radius: 14px; padding: 18px 20px;
@@ -3328,7 +3336,7 @@ button { cursor: pointer; font-family: inherit; }
    text, a single muted-teal accent, depth from shadow NOT bright edges, one
    global sans (no mono-mixing), no glow on foreground text. Calm, high-
    contrast, data-dense — not a neon Christmas tree. */
-.observatory-hud { --hud-cyan: #38d9cc; --hud-cyan-dim: rgba(56,217,204,.3); --hud-bg: #0a0e17; }
+.observatory-hud { --hud-cyan: #38d9cc; --hud-cyan-dim: rgba(56,217,204,.3); --hud-bg: #0a0e17; --obs-cyan: #38d9cc; }
 .observatory-hud.crm-main {
   background:
     radial-gradient(ellipse 900px 500px at 15% -10%, rgba(56,217,204,.05), transparent 60%),
@@ -3473,7 +3481,7 @@ button { cursor: pointer; font-family: inherit; }
 .gotham {
   --gotham-bg: #05080d; --gotham-panel: rgba(16,24,34,.72); --gotham-border: rgba(120,150,170,.16);
   --gotham-text: rgba(206,224,232,.82); --gotham-text-dim: rgba(140,170,184,.55);
-  --hud-cyan: #34e1ff; --hud-cyan-dim: rgba(52,225,255,.32); --hud-amber: #ffb01f;
+  --hud-cyan: #34e1ff; --hud-cyan-dim: rgba(52,225,255,.32); --hud-amber: #ffb01f; --obs-cyan: #34e1ff;
   /* One shared shell color for both the sidebar and the topbar — defined
      once here so they're byte-identical by construction, not two
      independently-tuned rgba values that drift apart (they used to). */

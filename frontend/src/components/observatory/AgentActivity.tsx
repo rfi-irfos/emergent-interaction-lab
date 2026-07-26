@@ -86,7 +86,7 @@ export function AgentActivity() {
   return (
     <div className="obs-panel">
       <HudGrid cols={4}>
-        <HudTile title="Reasoning-Volumen" badge="TOKENS" accent="var(--obs-teal)" span={4}>
+        <HudTile title="Reasoning-Volumen" badge="TOKENS" accent="var(--obs-teal)" span={2}>
           {humanAi ? (
             <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
               <HudStat value={humanAi.assistant_messages ?? 0} label="Antworten (Jarvis)" />

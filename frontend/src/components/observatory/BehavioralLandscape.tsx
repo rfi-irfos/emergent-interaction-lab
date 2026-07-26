@@ -114,7 +114,7 @@ export function BehavioralLandscape() {
       {/* ── LAURA · Kognitive Signatur (STATE) ── */}
       <div className="obs-section-label">Laura · Kognitive Signatur <span style={{ opacity: .6 }}>(STATE)</span></div>
       <HudGrid cols={4}>
-        <HudTile title="Tippgeschwindigkeit" badge="STATE" accent="var(--obs-blue)" span={4}>
+        <HudTile title="Tippgeschwindigkeit" badge="STATE" accent="var(--obs-blue)" span={2}>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Stat value={mind?.typing_velocity_cpm} label="CPM" format={fmtInt} accent="var(--obs-blue)" />
             <Stat value={mind?.backspace_ratio} label="Backspace-Anteil" format={fmtPct} accent="var(--obs-blue)" />
@@ -164,7 +164,7 @@ export function BehavioralLandscape() {
       {/* ── JARVIS · Werkzeugverhalten ── */}
       <div className="obs-section-label">Jarvis · Werkzeugverhalten <span style={{ opacity: .6 }}>({RANGE_SUFFIX[behavior?.range ?? range] ?? range})</span></div>
       <HudGrid cols={4}>
-        <HudTile title="Werkzeug-Verteilung" badge="MACHINE" accent="var(--obs-teal)" span={4}>
+        <HudTile title="Werkzeug-Verteilung" badge="MACHINE" accent="var(--obs-teal)" span={2}>
           {toolDist.length === 0 || toolDist.every(d => d.value === 0)
             ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
             : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>

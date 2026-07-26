@@ -215,7 +215,7 @@ function LoopNode({
       title={`TURN ${String(index + 1).padStart(3, '0')}`}
       badge="INTRACHAT"
       accent={LAYER_COLORS[turn.layers[0]] ?? 'var(--hud-cyan)'}
-      span={4}
+      span={2}
     >
       {/* 1 · RAW TRANSMISSION — Laura's own input (preview; backend truncates
           to 120 chars in the fragments excerpt; full text needs a message-by-id
