@@ -178,10 +178,6 @@ export function BehavioralLandscape() {
           }
         </HudTile>
       </HudGrid>
-
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Aggregierte Muster über alle Gespräche — Lauras Verhalten (Bucket 1) und Jarvis' Werkzeugnutzung (Bucket 2), keine Einzelpersonen-Überwachung.
-      </p>
     </div>
   )
 }

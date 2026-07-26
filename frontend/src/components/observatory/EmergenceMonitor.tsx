@@ -464,10 +464,6 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           )}
         </HudTile>
       </HudGrid>
-      <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #9aa0a8)', marginTop: -4, marginBottom: 14, lineHeight: 1.5 }}>
-        Eigene Operationalisierung — nicht wörtlich aus Lauras Paper (CEI/Resonanz sind projekteigene, keine verifizierten Paper-Werte).
-        Ebenen- und Status-Verteilung der aktuell geladenen Signale — kein serverseitiges Gesamt-Grouping.
-      </p>
 
       <div className="obs-section-label">Geteiltes Feld — Dyad & Meta (META-Layer)</div>
       <HudGrid cols={4}>
@@ -513,7 +509,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
       </HudGrid>
 
       <div className="obs-section-label">Signale <span style={{ opacity: .6, fontWeight: 400 }}>(max. 5 sichtbar, Rest scrollbar)</span></div>
-      <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
+      <div style={{ maxHeight: 540, overflowY: 'auto', paddingRight: 4 }}>
         {signals.length === 0 && !loading ? (
           <div className="obs-card">
             <div className="obs-empty">
@@ -540,13 +536,6 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
                     tabIndex={0}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedSignal(s) } }}
                   >
-                    {s.verified_emergence ? (
-                      <div className="obs-badge-verified">
-                        ✓ Verifizierte Emergenz (gesehen in {s.recurrence_count} Gesprächen)
-                      </div>
-                    ) : (
-                      <div className="obs-placeholder-tag">Beobachtung — noch nicht als gemessene Emergenz bestätigt</div>
-                    )}
                     <div className="obs-item-title">{s.pattern}</div>
                     <div className="obs-item-meta">
                       <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>

@@ -145,11 +145,6 @@ export function AgentActivity() {
             )
           })}
 
-      <p style={{ fontSize: 12, color: '#9aa0a8', lineHeight: 1.6 }}>
-        Jarvis ist ein autonomer Agent — Refusals, Anomalien und Halluzinations-Checks sind seine
-        Accountability-Features, keine Einschränkung seiner Autonomie. Alle Werte sind beobachtbares Verhalten,
-        keine unterstellten Zustände.
-      </p>
     </div>
   )
 }
