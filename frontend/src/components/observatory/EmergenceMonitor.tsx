@@ -142,7 +142,6 @@ function SignalDetailModal({ signal, onClose, onOpenConversation }: {
           ) : null}
           <div className="obs-item-meta" style={{ margin: '10px 0' }}>
             <span className="obs-pill" style={{ background: `${STATUS_ACCENT[signal.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>{signal.status}</span>
-            {' · '}Ebene: {LEVEL_SECTIONS.find(l => l.key === signal.level)?.label ?? signal.level}
             {' · '}Konfidenz: {signal.confidence}
             {' · '}Verlauf: {EVOLUTION_ARROW[signal.evolution] ?? '?'} {signal.evolution}
             {signal.scope && <> · {signal.scope}</>}
@@ -512,7 +511,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         </HudTile>
       </HudGrid>
 
-      <div className="obs-section-label">Signale <span style={{ opacity: .6, fontWeight: 400 }}>(max. 5 sichtbar, Rest scrollbar)</span></div>
+      <div className="obs-section-label">Signale</div>
       <div style={{ maxHeight: 540, overflowY: 'auto', paddingRight: 4 }}>
         {signals.length === 0 && !loading ? (
           <div className="obs-card">
@@ -524,13 +523,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
             </div>
           </div>
         ) : (
-          visibleSections.map(section => {
-            const levelSignals = signals.filter(s => s.level === section.key).slice(0, 5)
-            if (levelSignals.length === 0) return null
-            return (
-              <div key={section.key} style={{ marginBottom: 8 }}>
-                <div className="obs-section-label" style={{ fontSize: 11 }}>{section.label}</div>
-                {levelSignals.map((s, i) => (
+          signals.slice(0, 5).map((s, i) => (
                   <div
                     className="obs-item-card obs-item-card-clickable"
                     key={s.id}
@@ -565,11 +558,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
                       {s.observation.length > PREVIEW_CHARS && <span className="obs-item-more"> Details ansehen →</span>}
                     </div>
                   </div>
-                ))}
-              </div>
-            )
-          })
-        )}
+                ))        )}
       </div>
 
       {/* Only reached once some signals are already showing — the full-page

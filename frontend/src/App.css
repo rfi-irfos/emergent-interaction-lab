@@ -50,7 +50,7 @@ button { cursor: pointer; font-family: inherit; }
   --sem-success: #10b981;   /* confirmed / verified / positive outcome */
   --sem-warning: #f59e0b;   /* heuristic / uncertain / needs attention */
   --sem-danger: #ef4444;    /* error / mismatch / failed */
-  --sem-info: #3b6bf6;      /* neutral factual label, category, or count */
+  --sem-info: #38d9cc;      /* neutral factual label, category, or count — cyan to match the rest of the Observatory */
   --sem-neutral: #8a93a6;   /* inactive / pending / not-yet-applicable */
 
   /* Light-mode default for the shell chrome (sidebar/topbar) — previously
@@ -3184,7 +3184,7 @@ button { cursor: pointer; font-family: inherit; }
      below for why this property is what actually matters here. */
   color-scheme: light;
 }
-.crm-body select:focus { outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12); }
+.crm-body select:focus { outline: none; border-color: var(--hud-cyan, #38d9cc); box-shadow: 0 0 0 3px rgba(56,217,204,.12); }
 .observatory-hud .crm-body select {
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
   /* color-scheme: dark alone is necessary but NOT sufficient here — verified
@@ -3237,7 +3237,7 @@ button { cursor: pointer; font-family: inherit; }
   background: rgba(7,14,20,.6); border: 1px solid rgba(34,211,238,.22); color: #eefcff;
   color-scheme: dark;
 }
-.crm-body input[type="text"]:focus, .crm-body input[type="date"]:focus, .crm-body input[type="search"]:focus { outline: none; border-color: var(--obs-blue, #3b6bf6); box-shadow: 0 0 0 3px rgba(59,107,246,.12); }
+.crm-body input[type="text"]:focus, .crm-body input[type="date"]:focus, .crm-body input[type="search"]:focus { outline: none; border-color: var(--hud-cyan, #38d9cc); box-shadow: 0 0 0 3px rgba(56,217,204,.12); }
 .observatory-hud .crm-body input[type="text"]:focus, .observatory-hud .crm-body input[type="date"]:focus, .observatory-hud .crm-body input[type="search"]:focus {
   border-color: var(--hud-cyan); box-shadow: 0 0 0 3px rgba(34,211,238,.15);
 }
