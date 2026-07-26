@@ -9,7 +9,6 @@ import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { ObsBarStack } from './ObsBarStack'
 import { ObsSparkline } from './ObsSparkline'
-import { ObsChartFrame } from './ObsChartFrame'
 import { STATUS_ACCENT } from './registry'
 
 interface Signal {
@@ -426,17 +425,15 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
       <HudGrid cols={4}>
         {/* 1) DONUT — Ebenen-Mix */}
         <HudTile title="Ebenen-Mix" badge="SIGNALE" accent="var(--obs-purple)" span={1}>
-          <ObsChartFrame height={160}>
-            <ObsDonut
-              data={visibleSections.map(section => ({
-                label: section.label,
-                value: signals.filter(s => s.level === section.key).length,
-                color: LEVEL_DONUT_COLORS[section.key],
-              }))}
-              centerLabel={`${signals.length}\nSignale`}
-              gradientIdPrefix="emergence-level-mix"
-            />
-          </ObsChartFrame>
+          <ObsDonut
+            data={visibleSections.map(section => ({
+              label: section.label,
+              value: signals.filter(s => s.level === section.key).length,
+              color: LEVEL_DONUT_COLORS[section.key],
+            }))}
+            centerLabel={`${signals.length}\nSignale`}
+            gradientIdPrefix="emergence-level-mix"
+          />
         </HudTile>
 
         {/* 2) BAR STACK — Status-Mix */}
@@ -465,9 +462,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         {/* 4) GAUGE RING — Resonanz (0–1) */}
         <HudTile title="Rhythmus (Resonanz)" badge="CO-EVOLUTION" accent="var(--obs-amber)" span={1}>
           {ccet ? (
-            <ObsChartFrame height={160}>
-              <ObsGauge value={ccet.resonance_frequency} label="Resonanz" color="var(--obs-amber)" size={150} />
-            </ObsChartFrame>
+            <ObsGauge value={ccet.resonance_frequency} label="Resonanz" color="var(--obs-amber)" size={150} />
           ) : (
             <div className="obs-stat c-amber"><div className="obs-stat-value">—</div><div className="obs-stat-label">Rhythmus (Resonanz)</div></div>
           )}
