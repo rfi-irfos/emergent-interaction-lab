@@ -204,7 +204,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
                 <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{selected.agent_tool_calls_7d}</div><div className="obs-stat-label">Tool-Aufrufe (7T)</div></div>
               </HudGrid>
 
-              <p style={{ fontSize: 12, color: 'rgba(148,190,199,.65)', marginBottom: 22 }}>
+              <p style={{ fontSize: 12, color: 'var(--gotham-text-dim, #6b7280)', marginBottom: 22 }}>
                 {selected.trigger_turn_id
                   ? <> · CCET-Turn {selected.trigger_turn_id}</>
                   : ''}
@@ -262,7 +262,7 @@ export function Flugschreiber({ onOpenConversation }: { onOpenConversation?: (co
               key={s.id}
               role="button"
               tabIndex={0}
-              style={{ ...hudStagger(i), ['--obs-accent' as string]: s.id === selected?.id ? 'var(--obs-blue)' : '#6b7280', cursor: 'pointer' }}
+              style={{ ...hudStagger(i), ['--obs-accent' as string]: s.id === selected?.id ? 'var(--obs-blue)' : 'var(--gotham-text-dim, #9ca3af)', cursor: 'pointer' }}
               onClick={() => setSelectedId(s.id)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setSelectedId(s.id) }}
             >
