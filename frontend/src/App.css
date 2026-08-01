@@ -3883,14 +3883,23 @@ button { cursor: pointer; font-family: inherit; }
   from { opacity: 0; transform: scale(.2); }
   to { opacity: 1; transform: scale(1); }
 }
+/* Real light-mode fallbacks on every var below — this popup (the
+   click-to-detail card for KnowledgeGraph/SystemMap's force graphs, also
+   reused by Changelog.tsx) used to be hardcoded to the old permanent-dark
+   HUD literals (rgba(7,14,20,.6) bg, near-white text) with zero light-theme
+   awareness, so on the light shell it rendered as an inverted dark card
+   floating on a bright page. `.gotham .mycelium-detail` (see the ADMIN
+   SHELL THEME section) still layers the dark/hc-tuned literals on top for
+   those two themes, same "one token set, per-theme override" pattern as
+   `.hud-tile`. */
 .mycelium-detail {
-  margin-top: 16px; padding: 12px 16px; border: 1px solid rgba(34,211,238,.25);
-  background: rgba(7,14,20,.6); border-radius: 8px; display: flex; flex-direction: column; gap: 4px;
+  margin-top: 16px; padding: 12px 16px; border: 1px solid var(--gotham-border, rgba(15,23,42,.14));
+  background: var(--gotham-panel, #ffffff); border-radius: 8px; display: flex; flex-direction: column; gap: 4px;
   animation: hud-card-in .25s ease both;
 }
 .mycelium-detail-tag { font-size: 11px; font-weight: 800; letter-spacing: .02em; }
-.mycelium-detail-text { font-size: 12.5px; color: rgba(226,241,245,.9); line-height: 1.6; }
-.mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan); }
+.mycelium-detail-text { font-size: 12.5px; color: var(--gotham-text, #111827); line-height: 1.6; }
+.mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan, #0e8a9c); }
 
 /* Floating variant, absolutely positioned right next to the node that
    opened it (see useForceGraphPopupAnchor) instead of the plain in-flow
@@ -3898,14 +3907,14 @@ button { cursor: pointer; font-family: inherit; }
    tail so "this popup belongs to that node" reads instantly, not via a
    thin connector line nobody would notice. */
 .mycelium-detail-anchored {
-  margin-top: 0; background: rgba(6,11,18,.94); border: 1px solid rgba(34,211,238,.22);
-  box-shadow: 0 10px 28px rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  margin-top: 0; background: var(--gotham-panel, #ffffff); border: 1px solid var(--gotham-border, rgba(15,23,42,.14));
+  box-shadow: 0 10px 28px rgba(15,23,42,.18); backdrop-filter: blur(4px);
   max-height: 60%; overflow-y: auto;
 }
 .mycelium-detail-anchored::before {
   content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
-  width: 12px; height: 12px; background: rgba(6,11,18,.94);
-  border-left: 1px solid rgba(34,211,238,.22); border-top: 1px solid rgba(34,211,238,.22);
+  width: 12px; height: 12px; background: var(--gotham-panel, #ffffff);
+  border-left: 1px solid var(--gotham-border, rgba(15,23,42,.14)); border-top: 1px solid var(--gotham-border, rgba(15,23,42,.14));
   rotate: 45deg;
 }
 
@@ -3914,10 +3923,10 @@ button { cursor: pointer; font-family: inherit; }
    notes/documents behind it, scrollable so a large scope doesn't blow out
    the panel height. */
 .mycelium-detail-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
-.mycelium-detail-item { padding: 8px 10px; border: 1px solid var(--hud-cyan); background: rgba(255,255,255,.04); border-radius: 7px; animation: hud-card-in .2s ease both; }
-.mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: #eefcff; margin-bottom: 3px; }
-.mycelium-detail-item-excerpt { font-size: 11.5px; color: rgba(226,241,245,.72); line-height: 1.5; margin-bottom: 4px; }
-.mycelium-detail-item-meta { font-size: 10px; color: rgba(148,190,199,.55); }
+.mycelium-detail-item { padding: 8px 10px; border: 1px solid var(--hud-cyan, #0e8a9c); background: color-mix(in srgb, var(--gotham-text, #111827) 4%, transparent); border-radius: 7px; animation: hud-card-in .2s ease both; }
+.mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: var(--gotham-text, #111827); margin-bottom: 3px; }
+.mycelium-detail-item-excerpt { font-size: 11.5px; color: var(--gotham-text-dim, #4b5563); line-height: 1.5; margin-bottom: 4px; }
+.mycelium-detail-item-meta { font-size: 10px; color: var(--gotham-text-dim, #6b7280); }
 
 /* ── HUD FRAMING — dead corner-bracket/radar primitive, kept for the public
    site only ────────────────────────────────────────────────────────────

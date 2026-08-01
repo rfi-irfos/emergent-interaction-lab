@@ -3,7 +3,7 @@ import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { parseServerTimestamp } from '../../lib/dateGroups'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
-import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
+import { HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions, HudHeaderActions } from './Hud'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
 
@@ -279,51 +279,46 @@ export function Monetization() {
           is comparatively rare admin housekeeping. Filter/range/export now
           live in the shared page header (useHeaderActions) — this label is
           just the in-page section marker. */}
-      <div className="obs-section-label">Bestellungen</div>
+      <HudSectionHeader title="Bestellungen" sub="Echte, verifizierte Stripe-Zahlungen — keine manuellen Einträge." />
       {/* Order KPIs + product KPIs together at the top — Simeon's 2026-07-25
           layout call: "Bestellungen und Produkte" as one KPI block first,
           then revenue-per-product + latest order, then the (scroll-capped)
           product table. The product tiles keep their meaningful mapping
-          (total = info, has link = success, missing link = warning). */}
+          (total = info, has link = success, missing link = warning).
+          Shared HudTile/HudStat primitives now, not a hand-rolled
+          .obs-grid/.obs-stat block (that was this module's own bespoke KPI
+          markup — same anti-pattern the migration recipe calls out). */}
       {ordersTotal !== null && (
-        <div className="monetization-bikpi">
+        <HudGrid cols={3}>
           {/* Real meaning now drives each tile's color instead of a
               green/purple/blue rotation: a plain count and a filter-scope
               ratio are both just informational (--sem-info); revenue is
               the one figure here that's genuinely good news, so it earns
               --sem-success rather than sharing an arbitrary blue with the
               other two. */}
-          <div className="obs-grid" style={{ marginBottom: 14 }}>
-            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
-              <div className="obs-stat-value">{ordersTotal}</div>
-              <div className="obs-stat-label">Bestellungen gesamt</div>
-            </div>
-            <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}>
-              <div className="obs-stat-value">{filteredOrders.length} / {orders.length}</div>
-              <div className="obs-stat-label">sichtbar von geladen (Filter)</div>
-            </div>
-            {Object.entries(totalRevenueByCurrency).length > 0 ? (
-              Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
-                <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }} key={cur}>
-                  <div className="obs-stat-value">{formatPrice(cents, cur)}</div>
-                  <div className="obs-stat-label">Umsatz, sichtbar ({cur.toUpperCase()})</div>
-                </div>
-              ))
-            ) : (
-              <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}>
-                <div className="obs-stat-value">{formatPrice(0, 'eur')}</div>
-                <div className="obs-stat-label">Umsatz, sichtbar (EUR)</div>
-              </div>
-            )}
-          </div>
-        </div>
+          <HudTile accent="var(--sem-info)"><HudStat value={ordersTotal} label="Bestellungen gesamt" accent="var(--sem-info)" /></HudTile>
+          <HudTile accent="var(--sem-info)">
+            <HudStat value={filteredOrders.length} label="sichtbar von geladen (Filter)" accent="var(--sem-info)" format={v => `${Math.round(v)} / ${orders.length}`} />
+          </HudTile>
+          {Object.entries(totalRevenueByCurrency).length > 0 ? (
+            Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
+              <HudTile accent="var(--sem-success)" key={cur}>
+                <HudStat value={cents} label={`Umsatz, sichtbar (${cur.toUpperCase()})`} accent="var(--sem-success)" format={v => formatPrice(v, cur)} />
+              </HudTile>
+            ))
+          ) : (
+            <HudTile accent="var(--sem-success)">
+              <HudStat value={0} label="Umsatz, sichtbar (EUR)" accent="var(--sem-success)" format={v => formatPrice(v, 'eur')} />
+            </HudTile>
+          )}
+        </HudGrid>
       )}
       {!loading && list.length > 0 && (
-        <div className="obs-grid" style={{ marginBottom: 14 }}>
-          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-info)' }}><div className="obs-stat-value">{list.length}</div><div className="obs-stat-label">Produkte gesamt</div></div>
-          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-success)' }}><div className="obs-stat-value">{list.filter(p => p.payment_link_url).length}</div><div className="obs-stat-label">mit Zahlungslink</div></div>
-          <div className="obs-stat" style={{ ['--obs-accent' as string]: 'var(--sem-warning)' }}><div className="obs-stat-value">{list.filter(p => !p.payment_link_url).length}</div><div className="obs-stat-label">ohne Zahlungslink</div></div>
-        </div>
+        <HudGrid cols={3}>
+          <HudTile accent="var(--sem-info)"><HudStat value={list.length} label="Produkte gesamt" accent="var(--sem-info)" /></HudTile>
+          <HudTile accent="var(--sem-success)"><HudStat value={list.filter(p => p.payment_link_url).length} label="mit Zahlungslink" accent="var(--sem-success)" /></HudTile>
+          <HudTile accent="var(--sem-warning)"><HudStat value={list.filter(p => !p.payment_link_url).length} label="ohne Zahlungslink" accent="var(--sem-warning)" /></HudTile>
+        </HudGrid>
       )}
       {ordersTotal !== null && (
         <HudGrid cols={2}>
@@ -335,7 +330,7 @@ export function Monetization() {
               }
               gradientIdPrefix="monetization-revenue-by-product"
             />
-            <p style={{ fontSize: 11, color: '#9aa0a8', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+            <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
               Basis: die {filteredOrders.length} aktuell sichtbaren Bestellungen (von {orders.length} geladen{ordersTotal !== null ? `, ${ordersTotal} gesamt` : ''}) — kein serverseitiges
               Gesamt-Grouping nach Produkt, siehe „Weitere laden" oben.
               {!revenueCurrency && revenueCurrencies.length > 1 && ` Enthält mehrere Währungen (${revenueCurrencies.map(c => c.toUpperCase()).join(', ')}) ohne Umrechnung summiert — kein einheitlicher Gesamtbetrag.`}
@@ -381,13 +376,13 @@ export function Monetization() {
         <div className="obs-item-card" key={o.id} style={hudStagger(i)}>
           <div className="obs-item-title">{o.product_name ?? 'Unbekanntes Produkt'}</div>
           <div className="obs-item-meta">
-            <span className="obs-pill" style={{ background: 'rgba(16,185,129,.12)', color: 'var(--obs-green, #10b981)' }}>
+            <span className="obs-pill" style={{ background: 'color-mix(in srgb, var(--obs-green, #10b981) 12%, transparent)', color: 'var(--obs-green, #10b981)' }}>
               {formatPrice(o.amount_cents, o.currency)}
             </span>
             {' · '}{o.customer_email ?? 'keine E-Mail übermittelt'}
             {' · '}{o.created_at}
           </div>
-          <div className="obs-item-body" style={{ fontSize: 11, color: '#9aa0a8' }}>
+          <div className="obs-item-body" style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)' }}>
             <button
               className="chat-inspect-toggle"
               style={{ fontSize: 11, padding: 0 }}
@@ -412,11 +407,15 @@ export function Monetization() {
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 28 }}>
-        <div className="obs-section-label" style={{ marginBottom: 0 }}>Produkte</div>
-        <button className="panel-add-btn" onClick={() => setShowProductForm(s => !s)}>
-          {showProductForm ? 'Abbrechen' : '+ Produkt'}
-        </button>
+      <div style={{ marginTop: 28 }}>
+        <HudSectionHeader
+          title="Produkte"
+          actions={
+            <button className="panel-add-btn" onClick={() => setShowProductForm(s => !s)}>
+              {showProductForm ? 'Abbrechen' : '+ Produkt'}
+            </button>
+          }
+        />
       </div>
       {showProductForm && (
         <div className="obs-card">
@@ -493,7 +492,7 @@ export function Monetization() {
                     {formatPrice(p.price_cents, p.currency)}{p.mode === 'subscription' ? ` / ${p.recurring_interval === 'year' ? 'Jahr' : 'Monat'}` : ''}
                   </td>
                   <td>
-                    <span className="obs-pill" style={{ background: 'rgba(148,163,184,.14)', color: '#9aa0a8' }}>
+                    <span className="obs-pill" style={{ background: 'color-mix(in srgb, var(--gotham-text-dim, #6b7280) 14%, transparent)', color: 'var(--gotham-text-dim, #6b7280)' }}>
                       {p.category === 'certification' ? 'Zertifizierung' : 'Service'}
                     </span>
                   </td>
