@@ -193,7 +193,14 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
         }
       />
     ) : null,
-    [list, search, statusFilter, filtered],
+    // `filtered` intentionally excluded: it's a brand-new array every render
+    // (derived from `list.filter(...)` above), so keeping it in this deps
+    // list re-fires the effect -> setHeaderActions in the parent -> re-render
+    // -> new `filtered` -> infinite loop (React "Maximum update depth
+    // exceeded", crashes the whole admin shell) the moment this tab has any
+    // real posts. `list`/`search`/`statusFilter` already cover every input
+    // `filtered` is derived from.
+    [list, search, statusFilter],
   )
 
   if (loading && !posts) return <HudSkeleton variant="list" />

@@ -410,7 +410,14 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
         </>
       }
     />,
-    [convLoading, convError, conversations, selectedConv, effectiveFragments],
+    // `effectiveFragments` itself excluded: `selectedConv ? fragments : []`
+    // creates a brand-new `[]` literal every render whenever no conversation
+    // is selected, which — same bug as BlogDrafts.tsx/Inbox.tsx/
+    // ResearchNotesPanel.tsx — re-fires this effect every render via
+    // setHeaderActions in the parent, "Maximum update depth exceeded".
+    // `fragments` (real state, stable reference) + `selectedConv` already
+    // cover everything `effectiveFragments` is derived from.
+    [convLoading, convError, conversations, selectedConv, fragments],
   )
 
   return (
@@ -481,9 +488,16 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
         <div className="obs-card"><div className="obs-empty">Noch keine Denkfragmente über alle Gespräche hinweg — sie entstehen automatisch nach jedem Forschungsgespräch.</div></div>
       ) : (
         <HudGrid cols={4}>
-          {/* (1) Layer counts as horizontal bars — one chart idiom. */}
+          {/* (1) Layer counts as horizontal bars — one chart idiom. Centered
+              vertically in its tile body: this row's other two tiles
+              (Radar/Donut) need a full square chart's worth of height, and
+              this grid's rows stretch every tile in the row to that same
+              height (CSS Grid's default `align-items: stretch`) — the 8-row
+              bar list is inherently shorter, and used to sit pinned to the
+              top with a dead band below it; centering distributes that gap
+              evenly instead of dumping it all at the bottom. */}
           <HudTile title="Ebenen-Verteilung" badge="BARS" accent="var(--obs-purple)" span={2}>
-            <div>
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               {LAYER_ORDER.map(layer => {
                 const count = distribution.by_layer.find(b => b.layer === layer)?.count ?? 0
                 return (

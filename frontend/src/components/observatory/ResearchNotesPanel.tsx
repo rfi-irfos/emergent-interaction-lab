@@ -184,7 +184,12 @@ export function ResearchNotesPanel({ addLabel, placeholder, onOpenConversation }
         }
       />
     ) : null,
-    [list, categoryFilter, statusFilter, filtered],
+    // Same fix as BlogDrafts.tsx's identical bug: `filtered` is a fresh array
+    // every render, so keeping it here re-fires the effect -> setHeaderActions
+    // in the parent -> re-render -> new `filtered` -> infinite loop the
+    // moment this tab has any real notes. `list`/the two filters already
+    // cover everything `filtered` is derived from.
+    [list, categoryFilter, statusFilter],
   )
 
   return (

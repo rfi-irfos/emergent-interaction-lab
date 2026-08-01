@@ -213,7 +213,15 @@ export function SystemState() {
         />
       )}
     </>,
-    [range, states, countByScope, trendByScope],
+    // `states`/`countByScope`/`trendByScope` excluded: each is a fresh
+    // Map/Array literal built every render from `signals`/`scopeTrends` —
+    // same infinite-loop bug as BlogDrafts.tsx/Inbox.tsx/
+    // ResearchNotesPanel.tsx/Denkfragmente.tsx/Monetization.tsx, "Maximum
+    // update depth exceeded" via setHeaderActions in the parent re-firing
+    // this effect every render. `range`/`signals`/`scopeTrends` (real,
+    // stable state from useAdminFetch) already cover everything they're
+    // derived from.
+    [range, signals, scopeTrends],
   )
 
   return (
@@ -295,11 +303,13 @@ export function SystemState() {
                 good-news --sem-success zero as anywhere else in this app —
                 the taxonomy fix this whole module's own doc comment already
                 describes for AlertRow above, extended to these two tiles. */}
+            {/* hud-tile--compact on both — a lone HudStat with no title/chart
+                only needs ~72px, not the default 150px min-height. */}
             <HudGrid cols={2}>
-              <HudTile accent="var(--sem-info)">
+              <HudTile accent="var(--sem-info)" className="hud-tile--compact">
                 <HudStat value={diag.agent_tool_calls_7d} label="Jarvis-Aufrufe (7 T.)" accent="var(--sem-info)" />
               </HudTile>
-              <HudTile accent={diag.agent_tool_call_errors_7d > 0 ? 'var(--sem-danger)' : 'var(--sem-success)'}>
+              <HudTile accent={diag.agent_tool_call_errors_7d > 0 ? 'var(--sem-danger)' : 'var(--sem-success)'} className="hud-tile--compact">
                 <HudStat
                   value={diag.agent_tool_call_errors_7d}
                   label="Fehler (7 T.)"
