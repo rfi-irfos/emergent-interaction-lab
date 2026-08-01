@@ -51,12 +51,3 @@ export type AdminSection =
   // lauras-agents engine). Proxied read-only into EIL so she can see her own
   // agents at work without leaving this tool (see backend/src/coevolution.rs).
   | 'ameisenhaufen'
-  // Deep Self-Analysis (40/40/20) — the three framework buckets as their own
-  // Observatory apps (see DEEP_SELF_ANALYSIS_FRAMEWORK_v2_1_2026_07_25.md):
-  // 'mind' = Bucket 1 (Laura's own cognition/behavior, behavioral proxies
-  // over human-ai + fragments feeds), 'machine' = Bucket 2 (Jarvis's
-  // reasoning volume / refusal surface / self-checks), 'dyad' = Bucket 3 +
-  // META (direction-of-influence, CCET shared field, mutual-flagging
-  // matrix). Forschungsebene all three — research observables about the
-  // dyad itself, not platform-health rollups.
-  | 'mind' | 'machine' | 'dyad'
