@@ -91,10 +91,21 @@ export function AgentActivity() {
 
   return (
     <div className="obs-panel">
-      <HudGrid cols={4}>
-        <HudTile title="Reasoning-Volumen" badge="TOKENS" accent="var(--obs-teal)" span={2}>
+      {/* 3-across at span=1 each, not 4-across at span=2 each: with 3 tiles
+          the old cols=4/span=2 combo filled row 1 (2 tiles) then left row 2's
+          other 2 columns empty next to the 3rd tile (exactly the "cols leaves
+          unbalanced dead space" case) — 3 equal columns fit all three tiles
+          on one row with none left over. Reasoning-Volumen's stat row is also
+          centered vertically now: it's inherently shorter content than its
+          two donut/bar-stack neighbors, and this grid's rows stretch every
+          tile in a row to the tallest one's height (CSS Grid's default
+          `align-items: stretch`), so the numbers used to sit pinned to the
+          top with a dead band below — centering them at least reads as
+          intentional rather than abandoned. */}
+      <HudGrid cols={3}>
+        <HudTile title="Reasoning-Volumen" badge="TOKENS" accent="var(--obs-teal)" span={1}>
           {humanAi ? (
-            <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignContent: 'center', height: '100%' }}>
               <HudStat value={humanAi.assistant_messages ?? 0} label="Antworten (Jarvis)" />
               <HudStat value={humanAi.total_completion_tokens ?? 0} label="Completion-Tokens" format={v => v.toLocaleString('de-AT')} />
               <div style={{ flex: '1 1 120px', minWidth: 120 }}>
@@ -105,14 +116,14 @@ export function AgentActivity() {
           ) : <div className="obs-empty">Noch keine Reasoning-Daten.</div>}
         </HudTile>
 
-        <HudTile title="Werkzeug-Verhalten" badge={RANGE_SUFFIX[behavior?.range ?? range] ?? range} accent="var(--obs-purple)" span={2}>
+        <HudTile title="Werkzeug-Verhalten" badge={RANGE_SUFFIX[behavior?.range ?? range] ?? range} accent="var(--obs-purple)" span={1}>
           {toolDist.length === 0 || toolDist.every(d => d.value === 0)
             ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
             : <ObsDonut data={toolDist} gradientIdPrefix="machine-tool-distribution" />
           }
         </HudTile>
 
-        <HudTile title="Refusal- & Anomalie-Oberfläche" badge="META" accent="var(--sem-danger)" span={2}>
+        <HudTile title="Refusal- & Anomalie-Oberfläche" badge="META" accent="var(--sem-danger)" span={1}>
           {anomalyTotal > 0 ? (
             <ObsBarStack data={anomalyBars.filter(b => b.value > 0)} />
           ) : <div className="obs-empty">Keine Anomalien im Zeitraum.</div>}

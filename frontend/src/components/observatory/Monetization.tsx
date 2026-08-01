@@ -266,7 +266,13 @@ export function Monetization() {
         }
       />
     ) : null,
-    [orders, orderCurrencyFilter, orderRange, filteredOrders],
+    // Same infinite-loop bug as BlogDrafts.tsx/Inbox.tsx/ResearchNotesPanel.tsx/
+    // Denkfragmente.tsx: `filteredOrders` is a fresh array every render, so
+    // keeping it here re-fires the effect -> setHeaderActions in the parent ->
+    // re-render -> new `filteredOrders` -> "Maximum update depth exceeded".
+    // `orders`/`orderCurrencyFilter`/`orderRange` already cover everything
+    // it's derived from.
+    [orders, orderCurrencyFilter, orderRange],
   )
 
   return (
@@ -289,6 +295,10 @@ export function Monetization() {
           .obs-grid/.obs-stat block (that was this module's own bespoke KPI
           markup — same anti-pattern the migration recipe calls out). */}
       {ordersTotal !== null && (
+        // hud-tile--compact on every bare-stat tile below (same fix as
+        // Analytics.tsx's top KPI row): a lone HudStat with no title/chart
+        // only needs ~72px, not the default 150px min-height, which left a
+        // large dead band under each number.
         <HudGrid cols={3}>
           {/* Real meaning now drives each tile's color instead of a
               green/purple/blue rotation: a plain count and a filter-scope
@@ -296,18 +306,18 @@ export function Monetization() {
               the one figure here that's genuinely good news, so it earns
               --sem-success rather than sharing an arbitrary blue with the
               other two. */}
-          <HudTile accent="var(--sem-info)"><HudStat value={ordersTotal} label="Bestellungen gesamt" accent="var(--sem-info)" /></HudTile>
-          <HudTile accent="var(--sem-info)">
+          <HudTile accent="var(--sem-info)" className="hud-tile--compact"><HudStat value={ordersTotal} label="Bestellungen gesamt" accent="var(--sem-info)" /></HudTile>
+          <HudTile accent="var(--sem-info)" className="hud-tile--compact">
             <HudStat value={filteredOrders.length} label="sichtbar von geladen (Filter)" accent="var(--sem-info)" format={v => `${Math.round(v)} / ${orders.length}`} />
           </HudTile>
           {Object.entries(totalRevenueByCurrency).length > 0 ? (
             Object.entries(totalRevenueByCurrency).map(([cur, cents]) => (
-              <HudTile accent="var(--sem-success)" key={cur}>
+              <HudTile accent="var(--sem-success)" className="hud-tile--compact" key={cur}>
                 <HudStat value={cents} label={`Umsatz, sichtbar (${cur.toUpperCase()})`} accent="var(--sem-success)" format={v => formatPrice(v, cur)} />
               </HudTile>
             ))
           ) : (
-            <HudTile accent="var(--sem-success)">
+            <HudTile accent="var(--sem-success)" className="hud-tile--compact">
               <HudStat value={0} label="Umsatz, sichtbar (EUR)" accent="var(--sem-success)" format={v => formatPrice(v, 'eur')} />
             </HudTile>
           )}
@@ -315,9 +325,9 @@ export function Monetization() {
       )}
       {!loading && list.length > 0 && (
         <HudGrid cols={3}>
-          <HudTile accent="var(--sem-info)"><HudStat value={list.length} label="Produkte gesamt" accent="var(--sem-info)" /></HudTile>
-          <HudTile accent="var(--sem-success)"><HudStat value={list.filter(p => p.payment_link_url).length} label="mit Zahlungslink" accent="var(--sem-success)" /></HudTile>
-          <HudTile accent="var(--sem-warning)"><HudStat value={list.filter(p => !p.payment_link_url).length} label="ohne Zahlungslink" accent="var(--sem-warning)" /></HudTile>
+          <HudTile accent="var(--sem-info)" className="hud-tile--compact"><HudStat value={list.length} label="Produkte gesamt" accent="var(--sem-info)" /></HudTile>
+          <HudTile accent="var(--sem-success)" className="hud-tile--compact"><HudStat value={list.filter(p => p.payment_link_url).length} label="mit Zahlungslink" accent="var(--sem-success)" /></HudTile>
+          <HudTile accent="var(--sem-warning)" className="hud-tile--compact"><HudStat value={list.filter(p => !p.payment_link_url).length} label="ohne Zahlungslink" accent="var(--sem-warning)" /></HudTile>
         </HudGrid>
       )}
       {ordersTotal !== null && (

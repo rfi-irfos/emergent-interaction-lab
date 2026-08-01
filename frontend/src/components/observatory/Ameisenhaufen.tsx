@@ -119,7 +119,12 @@ export function Ameisenhaufen() {
           {topCenters.length === 0 ? (
             <div className="obs-empty">Noch keine Sitzungen in einem Zentrum.</div>
           ) : (
-            <div>
+            // Centered vertically: this row's neighbor (Virtual-Firm-Pipeline)
+            // needs a full donut's worth of height, and this grid's rows
+            // stretch every tile to that height (CSS Grid's default
+            // `align-items: stretch`) — a short bar list otherwise sits
+            // pinned to the top with a dead band below it.
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               {topCenters.map(([slug, c]) => {
                 const max = topCenters[0][1].sessions || 1
                 return (

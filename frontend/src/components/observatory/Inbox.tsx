@@ -159,7 +159,12 @@ export function Inbox() {
         />
       </>
     ) : null,
-    [list, statusFilter, filteredList],
+    // Same infinite-loop bug as BlogDrafts.tsx/ResearchNotesPanel.tsx: when
+    // statusFilter is set, `filteredList` is a fresh array every render, so
+    // keeping it here re-fires the effect -> setHeaderActions in the parent
+    // -> re-render -> new `filteredList` -> "Maximum update depth exceeded".
+    // `list`/`statusFilter` already cover everything it's derived from.
+    [list, statusFilter],
   )
 
   if (loading && !data) {

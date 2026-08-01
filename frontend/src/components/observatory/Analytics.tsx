@@ -170,15 +170,21 @@ export function Analytics() {
           the flat duplicates are gone and Gesamtübersicht's richer
           range-filtered breakdown (Nachrichten split by Laura/Jarvis) is
           what's kept. */}
+      {/* hud-tile--compact (72px min-height, ForschungKpis' own convention
+          for a bare title-less HudStat with no chart under it) — the default
+          150px .hud-tile min-height is sized for a title bar + chart; a lone
+          stat number left it with roughly 100px of empty box below the
+          number+label, the exact "container far exceeds actual content"
+          case, across all 8 of these KPI tiles. */}
       <HudGrid cols={4}>
-        <HudTile accent="var(--obs-blue)"><HudStat value={data.total_views} label="Seitenaufrufe" accent="var(--obs-blue)" /></HudTile>
-        <HudTile accent="var(--obs-teal)"><HudStat value={data.unique_visitors} label="Unique Besucher" accent="var(--obs-teal)" /></HudTile>
-        <HudTile accent="var(--obs-purple)"><HudStat value={everything.chat.conversations_total} label="Gespräche" accent="var(--obs-purple)" /></HudTile>
-        <HudTile accent="var(--obs-amber)"><HudStat value={everything.chat.user_messages} label="Nachrichten (Laura)" accent="var(--obs-amber)" /></HudTile>
-        <HudTile accent="var(--obs-green)"><HudStat value={everything.chat.assistant_messages} label="Antworten (Jarvis)" accent="var(--obs-green)" /></HudTile>
-        <HudTile accent="var(--obs-red)"><HudStat value={everything.research_notes.total} label="Research Notes" accent="var(--obs-red)" /></HudTile>
-        <HudTile accent="var(--obs-blue)"><HudStat value={everything.simulation_runs.total} label="Simulationen" accent="var(--obs-blue)" /></HudTile>
-        <HudTile accent="var(--obs-purple)"><HudStat value={everything.agent_tool_calls.total} label="Jarvis-Werkzeuge" accent="var(--obs-purple)" /></HudTile>
+        <HudTile accent="var(--obs-blue)" className="hud-tile--compact"><HudStat value={data.total_views} label="Seitenaufrufe" accent="var(--obs-blue)" /></HudTile>
+        <HudTile accent="var(--obs-teal)" className="hud-tile--compact"><HudStat value={data.unique_visitors} label="Unique Besucher" accent="var(--obs-teal)" /></HudTile>
+        <HudTile accent="var(--obs-purple)" className="hud-tile--compact"><HudStat value={everything.chat.conversations_total} label="Gespräche" accent="var(--obs-purple)" /></HudTile>
+        <HudTile accent="var(--obs-amber)" className="hud-tile--compact"><HudStat value={everything.chat.user_messages} label="Nachrichten (Laura)" accent="var(--obs-amber)" /></HudTile>
+        <HudTile accent="var(--obs-green)" className="hud-tile--compact"><HudStat value={everything.chat.assistant_messages} label="Antworten (Jarvis)" accent="var(--obs-green)" /></HudTile>
+        <HudTile accent="var(--obs-red)" className="hud-tile--compact"><HudStat value={everything.research_notes.total} label="Research Notes" accent="var(--obs-red)" /></HudTile>
+        <HudTile accent="var(--obs-blue)" className="hud-tile--compact"><HudStat value={everything.simulation_runs.total} label="Simulationen" accent="var(--obs-blue)" /></HudTile>
+        <HudTile accent="var(--obs-purple)" className="hud-tile--compact"><HudStat value={everything.agent_tool_calls.total} label="Jarvis-Werkzeuge" accent="var(--obs-purple)" /></HudTile>
       </HudGrid>
 
       {/* ── instrument wall: every chart in a fixed-size framed HudTile,
