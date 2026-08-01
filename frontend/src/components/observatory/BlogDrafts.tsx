@@ -157,7 +157,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
 
   const removeImage = (url: string) => setEditImages(prev => prev.filter(u => u !== url))
 
-  const STATUS_ACCENT: Record<string, string> = { draft: '#f59e0b', published: '#10b981' }
+  const STATUS_ACCENT: Record<string, string> = { draft: 'var(--obs-amber)', published: 'var(--obs-green)' }
 
   // Promoted to the shared page header — this is the one real filter/export
   // on the whole Blog tab (the manual-news section above has no filter of
@@ -201,14 +201,14 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
 
   return (
     <div>
-      <p style={{ fontSize: 12, color: '#9aa0a8', margin: '4px 0 16px', lineHeight: 1.6 }}>
+      <p style={{ fontSize: 12, color: 'var(--sem-neutral)', margin: '4px 0 16px', lineHeight: 1.6 }}>
         Entwürfe, die Jarvis (im Forschungstab) oder du hier angelegt habt. „Veröffentlichen" übernimmt den Beitrag in
         den öffentlichen Blog oben — anschließend oben rechts auf „Speichern" klicken, um ihn live zu schalten.
       </p>
       {list.length === 0 && <div className="obs-empty">Noch keine Blogpost-Entwürfe.</div>}
       {list.length > 0 && filtered.length === 0 && <div className="obs-empty">Keine Treffer.</div>}
       {filtered.map((p, i) => (
-        <div className="obs-item-card" key={p.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>
+        <div className="obs-item-card" key={p.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[p.status] ?? 'var(--obs-blue)' }}>
           {editingId === p.id ? (
             <div className="obs-form" style={{ marginBottom: 0 }}>
               <input value={editTitle} onChange={e => setEditTitle(e.target.value)} />
@@ -224,7 +224,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                         onClick={() => removeImage(url)}
                         style={{
                           position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%',
-                          border: 'none', background: '#ff6b6b', color: '#fff', fontSize: 12, lineHeight: '18px',
+                          border: 'none', background: 'var(--sem-danger)', color: '#fff', fontSize: 12, lineHeight: '18px',
                           padding: 0, cursor: 'pointer',
                         }}
                       >×</button>
@@ -267,7 +267,7 @@ export function BlogDrafts({ onPromoteToSite, onOpenConversation }: {
                   hairline divider so it reads as a distinct footer, not
                   just more stacked text. */}
               <div className="blog-draft-badges">
-                <span className="obs-pill" style={{ background: `${STATUS_ACCENT[p.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[p.status] ?? '#3b6bf6' }}>{BLOG_STATUS_LABELS[p.status] ?? p.status}</span>
+                <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_ACCENT[p.status] ?? 'var(--obs-blue)'} 16%, transparent)`, color: STATUS_ACCENT[p.status] ?? 'var(--obs-blue)' }}>{BLOG_STATUS_LABELS[p.status] ?? p.status}</span>
                 <span className="obs-pill" style={{ background: p.source === 'agent' ? 'color-mix(in srgb, var(--sem-info) 16%, transparent)' : 'rgba(148,163,184,.16)', color: p.source === 'agent' ? 'var(--sem-info)' : 'var(--sem-neutral)' }}>
                   {p.source === 'agent' ? '◆ Jarvis' : 'Manuell'}
                 </span>

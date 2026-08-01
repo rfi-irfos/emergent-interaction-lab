@@ -54,11 +54,11 @@ function InboxMessageModal({ message, onClose, onReply, onSetStatus, busy }: {
             <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_COLOR[message.status] ?? 'var(--sem-neutral)'} 16%, transparent)`, color: STATUS_COLOR[message.status] ?? 'var(--sem-neutral)' }}>
               {STATUS_LABEL[message.status] ?? message.status}
             </span>
-            {' · '}<a href={`mailto:${message.email}`} style={{ color: 'var(--hud-cyan, #22d3ee)' }}>{message.email}</a>
+            {' · '}<a href={`mailto:${message.email}`} style={{ color: 'var(--hud-cyan, #0099CC)' }}>{message.email}</a>
             {message.phone && <> · {message.phone}</>}
             {' · '}{parseServerTimestamp(message.created_at).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
           </div>
-          <p style={{ fontSize: 13.5, lineHeight: 1.7, color: 'var(--panel-text, rgba(226,241,245,.9))', whiteSpace: 'pre-wrap' }}>
+          <p style={{ fontSize: 13.5, lineHeight: 1.7, color: 'var(--panel-text, #374151)', whiteSpace: 'pre-wrap' }}>
             {message.message || '(Kein Nachrichtentext übermittelt.)'}
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
@@ -82,12 +82,12 @@ function InboxPlaceholder({ icon, text, sub }: { icon: string; text: string; sub
     <div style={{ minHeight: 'calc(100vh - 220px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, textAlign: 'center', padding: '24px' }}>
       <div style={{
         width: 46, height: 46, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, border: '1px solid rgba(34,211,238,.16)', background: 'var(--obs-card, rgba(11,17,26,.6))', color: 'var(--hud-cyan, #22d3ee)',
+        fontSize: 18, border: '1px solid var(--panel-border, rgba(15,23,42,.08))', background: 'var(--panel-surface, #fff)', color: 'var(--hud-cyan, #0099CC)',
       }}>
         {icon}
       </div>
-      <div style={{ color: 'var(--panel-text, rgba(226,241,245,.75))', fontSize: 13.5, fontWeight: 600 }}>{text}</div>
-      {sub && <div style={{ color: 'var(--panel-text-dim, rgba(148,190,199,.6))', fontSize: 12, maxWidth: 280, lineHeight: 1.5 }}>{sub}</div>}
+      <div style={{ color: 'var(--panel-text, #374151)', fontSize: 13.5, fontWeight: 600 }}>{text}</div>
+      {sub && <div style={{ color: 'var(--panel-text-dim, #6b7280)', fontSize: 12, maxWidth: 280, lineHeight: 1.5 }}>{sub}</div>}
     </div>
   )
 }
@@ -178,35 +178,34 @@ export function Inbox() {
       ) : (
         groups.map(group => (
           <div key={group.label} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--panel-text-dim, rgba(148,190,199,.6))', margin: '0 0 8px 2px' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--panel-text-dim, #6b7280)', margin: '0 0 8px 2px' }}>
               {group.label}
             </div>
             {group.items.map(item => (
               <div
                 key={item.id}
-                className="obs-item-card"
+                className="obs-item-card obs-item-card-clickable"
                 role="button"
                 tabIndex={0}
                 onClick={() => setOpenMessageId(item.id)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenMessageId(item.id) } }}
-                style={{ background: 'var(--obs-card, rgba(11,17,26,.6))', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid rgba(34,211,238,.16)', cursor: 'pointer' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
-                    <a href={`mailto:${item.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: 'var(--hud-cyan, #22d3ee)' }}>{item.email}</a>
-                    {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, rgba(148,190,199,.6))' }}>{item.phone}</div>}
+                    <a href={`mailto:${item.email}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: 'var(--hud-cyan, #0099CC)' }}>{item.email}</a>
+                    {item.phone && <div style={{ fontSize: 12, color: 'var(--panel-text-dim, #6b7280)' }}>{item.phone}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                     <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_COLOR[item.status] ?? 'var(--sem-neutral)'} 16%, transparent)`, color: STATUS_COLOR[item.status] ?? 'var(--sem-neutral)' }}>
                       {STATUS_LABEL[item.status] ?? item.status}
                     </span>
-                    <div style={{ fontSize: 10, color: 'var(--panel-text-dim, rgba(148,190,199,.6))', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 10, color: 'var(--panel-text-dim, #6b7280)', whiteSpace: 'nowrap' }}>
                       {parseServerTimestamp(item.created_at).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 </div>
-                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, rgba(226,241,245,.75))', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.message}</p>}
+                {item.message && <p style={{ fontSize: 12, margin: '8px 0 10px', color: 'var(--panel-text, #4b5563)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.message}</p>}
                 <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                   {item.status === 'done' ? (
                     <button

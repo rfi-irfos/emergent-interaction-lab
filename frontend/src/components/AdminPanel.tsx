@@ -444,26 +444,37 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   />
                   <button className="panel-add-btn" onClick={addCategory} type="button">+</button>
                 </div>
-                {/* .obs-item-card, not the shared .panel-product-row (also
-                    used by Website Kit's own product list) — same idiom
-                    every other list in the app uses instead of a second,
-                    Website-Kit-flavored one on this page. */}
-                {(draft.news?.items ?? []).map(n => (
-                  <div
-                    key={n.id}
-                    className={`obs-item-card ${editingNews === n.id ? 'blog-topic-item-active' : ''}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setEditingNews(n.id)}
-                  >
-                    <div className="obs-item-title">{n.title}</div>
-                    <div className="obs-item-meta">
-                      {n.date}
-                      {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
-                        <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
-                      )}
-                    </div>
+                {/* Compact one-line-per-post list, not a full obs-item-card per
+                    post — confirmed live (screenshot) that 4 manual posts at
+                    title+date each in a padded 2-line card already ate ~330px
+                    of vertical space for what is fundamentally a title/date
+                    index, the same "one giant card per row" complaint
+                    Monetization's product table and BehavioralLandscape's
+                    donut already got fixed for elsewhere in this pass.
+                    Reuses .panel-product-row (Website Kit's own page list —
+                    single dense row, title + meta stacked tight, hover
+                    highlight) instead of inventing a third list idiom. */}
+                {(draft.news?.items ?? []).length > 0 && (
+                  <div className="panel-product-list" style={{ padding: 0, maxHeight: 260, overflowY: 'auto', marginBottom: 4 }}>
+                    {(draft.news?.items ?? []).map(n => (
+                      <div
+                        key={n.id}
+                        className={`panel-product-row ${editingNews === n.id ? 'blog-topic-item-active' : ''}`}
+                        onClick={() => setEditingNews(n.id)}
+                      >
+                        <div className="panel-product-info">
+                          <div className="panel-product-name">{n.title}</div>
+                          <div className="panel-product-meta">
+                            {n.date}
+                            {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
+                              <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
                 {(draft.news?.items ?? []).length === 0 && (
                   <div className="obs-empty">Noch keine manuellen Blogbeiträge.</div>
                 )}
