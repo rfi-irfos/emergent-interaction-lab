@@ -3,7 +3,7 @@ import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { useHeaderActions } from './Hud'
+import { useHeaderActions, HudSectionHeader } from './Hud'
 import { EVENT_TYPE_LABELS } from '../../lib/labels'
 
 // Real, standalone Verwaltung page for backend/src/auditlog.rs's
@@ -297,9 +297,7 @@ export function Changelog() {
 
       {items.length > 0 && (
         <>
-          <div className="obs-section-label">
-            Einträge <span style={{ fontWeight: 400 }}>(geladen: {items.length} von {total ?? '…'})</span>
-          </div>
+          <HudSectionHeader title="Einträge" sub={`geladen: ${items.length} von ${total ?? '…'}`} />
           {groupLoginNoise(items).map((row, i) => row.kind === 'login-group' ? (
             <div
               className="obs-item-card obs-item-card-clickable"
@@ -316,7 +314,7 @@ export function Changelog() {
               }}
             >
               <div className="obs-item-title">
-                <span className="obs-pill" style={{ background: 'rgba(148,163,184,.14)', color: 'var(--sem-neutral)' }}>
+                <span className="obs-pill" style={{ background: 'color-mix(in srgb, var(--sem-neutral) 16%, transparent)', color: 'var(--sem-neutral)' }}>
                   {row.entries.length}× {EVENT_TYPE_LABELS.admin_login}
                 </span>
               </div>
@@ -350,7 +348,7 @@ export function Changelog() {
               <div className="obs-item-title">
                 <span
                   className="obs-pill"
-                  style={{ background: 'rgba(99,240,255,.12)', color: '#63f0ff' }}
+                  style={{ background: 'color-mix(in srgb, var(--sem-info) 16%, transparent)', color: 'var(--sem-info)' }}
                 >
                   {EVENT_TYPE_LABELS[row.entry.event_type] ?? row.entry.event_type}
                 </span>

@@ -1467,10 +1467,10 @@ button { cursor: pointer; font-family: inherit; }
 .panel-add-btn {
   display: inline-flex; align-items: center; gap: 6px; justify-content: center;
   background: none; border: 1.5px solid #93c5fd; border-radius: 6px;
-  padding: 8px 12px; font-size: 12px; font-weight: 600; color: #0099CC;
+  padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--sem-info, #0099CC);
   transition: .2s; cursor: pointer;
 }
-.panel-add-btn:hover:not(:disabled) { background: #eff8ff; border-color: #0099CC; }
+.panel-add-btn:hover:not(:disabled) { background: #eff8ff; border-color: var(--sem-info, #0099CC); }
 .panel-add-btn:disabled { opacity: .55; cursor: default; }
 
 /* The one export action button's own format dropdown (ExportButtons.tsx) —
@@ -1482,10 +1482,10 @@ button { cursor: pointer; font-family: inherit; }
 .export-menu-btn {
   display: inline-flex; align-items: center; gap: 7px; justify-content: center;
   background: none; border: 1.5px solid #93c5fd; border-radius: 7px;
-  padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: #0099CC;
+  padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: var(--sem-info, #0099CC);
   transition: .15s; cursor: pointer; white-space: nowrap;
 }
-.export-menu-btn:hover:not(:disabled) { background: #eff8ff; border-color: #0099CC; }
+.export-menu-btn:hover:not(:disabled) { background: #eff8ff; border-color: var(--sem-info, #0099CC); }
 .export-menu-btn:disabled { opacity: .5; cursor: default; }
 .export-menu-btn[aria-expanded="true"] .export-menu-chevron { transform: rotate(180deg); }
 .export-menu-chevron { transition: transform .15s ease; flex-shrink: 0; }

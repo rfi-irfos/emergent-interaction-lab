@@ -3,7 +3,7 @@ import { useAdminFetch } from '../../lib/adminApi'
 import { foldIntoOther } from '../../lib/chartMath'
 import { ObsChart } from './ObsChart'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile, useHeaderActions, HudHeaderActions } from './Hud'
+import { HudGrid, HudTile, HudStat, useHeaderActions, HudHeaderActions } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
 import { Gesamtuebersicht, type EverythingData } from './Gesamtuebersicht'
@@ -170,16 +170,16 @@ export function Analytics() {
           the flat duplicates are gone and Gesamtübersicht's richer
           range-filtered breakdown (Nachrichten split by Laura/Jarvis) is
           what's kept. */}
-      <div className="obs-grid">
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{data.total_views}</div><div className="obs-stat-label">Seitenaufrufe</div></div>
-        <div className="obs-stat c-teal"><div className="obs-stat-value">{data.unique_visitors}</div><div className="obs-stat-label">Unique Besucher</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.chat.conversations_total}</div><div className="obs-stat-label">Gespräche</div></div>
-        <div className="obs-stat c-amber"><div className="obs-stat-value">{everything.chat.user_messages}</div><div className="obs-stat-label">Nachrichten (Laura)</div></div>
-        <div className="obs-stat c-green"><div className="obs-stat-value">{everything.chat.assistant_messages}</div><div className="obs-stat-label">Antworten (Jarvis)</div></div>
-        <div className="obs-stat c-red"><div className="obs-stat-value">{everything.research_notes.total}</div><div className="obs-stat-label">Research Notes</div></div>
-        <div className="obs-stat c-blue"><div className="obs-stat-value">{everything.simulation_runs.total}</div><div className="obs-stat-label">Simulationen</div></div>
-        <div className="obs-stat c-purple"><div className="obs-stat-value">{everything.agent_tool_calls.total}</div><div className="obs-stat-label">Jarvis-Werkzeuge</div></div>
-      </div>
+      <HudGrid cols={4}>
+        <HudTile accent="var(--obs-blue)"><HudStat value={data.total_views} label="Seitenaufrufe" accent="var(--obs-blue)" /></HudTile>
+        <HudTile accent="var(--obs-teal)"><HudStat value={data.unique_visitors} label="Unique Besucher" accent="var(--obs-teal)" /></HudTile>
+        <HudTile accent="var(--obs-purple)"><HudStat value={everything.chat.conversations_total} label="Gespräche" accent="var(--obs-purple)" /></HudTile>
+        <HudTile accent="var(--obs-amber)"><HudStat value={everything.chat.user_messages} label="Nachrichten (Laura)" accent="var(--obs-amber)" /></HudTile>
+        <HudTile accent="var(--obs-green)"><HudStat value={everything.chat.assistant_messages} label="Antworten (Jarvis)" accent="var(--obs-green)" /></HudTile>
+        <HudTile accent="var(--obs-red)"><HudStat value={everything.research_notes.total} label="Research Notes" accent="var(--obs-red)" /></HudTile>
+        <HudTile accent="var(--obs-blue)"><HudStat value={everything.simulation_runs.total} label="Simulationen" accent="var(--obs-blue)" /></HudTile>
+        <HudTile accent="var(--obs-purple)"><HudStat value={everything.agent_tool_calls.total} label="Jarvis-Werkzeuge" accent="var(--obs-purple)" /></HudTile>
+      </HudGrid>
 
       {/* ── instrument wall: every chart in a fixed-size framed HudTile,
           never a lone full-width card. Jarvis-Werkzeuge's own donut is gone
@@ -212,7 +212,7 @@ export function Analytics() {
 
         <HudTile title="Aufrufe" accent="var(--obs-blue)" span={1}>
           {data.views_by_day.length > 0 ? (
-            <ObsChart data={data.views_by_day.map(d => ({ label: d.day.slice(5), value: d.views }))} color="#3b6bf6" gradientId="analytics-views" />
+            <ObsChart data={data.views_by_day.map(d => ({ label: d.day.slice(5), value: d.views }))} color="var(--obs-blue)" gradientId="analytics-views" />
           ) : <div className="obs-empty">Keine Aufrufe.</div>}
         </HudTile>
       </HudGrid>
