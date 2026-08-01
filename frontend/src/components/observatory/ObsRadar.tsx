@@ -21,10 +21,25 @@ export function ObsRadar({ axes, size = 280, levels = 4 }: { axes: RadarAxis[]; 
     normalized: a.max && a.max > 0 ? (a.value / a.max) * 100 : 0,
   }))
 
+  // Longer German axis labels (BehavioralLandscape's 8-Layer-Verteilung —
+  // "Gegenargumente", "Blinder Fleck") clip against a ResponsiveContainer
+  // sized to exactly `size`: Recharts doesn't reserve room for
+  // PolarAngleAxis tick text, so a label sitting near the horizontal
+  // (9/3 o'clock) axes runs past the container's own pixel edge and gets
+  // cut off — shrinking outerRadius alone doesn't fix this since the
+  // container width itself is the hard clip boundary, not just the plotted
+  // polygon. Fix: give the container real extra horizontal room (labelPad
+  // each side) while keeping the plotted polygon at the caller's intended
+  // `size` — Denkfragmente's shorter labels (its only other/original
+  // consumer) fit inside `size` alone already and just get a little unused
+  // margin instead.
+  const labelPad = 95
+  const containerWidth = size + labelPad * 2
+
   return (
-    <div className="obs-radar-wrap" style={{ width: size }}>
-      <ResponsiveContainer width={size} height={size}>
-        <RadarChart data={data} outerRadius={size / 2 - 22}>
+    <div className="obs-radar-wrap" style={{ width: containerWidth }}>
+      <ResponsiveContainer width={containerWidth} height={size}>
+        <RadarChart data={data} outerRadius={size / 2 - 24}>
           <PolarGrid className="obs-radar-ring" gridType="polygon" radialLines={true} polarRadius={Array.from({ length: levels }, (_, i) => ((i + 1) / levels) * 100)} />
           <PolarAngleAxis dataKey="label" tick={{ fontSize: 11 }} className="obs-radar-axis-label" />
           <Tooltip

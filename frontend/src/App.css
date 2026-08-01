@@ -1,39 +1,31 @@
 /* ── Reset ──────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { font-family: var(--font, system-ui, -apple-system, 'Segoe UI', sans-serif); }
+/* ONE global sans across the whole admin/OS surface — matches Lighthouse's
+   own "no font-mixing" rule. Previously this read `var(--font, ...)` with
+   `--font` defined nowhere, so it silently always fell through to the
+   system-ui fallback while dozens of individual component rules separately
+   hardcoded `Inter, system-ui, ...` — meaning Inter was applied piecemeal,
+   not as a real base. Forced directly here instead. */
+body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+/* `.mono` does NOT switch font family (that's the font-mixing this project
+   wants gone) — it only keeps numbers/IDs/timestamps/money tabular so
+   columns line up, same contract as Lighthouse's own `.mono`. */
+.mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; display: block; }
 button { cursor: pointer; font-family: inherit; }
 
-/* ── Shared gotham/observatory token layer ────────────────────────────────────
-   ONE palette for the whole admin/OS surface, defined once at :root so every
-   module reads the same dark-glass tokens whether it renders inside
-   .observatory-hud or not. Previously modules like Inbox fell back to
-   light-theme defaults (e.g. var(--panel-surface, #f8f8f8)) when they weren't
-   under the observatory scope — that mismatch is exactly what made the OS read
-   like a pile of unrelated Lego bricks instead of one lab. Centralising the
-   tokens here removes the per-scope fallback drift. */
+/* ── Shared admin-shell token layer ───────────────────────────────────────────
+   Theme-INVARIANT tokens only (categorical chart hues + semantic status
+   colors — same meaning in every theme, per Lighthouse's own convention).
+   Everything that actually needs to look different per theme (surface/text/
+   border/accent) now lives in the three `html[data-theme=X] .gotham { }`
+   blocks near the bottom of this file — see the "ADMIN SHELL THEME" section.
+   This is what previously made the OS read like unrelated Lego bricks: these
+   surface tokens used to be pinned to ONE hardcoded dark palette here at
+   :root, so even "light mode" rendered dark underneath. */
 :root {
-  --obs-card: rgba(11,17,26,.6);
-  --panel-surface: rgba(11,17,26,.6);
-  --panel-border: rgba(34,211,238,.16);
-  --panel-bg: rgba(7,14,20,.6);
-  --panel-text: rgba(226,241,245,.75);
-  --panel-text-dim: rgba(148,190,199,.6);
-  --hud-cyan: #22d3ee;
-  --hud-cyan-dim: rgba(34,211,238,.35);
-  --hud-bg: #070b12;
-  /* Gotham / Observatory surface tokens — defined globally (not under
-     .observatory-hud) so every module reads the same dark-glass palette
-     regardless of render scope. This is what stopped Verwaltung sections
-     (Inbox, Custom Dashboard, etc.) from flashing a white box when they
-     weren't nested under the HUD scope. */
-  --gotham-bg: #070b12;
-  --gotham-panel: rgba(11,17,26,.66);
-  --gotham-border: rgba(120,150,170,.16);
-  --gotham-text: #cfe8ef;
-  --gotham-text-dim: rgba(148,190,199,.62);
   /* Full obs status-hue set, available everywhere (no hard-hex drift). */
   --obs-blue: #3b6bf6;
   --obs-purple: #8b5cf6;
@@ -53,14 +45,6 @@ button { cursor: pointer; font-family: inherit; }
   --sem-danger: #ef4444;    /* error / mismatch / failed */
   --sem-info: #38d9cc;      /* neutral factual label, category, or count — cyan to match the rest of the Observatory */
   --sem-neutral: #8a93a6;   /* inactive / pending / not-yet-applicable */
-
-  /* Light-mode default for the shell chrome (sidebar/topbar) — previously
-     these only had a hardcoded DARK fallback baked into var(--panel-shell-bg,
-     #0a0e1a), so even with crmTheme==='light' the shell chrome never
-     actually went light (the fallback fired every time because nothing
-     defined the light value). Defining it here means .gotham's own dark
-     override (see below) is the only thing that changes it now. */
-  --panel-shell-bg: #eef2f4;
 }
 
 /* ── Loading / Error ─────────────────────────────────────────────────────────── */
@@ -1483,10 +1467,10 @@ button { cursor: pointer; font-family: inherit; }
 .panel-add-btn {
   display: inline-flex; align-items: center; gap: 6px; justify-content: center;
   background: none; border: 1.5px solid #93c5fd; border-radius: 6px;
-  padding: 8px 12px; font-size: 12px; font-weight: 600; color: #0099CC;
+  padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--sem-info, #0099CC);
   transition: .2s; cursor: pointer;
 }
-.panel-add-btn:hover:not(:disabled) { background: #eff8ff; border-color: #0099CC; }
+.panel-add-btn:hover:not(:disabled) { background: #eff8ff; border-color: var(--sem-info, #0099CC); }
 .panel-add-btn:disabled { opacity: .55; cursor: default; }
 
 /* The one export action button's own format dropdown (ExportButtons.tsx) —
@@ -1498,10 +1482,10 @@ button { cursor: pointer; font-family: inherit; }
 .export-menu-btn {
   display: inline-flex; align-items: center; gap: 7px; justify-content: center;
   background: none; border: 1.5px solid #93c5fd; border-radius: 7px;
-  padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: #0099CC;
+  padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: var(--sem-info, #0099CC);
   transition: .15s; cursor: pointer; white-space: nowrap;
 }
-.export-menu-btn:hover:not(:disabled) { background: #eff8ff; border-color: #0099CC; }
+.export-menu-btn:hover:not(:disabled) { background: #eff8ff; border-color: var(--sem-info, #0099CC); }
 .export-menu-btn:disabled { opacity: .5; cursor: default; }
 .export-menu-btn[aria-expanded="true"] .export-menu-chevron { transform: rotate(180deg); }
 .export-menu-chevron { transition: transform .15s ease; flex-shrink: 0; }
@@ -2570,7 +2554,7 @@ button { cursor: pointer; font-family: inherit; }
    Blog / Analytics, toggled via the "Verwaltung" topbar button. */
 .crm-layout { flex: 1; display: flex; overflow: hidden; background: #f4f6f5; }
 
-.crm-sidebar { position: relative; width: 220px; flex-shrink: 0; background: var(--panel-shell-bg, #0a0e1a); display: flex; flex-direction: column; overflow: hidden; }
+.crm-sidebar { position: relative; width: 220px; flex-shrink: 0; background: var(--panel-shell-bg, #eef2f4); display: flex; flex-direction: column; overflow: hidden; }
 /* Brand/logo lives in the page-level topbar now. Collapse toggle sits in
    normal flow on the same row as the first group label — it used to float
    `position: absolute` above everything at a fixed 8px offset, disconnected
@@ -2584,9 +2568,11 @@ button { cursor: pointer; font-family: inherit; }
 .crm-sidebar-collapse-icon-btn {
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   width: 26px; height: 26px; border-radius: 7px; border: none;
-  background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); cursor: pointer; transition: background .15s, color .15s;
+  background: rgba(15,23,42,.05); color: #6b7280; cursor: pointer; transition: background .15s, color .15s;
 }
-.crm-sidebar-collapse-icon-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); }
+.crm-sidebar-collapse-icon-btn:hover { background: rgba(15,23,42,.1); color: #111827; }
+.gotham .crm-sidebar-collapse-icon-btn { background: color-mix(in srgb, var(--gotham-text) 5%, transparent); color: var(--gotham-text-dim); }
+.gotham .crm-sidebar-collapse-icon-btn:hover { background: color-mix(in srgb, var(--gotham-text) 10%, transparent); color: var(--gotham-text); }
 .crm-nav-group-label--inline { padding: 0; margin: 0; }
 
 /* Brand/logo block in the page-level topbar, left of the section title. */
@@ -2607,19 +2593,19 @@ button { cursor: pointer; font-family: inherit; }
 .crm-nav { padding: 0 10px 12px; flex: 1; min-height: 0; overflow-y: auto; }
 .crm-nav-item {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border-radius: 8px;
-  border: none; background: none; color: rgba(255,255,255,.5); font-size: 13px; font-weight: 500;
+  border: none; background: none; color: #4b5563; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all .15s; text-align: left; font-family: inherit; margin-bottom: 2px; position: relative;
 }
 .crm-nav-item { transition: background .15s ease, color .15s ease, transform .1s ease; }
-.crm-nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+.crm-nav-item:hover { background: rgba(15,23,42,.05); color: #111827; }
 /* Active sidebar item reads from its full background tint + colored
    text/icon (below) — no one-edge stripe (see feedback_no_single_side_kpi_
    stripe.md, and the same rule now applies here: "the sidebar nav's
    active-item indicator has a colored left-border stripe … we hate that"). */
-.crm-nav-item.active { background: rgba(99,240,255,.14); color: #63f0ff; font-weight: 600; }
+.crm-nav-item.active { background: rgba(14,138,156,.1); color: #0e8a9c; font-weight: 600; }
 .crm-nav-item:active { transform: scale(.98); }
 .crm-nav-item svg { flex-shrink: 0; opacity: .85; }
-.crm-nav-item.active svg { stroke: #63f0ff; opacity: 1; }
+.crm-nav-item.active svg { stroke: #0e8a9c; opacity: 1; }
 
 .crm-badge {
   margin-left: auto; min-width: 18px; height: 18px; border-radius: 9px; font-size: 10px; font-weight: 700;
@@ -2628,15 +2614,17 @@ button { cursor: pointer; font-family: inherit; }
 .crm-badge.red { background: #e53e3e; color: #fff; }
 
 .crm-nav-group-label {
-  font-size: 10px; font-weight: 700; color: rgba(255,255,255,.32); text-transform: uppercase;
+  font-size: 10px; font-weight: 700; color: #9aa0a8; text-transform: uppercase;
   letter-spacing: .08em; padding: 14px 12px 6px;
 }
+.gotham .crm-nav-group-label { color: var(--gotham-text-dim); }
 .crm-nav-group-label:first-child { padding-top: 4px; }
 /* Forschungsebene / Systemebene / Technische Ebene — three genuinely
    different kinds of information, not one flat list (see plan). No separate
    "Observatory" wrapper label above these — what's inside is already named
    by its own tier, a second English header on top was pure redundancy. */
-.crm-nav-group-label--tier { font-size: 9px; padding: 10px 12px 4px 20px; color: rgba(255,255,255,.55); }
+.crm-nav-group-label--tier { font-size: 9px; padding: 10px 12px 4px 20px; color: #9aa0a8; }
+.gotham .crm-nav-group-label--tier { color: var(--gotham-text-dim); }
 .crm-sidebar.collapsed .crm-nav-group-label--tier { display: none; }
 
 .crm-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -3303,6 +3291,38 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-signal-modal-observation { color: rgba(226,241,245,.85); }
 .obs-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
 
+/* ── CHIP GRID — compact multi-select toggle ────────────────────────────────
+   Replaces a tall one-item-per-row checkbox list (SimulationLab's "Verknüpfte
+   Signale" picker: ~10 stacked full-width <label><input type="checkbox">
+   rows, eating the whole page height for what's fundamentally "pick a few
+   of these") with a wrapped grid of small toggle pills — same interaction
+   (click to add/remove from a selection), far less vertical space. Built as
+   real <button type="button" aria-pressed> elements, not styled checkboxes,
+   so keyboard/screen-reader semantics stay correct without extra ARIA
+   plumbing. Light-appropriate fallbacks throughout; dark/hc overrides below
+   mirror .obs-pill/.filter-panel-trigger's own token usage. */
+.obs-chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.obs-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; line-height: 1.3;
+  padding: 6px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--gotham-text-dim, #6b7280) 6%, var(--gotham-panel, #fff));
+  border: 1px solid color-mix(in srgb, var(--gotham-text-dim, #6b7280) 22%, transparent);
+  color: var(--gotham-text-dim, #4b5563);
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.obs-chip:hover { border-color: color-mix(in srgb, var(--gotham-text-dim, #6b7280) 40%, transparent); }
+.obs-chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--obs-teal) 16%, var(--gotham-panel, #fff));
+  border-color: color-mix(in srgb, var(--obs-teal) 55%, transparent);
+  color: var(--obs-teal);
+}
+.obs-chip-scope { opacity: .7; font-weight: 500; }
+.observatory-hud .obs-chip, .gotham .obs-chip { background: color-mix(in srgb, var(--gotham-text-dim, rgba(138,152,184,.7)) 10%, #12172b); }
+.observatory-hud .obs-chip[aria-pressed="true"], .gotham .obs-chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--hud-cyan, #38d9cc) 18%, #12172b); color: var(--hud-cyan, #38d9cc);
+}
+
 /* ── Dense data table — for genuinely tabular catalogs (Monetization's
    product list: 23+ rows, name/price/type/actions, no rich per-row content),
    as opposed to .obs-item-card's feed/activity rows (timestamped events with
@@ -3330,19 +3350,19 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .obs-table-name, .gotham .obs-table-name { color: #e4e8f0; }
 .observatory-hud .obs-table-desc, .gotham .obs-table-desc { color: rgba(212,219,235,.6); }
 
-/* ── OBSERVATORY HUD THEME ────────────────────────────────────────────────
-   Reskinned to match the Lighthouse OS standard (see projects/lighthouse
-   frontend/src/styles.css [data-theme="dark"]): deep midnight navy, off-white
-   text, a single muted-teal accent, depth from shadow NOT bright edges, one
-   global sans (no mono-mixing), no glow on foreground text. Calm, high-
-   contrast, data-dense — not a neon Christmas tree. */
+/* ── ADMIN SHELL THEME ─────────────────────────────────────────────────────
+   Three real states — light / dark / high-contrast — matching the Lighthouse
+   OS standard (projects/lighthouse frontend/src/styles.css) instead of a
+   permanent dark "military watch-floor" cosplay. `.gotham`/`.observatory-hud`
+   are now applied ONLY for dark and hc (never for light — see AdminPanel.tsx)
+   so the ~300+ per-module rules elsewhere in this file that already have
+   sane light-mode defaults (e.g. `.obs-item-title { color: #111827 }`) are
+   finally reachable; `.observatory-hc` layers AAA black/white/amber on top
+   for the third theme. Depth comes from shadow, not glow; one global sans
+   (no mono-mixing); no decorative scanline/tactical-grid — a real instrument
+   panel, not a neon Christmas tree. */
 .observatory-hud { --hud-cyan: #38d9cc; --hud-cyan-dim: rgba(56,217,204,.3); --hud-bg: #0a0e17; --obs-cyan: #38d9cc; }
-.observatory-hud.crm-main {
-  background:
-    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(56,217,204,.05), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(139,92,246,.04), transparent 55%),
-    var(--hud-bg);
-}
+.observatory-hud.crm-main { background: var(--hud-bg); }
 .crm-page-topbar.observatory-hud { background: var(--panel-shell-bg, #0a0e1a); border-bottom: 1px solid rgba(150,156,170,.1); }
 .observatory-hud .crm-topbar-title {
   color: #e4e8f0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700;
@@ -3359,10 +3379,6 @@ button { cursor: pointer; font-family: inherit; }
 .observatory-hud .panel-add-big-btn { border-color: rgba(56,217,204,.3); color: var(--hud-cyan); }
 .observatory-hud .panel-add-big-btn:hover { border-color: var(--hud-cyan); background: rgba(56,217,204,.08); }
 .observatory-hud .panel-checkbox { color: rgba(228,232,240,.82); }
-.observatory-hud .crm-body::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: repeating-linear-gradient(180deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px);
-}
 .observatory-hud .obs-section-label { color: var(--hud-cyan); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
 .observatory-hud .obs-section-label::after { background: rgba(150,156,170,.12); }
 .observatory-hud .obs-empty { color: rgba(228,232,240,.4); }
@@ -3469,97 +3485,65 @@ button { cursor: pointer; font-family: inherit; }
 .gotham pre { color: rgba(226,241,245,.85); font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GOTHAM — global military / Palantir-watchtower theme
-   App-wide dark instrumentation shell. Previously `.observatory-hud` only
-   applied to Observatory modules (AdminPanel.tsx gates it per-section); the
-   `gotham` class is applied to `.crm-main` for EVERY section so Verwaltung's
-   white BI cards + the whole admin shell read as one proprietary
-   watch-floor, not a consumer dashboard with a dark corner. The existing
-   `.observatory-hud` rules below still layer on top for the Observatory
-   telemetry accent (cyan), so Observatory surfaces stay the brightest.
-   ═══════════════════════════════════════════════════════════════════════════ */
+   GOTHAM — admin shell chrome (sidebar/topbar/nav), dark + hc only
+   `.gotham` now supplies ONLY what `.observatory-hud` doesn't already own
+   (nav/sidebar/topbar chrome + the export-menu dropdown + native select
+   styling) — the previous version redefined the obs-card, obs-stat, the
+   obs-item family, panel-add-btn and export-menu-btn a second time with
+   slightly different literal colors, which is exactly how the "reskinned to
+   match Lighthouse" pass on .observatory-hud got silently clobbered (later
+   cascade order, same specificity). One dark palette now, not two drifting
+   ones. Values unified with .observatory-hud's tokens; no decorative
+   scanline or tactical grid — flat surface, depth from shadow. */
 .gotham {
-  --gotham-bg: #05080d; --gotham-panel: rgba(16,24,34,.72); --gotham-border: rgba(120,150,170,.16);
-  --gotham-text: rgba(206,224,232,.82); --gotham-text-dim: rgba(140,170,184,.55);
-  --hud-cyan: #34e1ff; --hud-cyan-dim: rgba(52,225,255,.32); --hud-amber: #ffb01f; --obs-cyan: #34e1ff;
+  --gotham-bg: #0a0e17; --gotham-panel: #12172b; --gotham-border: rgba(150,156,170,.1);
+  --gotham-text: #e4e8f0; --gotham-text-dim: rgba(138,152,184,.8);
+  --hud-cyan: #38d9cc; --hud-cyan-dim: rgba(56,217,204,.3); --hud-amber: #ffb01f; --obs-cyan: #38d9cc;
   /* One shared shell color for both the sidebar and the topbar — defined
      once here so they're byte-identical by construction, not two
      independently-tuned rgba values that drift apart (they used to). */
   --panel-shell-bg: #0a0e1a;
 }
-.gotham.crm-main {
-  background:
-    radial-gradient(ellipse 1000px 600px at 12% -12%, rgba(52,225,255,.07), transparent 58%),
-    radial-gradient(ellipse 800px 600px at 100% 0%, rgba(124,92,246,.06), transparent 55%),
-    linear-gradient(180deg, #05080d, #070b12);
-  color: var(--gotham-text);
-  position: relative;
-}
-/* Tactical grid texture + scanline overlay across the whole shell. */
-.gotham.crm-main::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(120,160,180,.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120,160,180,.028) 1px, transparent 1px);
-  background-size: 38px 38px;
-  mask-image: radial-gradient(ellipse 120% 100% at 50% 0%, #000 55%, transparent 100%);
-}
-.gotham.crm-main::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-  background: repeating-linear-gradient(180deg, rgba(52,225,255,.02) 0px, rgba(52,225,255,.02) 1px, transparent 1px, transparent 3px);
-  mix-blend-mode: screen; opacity: .5;
-}
-/* Scanline overlay kept statically fixed — no drift loop. A constantly
-   drifting stripe reads as a fairground flicker, not a secure-ops console.
-   Disabled per Simeon's explicit "das flickert alles" directive. */
-@keyframes hud-scan-drift {
-  from { background-position-y: 0; }
-  to { background-position-y: 0; }
-}
-.gotham .crm-body { position: relative; z-index: 2; color: var(--gotham-text); }
+.gotham.crm-main { background: var(--gotham-bg); color: var(--gotham-text); position: relative; }
+.gotham .crm-body { position: relative; color: var(--gotham-text); }
 .crm-page-topbar.gotham {
   background: var(--panel-shell-bg); border-bottom: 1px solid var(--gotham-border);
-  position: relative; z-index: 2;
+  position: relative;
 }
 .gotham .crm-topbar-title {
-  color: #eafdff; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; letter-spacing: -.005em;
+  color: var(--gotham-text); font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; letter-spacing: -.005em;
   font-size: 15px; font-weight: 700;
 }
-.gotham .crm-topbar-actions .topbar-icon-btn { border-color: rgba(120,150,170,.25); background: rgba(120,150,170,.06); color: var(--gotham-text); }
-.gotham .crm-topbar-actions .topbar-icon-btn:hover { border-color: var(--hud-cyan); color: var(--hud-cyan); background: rgba(52,225,255,.08); }
-.gotham .crm-nav-item { color: rgba(255,255,255,.68); }
-.gotham .crm-nav-item:hover { background: rgba(120,150,170,.08); color: var(--gotham-text); }
-.gotham .crm-nav-item.active { background: rgba(52,225,255,.12); color: var(--hud-cyan); }
-.gotham .crm-nav-group-label { color: rgba(255,255,255,.5); }
+.gotham .crm-topbar-actions .topbar-icon-btn { border-color: var(--gotham-border); background: color-mix(in srgb, var(--gotham-text) 8%, transparent); color: var(--gotham-text); }
+.gotham .crm-topbar-actions .topbar-icon-btn:hover { border-color: var(--hud-cyan); color: var(--hud-cyan); background: color-mix(in srgb, var(--hud-cyan) 8%, transparent); }
+.gotham .crm-nav-item { color: var(--gotham-text-dim); }
+.gotham .crm-nav-item:hover { background: color-mix(in srgb, var(--gotham-text) 8%, transparent); color: var(--gotham-text); }
+.gotham .crm-nav-item.active { background: color-mix(in srgb, var(--hud-cyan) 12%, transparent); color: var(--hud-cyan); }
+.gotham .crm-nav-group-label { color: var(--gotham-text-dim); }
 .gotham .crm-sidebar { background: var(--panel-shell-bg); border-right: 1px solid var(--gotham-border); }
+.gotham .chat-inspect-toggle { border-color: color-mix(in srgb, var(--hud-cyan) 30%, transparent); color: var(--hud-cyan); }
+.gotham .chat-inspect-toggle:hover { border-color: var(--hud-cyan); background: color-mix(in srgb, var(--hud-cyan) 8%, transparent); }
+.gotham .export-menu { background: var(--gotham-panel); border-color: var(--gotham-border); }
+.gotham .export-menu-item { color: var(--gotham-text); }
+.gotham .export-menu-item:hover { background: color-mix(in srgb, var(--hud-cyan) 10%, transparent); color: var(--hud-cyan); }
+.gotham select { background: var(--gotham-panel); color: var(--gotham-text); border: 1px solid var(--gotham-border); }
+.gotham .crm-body select option { background-color: var(--gotham-panel); color: var(--gotham-text); }
 
-/* Verwaltung's white BI cards become dark tactical panels under gotham. */
-.gotham .obs-card, .gotham .obs-item-card, .gotham .obs-map-card, .gotham .obs-stat {
-  background: var(--gotham-panel); border: 1px solid var(--gotham-border);
-  border-radius: 10px; box-shadow: 0 0 0 1px rgba(52,225,255,.04), 0 8px 22px rgba(0,0,0,.45);
-  backdrop-filter: blur(6px); color: var(--gotham-text); animation: hud-card-in .3s ease both;
+/* ── HIGH CONTRAST — third theme, AAA black/white/amber ────────────────────
+   Layers on top of .gotham.observatory-hud (applied together, see
+   AdminPanel.tsx) by redefining the same custom properties at higher
+   specificity (two classes beats one). Matches Lighthouse's own hc theme
+   and this project's EU-mandate 3-theme convention. */
+.gotham.observatory-hc {
+  --gotham-bg: #000000; --gotham-panel: #0a0a0a; --gotham-border: #e8e8e8;
+  --gotham-text: #f0f0ec; --gotham-text-dim: #d8d8d4;
+  --hud-cyan: #ffd400; --hud-cyan-dim: rgba(255,212,0,.35); --obs-cyan: #ffd400;
+  --panel-shell-bg: #000000;
 }
-.gotham .obs-item-card { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 9%, var(--gotham-panel)); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 30%, var(--gotham-border)); }
-.gotham .obs-stat { background: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 11%, var(--gotham-panel)); border-color: color-mix(in srgb, var(--obs-accent, var(--hud-cyan)) 32%, var(--gotham-border)); }
-.gotham .obs-item-title { color: #eefcff; }
-.gotham .obs-item-meta { color: var(--gotham-text-dim); font-size: 10.5px; }
-.gotham .obs-item-body { color: rgba(212,231,235,.85); }
-.gotham .obs-stat-value { color: #eefcff; }
-.gotham .obs-stat-label { color: var(--gotham-text-dim); }
-.gotham .obs-section-label { color: var(--hud-cyan); letter-spacing: .04em; }
-.gotham .obs-section-label::after { background: rgba(52,225,255,.14); }
-.gotham .obs-section-sub { color: var(--gotham-text-dim); }
-.gotham .obs-empty { color: var(--gotham-text-dim); }
-.gotham .panel-product-name, .gotham .panel-product-meta { color: #eefcff; }
-.gotham .panel-add-btn, .gotham .chat-inspect-toggle { border-color: rgba(52,225,255,.3); color: var(--hud-cyan); }
-.gotham .panel-add-btn:hover, .gotham .chat-inspect-toggle:hover { border-color: var(--hud-cyan); background: rgba(52,225,255,.08); }
-.gotham .export-menu-btn { border-color: rgba(52,225,255,.3); color: var(--hud-cyan); }
-.gotham .export-menu-btn:hover:not(:disabled) { border-color: var(--hud-cyan); background: rgba(52,225,255,.08); }
-.gotham .export-menu { background: var(--gotham-panel, #12172b); border-color: var(--gotham-border, rgba(120,150,170,.16)); }
-.gotham .export-menu-item { color: rgba(226,235,245,.85); }
-.gotham .export-menu-item:hover { background: rgba(52,225,255,.1); color: var(--hud-cyan); }
-.gotham select { background: rgba(7,14,20,.9); color: var(--gotham-text); border: 1px solid var(--gotham-border); }
-.gotham .crm-body select option { background-color: #0a111a; color: #eefcff; }
+.gotham.observatory-hc .crm-nav-item.active { background: rgba(255,212,0,.16); color: #ffd400; }
+.gotham.observatory-hc .obs-card, .gotham.observatory-hc .obs-item-card, .gotham.observatory-hc .obs-map-card, .gotham.observatory-hc .obs-stat {
+  border-width: 2px;
+}
 
 /* ── HUD TILE — the shared framed-instrument cell (Hud.tsx) ───────────────── */
 .hud-grid { display: grid; gap: 14px; margin-bottom: 16px; }
@@ -3569,14 +3553,24 @@ button { cursor: pointer; font-family: inherit; }
 .hud-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .hud-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hud-tile {
-  --hud-accent: var(--hud-cyan, #34e1ff);
+  /* Real light fallbacks on every one of these — --gotham-* only exist while
+     .gotham is applied (dark/hc, see App.css's ADMIN SHELL THEME section),
+     so light mode previously fell through to hardcoded dark rgba defaults
+     here and rendered a dark tile on a light shell regardless of theme. */
+  --hud-accent: var(--hud-cyan, #0e8a9c);
   position: relative; grid-column: span var(--hud-span, 1);
-  background: var(--gotham-panel, rgba(16,24,34,.72));
-  border: 1px solid var(--gotham-border, rgba(120,150,170,.16));
+  background: var(--gotham-panel, #ffffff);
+  border: 1px solid var(--gotham-border, rgba(15,23,42,.1));
   border-radius: 10px; padding: 12px 14px 14px; min-height: 150px;
-  box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4);
-  backdrop-filter: blur(6px); overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 22px rgba(15,23,42,.05);
+  overflow: hidden;
   animation: hud-card-in .32s cubic-bezier(.16,1,.3,1) both;
+}
+/* Dark/hc get the heavier depth-from-shadow treatment + backdrop blur —
+   scoped so light mode stays a plain flat card. */
+.gotham .hud-tile {
+  box-shadow: inset 0 0 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,0,0,.4);
+  backdrop-filter: blur(6px);
 }
 .hud-tile--tall { min-height: 230px; }
 /* Compact variant — max half the default 150px, for strips of small
@@ -3601,8 +3595,8 @@ button { cursor: pointer; font-family: inherit; }
   background: var(--hud-accent);
 }
 .hud-tile-title {
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 700;
-  letter-spacing: -.005em; color: rgba(228,232,240,.9); flex: 1; min-width: 0;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: -.005em; color: var(--gotham-text, #111827); flex: 1; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .hud-tile-badge {
@@ -3630,11 +3624,10 @@ button { cursor: pointer; font-family: inherit; }
 .hud-section-header { margin: 0 0 18px; }
 .hud-section-header-row1 { display: flex; align-items: center; gap: 12px; }
 .hud-section-title {
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: rgba(228,232,240,.95); margin: 0;
+  font-size: 17px; font-weight: 700; letter-spacing: -.01em; color: var(--gotham-text, #111827); margin: 0;
   flex-shrink: 0; white-space: nowrap;
 }
-.hud-section-divider { width: 1px; height: 18px; background: rgba(255,255,255,.14); flex-shrink: 0; }
+.hud-section-divider { width: 1px; height: 18px; background: var(--gotham-border, rgba(15,23,42,.14)); flex-shrink: 0; }
 .hud-section-sub {
   font-size: 13px; line-height: 1.5; color: var(--panel-text-dim, rgba(148,190,199,.6)); margin: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 auto; cursor: default;
@@ -3708,8 +3701,11 @@ button { cursor: pointer; font-family: inherit; }
 }
 
 .hud-stat { text-align: left; }
-.hud-stat-value { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-size: 30px; font-weight: 800; color: #eefcff; letter-spacing: -.01em; line-height: 1.05; font-variant-numeric: tabular-nums; }
-.hud-stat-label { font-size: 9.5px; color: var(--gotham-text-dim, rgba(140,170,184,.55)); margin-top: 5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+/* No monospace swap — that's the font-mixing this project wants gone.
+   `.mono`'s tabular-nums contract (defined near the top of this file)
+   already keeps digits column-aligned without changing the typeface. */
+.hud-stat-value { font-size: 30px; font-weight: 800; color: var(--gotham-text, #111827); letter-spacing: -.01em; line-height: 1.05; font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.hud-stat-label { font-size: 9.5px; color: var(--gotham-text-dim, #6b7280); margin-top: 5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
 
 /* A chart centred inside a tile should never overflow the tile. */
 .hud-tile .obs-donut-wrap, .hud-tile .obs-gauge-wrap { margin: 0 auto; }
@@ -3919,14 +3915,23 @@ button { cursor: pointer; font-family: inherit; }
   from { opacity: 0; transform: scale(.2); }
   to { opacity: 1; transform: scale(1); }
 }
+/* Real light-mode fallbacks on every var below — this popup (the
+   click-to-detail card for KnowledgeGraph/SystemMap's force graphs, also
+   reused by Changelog.tsx) used to be hardcoded to the old permanent-dark
+   HUD literals (rgba(7,14,20,.6) bg, near-white text) with zero light-theme
+   awareness, so on the light shell it rendered as an inverted dark card
+   floating on a bright page. `.gotham .mycelium-detail` (see the ADMIN
+   SHELL THEME section) still layers the dark/hc-tuned literals on top for
+   those two themes, same "one token set, per-theme override" pattern as
+   `.hud-tile`. */
 .mycelium-detail {
-  margin-top: 16px; padding: 12px 16px; border: 1px solid rgba(34,211,238,.25);
-  background: rgba(7,14,20,.6); border-radius: 8px; display: flex; flex-direction: column; gap: 4px;
+  margin-top: 16px; padding: 12px 16px; border: 1px solid var(--gotham-border, rgba(15,23,42,.14));
+  background: var(--gotham-panel, #ffffff); border-radius: 8px; display: flex; flex-direction: column; gap: 4px;
   animation: hud-card-in .25s ease both;
 }
 .mycelium-detail-tag { font-size: 11px; font-weight: 800; letter-spacing: .02em; }
-.mycelium-detail-text { font-size: 12.5px; color: rgba(226,241,245,.9); line-height: 1.6; }
-.mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan); }
+.mycelium-detail-text { font-size: 12.5px; color: var(--gotham-text, #111827); line-height: 1.6; }
+.mycelium-caret { animation: hud-pulse .8s step-end infinite; color: var(--hud-cyan, #0e8a9c); }
 
 /* Floating variant, absolutely positioned right next to the node that
    opened it (see useForceGraphPopupAnchor) instead of the plain in-flow
@@ -3934,14 +3939,14 @@ button { cursor: pointer; font-family: inherit; }
    tail so "this popup belongs to that node" reads instantly, not via a
    thin connector line nobody would notice. */
 .mycelium-detail-anchored {
-  margin-top: 0; background: rgba(6,11,18,.94); border: 1px solid rgba(34,211,238,.22);
-  box-shadow: 0 10px 28px rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  margin-top: 0; background: var(--gotham-panel, #ffffff); border: 1px solid var(--gotham-border, rgba(15,23,42,.14));
+  box-shadow: 0 10px 28px rgba(15,23,42,.18); backdrop-filter: blur(4px);
   max-height: 60%; overflow-y: auto;
 }
 .mycelium-detail-anchored::before {
   content: ''; position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
-  width: 12px; height: 12px; background: rgba(6,11,18,.94);
-  border-left: 1px solid rgba(34,211,238,.22); border-top: 1px solid rgba(34,211,238,.22);
+  width: 12px; height: 12px; background: var(--gotham-panel, #ffffff);
+  border-left: 1px solid var(--gotham-border, rgba(15,23,42,.14)); border-top: 1px solid var(--gotham-border, rgba(15,23,42,.14));
   rotate: 45deg;
 }
 
@@ -3950,10 +3955,10 @@ button { cursor: pointer; font-family: inherit; }
    notes/documents behind it, scrollable so a large scope doesn't blow out
    the panel height. */
 .mycelium-detail-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
-.mycelium-detail-item { padding: 8px 10px; border: 1px solid var(--hud-cyan); background: rgba(255,255,255,.04); border-radius: 7px; animation: hud-card-in .2s ease both; }
-.mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: #eefcff; margin-bottom: 3px; }
-.mycelium-detail-item-excerpt { font-size: 11.5px; color: rgba(226,241,245,.72); line-height: 1.5; margin-bottom: 4px; }
-.mycelium-detail-item-meta { font-size: 10px; color: rgba(148,190,199,.55); }
+.mycelium-detail-item { padding: 8px 10px; border: 1px solid var(--hud-cyan, #0e8a9c); background: color-mix(in srgb, var(--gotham-text, #111827) 4%, transparent); border-radius: 7px; animation: hud-card-in .2s ease both; }
+.mycelium-detail-item-title { font-size: 12px; font-weight: 700; color: var(--gotham-text, #111827); margin-bottom: 3px; }
+.mycelium-detail-item-excerpt { font-size: 11.5px; color: var(--gotham-text-dim, #4b5563); line-height: 1.5; margin-bottom: 4px; }
+.mycelium-detail-item-meta { font-size: 10px; color: var(--gotham-text-dim, #6b7280); }
 
 /* ── HUD FRAMING — dead corner-bracket/radar primitive, kept for the public
    site only ────────────────────────────────────────────────────────────

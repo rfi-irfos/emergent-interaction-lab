@@ -53,9 +53,16 @@ function loadSidebarCollapsed(): boolean {
 }
 
 // Defaults to dark: the Observatory HUD look is the direction the whole
-// shell is meant to read in, not an opt-in for one section only.
-function loadCrmTheme(): 'light' | 'dark' {
-  try { return (localStorage.getItem('rfi_crm_theme') as 'light' | 'dark') || 'dark' } catch { return 'dark' }
+// shell is meant to read in, not an opt-in for one section only. Three real
+// themes now (light/dark/hc), matching Lighthouse's own EU-mandated
+// three-theme convention — see App.css's "ADMIN SHELL THEME" section.
+type CrmTheme = 'light' | 'dark' | 'hc'
+function loadCrmTheme(): CrmTheme {
+  try {
+    const stored = localStorage.getItem('rfi_crm_theme')
+    if (stored === 'light' || stored === 'dark' || stored === 'hc') return stored
+  } catch { /* localStorage unavailable */ }
+  return 'dark'
 }
 
 // ── Topbar icons (minimal shell: theme, view-live-site, logout) ─────────────
@@ -74,6 +81,9 @@ function IconSun() {
 function IconMoon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
 }
+function IconContrast() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>
+}
 
 /// The Verwaltung shell — collapsible sidebar + minimal topbar — is now the
 /// single, permanent view of the admin panel. The old "Builder mode / Verwaltung
@@ -84,7 +94,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [draft, setDraft] = useState<SiteContent>(content)
   const [adminSection, setAdminSection] = useState<AdminSection>('analytics')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadSidebarCollapsed)
-  const [crmTheme, setCrmTheme] = useState<'light' | 'dark'>(loadCrmTheme)
+  const [crmTheme, setCrmTheme] = useState<CrmTheme>(loadCrmTheme)
   // The active app's own filter/action controls, pushed up via
   // useHeaderActions so they render in the ONE shared page header instead of
   // a second header block inside the app itself (see Hud.tsx). Cleared on
@@ -93,13 +103,23 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   const [headerActions, setHeaderActions] = useState<ReactNode>(null)
   useEffect(() => { setHeaderActions(null) }, [adminSection])
 
+  // Cycles light → dark → hc → light, matching Lighthouse's own topbar
+  // three-theme toggle convention.
   const toggleCrmTheme = () => {
     setCrmTheme(t => {
-      const next = t === 'dark' ? 'light' : 'dark'
+      const next: CrmTheme = t === 'light' ? 'dark' : t === 'dark' ? 'hc' : 'light'
       localStorage.setItem('rfi_crm_theme', next)
       return next
     })
   }
+
+  // Real light mode now exists (see App.css's "ADMIN SHELL THEME" section) —
+  // `.gotham`/`.observatory-hud` are applied ONLY for dark/hc, never light,
+  // so the ~300+ per-module rules that already have sane light-mode defaults
+  // are actually reachable. `data-theme` on <html> is set too, for any
+  // future CSS written against a clean attribute selector instead of
+  // threading classes into every portal/overlay by hand.
+  useEffect(() => { document.documentElement.dataset.theme = crmTheme }, [crmTheme])
 
   useEffect(() => { setDraft(content) }, [content])
   const [saved, setSaved] = useState(false)
@@ -235,8 +255,9 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
   // ancestor of both the sidebar and `.crm-main`) so `.gotham .crm-sidebar` /
   // `.observatory-hud .crm-sidebar` in App.css actually reach the sidebar
   // too, not just the topbar/main column.
-  const isDark = crmTheme === 'dark'
-  const themeClasses = `gotham ${isDark ? 'observatory-hud' : ''}`
+  // Light mode gets NEITHER class now (see App.css) — that's what makes it a
+  // real light theme instead of a dark shell with the cyan glow dialed down.
+  const themeClasses = crmTheme === 'light' ? '' : `gotham observatory-hud${crmTheme === 'hc' ? ' observatory-hc' : ''}`
 
   return (
     <div className="builder">
@@ -261,8 +282,12 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
           <button className="topbar-icon-btn" onClick={() => setAdminSection('forschung')} title="Zu Jarvis (Forschung)">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
           </button>
-          <button className="topbar-icon-btn" onClick={toggleCrmTheme} title={crmTheme === 'dark' ? 'Helles Design' : 'Dunkles Design'}>
-            {crmTheme === 'dark' ? <IconSun /> : <IconMoon />}
+          <button
+            className="topbar-icon-btn"
+            onClick={toggleCrmTheme}
+            title={crmTheme === 'light' ? 'Zu Dunkel wechseln' : crmTheme === 'dark' ? 'Zu Hohem Kontrast wechseln' : 'Zu Hell wechseln'}
+          >
+            {crmTheme === 'light' ? <IconSun /> : crmTheme === 'dark' ? <IconMoon /> : <IconContrast />}
           </button>
           <a
             href={window.location.origin + window.location.pathname}
@@ -419,26 +444,37 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
                   />
                   <button className="panel-add-btn" onClick={addCategory} type="button">+</button>
                 </div>
-                {/* .obs-item-card, not the shared .panel-product-row (also
-                    used by Website Kit's own product list) — same idiom
-                    every other list in the app uses instead of a second,
-                    Website-Kit-flavored one on this page. */}
-                {(draft.news?.items ?? []).map(n => (
-                  <div
-                    key={n.id}
-                    className={`obs-item-card ${editingNews === n.id ? 'blog-topic-item-active' : ''}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setEditingNews(n.id)}
-                  >
-                    <div className="obs-item-title">{n.title}</div>
-                    <div className="obs-item-meta">
-                      {n.date}
-                      {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
-                        <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
-                      )}
-                    </div>
+                {/* Compact one-line-per-post list, not a full obs-item-card per
+                    post — confirmed live (screenshot) that 4 manual posts at
+                    title+date each in a padded 2-line card already ate ~330px
+                    of vertical space for what is fundamentally a title/date
+                    index, the same "one giant card per row" complaint
+                    Monetization's product table and BehavioralLandscape's
+                    donut already got fixed for elsewhere in this pass.
+                    Reuses .panel-product-row (Website Kit's own page list —
+                    single dense row, title + meta stacked tight, hover
+                    highlight) instead of inventing a third list idiom. */}
+                {(draft.news?.items ?? []).length > 0 && (
+                  <div className="panel-product-list" style={{ padding: 0, maxHeight: 260, overflowY: 'auto', marginBottom: 4 }}>
+                    {(draft.news?.items ?? []).map(n => (
+                      <div
+                        key={n.id}
+                        className={`panel-product-row ${editingNews === n.id ? 'blog-topic-item-active' : ''}`}
+                        onClick={() => setEditingNews(n.id)}
+                      >
+                        <div className="panel-product-info">
+                          <div className="panel-product-name">{n.title}</div>
+                          <div className="panel-product-meta">
+                            {n.date}
+                            {n.category && (draft.news?.categories ?? []).find(c => c.id === n.category) && (
+                              <> · {(draft.news?.categories ?? []).find(c => c.id === n.category)?.name}</>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
                 {(draft.news?.items ?? []).length === 0 && (
                   <div className="obs-empty">Noch keine manuellen Blogbeiträge.</div>
                 )}
@@ -535,7 +571,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
 
       {/* ── BLOG EDIT MODAL ────────────────────────────────────────────── */}
       {editingNewsItem && (
-        <div className={`pem-overlay ${crmTheme === 'dark' ? 'observatory-hud' : ''}`} onClick={() => setEditingNews(null)}>
+        <div className={`pem-overlay ${themeClasses}`} onClick={() => setEditingNews(null)}>
           <div className="pem" onClick={e => e.stopPropagation()}>
             <div className="pem-header">
               <span className="pem-title">Blogbeitrag bearbeiten</span>

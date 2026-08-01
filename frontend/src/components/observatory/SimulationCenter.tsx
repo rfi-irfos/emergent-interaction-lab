@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminFetch, useAdminFetch } from '../../lib/adminApi'
 import { SimulationLab, STATUS_ACCENT, BranchesList } from './SimulationLab'
-import { HudGrid, HudTile, useHeaderActions } from './Hud'
+import { HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
 import type { BranchOut } from './SimulationLab'
 import { ExportButtons } from './ExportButtons'
 import { ObsDonut } from './ObsDonut'
@@ -228,11 +228,15 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
   // centerLabel below, rather than recomputing the same flatMap per slice.
   const allBranches = runs.flatMap(r => r.branches ?? [])
 
+  const branchedCount = allBranches.filter(b => (b.rationale ?? '').trim().length > 0).length
+  const unbranchedRationaleCount = allBranches.length - branchedCount
+
   return (
     <div className="obs-panel">
-      {total !== null && total > runs.length && (
-        <p style={{ fontSize: 12, color: '#9aa0a8', margin: '0 0 12px' }}>Geladen: {runs.length} von {total}</p>
-      )}
+      <HudSectionHeader
+        title="Simulationsläufe"
+        sub={total !== null ? `geladen: ${runs.length} von ${total}` : undefined}
+      />
       {/* Three distinct compact status instruments — the old design jammed a
           run-status and a branch-status donut into ONE centered HudTile,
           which read as a single oversized chart. Splitting into three
@@ -244,7 +248,17 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
           server-side status filter, so the branch-status + rationale
           tiles always consider all of them; the run-status tile hides
           statuses that weren't fetched when a status filter is active
-          (same convention as EmergenceMonitor's visibleStatuses). */}
+          (same convention as EmergenceMonitor's visibleStatuses).
+
+          Live product complaint (Simeon, 2026-08-01): the empty states for
+          "Zweig-Status"/"Zweig-Begründung" used to be 2 lines of muted
+          .obs-empty text floating in an otherwise-empty 150px HudTile — real
+          dead air, not a real instrument. Both now render a proper HudStat
+          (0, with an honest label) so the tile is actually filled the same
+          way every other empty-but-real-KPI tile in this app is (see
+          Monetization's "Umsatz, sichtbar" zero-state), with the
+          call-to-action link kept as a small secondary line underneath
+          rather than being the only content in the tile. */}
       {/* HudGrid cols={4}, not a raw hud-grid--12 div — that variant has no
           responsive breakpoint at all (App.css only collapses --5/--4/--3/--2
           on narrower screens), so these donuts would stay pinned at ~17%/
@@ -257,56 +271,74 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
             data={(statusFilter ? [statusFilter] : Object.keys(STATUS_ACCENT)).map(status => ({
               label: SIMULATION_STATUS_LABELS[status] ?? status,
               value: runs.filter(r => r.status === status).length,
-              color: STATUS_ACCENT[status] ?? '#3b6bf6',
+              color: STATUS_ACCENT[status] ?? 'var(--sem-info)',
             }))}
             centerLabel={`${runs.length}\nLäufe`}
             gradientIdPrefix="simulation-run-status"
           />
         </div>
-        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
           Status der aktuell geladenen Läufe{statusFilter ? ` (gefiltert auf „${SIMULATION_STATUS_LABELS[statusFilter] ?? statusFilter}“)` : ''} (geladen: {runs.length}{total !== null ? ` von ${total}` : ''}).
         </p>
       </HudTile>
 
       <HudTile title="Zweig-Status" badge="SIM" accent="var(--obs-cyan)" span={1}>
         {allBranches.length === 0 ? (
-          <div className="obs-empty" style={{ marginTop: 8 }}>Noch keine Zweige. <button type="button" className="chat-inspect-toggle" style={{ fontSize: 11, padding: 0 }} onClick={() => document.getElementById('simulation-lab-form')?.scrollIntoView({ behavior: 'smooth' })}>Verzweigten Lauf starten →</button></div>
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <HudStat value={0} label="Zweige" accent="var(--sem-neutral)" />
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+              Noch keine Zweige. <button type="button" className="chat-inspect-toggle" style={{ fontSize: 11, padding: 0 }} onClick={() => document.getElementById('simulation-lab-form')?.scrollIntoView({ behavior: 'smooth' })}>Verzweigten Lauf starten →</button>
+            </p>
+          </>
         ) : (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <ObsDonut
-              data={Object.keys(STATUS_ACCENT).map(status => ({
-                label: SIMULATION_STATUS_LABELS[status] ?? status,
-                value: allBranches.filter(b => b.status === status).length,
-                color: STATUS_ACCENT[status] ?? '#3b6bf6',
-              }))}
-              centerLabel={`${allBranches.length}\nZweige`}
-              gradientIdPrefix="simulation-branch-status"
-            />
-          </div>
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <ObsDonut
+                data={Object.keys(STATUS_ACCENT).map(status => ({
+                  label: SIMULATION_STATUS_LABELS[status] ?? status,
+                  value: allBranches.filter(b => b.status === status).length,
+                  color: STATUS_ACCENT[status] ?? 'var(--sem-info)',
+                }))}
+                centerLabel={`${allBranches.length}\nZweige`}
+                gradientIdPrefix="simulation-branch-status"
+              />
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+              Status aller geladenen Zweige (geladen: {allBranches.length}).
+            </p>
+          </>
         )}
-        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
-          Status aller geladenen Zweige (geladen: {allBranches.length}).
-        </p>
       </HudTile>
 
       <HudTile title="Zweig-Begründung" badge="SIM" accent="var(--obs-cyan)" span={2}>
         {allBranches.length === 0 ? (
-          <div className="obs-empty" style={{ marginTop: 8 }}>Noch keine Zweige — eine dokumentierte Entscheidungs-Begründung entsteht automatisch mit dem ersten verzweigten Lauf.</div>
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <HudStat value={0} label="begründete Zweige" accent="var(--sem-neutral)" />
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+              Eine dokumentierte Entscheidungs-Begründung entsteht automatisch mit dem ersten verzweigten Lauf.
+            </p>
+          </>
         ) : (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <ObsDonut
-              data={[
-                { label: 'begründet', value: allBranches.filter(b => (b.rationale ?? '').trim().length > 0).length, color: '#10b981' },
-                { label: 'ohne Begründung', value: allBranches.filter(b => (b.rationale ?? '').trim().length === 0).length, color: '#6b7280' },
-              ]}
-              centerLabel={`${allBranches.filter(b => (b.rationale ?? '').trim().length > 0).length}\nbegründet`}
-              gradientIdPrefix="simulation-branch-rationale"
-            />
-          </div>
+          <>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <ObsDonut
+                data={[
+                  { label: 'begründet', value: branchedCount, color: 'var(--sem-success)' },
+                  { label: 'ohne Begründung', value: unbranchedRationaleCount, color: 'var(--sem-neutral)' },
+                ]}
+                centerLabel={`${branchedCount}\nbegründet`}
+                gradientIdPrefix="simulation-branch-rationale"
+              />
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
+              Wie viele Zweige eine dokumentierte Entscheidungs-Begründung tragen (geladen: {allBranches.length}).
+            </p>
+          </>
         )}
-        <p style={{ fontSize: 11, color: '#9aa0a8', textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
-          Wie viele Zweige eine dokumentierte Entscheidungs-Begründung tragen (geladen: {allBranches.length}).
-        </p>
       </HudTile>
       </HudGrid>
       <SimulationLab
@@ -323,8 +355,8 @@ export function SimulationCenter({ onNavigate }: { onNavigate?: (s: AdminSection
         onNavigate={onNavigate}
       />
 
-      <div className="obs-section-label" style={{ marginTop: 24 }}>
-        Vergleich{compareIds.length > 2 ? ` (${compareIds.length} Läufe)` : ''}
+      <div style={{ marginTop: 24 }}>
+        <HudSectionHeader title={`Vergleich${compareIds.length > 2 ? ` (${compareIds.length} Läufe)` : ''}`} />
       </div>
       <div className="obs-form" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         {compareIds.map((id, idx) => (

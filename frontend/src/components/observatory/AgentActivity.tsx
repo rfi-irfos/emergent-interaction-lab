@@ -4,7 +4,8 @@ import { TOOL_LABELS } from '../../lib/toolLabels'
 import { foldIntoOther } from '../../lib/chartMath'
 import { HudSkeleton } from './HudSkeleton'
 import { ObsDonut } from './ObsDonut'
-import { HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
+import { ObsBarStack } from './ObsBarStack'
+import { HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
 
 // ── AgentActivity · Jarvis the Machine (Bucket 2) ─────────────────────────
 // Ersetzt den alten GitHub-Activity-Feed komplett (PR/Commit/Deploy-Chatter
@@ -75,11 +76,16 @@ export function AgentActivity() {
   if (lB || lD || lH || lA || lC) return <div className="obs-panel"><HudSkeleton variant="panel" /></div>
 
   const anomalyTotal = dist ? dist.tool_error + dist.iteration_cap + dist.refusal + dist.hallucination_mismatch : 0
+  // Same 4-kind vocabulary AnomalyLog/anomaly.rs use — real per-kind
+  // semantic accents (danger for the two "something actually broke" kinds,
+  // amber for the soft iteration-cap trip-wire, purple for the heuristic
+  // refusal flag) instead of the flat unstyled two-column text rows this
+  // used to render.
   const anomalyBars = [
-    { label: 'Tool-Fehler', value: dist?.tool_error ?? 0 },
-    { label: 'Iteration-Cap', value: dist?.iteration_cap ?? 0 },
-    { label: 'Refusal', value: dist?.refusal ?? 0 },
-    { label: 'Halluzinations-Mismatch', value: dist?.hallucination_mismatch ?? 0 },
+    { label: 'Tool-Fehler', value: dist?.tool_error ?? 0, color: 'var(--sem-danger)' },
+    { label: 'Iteration-Cap', value: dist?.iteration_cap ?? 0, color: 'var(--obs-amber)' },
+    { label: 'Refusal', value: dist?.refusal ?? 0, color: 'var(--obs-purple)' },
+    { label: 'Halluzinations-Mismatch', value: dist?.hallucination_mismatch ?? 0, color: 'var(--sem-danger)' },
   ]
   const toolDist = foldIntoOther((behavior?.tool_distribution ?? []).map(b => ({ label: TOOL_LABELS[b.tool ?? ''] ?? (b.tool ?? '—'), value: b.count })))
 
@@ -108,19 +114,12 @@ export function AgentActivity() {
 
         <HudTile title="Refusal- & Anomalie-Oberfläche" badge="META" accent="var(--sem-danger)" span={2}>
           {anomalyTotal > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {anomalyBars.filter(b => b.value > 0).map(b => (
-                <div key={b.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span style={{ color: '#9aa0a8' }}>{b.label}</span>
-                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{b.value}</span>
-                </div>
-              ))}
-            </div>
+            <ObsBarStack data={anomalyBars.filter(b => b.value > 0)} />
           ) : <div className="obs-empty">Keine Anomalien im Zeitraum.</div>}
         </HudTile>
       </HudGrid>
 
-      <div className="obs-section-label">Letzte Anomalien</div>
+      <HudSectionHeader title="Letzte Anomalien" />
       {(anomalies ?? []).length === 0
         ? <div className="obs-card"><div className="obs-empty">Keine Anomalien protokolliert.</div></div>
         : (anomalies ?? []).map((a) => (
@@ -130,7 +129,7 @@ export function AgentActivity() {
             </div>
           ))}
 
-      <div className="obs-section-label">Halluzinations-Selbstkontrolle</div>
+      <HudSectionHeader title="Halluzinations-Selbstkontrolle" />
       {(checks ?? []).length === 0
         ? <div className="obs-card"><div className="obs-empty">Noch keine Prüfungen.</div></div>
         : (checks ?? []).map((c) => {

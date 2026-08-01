@@ -148,9 +148,6 @@ export const SECTION_COPY: Record<AdminSection, SectionCopy> = {
   forschungspipeline: { title: 'Forschungspipeline', description: '' },
   changelog: { title: 'Changelog', description: 'Jede Änderung am Lab — nachvollziehbar, mit Kettensignatur.' },
   ameisenhaufen: { title: 'Ameisenhaufen', description: 'Deine Coevolution Factory — 50 Zentren, live von hier aus sichtbar.' },
-  mind: { title: 'Mind', description: 'Dein eigener Kopf als beobachtbares Verhalten — Tippen, Entscheiden, Reflektieren.' },
-  machine: { title: 'Machine', description: 'Jarvis von innen — Reasoning-Volumen, Werkzeuge, Selbstkontrolle.' },
-  dyad: { title: 'Dyad + Meta', description: 'Wer prägt wen — Einfluss, gemeinsames Vokabular, gegenseitige Flags.' },
 }
 
 /** @deprecated use `SECTION_COPY[x].title` — kept only until every consumer migrates. */

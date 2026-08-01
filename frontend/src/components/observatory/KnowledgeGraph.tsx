@@ -3,7 +3,7 @@ import ForceGraph2D from 'react-force-graph-2d'
 import { API_BASE } from '../../lib/apiBase'
 import { adminFetch } from '../../lib/adminApi'
 import { HudSkeleton } from './HudSkeleton'
-import { tuneForceGraph, reheatOnDrag } from '../../lib/forceGraphTuning'
+import { tuneForceGraph, resolveThemeColor, resolveAccentColor } from '../../lib/forceGraphTuning'
 import { useForceGraphPopupAnchor } from '../../hooks/useForceGraphPopupAnchor'
 
 // Node core radius, shared between the canvas painter and the collision
@@ -152,10 +152,10 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const noteItems: DetailItem[] = safeNotes.map(n => ({ id: n.id, kind: 'note', title: n.title, excerpt: n.body, timestamp: n.updated_at, conversationId: n.source_conversation_id }))
   const docItems: DetailItem[] = safeDocs.map(d => ({ id: d.id, kind: 'doc', title: d.filename, excerpt: '', timestamp: d.created_at, conversationId: null }))
 
-  const hub = { id: 'hub', label: 'Wissensbestand', accent: '#22d3ee', count: 0, kind: 'hub' as const, scope: null as string | null }
-  const scopeNodes = scopeNames.map((scope, i) => ({ id: `scope-${i}`, label: scope, kind: 'scope' as const, accent: '#22d3ee', count: scopeSignalCount(scope), scope }))
-  const noteNode = { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: '#8b5cf6', count: safeNotes.length, scope: null as string | null }
-  const docNode = { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: '#10b981', count: safeDocs.length, scope: null as string | null }
+  const hub = { id: 'hub', label: 'Wissensbestand', accent: 'var(--hud-cyan, #22d3ee)', count: 0, kind: 'hub' as const, scope: null as string | null }
+  const scopeNodes = scopeNames.map((scope, i) => ({ id: `scope-${i}`, label: scope, kind: 'scope' as const, accent: 'var(--hud-cyan, #22d3ee)', count: scopeSignalCount(scope), scope }))
+  const noteNode = { id: 'notes', label: 'Research Notes', kind: 'notes' as const, accent: 'var(--obs-purple, #8b5cf6)', count: safeNotes.length, scope: null as string | null }
+  const docNode = { id: 'docs', label: 'Dokumente', kind: 'docs' as const, accent: 'var(--obs-green, #10b981)', count: safeDocs.length, scope: null as string | null }
   const nodes = [hub, ...scopeNodes, noteNode, docNode] as Array<{ id: string; label: string; accent: string; count: number; kind: any; scope: string | null }>
 
   // `linkedPosts` count per scope actually drives the rendered stroke width
@@ -221,31 +221,61 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
   const expandedLinkedPosts = expandedNode?.scope ? linkedPosts(expandedNode.scope) : []
   const expandedItems: DetailItem[] = itemsForNode(expandedNode)
 
-  const nodePaint = (node: any, ctx: CanvasRenderingContext2D) => {
+  // Resolved once per paint (not per node) — canvas fillStyle needs a real
+  // computed color, not a literal `var(--x)` string; see forceGraphTuning.ts's
+  // resolveThemeColor doc comment for why this used to be a permanent-dark
+  // `#0d141f`/`#eefcff` pair regardless of the active theme.
+  //
+  // `globalScale` (react-force-graph-2d's 3rd nodeCanvasObject arg, see
+  // node_modules/force-graph/dist/force-graph.mjs's `state.nodeCanvasObject(
+  // node, ctx, state.globalScale)`) was never read here before — the label
+  // font was a fixed 11px in GRAPH coordinate space, not screen space. With
+  // only ~5-20 nodes, `onEngineStop`'s `zoomToFit` zooms in hard to fill the
+  // canvas, and the canvas context is already transformed for that zoom by
+  // the time this paints — so the "11px" text actually rendered at
+  // 11×globalScale real screen pixels, ballooning past its own node circle
+  // and stacking illegibly on top of neighboring nodes/labels. This is the
+  // actual mechanism behind the reported "overlapping/unreadable labels"
+  // bug (confirmed live: a 5-node graph zoomed to fit rendered ~40px text
+  // from a 12px font declaration). Dividing by `globalScale` keeps the
+  // label a constant, legible size on screen at any zoom level — the node
+  // circle itself intentionally stays in graph space (so it still scales
+  // with zoom, matching the collision force which also operates in graph
+  // space).
+  const nodePaint = (node: any, ctx: CanvasRenderingContext2D, globalScale = 1) => {
     const r = nodeCoreRadius(node)
     const x = node.x ?? 0, y = node.y ?? 0
+    const fontScale = Math.max(globalScale, 0.0001)
+    // Fallbacks are the LIGHT-theme defaults, not the old dark literals —
+    // `--gotham-panel`/`--gotham-text` only exist while `.gotham` is applied
+    // (dark/hc, see App.css's ADMIN SHELL THEME section), so an empty
+    // getComputedStyle read here means "we're in light mode," same as
+    // `.hud-tile`'s own `var(--gotham-panel, #ffffff)` convention.
+    const chipBg = resolveThemeColor(wrapRef.current, '--gotham-panel', '#ffffff')
+    const labelColor = resolveThemeColor(wrapRef.current, '--gotham-text', '#111827')
+    const accent = resolveAccentColor(wrapRef.current, node.accent)
     // glow
     ctx.beginPath()
     ctx.arc(x, y, r + 6, 0, 2 * Math.PI)
-    ctx.fillStyle = node.accent + '22'
+    ctx.fillStyle = accent + '22'
     ctx.fill()
     // core
     ctx.beginPath()
     ctx.arc(x, y, r, 0, 2 * Math.PI)
-    ctx.fillStyle = '#0d141f'
+    ctx.fillStyle = chipBg
     ctx.fill()
     ctx.lineWidth = 2
-    ctx.strokeStyle = node.accent
+    ctx.strokeStyle = accent
     ctx.stroke()
-    // label
-    ctx.font = '600 11px "SF Mono", Consolas, monospace'
+    // label — font size divided by globalScale, see the doc comment above
+    ctx.font = `600 ${11 / fontScale}px "SF Mono", Consolas, monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillStyle = '#eefcff'
-    ctx.fillText(node.label, x, y - 2)
-    ctx.fillStyle = node.accent
-    ctx.font = '800 11px "SF Mono", Consolas, monospace'
-    ctx.fillText(String(node.count), x, y + 12)
+    ctx.fillStyle = labelColor
+    ctx.fillText(node.label, x, y - 2 / fontScale)
+    ctx.fillStyle = accent
+    ctx.font = `800 ${11 / fontScale}px "SF Mono", Consolas, monospace`
+    ctx.fillText(String(node.count), x, y + 12 / fontScale)
   }
 
   return (
@@ -266,12 +296,17 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
             ctx.arc(node.x ?? 0, node.y ?? 0, r, 0, 2 * Math.PI)
             ctx.fill()
           }}
-          linkColor={() => 'rgba(34,211,238,.32)'}
+          linkColor={() => resolveThemeColor(wrapRef.current, '--hud-cyan', '#22d3ee') + '52'}
           linkWidth={(link: any) => 1.2 + Math.min(link.value ?? 0, 8) * 0.9}
           cooldownTicks={120}
           onEngineStop={() => { try { fgRef.current?.zoomToFit?.(400, 46) } catch { /* canvas may already be unmounted */ } }}
           onNodeClick={(node: any) => { try { setExpanded(cur => cur === node?.id ? null : node?.id) } catch { /* ignore click errors */ } }}
-          onNodeDrag={() => reheatOnDrag(fgRef.current)}
+          // No onNodeDrag handler — see forceGraphTuning.ts's comment on the
+          // removed reheatOnDrag: the library's own drag handler already
+          // keeps the sim ticking + gently warm during a drag; an app-side
+          // reheat on top of that was the actual "drag breaks mid-gesture"
+          // bug (forced alpha=1 every tick, fighting the library's steady
+          // alphaTarget(0.3)).
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
         />
 
@@ -333,7 +368,7 @@ export function KnowledgeGraph({ onOpenConversation }: { onOpenConversation?: (c
           </div>
         )}
       </div>
-      <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
+      <p style={{ fontSize: 12, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 4 }}>
         Kantenstärke = Anzahl über die Gesprächs-ID verknüpfter Blogposts. Klick auf einen Knoten für die echten Einzeleinträge dahinter.
       </p>
     </div>

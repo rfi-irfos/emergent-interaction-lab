@@ -220,13 +220,13 @@ function LoopNode({
       {/* 1 · RAW TRANSMISSION — Laura's own input (preview; backend truncates
           to 120 chars in the fragments excerpt; full text needs a message-by-id
           endpoint, flagged as a follow-up). */}
-      <div style={{ fontFamily: "'SF Mono','JetBrains Mono',Consolas,monospace", fontSize: 12, lineHeight: 1.55, color: 'rgba(226,241,245,.9)', background: 'rgba(7,14,20,.5)', borderLeft: '2px solid var(--hud-cyan)', padding: '8px 10px', borderRadius: 6, marginBottom: 10 }}>
+      <div style={{ fontFamily: "'SF Mono','JetBrains Mono',Consolas,monospace", fontSize: 12, lineHeight: 1.55, color: 'var(--gotham-text, #111827)', background: 'var(--gotham-panel, #f3f4f6)', borderLeft: '2px solid var(--hud-cyan)', padding: '8px 10px', borderRadius: 6, marginBottom: 10 }}>
         {turn.excerpt || '—'}
       </div>
       {/* 2 · HER LAYERS — which of the 8 IEIA layers this turn drew on. */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
         {turn.layers.map(layer => (
-          <span key={layer} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: '#eefcff', background: `${LAYER_COLORS[layer] ?? '#888'}22`, border: `1px solid ${LAYER_COLORS[layer] ?? '#888'}`, borderRadius: 20, padding: '2px 9px' }}>
+          <span key={layer} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, color: 'var(--gotham-text, #111827)', background: `${LAYER_COLORS[layer] ?? '#888'}22`, border: `1px solid ${LAYER_COLORS[layer] ?? '#888'}`, borderRadius: 20, padding: '2px 9px' }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: LAYER_COLORS[layer] ?? '#888' }} />
             {LAYER_LABELS[layer] ?? layer}
           </span>
@@ -235,31 +235,31 @@ function LoopNode({
       {/* 3 + 4 · MODEL REACTION + SYSTEM SHIFT, side by side. */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 9.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'rgba(148,190,199,.6)', marginBottom: 5 }}>Modell-Reaktion</div>
+          <div style={{ fontSize: 9.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--gotham-text-dim, #6b7280)', marginBottom: 5 }}>Modell-Reaktion</div>
           {spawned.length === 0 ? (
-            <div style={{ fontSize: 11, color: 'rgba(148,190,199,.45)' }}>keine Signale in diesem Fenster</div>
+            <div style={{ fontSize: 11, color: 'var(--gotham-text-dim, #9ca3af)' }}>keine Signale in diesem Fenster</div>
           ) : (
             spawned.map(s => (
-              <div key={s.id} style={{ fontSize: 11, color: 'rgba(226,241,245,.82)', marginBottom: 4 }}>
+              <div key={s.id} style={{ fontSize: 11, color: 'var(--gotham-text, #374151)', marginBottom: 4 }}>
                 <span style={{ color: STATUS_ACCENT[s.status] ?? 'var(--hud-cyan)' }}>●</span> {s.pattern}
-                <span style={{ color: 'rgba(148,190,199,.5)' }}> · {s.level}</span>
+                <span style={{ color: 'var(--gotham-text-dim, #6b7280)' }}> · {s.level}</span>
               </div>
             ))
           )}
         </div>
         <div>
-          <div style={{ fontSize: 9.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'rgba(148,190,199,.6)', marginBottom: 5 }}>System-Shift</div>
+          <div style={{ fontSize: 9.5, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--gotham-text-dim, #6b7280)', marginBottom: 5 }}>System-Shift</div>
           {ceiDelta === null ? (
-            <div style={{ fontSize: 11, color: 'rgba(148,190,199,.45)' }}>kein Snapshot-Delta</div>
+            <div style={{ fontSize: 11, color: 'var(--gotham-text-dim, #9ca3af)' }}>kein Snapshot-Delta</div>
           ) : (
             <div style={{ display: 'flex', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: ceiDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{ceiDelta >= 0 ? '+' : ''}{fmtPct(Math.abs(ceiDelta))}</div>
-                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>Stabilität Δ</div>
+                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: ceiDelta >= 0 ? 'var(--sem-success, #10b981)' : 'var(--sem-danger, #ef4444)' }}>{ceiDelta >= 0 ? '+' : ''}{fmtPct(Math.abs(ceiDelta))}</div>
+                <div style={{ fontSize: 9, color: 'var(--gotham-text-dim, #6b7280)', textTransform: 'uppercase' }}>Stabilität Δ</div>
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: resDelta !== null && resDelta >= 0 ? '#6ee7b7' : '#fca5a5' }}>{(resDelta ?? 0) >= 0 ? '+' : ''}{fmtPct(Math.abs(resDelta ?? 0))}</div>
-                <div style={{ fontSize: 9, color: 'rgba(148,190,199,.55)', textTransform: 'uppercase' }}>Resonanz Δ</div>
+                <div style={{ fontSize: 16, fontWeight: 800, fontFamily: "'SF Mono',monospace", color: resDelta !== null && resDelta >= 0 ? 'var(--sem-success, #10b981)' : 'var(--sem-danger, #ef4444)' }}>{(resDelta ?? 0) >= 0 ? '+' : ''}{fmtPct(Math.abs(resDelta ?? 0))}</div>
+                <div style={{ fontSize: 9, color: 'var(--gotham-text-dim, #6b7280)', textTransform: 'uppercase' }}>Resonanz Δ</div>
               </div>
             </div>
           )}
@@ -383,11 +383,11 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
     <HudHeaderActions
       filters={
         convLoading ? (
-          <span style={{ fontSize: 12, color: '#9aa0a8' }}>Lade Gespräche…</span>
+          <span style={{ fontSize: 12, color: 'var(--gotham-text-dim, #9aa0a8)' }}>Lade Gespräche…</span>
         ) : convError ? (
-          <span style={{ fontSize: 12, color: '#9aa0a8' }}>Gespräche konnten nicht geladen werden.</span>
+          <span style={{ fontSize: 12, color: 'var(--gotham-text-dim, #9aa0a8)' }}>Gespräche konnten nicht geladen werden.</span>
         ) : conversations.length === 0 ? (
-          <span style={{ fontSize: 12, color: '#9aa0a8' }}>Noch keine Forschungsgespräche vorhanden.</span>
+          <span style={{ fontSize: 12, color: 'var(--gotham-text-dim, #9aa0a8)' }}>Noch keine Forschungsgespräche vorhanden.</span>
         ) : (
           <select value={selectedConv} onChange={e => setSelectedConv(e.target.value)} style={{ flex: '1 1 260px', fontSize: 12, padding: '5px 8px' }}>
             {conversations.map(c => <option key={c.id} value={c.id}>{c.title} ({c.updated_at})</option>)}
@@ -418,7 +418,7 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
       {/* ── legend: always-visible text labels, not color-only identity — */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginBottom: 16 }}>
         {LAYER_ORDER.map(layer => (
-          <span key={layer} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: '#6b7280', fontWeight: 600 }}>
+          <span key={layer} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--gotham-text-dim, #6b7280)', fontWeight: 600 }}>
             <span style={{ width: 10, height: 10, borderRadius: 3, background: LAYER_COLORS[layer], flexShrink: 0 }} />
             {LAYER_LABELS[layer]}
           </span>
@@ -488,11 +488,11 @@ export function Denkfragmente({ onOpenConversation }: { onOpenConversation?: (co
                 const count = distribution.by_layer.find(b => b.layer === layer)?.count ?? 0
                 return (
                   <div key={layer} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
-                    <span style={{ width: 86, fontSize: 11, color: 'rgba(148,190,199,.72)', flexShrink: 0 }}>{LAYER_LABELS[layer]}</span>
-                    <div style={{ flex: 1, height: 9, borderRadius: 4, background: 'rgba(120,150,170,.14)', overflow: 'hidden' }}>
+                    <span style={{ width: 86, fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', flexShrink: 0 }}>{LAYER_LABELS[layer]}</span>
+                    <div style={{ flex: 1, height: 9, borderRadius: 4, background: 'var(--gotham-border, rgba(15,23,42,.1))', overflow: 'hidden' }}>
                       <div style={{ width: `${maxLayerCount > 0 ? (count / maxLayerCount) * 100 : 0}%`, height: '100%', background: LAYER_COLORS[layer] }} />
                     </div>
-                    <span style={{ width: 22, fontSize: 11, fontWeight: 700, textAlign: 'right', color: '#cfe8ef' }}>{count}</span>
+                    <span style={{ width: 22, fontSize: 11, fontWeight: 700, textAlign: 'right', color: 'var(--gotham-text, #111827)' }}>{count}</span>
                   </div>
                 )
               })}

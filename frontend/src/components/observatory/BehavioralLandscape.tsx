@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { foldIntoOther } from '../../lib/chartMath'
-import { HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
+import { HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
+import { ObsRadar } from './ObsRadar'
+import { ObsDonut } from './ObsDonut'
 
 // ── Verhaltenslandschaft ──────────────────────────────────────────────────
 // ONE module for "beide Verhaltensweisen" — Lauras Mind (Bucket 1) + Jarvis'
@@ -14,6 +16,17 @@ import { HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
 //
 // Hausregel: null/leer vom Backend → "Noch keine Daten", nie eine 0 als
 // echte Zahl verpackt.
+//
+// HUD migration (2026-08-01, Batch B): replaced the ad hoc obs-section-label
+// blocks with HudSectionHeader, and the 8-Layer-Verteilung's hand-rolled
+// LayerBar list with ObsRadar — 8 named layers (facts/analysis/patterns/…),
+// all counted on the exact same "how many turns landed here" scale, is
+// squarely the "genuine multi-axis comparison" case the radar chart is for
+// (and it was otherwise used in exactly one place in the whole app). Tool
+// distribution gets ObsDonut instead of a hand-rolled flex-wrap number
+// list, matching AgentActivity's own treatment of the same tool_distribution
+// shape — one visual language for "distribution across categories" instead
+// of a bespoke one per module.
 
 interface ToolBucket { tool?: string; count: number }
 interface BehaviorData {
@@ -69,22 +82,9 @@ const fmtSec = (v: number) => `${v.toFixed(1)} s`
 
 function Stat({ value, label, format, accent }: { value: number | null | undefined; label: string; format?: (v: number) => string; accent?: string }) {
   if (value === null || value === undefined || Number.isNaN(value)) {
-    return <div style={{ flex: '1 1 120px', minWidth: 120 }}><div className="obs-empty">Noch keine Daten</div><div className="hud-stat-label" style={{ marginTop: 4 }}>{label}</div></div>
+    return <div style={{ flex: '1 1 120px', minWidth: 120 }}><div className="obs-empty" style={{ padding: 0, textAlign: 'left' }}>Noch keine Daten</div><div className="hud-stat-label" style={{ marginTop: 4 }}>{label}</div></div>
   }
   return <div style={{ flex: '1 1 120px', minWidth: 120 }}><HudStat value={value} label={label} format={format} accent={accent} /></div>
-}
-
-function LayerBar({ label, count, max }: { label: string; count: number; max: number }) {
-  const pct = max > 0 ? (count / max) * 100 : 0
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-      <div style={{ width: 110, fontSize: 12, color: '#c7ccd4', flexShrink: 0 }}>{label}</div>
-      <div style={{ flex: 1, background: 'color-mix(in srgb, var(--obs-green) 10%, transparent)', borderRadius: 3, height: 14, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--obs-green)', borderRadius: 3 }} />
-      </div>
-      <div style={{ width: 48, textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: '#e6e9ee', flexShrink: 0 }}>{fmtInt(count)}</div>
-    </div>
-  )
 }
 
 export function BehavioralLandscape() {
@@ -94,11 +94,9 @@ export function BehavioralLandscape() {
   const { data: dist, loading: lD } = useAdminFetch<DistributionData>(`/api/observatory/fragments/distribution?range=${range}`, [range])
 
   useHeaderActions(
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-      <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
-        {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </div>,
+    <select value={range} onChange={e => setRange(e.target.value)} style={{ fontSize: 12, padding: '5px 8px' }}>
+      {RANGE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>,
     [range],
   )
 
@@ -107,12 +105,24 @@ export function BehavioralLandscape() {
 
   const toolDist = foldIntoOther((behavior?.tool_distribution ?? []).map(b => ({ label: TOOL_LABELS[b.tool ?? ''] ?? (b.tool ?? '—'), value: b.count })))
   const amr = mind?.accept_modify_reject ?? null
+
+  // 8-Layer-Verteilung as radar axes — same 0-based "count" unit on every
+  // one of the 8 named layers (facts/analysis/patterns/hypotheses/symbols/
+  // action/counterarguments/blind_spot), so they share one scale and are
+  // directly comparable — exactly the shape ObsRadar exists for, unlike the
+  // CPM/ratio/seconds mixes above (genuinely different units, kept as plain
+  // stat rows instead of forcing them onto one radial axis).
   const layerMax = dist && dist.by_layer.length > 0 ? Math.max(...dist.by_layer.map(b => b.count)) : 0
+  const radarAxes = (dist?.by_layer ?? []).map(b => ({
+    key: b.layer,
+    label: LAYER_LABELS[b.layer] ?? b.layer,
+    value: b.count,
+    max: layerMax > 0 ? layerMax : undefined,
+  }))
 
   return (
     <div className="obs-panel">
-      {/* ── LAURA · Kognitive Signatur (STATE) ── */}
-      <div className="obs-section-label">Laura · Kognitive Signatur <span style={{ opacity: .6 }}>(STATE)</span></div>
+      <HudSectionHeader title="Laura · Kognitive Signatur" sub="Tipp- und Entscheidungsverhalten im gewählten Zeitraum." />
       <HudGrid cols={4}>
         <HudTile title="Tippgeschwindigkeit" badge="STATE" accent="var(--obs-blue)" span={2}>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -122,9 +132,15 @@ export function BehavioralLandscape() {
             <Stat value={mind?.avg_prompt_length} label="Ø Prompt-Länge (Zeichen)" format={fmtInt} accent="var(--obs-blue)" />
           </div>
         </HudTile>
+        <HudTile title="Kommunikation" badge="STATE" accent="var(--obs-amber)" span={2}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <Stat value={mind?.avg_structured_prompt_ratio} label="Strukturierungsanteil" format={fmtPct} accent="var(--obs-amber)" />
+            <Stat value={mind?.avg_constraint_density} label="Constraint-Dichte" format={fmtPct} accent="var(--obs-amber)" />
+            <Stat value={mind?.user_messages} label="Laura-Nachrichten" format={fmtInt} accent="var(--obs-amber)" />
+          </div>
+        </HudTile>
       </HudGrid>
 
-      {/* ── LAURA · Entscheidungen (TRAIT) ── */}
       <HudGrid cols={4}>
         <HudTile title="Entscheidungen" badge="TRAIT" accent="var(--obs-purple)" span={2}>
           {amr ? (
@@ -145,36 +161,23 @@ export function BehavioralLandscape() {
         </HudTile>
       </HudGrid>
 
-      {/* ── LAURA · Kommunikation + 8-Layer ── */}
+      <HudSectionHeader title="8-Layer-Verteilung" sub="Welche der 8 Denkebenen (IEIA-2025) Lauras Turns tragen — alle auf derselben Zähl-Skala, deshalb als Radar." />
       <HudGrid cols={4}>
-        <HudTile title="Kommunikation" badge="STATE" accent="var(--obs-amber)" span={2}>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <Stat value={mind?.avg_structured_prompt_ratio} label="Strukturierungsanteil" format={fmtPct} accent="var(--obs-amber)" />
-            <Stat value={mind?.avg_constraint_density} label="Constraint-Dichte" format={fmtPct} accent="var(--obs-amber)" />
-            <Stat value={mind?.user_messages} label="Laura-Nachrichten" format={fmtInt} accent="var(--obs-amber)" />
-          </div>
-        </HudTile>
-        <HudTile title="8-Layer-Verteilung" badge="TRAIT" accent="var(--obs-green)" span={2}>
-          {dist && dist.by_layer.length > 0 ? (
-            <div>{dist.by_layer.map(b => <LayerBar key={b.layer} label={LAYER_LABELS[b.layer] ?? b.layer} count={b.count} max={layerMax} />)}</div>
+        <HudTile title="Layer-Radar" badge="TRAIT" accent="var(--obs-green)" span={4} tall>
+          {radarAxes.length > 0 ? (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <ObsRadar axes={radarAxes} size={320} />
+            </div>
           ) : <div className="obs-empty">Noch keine Daten</div>}
         </HudTile>
       </HudGrid>
 
-      {/* ── JARVIS · Werkzeugverhalten ── */}
-      <div className="obs-section-label">Jarvis · Werkzeugverhalten <span style={{ opacity: .6 }}>({RANGE_SUFFIX[behavior?.range ?? range] ?? range})</span></div>
+      <HudSectionHeader title="Jarvis · Werkzeugverhalten" sub={RANGE_SUFFIX[behavior?.range ?? range] ?? range} />
       <HudGrid cols={4}>
         <HudTile title="Werkzeug-Verteilung" badge="MACHINE" accent="var(--obs-teal)" span={2}>
           {toolDist.length === 0 || toolDist.every(d => d.value === 0)
             ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
-            : <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
-                {toolDist.map(d => (
-                  <div key={d.label} style={{ minWidth: 130 }}>
-                    <div style={{ fontSize: 12, color: '#c7ccd4' }}>{d.label}</div>
-                    <div style={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color: '#e6e9ee' }}>{fmtInt(d.value)}</div>
-                  </div>
-                ))}
-              </div>
+            : <ObsDonut data={toolDist} gradientIdPrefix="behavioral-tool-distribution" />
           }
         </HudTile>
       </HudGrid>
