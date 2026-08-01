@@ -4,7 +4,7 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { FilterPanel, HudGrid, HudTile, HudStat, useHeaderActions } from './Hud'
+import { FilterPanel, HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { ObsBarStack } from './ObsBarStack'
@@ -92,7 +92,7 @@ function DirectionBar({ label, value, max, accent }: { label: string; value: num
   const pct = max > 0 ? Math.round((value / max) * 100) : 0
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
-      <span style={{ flex: '0 0 130px', color: '#9aa0a8' }}>{label}</span>
+      <span style={{ flex: '0 0 130px', color: 'var(--gotham-text-dim, #6b7280)' }}>{label}</span>
       <span style={{ flex: 1, background: 'color-mix(in srgb, currentColor 8%, transparent)', borderRadius: 3, overflow: 'hidden', height: 8 }}>
         <span style={{ display: 'block', height: '100%', width: `${pct}%`, background: accent, transition: 'width .4s ease' }} />
       </span>
@@ -129,7 +129,7 @@ function SignalDetailModal({ signal, onClose, onOpenConversation }: {
   }, [onClose])
   return (
     <div className="pem-overlay" onClick={onClose}>
-      <div className="pem obs-signal-modal" onClick={e => e.stopPropagation()} style={{ ['--obs-accent' as string]: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>
+      <div className="pem obs-signal-modal" onClick={e => e.stopPropagation()} style={{ ['--obs-accent' as string]: STATUS_ACCENT[signal.status] ?? 'var(--obs-blue, #3b6bf6)' }}>
         <div className="pem-header">
           <span className="pem-title">{signal.pattern}</span>
           <button className="pem-close" onClick={onClose} title="Schließen (Esc)">✕</button>
@@ -141,7 +141,7 @@ function SignalDetailModal({ signal, onClose, onOpenConversation }: {
             </div>
           ) : null}
           <div className="obs-item-meta" style={{ margin: '10px 0' }}>
-            <span className="obs-pill" style={{ background: `${STATUS_ACCENT[signal.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[signal.status] ?? '#3b6bf6' }}>{signal.status}</span>
+            <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_ACCENT[signal.status] ?? 'var(--obs-blue, #3b6bf6)'} 16%, transparent)`, color: STATUS_ACCENT[signal.status] ?? 'var(--obs-blue, #3b6bf6)' }}>{signal.status}</span>
             {' · '}Konfidenz: {signal.confidence}
             {' · '}Verlauf: {EVOLUTION_ARROW[signal.evolution] ?? '?'} {signal.evolution}
             {signal.scope && <> · {signal.scope}</>}
@@ -418,9 +418,10 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           *loaded* signals, not necessarily the global total — see the
           "geladen" note below, honest about that now that this list is
           paginated instead of always holding everything up to the old cap. */}
-      <div className="obs-section-label">
-        Übersicht {total !== null && <span style={{ fontWeight: 400 }}>(geladen: {signals.length} von {total})</span>}
-      </div>
+      <HudSectionHeader
+        title="Übersicht"
+        sub={total !== null ? `geladen: ${signals.length} von ${total}` : undefined}
+      />
       <HudGrid cols={4}>
         {/* 1) DONUT — Ebenen-Mix */}
         <HudTile title="Ebenen-Mix" badge="SIGNALE" accent="var(--obs-purple)" span={1}>
@@ -441,7 +442,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
             data={visibleStatuses.map(status => ({
               label: status,
               value: signals.filter(s => s.status === status).length,
-              color: STATUS_ACCENT[status] ?? '#3b6bf6',
+              color: STATUS_ACCENT[status] ?? 'var(--obs-blue, #3b6bf6)',
             }))}
           />
         </HudTile>
@@ -468,14 +469,14 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         </HudTile>
       </HudGrid>
 
-      <div className="obs-section-label">Geteiltes Feld — Dyad & Meta (META-Layer)</div>
+      <HudSectionHeader title="Geteiltes Feld" sub="Dyad & Meta (META-Layer)" />
       <HudGrid cols={4}>
         <HudTile title="Einfluss-Richtung" badge="TRAIT" accent="var(--obs-purple)" span={2}>
           {influence && (influence.balance.laura_to_jarvis_count > 0 || influence.balance.jarvis_to_laura_count > 0) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <DirectionBar label="Laura → Jarvis" value={influence.balance.laura_to_jarvis_count} max={Math.max(influence.balance.laura_to_jarvis_count, influence.balance.jarvis_to_laura_count)} accent="var(--obs-purple)" />
               <DirectionBar label="Jarvis → Laura" value={influence.balance.jarvis_to_laura_count} max={Math.max(influence.balance.laura_to_jarvis_count, influence.balance.jarvis_to_laura_count)} accent="var(--obs-teal)" />
-              {influence.balance.ratio != null && <p style={{ fontSize: 11, color: '#9aa0a8', margin: 0 }}>Verhältnis: {influence.balance.ratio.toFixed(2)}</p>}
+              {influence.balance.ratio != null && <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', margin: 0 }}>Verhältnis: {influence.balance.ratio.toFixed(2)}</p>}
             </div>
           ) : <div className="obs-empty">Noch keine gerichtete Einfluss-Beobachtung.</div>}
         </HudTile>
@@ -511,7 +512,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         </HudTile>
       </HudGrid>
 
-      <div className="obs-section-label">Signale</div>
+      <HudSectionHeader title="Signale" sub="Neueste zuerst — oberste 5 der aktuell geladenen/gefilterten Menge." />
       <div style={{ maxHeight: 540, overflowY: 'auto', paddingRight: 4 }}>
         {signals.length === 0 && !loading ? (
           <div className="obs-card">
@@ -527,7 +528,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
                   <div
                     className="obs-item-card obs-item-card-clickable"
                     key={s.id}
-                    style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}
+                    style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[s.status] ?? 'var(--obs-blue, #3b6bf6)' }}
                     onClick={() => setExpandedSignal(s)}
                     role="button"
                     tabIndex={0}
@@ -535,7 +536,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
                   >
                     <div className="obs-item-title">{s.pattern}</div>
                     <div className="obs-item-meta">
-                      <span className="obs-pill" style={{ background: `${STATUS_ACCENT[s.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[s.status] ?? '#3b6bf6' }}>{s.status}</span>
+                      <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_ACCENT[s.status] ?? 'var(--obs-blue, #3b6bf6)'} 16%, transparent)`, color: STATUS_ACCENT[s.status] ?? 'var(--obs-blue, #3b6bf6)' }}>{s.status}</span>
                       {' · '}Konfidenz: {s.confidence}
                       {' · '}Verlauf: {EVOLUTION_ARROW[s.evolution] ?? '?'} {s.evolution}
                       {s.scope && <> · {s.scope}</>}

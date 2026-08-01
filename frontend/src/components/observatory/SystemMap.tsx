@@ -5,7 +5,7 @@ import { adminFetch } from '../../lib/adminApi'
 import { TOOL_LABELS } from '../../lib/toolLabels'
 import { HudSkeleton } from './HudSkeleton'
 import { SYSTEM_MAP_NODE_LABELS } from '../../lib/labels'
-import { tuneForceGraph, reheatOnDrag } from '../../lib/forceGraphTuning'
+import { tuneForceGraph, resolveThemeColor, resolveAccentColor } from '../../lib/forceGraphTuning'
 import { useForceGraphPopupAnchor } from '../../hooks/useForceGraphPopupAnchor'
 
 // Same core-radius/collision-radius shape as KnowledgeGraph.tsx's
@@ -29,11 +29,11 @@ function collideRadiusFor(node: any): number {
 // makes sense" — you shouldn't have to click all 5 nodes once each just to
 // find out what the diagram is even a diagram OF.
 const NODES = [
-  { id: 'human', label: SYSTEM_MAP_NODE_LABELS.human, accent: '#22d3ee', legend: 'Deine Nachrichten in Forschungsgesprächen', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
-  { id: 'ai', label: SYSTEM_MAP_NODE_LABELS.ai, accent: '#8b5cf6', legend: 'Jarvis\' Antworten und Werkzeugaufrufe', blurb: (n: number) => `${n} Beobachtungen — Antworten und Werkzeugaufrufe von Jarvis.` },
-  { id: 'organization', label: SYSTEM_MAP_NODE_LABELS.organization, accent: '#f59e0b', legend: 'Research Notes, Blogpost-Entwürfe, Simulationen', blurb: (n: number) => `${n} Beobachtungen — Research Notes, Blogpost-Entwürfe und Simulationsläufe.` },
-  { id: 'technology', label: SYSTEM_MAP_NODE_LABELS.technology, accent: '#10b981', legend: 'Hochgeladene Dokumente (RAG)', blurb: (n: number) => `${n} Beobachtungen — hochgeladene Dokumente und daraus erzeugte Chunks.` },
-  { id: 'information', label: SYSTEM_MAP_NODE_LABELS.information, accent: '#14b8a6', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
+  { id: 'human', label: SYSTEM_MAP_NODE_LABELS.human, accent: 'var(--hud-cyan, #22d3ee)', legend: 'Deine Nachrichten in Forschungsgesprächen', blurb: (n: number) => `${n} Beobachtungen — Nutzer-Nachrichten aus Forschungsgesprächen mit Laura.` },
+  { id: 'ai', label: SYSTEM_MAP_NODE_LABELS.ai, accent: 'var(--obs-purple, #8b5cf6)', legend: 'Jarvis\' Antworten und Werkzeugaufrufe', blurb: (n: number) => `${n} Beobachtungen — Antworten und Werkzeugaufrufe von Jarvis.` },
+  { id: 'organization', label: SYSTEM_MAP_NODE_LABELS.organization, accent: 'var(--obs-amber, #f59e0b)', legend: 'Research Notes, Blogpost-Entwürfe, Simulationen', blurb: (n: number) => `${n} Beobachtungen — Research Notes, Blogpost-Entwürfe und Simulationsläufe.` },
+  { id: 'technology', label: SYSTEM_MAP_NODE_LABELS.technology, accent: 'var(--obs-green, #10b981)', legend: 'Hochgeladene Dokumente (RAG)', blurb: (n: number) => `${n} Beobachtungen — hochgeladene Dokumente und daraus erzeugte Chunks.` },
+  { id: 'information', label: SYSTEM_MAP_NODE_LABELS.information, accent: 'var(--obs-teal, #14b8a6)', legend: 'Wie oft frühere Gespräche/Dokumente wiederverwendet werden', blurb: (n: number) => `${n} Beobachtungen — Retrieval-Aktivität über alle Gespräche hinweg.` },
 ]
 
 // Age-decay in [0,1]: a fresh record → 1 (bright, long trail), an old one →
@@ -339,28 +339,57 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
     return <div className="obs-panel"><HudSkeleton /></div>
   }
 
-  const nodePaint = (node: any, ctx: CanvasRenderingContext2D) => {
+  // See forceGraphTuning.ts's resolveThemeColor/resolveAccentColor doc
+  // comments — canvas fillStyle can't read a literal `var(--x)` string, so
+  // both the node-chip background and each node's own accent (authored as
+  // `var(--hud-cyan, #22d3ee)` etc, see NODES above) are resolved to their
+  // real current computed color here, once per paint. Previously
+  // `#0d141f`/`#eefcff` were permanent-dark literals regardless of theme.
+  //
+  // `globalScale` (react-force-graph-2d's 3rd nodeCanvasObject arg) was
+  // never read here before — label font was a fixed 12px in GRAPH
+  // coordinate space, not screen space. With only 5 core nodes,
+  // `onEngineStop`'s `zoomToFit` zooms in hard to fill the canvas, and by
+  // paint time the context is already transformed for that zoom — so a
+  // "12px" font rendered at 12×globalScale real screen pixels, ballooning
+  // past its own node circle and stacking illegibly onto neighboring
+  // nodes/labels (confirmed live: a 5-node graph zoomed to fit rendered
+  // ~40px text from a 12px font declaration — the actual mechanism behind
+  // the reported "overlapping/unreadable labels" bug). Dividing by
+  // `globalScale` keeps every label a constant, legible screen size at any
+  // zoom level; the node circle itself intentionally stays in graph space
+  // (matching the collision force, which also operates in graph space).
+  const nodePaint = (node: any, ctx: CanvasRenderingContext2D, globalScale = 1) => {
     const x = node.x ?? 0, y = node.y ?? 0
     const r = node.size ?? 6
+    const fontScale = Math.max(globalScale, 0.0001)
+    // Fallbacks are the LIGHT-theme defaults, not the old dark literals —
+    // `--gotham-panel`/`--gotham-text` only exist while `.gotham` is applied
+    // (dark/hc, see App.css's ADMIN SHELL THEME section), so an empty
+    // getComputedStyle read here means "we're in light mode," same as
+    // `.hud-tile`'s own `var(--gotham-panel, #ffffff)` convention.
+    const chipBg = resolveThemeColor(wrapRef.current, '--gotham-panel', '#ffffff')
+    const labelColor = resolveThemeColor(wrapRef.current, '--gotham-text', '#111827')
+    const accent = resolveAccentColor(wrapRef.current, node.accent)
     if (node.isCore) {
       // glow + labeled core
       ctx.beginPath(); ctx.arc(x, y, r + 8, 0, 2 * Math.PI)
-      ctx.fillStyle = node.accent + '22'; ctx.fill()
+      ctx.fillStyle = accent + '22'; ctx.fill()
       ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI)
-      ctx.fillStyle = '#0d141f'; ctx.fill()
-      ctx.lineWidth = 2.5; ctx.strokeStyle = node.accent; ctx.stroke()
-      ctx.font = '700 12px "SF Mono", Consolas, monospace'
+      ctx.fillStyle = chipBg; ctx.fill()
+      ctx.lineWidth = 2.5; ctx.strokeStyle = accent; ctx.stroke()
+      ctx.font = `700 ${12 / fontScale}px "SF Mono", Consolas, monospace`
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-      ctx.fillStyle = '#eefcff'; ctx.fillText(node.label, x, y - 2)
-      ctx.fillStyle = node.accent; ctx.font = '800 12px "SF Mono", Consolas, monospace'
-      ctx.fillText(String(node.count), x, y + 14)
+      ctx.fillStyle = labelColor; ctx.fillText(node.label, x, y - 2 / fontScale)
+      ctx.fillStyle = accent; ctx.font = `800 ${12 / fontScale}px "SF Mono", Consolas, monospace`
+      ctx.fillText(String(node.count), x, y + 14 / fontScale)
     } else {
       // satellite dot — confidence/age encoded as glow + alpha
       const a = 0.22 + (node.decay ?? 0.5) * 0.5
       ctx.beginPath(); ctx.arc(x, y, r + 3, 0, 2 * Math.PI)
-      ctx.fillStyle = node.accent + '33'; ctx.fill()
+      ctx.fillStyle = accent + '33'; ctx.fill()
       ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI)
-      ctx.fillStyle = node.accent; ctx.globalAlpha = a; ctx.fill(); ctx.globalAlpha = 1
+      ctx.fillStyle = accent; ctx.globalAlpha = a; ctx.fill(); ctx.globalAlpha = 1
     }
   }
 
@@ -405,7 +434,14 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           // line (this IS the network, always there); pheromone core↔
           // satellite trails stay faint, matching the "Ausläufer" language
           // in the legend above.
-          linkColor={(link: any) => link.structural ? 'rgba(148,197,214,.34)' : 'rgba(148,197,214,.18)'}
+          // `--hud-cyan` is always a 6-digit hex across every theme (see
+          // App.css's ADMIN SHELL THEME section) — unlike `--gotham-text-dim`,
+          // which is an rgba() string in dark/gotham, so it's safe to append
+          // a hex alpha suffix to (the same pattern nodePaint above uses).
+          linkColor={(link: any) => {
+            const base = resolveThemeColor(wrapRef.current, '--hud-cyan', '#22d3ee')
+            return link.structural ? base + '57' : base + '2e'
+          }}
           linkWidth={(link: any) => link.structural ? 1.6 : 1}
           onNodeHover={(node: any) => setHoverNodeId(node ? node.id : null)}
           cooldownTicks={140}
@@ -423,7 +459,12 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
               }
             } catch { /* ignore click errors — never crash the OS on a node click */ }
           }}
-          onNodeDrag={() => reheatOnDrag(fgRef.current)}
+          // No onNodeDrag handler — see forceGraphTuning.ts's comment on the
+          // removed reheatOnDrag: the library's own drag handler already
+          // keeps the sim ticking + gently warm during a drag; an app-side
+          // reheat on top of that was the actual "drag breaks mid-gesture"
+          // bug (forced alpha=1 every tick, fighting the library's steady
+          // alphaTarget(0.3)).
           onNodeDragEnd={(node: any) => { node.fx = node.x; node.fy = node.y }}
         />
 
@@ -472,7 +513,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
           </div>
         )}
       </div>
-      <p style={{ fontSize: 12, color: 'rgba(148,190,199,.6)', textAlign: 'center', marginTop: 4 }}>
+      <p style={{ fontSize: 12, color: 'var(--gotham-text-dim, #6b7280)', textAlign: 'center', marginTop: 4 }}>
         Klick auf einen Knoten für die Zusammenfassung, Klick auf einen Ausläufer für den echten Einzeleintrag dahinter.
       </p>
     </div>
