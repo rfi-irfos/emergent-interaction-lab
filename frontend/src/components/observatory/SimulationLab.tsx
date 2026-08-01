@@ -4,6 +4,7 @@ import { hudStagger } from '../../lib/hudStagger'
 import type { AdminSection } from '../../types/admin'
 import type { SignalRef } from './SimulationCenter'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 import { SIMULATION_STATUS_LABELS } from '../../lib/labels'
 
 // One option within a branching decision run ("either the team does A
@@ -37,7 +38,11 @@ interface RunOut {
 // Branches use the exact same pending/complete/error vocabulary (see
 // `Branch` in simulation.rs), so `BranchesList` below reuses this map too
 // instead of inventing a second color scheme for the same three states.
-export const STATUS_ACCENT: Record<string, string> = { pending: '#f59e0b', complete: '#10b981', error: '#ef4444' }
+// Real semantic tokens (see App.css's fixed --sem-* taxonomy) instead of a
+// bespoke hardcoded hex trio — pending is "not resolved yet" (warning),
+// complete is a genuinely good outcome (success), error is a real failure
+// (danger). Exactly the 3-of-5 sem slots this vocabulary needs, no new hue.
+export const STATUS_ACCENT: Record<string, string> = { pending: 'var(--sem-warning)', complete: 'var(--sem-success)', error: 'var(--sem-danger)' }
 
 // Shared by this file's own run list and SimulationCenter's compare/detail
 // view (RunColumn) — one rendering for "a run's branches", not two copies
@@ -54,13 +59,13 @@ export function BranchesList({ branches }: { branches: BranchOut[] }) {
         <div
           className="obs-item-card"
           key={b.id}
-          style={{ ['--obs-accent' as string]: STATUS_ACCENT[b.status] ?? '#3b6bf6', padding: '10px 12px' }}
+          style={{ ['--obs-accent' as string]: STATUS_ACCENT[b.status] ?? 'var(--sem-info)', padding: '10px 12px' }}
         >
           <div className="obs-item-title" style={{ fontSize: 12.5 }}>{b.option}</div>
           <div className="obs-item-meta">
             <span
               className="obs-pill"
-              style={{ background: `${STATUS_ACCENT[b.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[b.status] ?? '#3b6bf6' }}
+              style={{ background: `color-mix(in srgb, ${STATUS_ACCENT[b.status] ?? 'var(--sem-info)'} 16%, transparent)`, color: STATUS_ACCENT[b.status] ?? 'var(--sem-info)' }}
             >
               {SIMULATION_STATUS_LABELS[b.status] ?? b.status}
             </span>
@@ -219,14 +224,31 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
           </div>
           {recentSignals.length > 0 && (
             <div>
+              {/* Compact wrapped chip grid, not a ~10-item stacked checkbox
+                  list eating the whole page height (live product complaint,
+                  Simeon 2026-08-01) — same multi-toggle semantics
+                  (toggleSignal, selectedSignalIds unchanged), just a
+                  real <button aria-pressed> per signal instead of a
+                  <label><input type="checkbox">> row. See .obs-chip-grid/
+                  .obs-chip in App.css. */}
               <div className="obs-compare-label" style={{ margin: '2px 0 6px' }}>Verknüpfte Signale (optional)</div>
-              {recentSignals.map(s => (
-                <label key={s.id} className="panel-checkbox" style={{ fontSize: 12, marginBottom: 4 }}>
-                  <input type="checkbox" checked={selectedSignalIds.includes(s.id)} onChange={() => toggleSignal(s.id)} />
-                  {s.pattern}
-                  {s.scope && <span style={{ color: '#9aa0a8' }}> · {s.scope}</span>}
-                </label>
-              ))}
+              <div className="obs-chip-grid">
+                {recentSignals.map(s => {
+                  const selected = selectedSignalIds.includes(s.id)
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="obs-chip"
+                      aria-pressed={selected}
+                      onClick={() => toggleSignal(s.id)}
+                    >
+                      {s.pattern}
+                      {s.scope && <span className="obs-chip-scope"> · {s.scope}</span>}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
           <button className="panel-add-btn" style={{ alignSelf: 'flex-start' }} onClick={submit} disabled={running || !hypothesis.trim() || !branchesValid}>
@@ -235,7 +257,7 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
         </div>
       </div>
 
-      <div className="obs-section-label">Bisherige Läufe</div>
+      <HudSectionHeader title="Bisherige Läufe" />
       {loading && list.length === 0 && <HudSkeleton variant="list" />}
       {list.length === 0 && !loading && <div className="obs-empty">Noch keine Simulationen.</div>}
       {list.map((r, i) => {
@@ -243,10 +265,10 @@ export function SimulationLab({ runs: list, loading, loadingMore, error, total, 
           .map(id => signals.find(s => s.id === id))
           .filter((s): s is SignalRef => Boolean(s))
         return (
-          <div className="obs-item-card" key={r.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>
+          <div className="obs-item-card" key={r.id} style={{ ...hudStagger(i), ['--obs-accent' as string]: STATUS_ACCENT[r.status] ?? 'var(--sem-info)' }}>
             <div className="obs-item-title">{r.hypothesis}</div>
             <div className="obs-item-meta">
-              <span className="obs-pill" style={{ background: `${STATUS_ACCENT[r.status] ?? '#3b6bf6'}1a`, color: STATUS_ACCENT[r.status] ?? '#3b6bf6' }}>{SIMULATION_STATUS_LABELS[r.status] ?? r.status}</span>
+              <span className="obs-pill" style={{ background: `color-mix(in srgb, ${STATUS_ACCENT[r.status] ?? 'var(--sem-info)'} 16%, transparent)`, color: STATUS_ACCENT[r.status] ?? 'var(--sem-info)' }}>{SIMULATION_STATUS_LABELS[r.status] ?? r.status}</span>
               {' · '}{r.created_at}
             </div>
             {related.length > 0 && (

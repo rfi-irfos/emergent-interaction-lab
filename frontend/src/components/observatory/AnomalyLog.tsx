@@ -1,9 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { adminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { useHeaderActions } from './Hud'
+import { HudSectionHeader, useHeaderActions } from './Hud'
 
 // One row per anomaly the Anomaly Watchdog v1 flagged — see
 // backend/src/anomaly.rs's module doc comment for the full "what this is
@@ -40,50 +40,35 @@ const KIND_LABELS: Record<Anomaly['kind'], string> = {
   hallucination_mismatch: 'Falschbehauptung (Hallucination Tracker)',
 }
 
+// Real semantic accents (--sem-*, see App.css's fixed 5-value taxonomy)
+// instead of a bespoke per-kind hex palette: a tool failure and a real
+// hallucination mismatch are both genuinely bad (--sem-danger); the
+// iteration-cap trip-wire is soft/advisory (--sem-warning, matching
+// AgentActivity's own anomaly-surface accent for the same kind); the
+// refusal heuristic gets the neutral-factual --sem-info tint since it's a
+// keyword-scan flag, not a confirmed problem or a research signal.
 const KIND_COLORS: Record<Anomaly['kind'], string> = {
-  tool_error: '#ef4444',
-  iteration_cap: '#f59e0b',
-  refusal_triggered: '#3b6bf6',
-  hallucination_mismatch: '#8b5cf6',
+  tool_error: 'var(--sem-danger)',
+  iteration_cap: 'var(--sem-warning)',
+  refusal_triggered: 'var(--sem-info)',
+  hallucination_mismatch: 'var(--sem-danger)',
 }
 
 function verdictColor(verdict: string): string {
   const v = verdict.toLowerCase()
-  if (v === 'match') return '#10b981'
-  if (v === 'mismatch') return '#ef4444'
-  return '#f59e0b'
+  if (v === 'match') return 'var(--sem-success)'
+  if (v === 'mismatch') return 'var(--sem-danger)'
+  return 'var(--sem-warning)'
 }
 
+// Real theme-aware fallbacks (light-appropriate) instead of a permanently
+// dark-hardcoded input — this input previously rendered dark-on-dark
+// regardless of the active theme.
 const DRILLDOWN_INPUT_STYLE = {
   flex: '1 1 220px',
   minWidth: 160,
   fontSize: 12,
   padding: '6px 8px',
-  background: '#0e1116',
-  color: '#e8eaed',
-  border: '1px solid #2a2f37',
-  borderRadius: 6,
-}
-
-const HAL_TABLE_STYLE: CSSProperties = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  fontSize: 12,
-}
-
-const HAL_TH_STYLE: CSSProperties = {
-  textAlign: 'left',
-  padding: '8px 10px',
-  color: '#9aa0a8',
-  borderBottom: '1px solid #1f242c',
-  fontWeight: 600,
-}
-
-const HAL_TD_STYLE: CSSProperties = {
-  padding: '8px 10px',
-  borderBottom: '1px solid #161b21',
-  verticalAlign: 'top',
-  color: '#c8cdd4',
 }
 
 // Click-to-expand detail view — same .pem-overlay/.pem shell as the other
@@ -222,9 +207,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
         </div>
       ) : (
         <>
-          <div className="obs-section-label">
-            Geloggte Anomalien <span style={{ fontWeight: 400 }}>(geladen: {items.length} von {total ?? '…'})</span>
-          </div>
+          <HudSectionHeader title="Geloggte Anomalien" sub={`geladen: ${items.length} von ${total ?? '…'}`} />
           {items.map((item, i) => (
             <div
               className="obs-item-card obs-item-card-clickable"
@@ -236,7 +219,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedItem(item) } }}
             >
               <div className="obs-item-title">
-                <span className="obs-pill" style={{ background: `${KIND_COLORS[item.kind]}1a`, color: KIND_COLORS[item.kind] }}>
+                <span className="obs-pill" style={{ background: `color-mix(in srgb, ${KIND_COLORS[item.kind]} 16%, transparent)`, color: KIND_COLORS[item.kind] }}>
                   {KIND_LABELS[item.kind]}
                 </span>
               </div>
@@ -274,7 +257,7 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
       {expandedItem && (
         <AnomalyModal item={expandedItem} onClose={() => setExpandedItem(null)} onOpenConversation={onOpenConversation} />
       )}
-      <div className="obs-section-label" style={{ marginTop: 18 }}>Halluzinations-Prüfungen (Drilldown)</div>
+      <HudSectionHeader title="Halluzinations-Prüfungen (Drilldown)" />
       <div className="obs-card">
         <div className="obs-item-meta" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <input
@@ -293,26 +276,28 @@ export function AnomalyLog({ onOpenConversation }: { onOpenConversation?: (conve
           <div className="obs-empty">Noch keine Halluzinations-Prüfungen geladen. Conversation-ID eingeben und „Laden“.</div>
         )}
         {hallucinations.length > 0 && (
-          <table style={HAL_TABLE_STYLE}>
-            <thead>
-              <tr>
-                <th style={HAL_TH_STYLE}>Zeit</th>
-                <th style={HAL_TH_STYLE}>Verdict</th>
-                <th style={HAL_TH_STYLE}>Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hallucinations.map((h, i) => (
-                <tr key={h.id ?? i}>
-                  <td style={HAL_TD_STYLE}>{h.created_at ?? '—'}</td>
-                  <td style={HAL_TD_STYLE}>
-                    <span className="obs-pill" style={{ background: `${verdictColor(h.verdict ?? '')}1a`, color: verdictColor(h.verdict ?? '') }}>{h.verdict ?? '—'}</span>
-                  </td>
-                  <td style={HAL_TD_STYLE}>{h.detail ?? '—'}</td>
+          <div className="obs-table-wrap" style={{ marginTop: 10 }}>
+            <table className="obs-table">
+              <thead>
+                <tr>
+                  <th>Zeit</th>
+                  <th>Verdict</th>
+                  <th>Detail</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {hallucinations.map((h, i) => (
+                  <tr key={h.id ?? i}>
+                    <td>{h.created_at ?? '—'}</td>
+                    <td>
+                      <span className="obs-pill" style={{ background: `color-mix(in srgb, ${verdictColor(h.verdict ?? '')} 16%, transparent)`, color: verdictColor(h.verdict ?? '') }}>{h.verdict ?? '—'}</span>
+                    </td>
+                    <td>{h.detail ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

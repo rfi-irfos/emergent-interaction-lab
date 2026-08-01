@@ -1,6 +1,7 @@
 import { useAdminFetch } from '../../lib/adminApi'
 import { ResearchNotesPanel } from './ResearchNotesPanel'
 import { HudSkeleton } from './HudSkeleton'
+import { HudSectionHeader } from './Hud'
 import type { AdminSection } from '../../types/admin'
 import { BLOG_STATUS_LABELS } from '../../lib/labels'
 
@@ -44,6 +45,19 @@ function BlogActivity() {
 /// simulation is a Kernbereich in its own right, not a Research Pulse
 /// sub-panel (see plan). Notes/ideas can each carry a source_conversation_id
 /// back to the Forschung talk that prompted them (see ResearchNotesPanel).
+///
+/// HONEST NOTE (2026-08-01 HUD migration pass): this module is genuinely
+/// thin relative to what its sidebar label ("Research Pulse") promises —
+/// almost all of its real content lives inside <ResearchNotesPanel> (a
+/// separate component, out of scope for this pass) plus two one-line
+/// delegations (a button linking out to Simulation Center, and a read-only
+/// blog feed that's a deliberate cross-link, not this module's own data).
+/// This pass only swapped the two bare obs-section-label divs for
+/// HudSectionHeader — it does NOT invent new metrics/content here to make
+/// the page look fuller than it is; that would be fabricating data the
+/// backend doesn't have. If "Research Pulse" is meant to carry more than
+/// "notes panel + 2 links," that's a product/backend scope question for a
+/// separate pass, not something to paper over with decoration.
 export function ResearchPulse({ onNavigate, onOpenConversation }: {
   onNavigate: (s: AdminSection) => void
   onOpenConversation?: (conversationId: string) => void
@@ -52,12 +66,14 @@ export function ResearchPulse({ onNavigate, onOpenConversation }: {
     <div className="obs-panel">
       <ResearchNotesPanel addLabel="Eintrag hinzufügen" placeholder="Titel" onOpenConversation={onOpenConversation} />
 
-      <div className="obs-section-label" style={{ marginTop: 8 }}>Simulationen</div>
+      <HudSectionHeader title="Simulationen" />
       <button type="button" className="panel-add-btn" onClick={() => onNavigate('simulationcenter')}>
         → Simulation Center öffnen
       </button>
 
-      <div className="obs-section-label" style={{ marginTop: 24 }}>Blog-Aktivität</div>
+      <div style={{ marginTop: 24 }}>
+        <HudSectionHeader title="Blog-Aktivität" />
+      </div>
       <BlogActivity />
     </div>
   )

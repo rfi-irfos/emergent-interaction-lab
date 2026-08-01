@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAdminFetch } from '../../lib/adminApi'
 import { hudStagger } from '../../lib/hudStagger'
 import { HudSkeleton } from './HudSkeleton'
-import { useHeaderActions } from './Hud'
+import { HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
 import { ExportButtons } from './ExportButtons'
 import { STATUS_ACCENT } from './registry'
 
@@ -220,13 +220,14 @@ export function SystemState() {
     <div className="obs-panel">
       {hasAlerts && (
         <>
-          <div className="obs-section-label">Signale mit erhöhter Aufmerksamkeit</div>
+          <HudSectionHeader title="Signale mit erhöhter Aufmerksamkeit" />
           <div className="obs-card" style={{ marginBottom: 22 }}>
             {emergingSignals.map(s => <AlertRow key={s.id} signal={s} kind="signal" onOpen={setExpandedSignal} />)}
             {diagAlerts.map((a, i) => <AlertRow key={`diag-${i}`} signal={{ id: `diag-${i}`, pattern: a.label, status: 'technical', confidence: '—', evolution: '—', observation: a.label, scope: a.detail, created_at: '—' }} kind="technical" onOpen={setExpandedSignal} />)}
           </div>
         </>
       )}
+      <HudSectionHeader title="Beobachtete Systeme" sub="Ein Narrativ pro Bereich, aus dem jeweils neuesten Signal." />
       {signalsLoading && <HudSkeleton variant="list" rows={2} />}
       {signalsError && <div className="obs-card"><div className="obs-empty">Fehler beim Laden.</div></div>}
       {!signalsLoading && !signalsError && states.length === 0 && (
@@ -246,7 +247,7 @@ export function SystemState() {
           >
             <div className="obs-item-title">
               {scope}
-              <span className="obs-pill" style={{ marginLeft: 8, background: 'rgba(59,107,246,.12)', color: 'var(--obs-blue, #3b6bf6)' }}>{countByScope.get(scope)} Beobachtungen</span>
+              <span className="obs-pill" style={{ marginLeft: 8, background: 'color-mix(in srgb, var(--obs-blue) 12%, transparent)', color: 'var(--obs-blue)' }}>{countByScope.get(scope)} Beobachtungen</span>
               <span className="obs-item-more">Details ansehen →</span>
             </div>
             <div className="obs-item-meta">Zustand: {s.status} · zuletzt aktualisiert {s.created_at}</div>
@@ -287,10 +288,25 @@ export function SystemState() {
               <StatusRow label="KI-Anbindung konfiguriert" ok={diag.nvidia_api_key_configured} />
               <StatusRow label="Zugriffsschutz aktiv" ok={diag.chat_secret_configured} />
             </div>
-            <div className="obs-grid">
-              <div className="obs-stat c-purple"><div className="obs-stat-value">{diag.agent_tool_calls_7d}</div><div className="obs-stat-label">Jarvis-Aufrufe (7 T.)</div></div>
-              <div className={`obs-stat ${diag.agent_tool_call_errors_7d > 0 ? 'c-red' : 'c-green'}`}><div className="obs-stat-value">{diag.agent_tool_call_errors_7d}</div><div className="obs-stat-label">Fehler (7 T.)</div></div>
-            </div>
+            {/* Real meaning drives the accent, not a decorative purple/red/
+                green rotation: a plain 7-day call count is informational
+                (--sem-info); an error count is only bad news when it's
+                actually non-zero (--sem-danger), otherwise it's the same
+                good-news --sem-success zero as anywhere else in this app —
+                the taxonomy fix this whole module's own doc comment already
+                describes for AlertRow above, extended to these two tiles. */}
+            <HudGrid cols={2}>
+              <HudTile accent="var(--sem-info)">
+                <HudStat value={diag.agent_tool_calls_7d} label="Jarvis-Aufrufe (7 T.)" accent="var(--sem-info)" />
+              </HudTile>
+              <HudTile accent={diag.agent_tool_call_errors_7d > 0 ? 'var(--sem-danger)' : 'var(--sem-success)'}>
+                <HudStat
+                  value={diag.agent_tool_call_errors_7d}
+                  label="Fehler (7 T.)"
+                  accent={diag.agent_tool_call_errors_7d > 0 ? 'var(--sem-danger)' : 'var(--sem-success)'}
+                />
+              </HudTile>
+            </HudGrid>
             {!diag.chat_secret_configured && (
               <div className="obs-warning-note">
                 ▲ Kein Zugriffsschutz aktiv — die Verwaltungsseiten sind aktuell ohne Passwortschutz erreichbar. Das ist für die lokale Entwicklung praktisch gedacht, nicht für den Live-Betrieb.
