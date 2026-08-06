@@ -11,7 +11,6 @@ import { DynamicPage } from './components/DynamicPage'
 import { PageModal } from './components/PageModal'
 import { CertificationPage } from './components/CertificationPage'
 import { BlogPostPage } from './components/BlogPostPage'
-import { WebHubPricing } from './components/WebHubPricing'
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
 const BLOG_PREFIX = '#p/blog/'
@@ -73,6 +72,22 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  // '#p/pricing' used to open a full-page modal (WebHubPricing.tsx, removed
+  // — see docs/superpowers/specs/2026-08-06-webhub-pricing-inline-carousel-design.md).
+  // The real ladder now renders inline in the homepage's #pricing section,
+  // so this hash just scrolls there instead. Guarded on `content` so a cold
+  // page load on a #p/pricing deep link (content still fetching, PublicSite
+  // not mounted yet) waits for content to arrive before trying to scroll.
+  useEffect(() => {
+    if (pageModalSlug !== 'pricing' || !content) return
+    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
+    setPageModalSlug(null)
+    if (window.location.hash.startsWith('#p/')) {
+      window.history.pushState('', document.title, window.location.pathname + window.location.search)
+      setRoute(getRoute(window.location.hash))
+    }
+  }, [pageModalSlug, content])
+
   if (loading) {
     return (
       <div className="loading-screen">
@@ -129,10 +144,6 @@ export default function App() {
   // Lab complaint this file already fixed once. Folded into the same modal
   // system here instead of being a third, differently-behaved route.
   const isCertModal = pageModalSlug === 'zertifizierung'
-  // Pricing moved off the homepage into its own modal too - was a wall of
-  // 23 products scrolled past on every visit; now opt-in via the "Pricing"
-  // nav link, same dark-modal pattern as everything else here.
-  const isPricingModal = pageModalSlug === 'pricing'
   // Blog posts (#p/blog/<id>, tracked via route.blogId - a separate hash
   // prefix from the #p/<slug> pages above, see getRoute()) used to be their
   // own standalone light-themed page too ("leads to this external white
@@ -141,10 +152,10 @@ export default function App() {
   // degradation the DynamicPage branch already has for an unknown slug.
   const blogItem = route.blogId ? (content.news?.items ?? []).find(n => n.id === route.blogId) : undefined
   const isBlogModal = !!blogItem
-  const modalPage = !isCertModal && !isPricingModal && !isBlogModal && pageModalSlug
+  const modalPage = !isCertModal && !isBlogModal && pageModalSlug && pageModalSlug !== 'pricing'
     ? (content.pages ?? []).find(p => p.slug === pageModalSlug)
     : undefined
-  const modalActive = isCertModal || isPricingModal || isBlogModal || !!modalPage
+  const modalActive = isCertModal || isBlogModal || !!modalPage
 
   if (!modalActive && route.pageSlug) {
     const page = (content.pages ?? []).find(p => p.slug === route.pageSlug)
@@ -180,8 +191,6 @@ export default function App() {
       <PublicSite content={content} modalOpen={modalActive} />
       {isCertModal
         ? <CertificationPage content={content} onClose={closeModal} />
-        : isPricingModal
-        ? <WebHubPricing content={content} onClose={closeModal} />
         : isBlogModal && blogItem
         ? <BlogPostPage item={blogItem} content={content} onClose={closeModal} />
         : modalPage && <PageModal page={modalPage} content={content} onClose={closeModal} />}

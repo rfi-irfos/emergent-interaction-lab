@@ -1924,17 +1924,7 @@ button { cursor: pointer; font-family: inherit; }
    eyebrow bar, tight caps tracking, and a reversed (dark-on-light /
    light-on-dark) CTA button per card, same "confident, not friendly" idiom
    as .site-pcard-cta's existing var(--text)-background button. */
-.site-webhub-head { max-width: 720px; margin: 0 auto 44px; text-align: center; }
-.site-webhub-eyebrow {
-  font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--primary); margin-bottom: 10px;
-}
-.site-webhub-intro { font-size: 16px; line-height: 1.75; color: var(--text); opacity: .82; margin-top: 14px; }
 .site-webhub-status { text-align: center; font-size: 14px; color: var(--text-soft); }
-.site-webhub-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); gap: 14px;
-  max-width: 1160px; margin: 0 auto 28px;
-}
 /* Two distinct methodologies (case-intelligence ladder vs. the newer
    Systemaudit ladder) share this product list now — a labelled divider
    between them instead of one flat price-sorted wall, so the two ladders
@@ -2007,21 +1997,6 @@ button { cursor: pointer; font-family: inherit; }
 @media (max-width: 720px) {
   .site-webhub-agents-row { grid-template-columns: 1fr; }
 }
-.site-webhub-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  padding: 16px 16px 14px; display: flex; flex-direction: column; position: relative;
-  min-height: 124px;
-  transition: transform .25s ease, border-color .25s ease;
-}
-.site-webhub-card:hover { transform: translateY(-3px); border-color: var(--primary); }
-@media (prefers-reduced-motion: reduce) { .site-webhub-card:hover { transform: none; } }
-/* Core offer: same card as the rest (var(--surface)), just highlighted. */
-.site-webhub-card.flagship {
-  background: var(--surface);
-  border-color: var(--primary);
-  box-shadow: inset 0 0 0 1px var(--primary), 0 14px 34px -16px rgba(0, 0, 0, .55);
-}
-.site-webhub-card.flagship h3 { color: var(--text); }
 .site-webhub-flag {
   position: absolute; top: -11px; left: 16px; background: var(--primary); color: var(--on-primary);
   font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
@@ -2034,31 +2009,8 @@ button { cursor: pointer; font-family: inherit; }
   letter-spacing: .1em; text-transform: uppercase; color: var(--text-soft);
   border: 1px solid var(--border); border-radius: 5px; padding: 3px 6px; margin-bottom: 8px;
 }
-.site-webhub-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 2px; color: var(--text); line-height: 1.22; }
-/* One-line value preview - was missing entirely, a visitor had to open
-   every single one of 23 detail modals just to find out what any tier
-   actually does ("I have no idea as a customer what this is", flagged
-   live). Same tagline text the detail modal already uses. */
-.site-webhub-card-tagline { font-size: 12.5px; line-height: 1.45; color: var(--text-soft); margin: 0 0 10px; }
 .site-webhub-price { font-size: 18px; font-weight: 900; color: var(--price); margin-top: auto; }
 .site-webhub-per { font-size: 10px; font-weight: 600; opacity: .7; }
-/* Bottom row: basket link (left) + More button (right). */
-.site-webhub-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
-.site-webhub-buy {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 8px; color: var(--accent);
-  border: 1px solid var(--border); background: rgba(52, 225, 255, .05);
-  text-decoration: none; transition: background .15s, border-color .15s;
-}
-.site-webhub-buy:hover { background: rgba(52, 225, 255, .14); border-color: var(--accent); }
-.site-webhub-more {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: transparent; border: 1px solid var(--border); color: var(--text);
-  font: 700 10.5px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  letter-spacing: .06em; text-transform: uppercase; border-radius: 8px; padding: 7px 10px;
-  cursor: pointer; transition: border-color .15s, color .15s;
-}
-.site-webhub-more:hover { border-color: var(--primary); color: var(--primary); }
 
 /* ── modal ── */
 .site-webhub-overlay {
@@ -2077,7 +2029,6 @@ button { cursor: pointer; font-family: inherit; }
   box-shadow: 0 24px 70px -24px rgba(0, 0, 0, .7);
   --text: #e9fbff;
 }
-.site-webhub-modal .site-webhub-chip { margin-bottom: 10px; }
 .site-webhub-modal-name { font-size: 20px; font-weight: 800; margin: 0 0 4px; color: var(--text); }
 .site-webhub-modal-price { font-size: 18px; font-weight: 900; color: var(--price); margin: 0 0 16px; }
 .site-webhub-blk { margin-bottom: 14px; }
@@ -2134,10 +2085,6 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-webhub-consent-cancel:hover { color: var(--text); border-color: var(--text); }
 .site-webhub-consent .site-webhub-buy.big { flex: 2; justify-content: center; margin-top: 0; }
-
-@media (max-width: 640px) {
-  .site-webhub-grid { grid-template-columns: 1fr; }
-}
 
 /* ── JARVIS (legacy, kept for reference) ─────────────────────────────────── */
 /* Amber, not the Live-API badge's green — this is a forward-looking "in

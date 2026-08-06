@@ -6,6 +6,7 @@ import { trackPageView } from '../lib/tracking'
 import { API_BASE } from '../lib/apiBase'
 import { CoEvolutionDiagram } from './CoEvolutionDiagram'
 import { PdfViewerModal } from './PdfViewerModal'
+import { WebHubPricingCarousel } from './WebHubPricingCarousel'
 
 // Generic single-card carousel: one item shown at a time, flip left/right,
 // a slide-in transition each time the active item changes (direction-aware
@@ -1642,20 +1643,21 @@ export function PublicSite({
         )}
 
         {/* ── PRICING ──────────────────────────────────────────────────── */}
-        {pricing?.body && (
-          <section className={reveal("site-section site-pricing")} id="pricing" data-cid="pricing.title">
-            <h2 className="site-section-title">{pricing.title}</h2>
+        {/* Always renders (not gated behind pricing?.body like before) so
+            the real offer ladder can never go silently missing just
+            because the CMS intro text happens to be empty — see
+            docs/superpowers/specs/2026-08-06-webhub-pricing-inline-carousel-design.md. */}
+        <section className={reveal("site-section site-pricing")} id="pricing" data-cid="pricing.title">
+          {pricing?.title && <h2 className="site-section-title">{pricing.title}</h2>}
+          {pricing?.body && (
             <div className="site-pricing-body">
               {pricing.body.split('\n\n').map((para, i) => (
                 <p key={i}>{para}</p>
               ))}
             </div>
-          </section>
-        )}
-
-        {/* WebHub offer ladder moved off the homepage into its own modal
-            (see App.tsx / WebHubPricing.tsx) - opened via the "Pricing" nav
-            link (#p/pricing), not rendered inline here anymore. */}
+          )}
+          <WebHubPricingCarousel content={content} />
+        </section>
 
         {/* ── PAPERS ───────────────────────────────────────────────────── */}
         {(papers?.items?.length ?? 0) > 0 && (

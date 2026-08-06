@@ -2,60 +2,12 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 import { useLang } from '../hooks/useLang'
 import type { SiteContent } from '../types/content'
-
-// The real WebHub service ladder — Laura's own product line, sold through
-// real Stripe Payment Links (see backend/src/billing.rs's
-// seed_webhub_products). Deliberately separate from `.site-pcard` /
-// content.products (unrelated portfolio catalog) and from
-// CertificationPage. Rendered directly on the main site as a tight card
-// wall + themed modal: the card shows only name + price + a basket link +
-// a "more" button; the modal carries the single-language narrative for
-// whichever language the site is currently in (see DETAIL below) so the
-// ladder reads as ONE method scoped to layers (Intake → Cluster → Derive
-// → Reconstruct → Design → Build → Operate) — never "mysterious option A
-// vs Z".
-interface PublicProduct {
-  name: string
-  description: string
-  description_de: string | null
-  price_cents: number
-  currency: string
-  mode: string
-  recurring_interval: string | null
-  payment_link_url: string
-  category: string
-}
-
-function formatPrice(cents: number, currency: string, lang: 'en' | 'de'): string {
-  return new Intl.NumberFormat(lang === 'de' ? 'de-AT' : 'en-IE', {
-    style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 0,
-  }).format(cents / 100)
-}
+import { LENS_ORDER, SUBGROUP_ORDER, lensRank, subgroupRank, type SubgroupKey } from '../lib/pricingTiers'
+import { PricingTierCarousel, type PricingTier } from './PricingTierCarousel'
 
 // Core offer — called out visually; if renamed/removed upstream it simply
 // stops matching and no card gets the badge. Nothing breaks.
 const FLAGSHIP_NAME = 'Emergent Case Intelligence Sprint'
-
-// (no bestseller highlight — pricing is not a sales funnel)
-
-// Minimalist inline SVGs — never emojis.
-const BASKET = (
-  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M5 9h14l-1.2 10.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8L5 9z" />
-    <path d="M9 9 10.5 4" /><path d="M15 9 13.5 4" />
-    <path d="M9.5 13v3" /><path d="M14.5 13v3" />
-  </svg>
-)
-const PLUS = (
-  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-    <path d="M12 5v14M5 12h14" />
-  </svg>
-)
-const CROSS = (
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <path d="M6 6 L18 18 M18 6 L6 18" />
-  </svg>
-)
 
 // Phase chip + single-language-at-a-time narrative, keyed by product name.
 // Deliberately outcome-only: what changes for the client / what they get,
@@ -576,94 +528,28 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   },
 }
 
-// Three "review perspectives" (Prüfperspektiven) the offer ladder is organized
-// by, each price-sorted within itself. Anything not in a set defaults to the
-// last (Systemaudit) so a new admin-added product still shows up somewhere
-// sensible instead of silently vanishing. The agent products (Call Laura /
-// Lauras Team / Jarvis) are NOT in this grid — they're rendered as a separate
-// "emerging from the review perspectives" strip, since they are products of
-// the method, not a service you buy by the hour.
-//
-// Corrected 2026-07-13 against the REAL live product names from
-// /api/billing/public-products (verified via curl, not guessed) - the
-// previous sets used placeholder names ('Vollständige Rekonstruktion',
-// 'Case Intake & Triage', etc.) that matched ZERO real products. Rekonstruktion
-// was rendering completely empty and Analysen barely populated, so nearly
-// every real product fell through to the Systemaudit default - the exact
-// "everything bundled into one mess" bug reported live. Domains now assigned
-// by what each product actually does: Rekonstruktion = turning raw/messy case
-// material into structure (the earliest stage), Analysen = deeper analytical
-// read (competitive intelligence, deriving frameworks, the core Case
-// Intelligence offer - explicitly "folds into Analysen" per Laura's own
-// framing), Systemaudit = everything about auditing, building, or
-// maintaining a system (still the largest group - that's a real reflection
-// of the catalog, not a classification bug).
-const REKONSTRUKTION_NAMES = new Set([
-  'Case Intake Scan', 'Mangelcluster Sprint',
-])
-const ANALYSEN_NAMES = new Set([
-  'Market & Competitor Intelligence', 'Framework Magnification', 'Emergent Case Intelligence Sprint',
-])
-const SYSTEMAUDIT_NAMES = new Set([
-  'Multi-Agent System Design', 'Implementation Build', 'Retainer / Monitoring', 'Framework Update',
-  'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
-  'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview',
-  'Framework Design from Analysis', 'System Design & Deployment', 'Watchtower Retainment',
-  'Multiagent System Coordination', 'Further Development',
-])
-
-// Systemaudit alone is 18 products - flagged live as still too much to take
-// in even under one clear label ("bündeln noch für mehr Visibility"). Split
-// into its own 3 sub-bundles, each with a smaller secondary header inside
-// the Systemaudit group (see SUBGROUP_ORDER below): the *review family
-// (diagnostic reads), system design/build (the bigger build-out tiers), and
-// ongoing/retainer work (ships as a recurring service, not a one-off).
-type SubgroupKey = 'reviews' | 'systemDesign' | 'ongoing'
-const SUBGROUP_ORDER: SubgroupKey[] = ['reviews', 'systemDesign', 'ongoing']
-const SUBGROUP_SETS: Record<SubgroupKey, Set<string>> = {
-  reviews: new Set([
-    'Systemaudit', 'Rollenreview', 'Prozessreview', 'Root Level Review', 'Schnittstellenreview',
-    'Betriebsreview', 'Verhaltensreview', 'Organisationsreview', 'Produktreview',
-  ]),
-  systemDesign: new Set([
-    'Multi-Agent System Design', 'Framework Design from Analysis', 'Implementation Build', 'System Design & Deployment',
-  ]),
-  ongoing: new Set([
-    'Retainer / Monitoring', 'Framework Update', 'Watchtower Retainment', 'Multiagent System Coordination', 'Further Development',
-  ]),
-}
-function subgroupRank(name: string): number {
-  for (let i = 0; i < SUBGROUP_ORDER.length; i++) {
-    if (SUBGROUP_SETS[SUBGROUP_ORDER[i]].has(name)) return i
-  }
-  return SUBGROUP_ORDER.length - 1
+interface PublicProduct {
+  name: string
+  description: string
+  description_de: string | null
+  price_cents: number
+  currency: string
+  mode: string
+  recurring_interval: string | null
+  payment_link_url: string
+  category: string
 }
 
-// Order the groups render in: Rekonstruktion → Analysen → Systemaudit.
-type LensKey = 'rekonstruktion' | 'analysen' | 'systemaudit'
-const LENS_ORDER: LensKey[] = ['rekonstruktion', 'analysen', 'systemaudit']
-const LENS_SETS: Record<LensKey, Set<string>> = {
-  rekonstruktion: REKONSTRUKTION_NAMES,
-  analysen: ANALYSEN_NAMES,
-  systemaudit: SYSTEMAUDIT_NAMES,
-}
-// Rank a product into its lens group (0..n-1); unknown products fall into
-// the last group (Systemaudit) as a sensible default.
-function lensRank(name: string): number {
-  for (let i = 0; i < LENS_ORDER.length; i++) {
-    if (LENS_SETS[LENS_ORDER[i]].has(name)) return i
-  }
-  return LENS_ORDER.length - 1
+function formatPrice(cents: number, currency: string, lang: 'en' | 'de'): string {
+  return new Intl.NumberFormat(lang === 'de' ? 'de-AT' : 'en-IE', {
+    style: 'currency', currency: currency.toUpperCase(), maximumFractionDigits: 0,
+  }).format(cents / 100)
 }
 
 const COPY = {
   en: {
-    eyebrow: 'Offer',
-    title: "Your case isn't random. It has a logic. I find it.",
-    intro: "Bring a complex case, a set of documents, case-file access, or a conversation history. I reconstruct what it actually is: the gaps, the contradictions, the recurring patterns - and the logic a framework or agent system gets built from. Not a vibe check. Structure. Your case is analysed through my own research perspective - I'm studying emergence and building agents from it, not ingesting it as generic company data.",
     flagshipBadge: 'Core offer',
     recurring: 'month',
-    more: 'More',
     loading: 'Loading the offer ladder…',
     error: 'Could not load pricing right now - reach out directly instead.',
     whatLabel: 'What this is',
@@ -687,12 +573,8 @@ const COPY = {
     continueToStripe: 'Continue to Stripe →',
   },
   de: {
-    eyebrow: 'Angebot',
-    title: 'Dein Fall ist kein Zufall - er hat eine Logik. Ich finde sie.',
-    intro: 'Du bringst einen komplexen Fall, eine Dokumentation, Akteneinsicht oder einen Interaktionsverlauf. Ich rekonstruiere daraus, was er wirklich ist: Mängel, Widersprüche, Lücken - und die Logik, aus der sich ein Framework oder Agentensystem ableiten lässt. Kein Bauchgefühl. Struktur. Dein Fall wird durch meine eigene Forschungs-Prüfperspektive analysiert - ich erforsche Emergenz und baue Agenten daraus, ich nehme ihn nicht als generische Unternehmensdaten auf.',
     flagshipBadge: 'Kernangebot',
     recurring: 'Monat',
-    more: 'Mehr',
     loading: 'Angebotsleiter wird geladen…',
     error: 'Preise konnten gerade nicht geladen werden - melde dich direkt.',
     whatLabel: 'Was das ist',
@@ -717,24 +599,19 @@ const COPY = {
   },
 } as const
 
-export function WebHubPricing({ content, onClose }: { content: SiteContent; onClose: () => void }) {
+export function WebHubPricingCarousel({ content }: { content: SiteContent }) {
   const { lang } = useLang()
   const c = COPY[lang]
   const [products, setProducts] = useState<PublicProduct[] | null>(null)
   const [error, setError] = useState(false)
-  const [active, setActive] = useState<PublicProduct | null>(null)
   // Agents (Call Laura / Lauras Team / Jarvis) emerge from the method — shown
   // as a separate strip, not in the buyable price grid.
   const agents = (content.productsBorn?.items ?? []).filter(a =>
     ['born-jarvis', 'born-calllaura', 'born-laurateam'].includes(a.id),
   )
+
   // Legal consent gate before any Stripe redirect — mirrors rfi-irfos.com's
-  // own B2B-checkout-confirmation modal (Abmahnung-proofing: self-declared
-  // commercial customer excludes the KSchG consumer-protection Widerrufsrecht
-  // per §1(2) KSchG / §18(1)(1) FAGG, matched by AgbContent in LegalPage.tsx).
-  // Holds the product pending checkout; both checkboxes reset whenever a new
-  // checkout is opened so consent is given fresh per purchase, not carried
-  // over from an earlier one.
+  // own B2B-checkout-confirmation modal. Unchanged from the old modal.
   const [checkoutTarget, setCheckoutTarget] = useState<PublicProduct | null>(null)
   const [b2bChecked, setB2bChecked] = useState(false)
   const [agbChecked, setAgbChecked] = useState(false)
@@ -756,9 +633,6 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
       .then(res => { if (!res.ok) throw new Error(String(res.status)); return res.json() })
       .then((data: PublicProduct[]) => {
         if (cancelled) return
-        // Group order: Rekonstruktion → Analysen → Systemaudit (see LENS_ORDER).
-        // Within each group, price-sorted. A product not in any lens set falls
-        // into the last group (Systemaudit) as a sensible default.
         const sorted = [...data.filter(p => p.category !== 'certification')].sort((a, b) => {
           const ra = lensRank(a.name); const rb = lensRank(b.name)
           return ra !== rb ? ra - rb : a.price_cents - b.price_cents
@@ -769,90 +643,57 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
     return () => { cancelled = true }
   }, [])
 
-  // Close on Escape — checkout consent takes priority over the detail
-  // modal, which takes priority over closing the whole pricing modal
-  // itself (was homepage-only before; now opened via its own #p/pricing
-  // route, same dark-modal shell as Research/About the Lab).
+  // Only the checkout consent overlay needs to lock body scroll and handle
+  // Escape now — the old modal locked scroll unconditionally because the
+  // whole component WAS a full-page overlay; as inline homepage content it
+  // must let the page scroll normally except while the consent popup is
+  // actually open.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      if (checkoutTarget) setCheckoutTarget(null)
-      else if (active) setActive(null)
-      else onClose()
+      if (e.key === 'Escape' && checkoutTarget) setCheckoutTarget(null)
     }
     window.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
-    }
-  }, [active, checkoutTarget, onClose])
+    document.body.style.overflow = checkoutTarget ? 'hidden' : ''
+    return () => window.removeEventListener('keydown', onKey)
+  }, [checkoutTarget])
+
+  const buildTier = (p: PublicProduct): PricingTier => ({
+    key: p.name,
+    name: p.name,
+    phase: DETAIL[p.name]?.phase ?? p.category,
+    tagline: DETAIL[p.name]?.[lang]?.tagline ?? (lang === 'en' ? p.description : (p.description_de ?? p.description)),
+    points: DETAIL[p.name]?.[lang]?.points ?? [],
+    price: formatPrice(p.price_cents, p.currency, lang),
+    perLabel: p.mode === 'subscription' ? `/ ${c.recurring}` : undefined,
+    highlight: p.name === FLAGSHIP_NAME,
+    isFlagship: p.name === FLAGSHIP_NAME,
+  })
 
   if (!error && products !== null && products.length === 0) return null
 
   return (
-    <div
-      className="page-modal-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={c.title}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div className="page-modal-panel page-modal-panel--wide">
-        <button type="button" className="page-modal-x" aria-label="Schließen" onClick={onClose}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6 L18 18 M18 6 L6 18" /></svg>
-        </button>
-        <div className="page-modal-scroll site-webhub-pricing" data-native-scroll data-cid="webhub-pricing.title">
-      <div className="site-webhub-head">
-        <div className="site-webhub-eyebrow">{c.eyebrow}</div>
-        <h2 className="page-modal-title">{c.title}</h2>
-        <p className="site-webhub-intro">{c.intro}</p>
-      </div>
-
+    <div className="site-webhub-pricing">
       {products === null && !error && <p className="site-webhub-status">{c.loading}</p>}
       {error && <p className="site-webhub-status">{c.error}</p>}
 
       {products !== null && products.length > 0 && (() => {
-        const renderCard = (p: PublicProduct, i: number) => {
-          const isFlagship = p.name === FLAGSHIP_NAME
-          // The card previously showed only a name and a price - a customer
-          // had to open all 23 detail modals one at a time just to find out
-          // what any of them actually does ("ich hab als Kunde garkein Plan
-          // was das soll", flagged live). The tagline already exists (see
-          // DETAIL above, written specifically to be the differentiator,
-          // not a restatement of the name) - just wasn't shown until now.
-          const tagline = DETAIL[p.name]?.[lang]?.tagline
-          return (
-            <div key={i} className={`site-webhub-card${isFlagship ? ' flagship' : ''}`}>
-              {isFlagship && <div className="site-webhub-flag">{c.flagshipBadge}</div>}
-              <h3>{p.name}</h3>
-              {tagline && <p className="site-webhub-card-tagline">{tagline}</p>}
-              <div className="site-webhub-price">
-                {formatPrice(p.price_cents, p.currency, lang)}
-                {p.mode === 'subscription' && <span className="site-webhub-per"> / {c.recurring}</span>}
-              </div>
-              <div className="site-webhub-row">
-                <button
-                  type="button"
-                  className="site-webhub-buy"
-                  title={`${c.buy}: ${p.name}`}
-                  aria-label={`${c.buy}: ${p.name}`}
-                  onClick={() => openCheckout(p)}
-                >
-                  {BASKET}
-                </button>
-                <button
-                  type="button"
-                  className="site-webhub-more"
-                  onClick={() => setActive(p)}
-                  aria-haspopup="dialog"
-                >
-                  {c.more} {PLUS}
-                </button>
-              </div>
-            </div>
-          )
-        }
+        const renderGroup = (key: string, label: string, items: PublicProduct[]) => (
+          <div key={key} className="site-webhub-group-panel">
+            <div className="site-webhub-group-label">{label}</div>
+            <PricingTierCarousel
+              tiers={items.map(buildTier)}
+              whatLabel={c.whatLabel}
+              youGetLabel={c.youGetLabel}
+              buyLabel={c.buy}
+              flagshipBadge={c.flagshipBadge}
+              onBuy={tier => {
+                const p = items.find(p => p.name === tier.name)
+                if (p) openCheckout(p)
+              }}
+            />
+          </div>
+        )
+
         return (
           <>
             {LENS_ORDER.map((lens, li) => {
@@ -861,11 +702,6 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
               const label = lens === 'rekonstruktion' ? c.groupRekonstruktion
                 : lens === 'analysen' ? c.groupAnalysen
                 : c.groupSystemaudit
-              // Systemaudit alone is 18 products - one flat grid under one
-              // label still read as a wall even with the other two domains
-              // correctly separated out. Split into its own 3 sub-bundles
-              // (reviews / system design & build / ongoing), each with a
-              // smaller secondary header, instead of one undifferentiated grid.
               if (lens === 'systemaudit') {
                 const subgroups = SUBGROUP_ORDER.map((sg, si) => ({
                   sg,
@@ -873,26 +709,11 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
                 })).filter(g => g.items.length > 0)
                 const subLabel = (sg: SubgroupKey) =>
                   sg === 'reviews' ? c.subgroupReviews : sg === 'systemDesign' ? c.subgroupSystemDesign : c.subgroupOngoing
-                return (
-                  <div key={lens}>
-                    {li > 0 && <div className="site-webhub-group-divider" />}
-                    <div className="site-webhub-group-label">{label}</div>
-                    {subgroups.map(({ sg, items }) => (
-                      <div key={sg} className="site-webhub-subgroup">
-                        <div className="site-webhub-subgroup-label">{subLabel(sg)}</div>
-                        <div className="site-webhub-grid">{items.map(renderCard)}</div>
-                      </div>
-                    ))}
-                  </div>
+                return subgroups.map(({ sg, items }) =>
+                  renderGroup(`${lens}-${sg}`, `${label} — ${subLabel(sg)}`, items),
                 )
               }
-              return (
-                <div key={lens}>
-                  {li > 0 && <div className="site-webhub-group-divider" />}
-                  <div className="site-webhub-group-label">{label}</div>
-                  <div className="site-webhub-grid">{group.map(renderCard)}</div>
-                </div>
-              )
+              return renderGroup(lens, label, group)
             })}
             {agents.length > 0 && (
               <div className="site-webhub-agents">
@@ -914,65 +735,6 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
         )
       })()}
 
-      {active && (
-        <div
-          className="site-webhub-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label={active.name}
-          onClick={(e) => { if (e.target === e.currentTarget) setActive(null) }}
-        >
-          <div className="site-webhub-modal">
-            <button type="button" className="site-webhub-x" aria-label={c.close} onClick={() => setActive(null)}>
-              {CROSS}
-            </button>
-            <span className="site-webhub-chip">{DETAIL[active.name]?.phase ?? active.category}</span>
-            <h3 className="site-webhub-modal-name">{active.name}</h3>
-            <div className="site-webhub-modal-price">
-              {formatPrice(active.price_cents, active.currency, lang)}
-              {active.mode === 'subscription' && <span className="site-webhub-per"> / {c.recurring}</span>}
-            </div>
-
-            {(() => {
-              const detail = DETAIL[active.name]?.[lang]
-              if (!detail) {
-                // Fallback for a product not yet in DETAIL (e.g. freshly
-                // added via the admin panel) — the plain DB description,
-                // no bullets to invent.
-                return (
-                  <div className="site-webhub-blk">
-                    <div className="site-webhub-lbl">{c.whatLabel}</div>
-                    <div className="site-webhub-txt">
-                      {lang === 'en' ? active.description : (active.description_de ?? active.description)}
-                    </div>
-                  </div>
-                )
-              }
-              return (
-                <>
-                  <div className="site-webhub-blk">
-                    <div className="site-webhub-lbl">{c.whatLabel}</div>
-                    <div className="site-webhub-txt">{detail.tagline}</div>
-                  </div>
-                  {detail.points.length > 0 && (
-                    <div className="site-webhub-blk">
-                      <div className="site-webhub-lbl">{c.youGetLabel}</div>
-                      <ul className="site-webhub-points">
-                        {detail.points.map((pt, i) => <li key={i}>{pt}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )
-            })()}
-
-            <button type="button" className="site-webhub-buy big" onClick={() => openCheckout(active)}>
-              {BASKET}<span>{c.buy}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {checkoutTarget && (
         <div
           className="site-webhub-overlay"
@@ -983,7 +745,9 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
         >
           <div className="site-webhub-modal site-webhub-consent">
             <button type="button" className="site-webhub-x" aria-label={c.close} onClick={() => setCheckoutTarget(null)}>
-              {CROSS}
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6 L18 18 M18 6 L6 18" />
+              </svg>
             </button>
             <div className="site-webhub-lbl">{c.consentTitle}</div>
             <h3 className="site-webhub-modal-name">{checkoutTarget.name}</h3>
@@ -1015,8 +779,6 @@ export function WebHubPricing({ content, onClose }: { content: SiteContent; onCl
           </div>
         </div>
       )}
-        </div>
-      </div>
     </div>
   )
 }
