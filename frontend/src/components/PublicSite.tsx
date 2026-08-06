@@ -1340,13 +1340,13 @@ export function PublicSite({
           return (
             <section className={reveal("site-lauras-team")} id="lauras-team">
               <div className="site-lauras-team-inner">
+                <CredPills items={content.creds} tone="light" />
                 <Reveal from="bottom">
                   <h2 className="site-lauras-team-title" data-cid="about.laurasTeam.title">{lt.title}</h2>
                 </Reveal>
                 <Reveal from="bottom" delay={1}>
                   <p className="site-lauras-team-body" data-cid="about.laurasTeam.body">{lt.body}</p>
                 </Reveal>
-                <CredPills items={content.creds} tone="light" />
               </div>
             </section>
           )
@@ -1376,7 +1376,6 @@ export function PublicSite({
             <Reveal from="bottom"><h2 className="site-section-title">{content.protocol.title}</h2></Reveal>
             <Reveal from="scale" delay={2}><CoEvolutionDiagram nodes={content.protocol.nodes} intro={content.protocol.intro} /></Reveal>
             {content.protocol.closing && <Reveal from="bottom" delay={3}><p className="site-protocol-closing">{content.protocol.closing}</p></Reveal>}
-            <CredPills items={content.creds} tone="light" />
           </section>
         ) : null}
 
