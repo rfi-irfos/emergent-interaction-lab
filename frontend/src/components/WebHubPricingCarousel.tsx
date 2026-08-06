@@ -83,7 +83,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
     de: {
       tagline: 'Dieselbe beobachtende Methode, die ich auf einen Fall anwende - hier nach außen auf deinen Markt gerichtet. Du bekommst eine echte Standortbestimmung, keine Folie voller Logos.',
       points: [
-        'Du erfährst, wer tatsächlich in deinem Feld agiert, und wie positioniert und bepreist.',
+        'Du erfährst, wer tatsächlich in deinem Feld agiert, und wie diese Anbieter positioniert und bepreist sind.',
         'Ich liefere eine strukturierte, evidenzbasierte Lesart des echten Wettbewerbsfelds, kein Template-SWOT.',
         'Die Lücken und Chancen, die es wirklich wert sind, verfolgt zu werden, werden konkret benannt.',
         'Du bekommst eine Landkarte zum Navigieren, keinen Bericht zum Abheften.',
@@ -221,7 +221,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
     en: {
       tagline: 'I look at how your system actually behaves, not what the org chart claims it does. That gap is usually where the real cost sits.',
       points: [
-        'I diagnose across system, organisation, process, product, and interaction together.',
+        'I diagnose system, organisation, process, product, and interaction together, not each in isolation.',
         'Concrete friction points get named and traced back to where they actually occur.',
         'You get an agent and automation model for what should keep watching this going forward.',
       ],
@@ -229,7 +229,7 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
     de: {
       tagline: 'Ich schau mir an, wie dein System wirklich funktioniert, nicht, was das Organigramm behauptet. Genau in dieser Lücke steckt meistens der echte Preis.',
       points: [
-        'Ich diagnostiziere über System, Organisation, Prozess, Produkt und Interaktion hinweg, zusammen.',
+        'Ich diagnostiziere System, Organisation, Prozess, Produkt und Interaktion gemeinsam, nicht jedes für sich.',
         'Konkrete Reibungspunkte werden benannt und dorthin zurückverfolgt, wo sie tatsächlich auftreten.',
         'Du bekommst ein Agenten- und Automatisierungsmodell für die künftige Überwachung.',
       ],
@@ -392,137 +392,137 @@ const DETAIL: Record<string, { phase: string; en: DetailLang; de: DetailLang }> 
   'Framework Design from Analysis': {
     phase: 'Design',
     en: {
-      tagline: 'Translates a diagnosis into a concrete, build-ready design - not another report to file away.',
+      tagline: 'I translate a diagnosis into a concrete, build-ready design. Not another report to file away.',
       points: [
-        'Agent roles and check rules specified',
-        'Control logic and interfaces designed explicitly',
-        'Safety and alignment mechanisms built into the design itself',
+        'You get agent roles and check rules, specified in detail.',
+        'I design the control logic and the interfaces explicitly, not as an afterthought.',
+        'Safety and alignment mechanisms are built into the design itself, not added on top.',
       ],
     },
     de: {
-      tagline: 'Übersetzt eine Diagnose in ein konkretes, baureifes Design - keinen weiteren Bericht zum Abheften.',
+      tagline: 'Ich übersetze eine Diagnose in ein konkretes, baureifes Design. Keinen weiteren Bericht zum Abheften.',
       points: [
-        'Agentenrollen und Prüfregeln festgelegt',
-        'Kontrolllogik und Schnittstellen explizit entworfen',
-        'Sicherheits- und Ausrichtungsmechanismen im Design selbst verankert',
+        'Du bekommst Agentenrollen und Prüfregeln, im Detail festgelegt.',
+        'Ich entwerfe die Kontrolllogik und die Schnittstellen explizit, nicht nachträglich.',
+        'Sicherheits- und Ausrichtungsmechanismen sind im Design selbst verankert, nicht aufgesetzt.',
       ],
     },
   },
   'System Design & Deployment': {
     phase: 'Build',
     en: {
-      tagline: 'Built. Running. Live. Infrastructure, agents, monitoring - not a slide.',
+      tagline: 'Built. Running. Live. You get infrastructure, agents, and monitoring, not a slide deck.',
       points: [
-        'Infrastructure and agent logic implemented',
-        'Monitoring and interfaces wired up',
-        'A working system handed over, not a spec waiting on a second vendor',
+        'I implement the infrastructure and the agent logic myself.',
+        'Monitoring and interfaces are wired up as part of the build.',
+        'You get a working system handed over, not a spec still waiting on a second vendor.',
       ],
     },
     de: {
-      tagline: 'Gebaut. Im Betrieb. Live. Infrastruktur, Agenten, Monitoring - keine Folie.',
+      tagline: 'Gebaut. Im Betrieb. Live. Du bekommst Infrastruktur, Agenten und Monitoring, keine Folie.',
       points: [
-        'Infrastruktur und Agentenlogik implementiert',
-        'Monitoring und Schnittstellen verdrahtet',
-        'Ein funktionierendes System übergeben, keine Spezifikation, die auf einen zweiten Dienstleister wartet',
+        'Ich implementiere die Infrastruktur und die Agentenlogik selbst.',
+        'Monitoring und Schnittstellen werden im Rahmen des Builds verdrahtet.',
+        'Du bekommst ein funktionierendes System übergeben, keine Spezifikation, die auf einen zweiten Dienstleister wartet.',
       ],
     },
   },
   'Watchtower Retainment': {
     phase: 'License',
     en: {
-      tagline: 'A monthly license to keep the system, its agents, and its check routines alive and current.',
+      tagline: "A monthly license to keep the system, its agents, and its check routines alive. I'm the one keeping it current.",
       points: [
-        'Ongoing usage rights for the deployed system and its agents',
-        'Regular care and adjustment as things change',
-        'Not a one-off delivered and abandoned',
+        'You get ongoing usage rights for the deployed system and its agents.',
+        'I take care of it regularly, and adjust it as things change.',
+        "It's not a one-off, delivered and then abandoned.",
       ],
     },
     de: {
-      tagline: 'Eine monatliche Lizenz, um System, Agenten und Prüfroutinen am Leben und aktuell zu halten.',
+      tagline: 'Eine monatliche Lizenz, um System, Agenten und Prüfroutinen am Leben zu halten. Ich bin diejenige, die dranbleibt.',
       points: [
-        'Laufendes Nutzungsrecht für das ausgerollte System und seine Agenten',
-        'Regelmäßige Pflege und Anpassung, wenn sich Dinge ändern',
-        'Kein Einmalprodukt, das danach vergessen wird',
+        'Du bekommst laufendes Nutzungsrecht für das ausgerollte System und seine Agenten.',
+        'Ich kümmere mich regelmäßig darum und passe an, wenn sich Dinge ändern.',
+        'Das ist kein Einmalprodukt, das geliefert und dann vergessen wird.',
       ],
     },
   },
   'Multiagent System Coordination': {
     phase: 'Operate',
     en: {
-      tagline: 'The agent family actually watching the system every month, not sitting idle after handover.',
+      tagline: "The agent family actually watches your system every month. It doesn't sit idle after handover.",
       points: [
-        'Continuous automated monitoring and evaluation',
-        'Deviations caught and flagged for a human look',
-        'Monthly operation of the full agent family',
+        'The agents run continuous automated monitoring and evaluation.',
+        'Deviations get caught and flagged for a human to look at.',
+        'You get the full agent family in operation, every month.',
       ],
     },
     de: {
-      tagline: 'Die Agenten-Familie, die das System jeden Monat tatsächlich im Blick behält - statt nach der Übergabe stillzustehen.',
+      tagline: 'Die Agenten-Familie behält dein System jeden Monat tatsächlich im Blick. Sie steht nach der Übergabe nicht still.',
       points: [
-        'Laufende automatisierte Überwachung und Auswertung',
-        'Abweichungen erkannt und für einen menschlichen Blick markiert',
-        'Monatlicher Betrieb der gesamten Agenten-Familie',
+        'Die Agenten überwachen und werten laufend automatisiert aus.',
+        'Abweichungen werden erkannt und für einen menschlichen Blick markiert.',
+        'Du bekommst die gesamte Agenten-Familie im monatlichen Betrieb.',
       ],
     },
   },
   'Further Development': {
     phase: 'Maintain',
     en: {
-      tagline: 'The system kept current as your case or organisation moves, instead of quietly drifting out of date.',
+      tagline: "I keep the system current as your case or organisation moves. It doesn't quietly drift out of date.",
       points: [
-        'Monthly adjustments as things change',
-        'Framework and agent updates rolled in as needed',
-        'No re-audit from scratch each time - continuity, not restart',
+        'I make monthly adjustments as things change.',
+        'Framework and agent updates get rolled in as needed.',
+        "There's no re-audit from scratch each time. It's continuity, not a restart.",
       ],
     },
     de: {
-      tagline: 'Das System bleibt aktuell, während sich dein Fall oder deine Organisation weiterentwickelt - statt still zu veralten.',
+      tagline: 'Ich halte das System aktuell, während sich dein Fall oder deine Organisation weiterentwickelt. Es veraltet nicht still vor sich hin.',
       points: [
-        'Monatliche Anpassungen, wenn sich Dinge ändern',
-        'Framework- und Agenten-Updates nach Bedarf eingespielt',
-        'Kein Re-Audit von vorn bei jedem Mal - Kontinuität statt Neustart',
+        'Ich passe monatlich an, wenn sich Dinge ändern.',
+        'Framework- und Agenten-Updates spiele ich nach Bedarf ein.',
+        'Kein Re-Audit von vorn bei jedem Mal. Das ist Kontinuität, kein Neustart.',
       ],
     },
   },
   'Behavior Analysis': {
     phase: 'Review',
     en: {
-      tagline: 'A read on how behavior actually shifts under sustained interaction - measured as a trend, never dressed up as prediction.',
+      tagline: "I read how behavior actually shifts under sustained interaction. It's measured as a trend, never dressed up as a prediction.",
       points: [
-        'Tool-usage patterns and how they change over time, reconstructed from logged interaction',
-        'Tone, confidence, and decision shifts tracked against the real record',
-        'An honest trend read - increasing, decreasing, or steady - labeled as a trend, not a forecast',
-        'Where a shift is worth watching before it becomes a problem',
+        'You get tool-usage patterns and how they change over time, reconstructed from logged interaction.',
+        'Tone, confidence, and decision shifts get tracked against the real record.',
+        'The trend - increasing, decreasing, or steady - is labeled honestly as a trend, not a forecast.',
+        'I flag where a shift is worth watching before it becomes a problem.',
       ],
     },
     de: {
-      tagline: 'Ein Read, wie sich Verhalten unter anhaltender Interaktion tatsächlich verschiebt - als Trend gemessen, nie als Vorhersage verkauft.',
+      tagline: 'Ich lese, wie sich Verhalten unter anhaltender Interaktion tatsächlich verschiebt. Gemessen wird das als Trend, nie als Vorhersage verkauft.',
       points: [
-        'Werkzeugnutzungsmuster und wie sie sich über Zeit verändern, rekonstruiert aus protokollierter Interaktion',
-        'Tonfall-, Sicherheits- und Entscheidungsverschiebungen, verfolgt anhand des echten Records',
-        'Ein ehrlicher Trend-Read - steigend, fallend oder stabil - als Trend markiert, nicht als Prognose',
-        'Wo sich eine Verschiebung zu beobachten lohnt, bevor sie zum Problem wird',
+        'Du bekommst Werkzeugnutzungsmuster und wie sie sich über Zeit verändern, rekonstruiert aus protokollierter Interaktion.',
+        'Tonfall-, Sicherheits- und Entscheidungsverschiebungen werden anhand des echten Records verfolgt.',
+        'Der Trend - steigend, fallend oder stabil - wird ehrlich als Trend markiert, nicht als Prognose.',
+        'Ich markiere, wo sich eine Verschiebung zu beobachten lohnt, bevor sie zum Problem wird.',
       ],
     },
   },
   'Behavior Model': {
     phase: 'Review',
     en: {
-      tagline: 'The behavioral pattern, formalized - a working model you can test, hand over, and build on, not a slide.',
+      tagline: 'I formalize the behavioral pattern. You get a working model you can test, hand over, and build on, not a slide.',
       points: [
-        'The recurring behavior pattern extracted and written down explicitly',
-        'A runnable model you can test against new data',
-        'Edge cases and where the model breaks, stated up front',
-        'Something you can hand to a team or an agent system as a spec',
+        'I extract the recurring behavior pattern and write it down explicitly.',
+        'You get a runnable model you can test against new data.',
+        'I state the edge cases and where the model breaks, up front.',
+        'You get something you can hand to a team or an agent system as a spec.',
       ],
     },
     de: {
-      tagline: 'Das Verhaltensmuster, formalisiert - ein lauffähiges Modell, das du testen, übergeben und weiterbauen kannst, keine Slide.',
+      tagline: 'Ich formalisiere das Verhaltensmuster. Du bekommst ein lauffähiges Modell, das du testen, übergeben und weiterbauen kannst, keine Slide.',
       points: [
-        'Das wiederkehrende Verhaltensmuster extrahiert und explizit aufgeschrieben',
-        'Ein lauffähiges Modell, das du gegen neue Daten testen kannst',
-        'Randfälle und wo das Modell bricht, von vornherein benannt',
-        'Etwas, das du einem Team oder einem Agentensystem als Spezifikation übergeben kannst',
+        'Ich extrahiere das wiederkehrende Verhaltensmuster und schreibe es explizit auf.',
+        'Du bekommst ein lauffähiges Modell, das du gegen neue Daten testen kannst.',
+        'Ich benenne die Randfälle und wo das Modell bricht, von vornherein.',
+        'Du bekommst etwas, das du einem Team oder einem Agentensystem als Spezifikation übergeben kannst.',
       ],
     },
   },
@@ -563,7 +563,7 @@ const COPY = {
     subgroupSystemDesign: 'System design & build',
     subgroupOngoing: 'Ongoing',
     agentsEyebrow: 'Agents from the method',
-    agentsIntro: 'These are not services you book by the hour — they are what the review perspectives produce: working agents built from the same case-logic above.',
+    agentsIntro: 'These are not services you book by the hour. They are what the review perspectives produce: working agents built from the same case-logic above.',
     consentTitle: 'Please confirm before checkout',
     consentB2b: 'I am acting as a business customer and confirm that this purchase is made in the course of my commercial or professional activity.',
     consentAgbBefore: 'I agree to the ',
@@ -713,7 +713,7 @@ export function WebHubPricingCarousel({ content }: { content: SiteContent }) {
                 const subLabel = (sg: SubgroupKey) =>
                   sg === 'reviews' ? c.subgroupReviews : sg === 'systemDesign' ? c.subgroupSystemDesign : c.subgroupOngoing
                 return subgroups.map(({ sg, items }) =>
-                  renderGroup(`${lens}-${sg}`, `${label} — ${subLabel(sg)}`, items),
+                  renderGroup(`${lens}-${sg}`, `${label} - ${subLabel(sg)}`, items),
                 )
               }
               return renderGroup(lens, label, group)
