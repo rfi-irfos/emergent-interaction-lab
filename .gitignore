@@ -46,3 +46,6 @@ backend/uploads/
 *.db-shm
 *.db-wal
 *.db-wal-*
+
+# subagent-driven-development scratch workspace (ledgers, briefs, reports)
+.superpowers/
