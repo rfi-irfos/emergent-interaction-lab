@@ -654,7 +654,10 @@ export function WebHubPricingCarousel({ content }: { content: SiteContent }) {
     }
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = checkoutTarget ? 'hidden' : ''
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
   }, [checkoutTarget])
 
   const buildTier = (p: PublicProduct): PricingTier => ({
