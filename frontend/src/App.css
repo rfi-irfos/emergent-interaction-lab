@@ -1957,6 +1957,41 @@ button { cursor: pointer; font-family: inherit; }
   color: var(--text-soft); padding-bottom: 6px; border-bottom: 1px dashed var(--border);
 }
 
+/* ── inline pricing carousel — featured card + filmstrip per group,
+   rendered directly on the homepage (see
+   docs/superpowers/specs/2026-08-06-webhub-pricing-inline-carousel-design.md).
+   Unlike .site-webhub-modal below, this is ordinary page content, so it
+   must NOT pin a hardcoded dark surface — it inherits the page's active
+   light/dark/hc theme via the plain --surface/--text tokens. ── */
+.site-webhub-group-panel {
+  max-width: 720px; margin: 0 auto 32px; padding: 28px 24px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 18px;
+}
+.site-webhub-carousel-featured {
+  position: relative;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 22px 22px 20px; margin-bottom: 16px;
+}
+.site-webhub-carousel-featured.is-default { border-color: var(--primary); }
+.site-webhub-carousel-name { font-size: 19px; font-weight: 800; margin: 8px 0 2px; color: var(--text); line-height: 1.25; }
+.site-webhub-carousel-strip {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-behavior: smooth;
+}
+.site-webhub-carousel-tile {
+  flex-shrink: 0; min-width: 148px; text-align: left; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; transition: border-color .15s, background .15s;
+}
+.site-webhub-carousel-tile.is-active { border-color: var(--primary); background: var(--surface-alt); }
+.site-webhub-carousel-tile-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.site-webhub-carousel-tile-price { font-size: 12px; font-weight: 800; color: var(--price); margin-top: 3px; }
+
+@media (max-width: 640px) {
+  .site-webhub-group-panel { padding: 20px 16px; }
+}
+
 /* Agents strip — products of the method, separate from the buyable grid */
 .site-webhub-agents { max-width: 1160px; margin: 0 auto; }
 .site-webhub-agents-label { color: var(--accent-purple); }
