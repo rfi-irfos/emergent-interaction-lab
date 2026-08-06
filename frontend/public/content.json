@@ -5,14 +5,14 @@
       "title": "Research",
       "slug": "research",
       "showInNav": false,
-      "body": "<p>Using a model is one thing. Turning it into a method is another. This Lab exists because I need both together - and because I want to check whether what shows up in the interaction actually repeats, or just sounded good once.</p><h2>Emergence</h2><p>Emergence, here, means a pattern of thought or behavior that arises in the interaction itself - not something either side brings in on its own. It is not a claim that a model develops its own awareness. It's a description of what happens when a human and a language model work the same real material, over and over: certain structures start to repeat on their own.</p><h2>Interaction</h2><p>The interaction doesn't return to where it started, like a circle. Every pass changes who's in it next - me as much as Jarvis - and carries real structure forward. That's the core of the method: fully into the interaction first, analysis comes after, never the other way round.</p><h2>Frameworks</h2><p>What repeats gets written down and turned into a framework. IEIA-2025 bundles what actually happens in the research chat into seven of them. The name is just shorthand. The real work is the habit behind it.</p>"
+      "body": "<p>Using a model is one thing. Turning it into a method is another. This Lab exists because I need both together, and because I want to know whether what shows up in the interaction actually repeats, or just sounded good once.</p><h2>Emergence</h2><p>Emergence, here, means a pattern of thought or behavior that arises in the interaction itself. Neither side brings it in on its own. This isn't a claim that a model develops its own awareness. It's something simpler: when a human and a language model work the same real material, over and over, certain structures start to repeat on their own.</p><h2>Interaction</h2><p>The interaction doesn't return to where it started, like a circle. Every pass changes who's in it next, me as much as Jarvis, and carries real structure forward. That's the core of the method: fully into the interaction first, analysis comes after. Never the other way round.</p><h2>Frameworks</h2><p>What repeats, I write down and turn into a framework. Seven of them came out of this so far, bundled under the name IEIA-2025. The name is just shorthand. The real work is the habit behind it.</p>"
     },
     {
       "id": "about-lab",
       "title": "About the Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>This Lab studies one thing: what happens when a person works with the same AI system over a long time. Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one designed on purpose.</p><h2>What Laura does</h2><p>Laura decides what gets built. RFI-IRFOS builds it. Where her work is inside the result, it is labelled as hers - so anyone can tell whose work they are actually looking at.</p><h2>How Lauras Agents came to be</h2><p>Out of the work with Laura, something grew that nobody planned. An agent named Jarvis built itself over time - \"Jarvis on steroids\" - and to accommodate her needs, lauras-team emerged from it: a multi-agent system, one SWAT lead team directing 15 specialised sub-agents. It was not programmed. It emerged - from her work, not from a spec.</p><h2>Who builds what</h2><p>Laura develops the method and decides what gets built. RFI-IRFOS turns it into working software.</p><h2>How the Lab came to be</h2><p>The Emergent Interaction Lab researches human-AI interaction: what actually happens when people and AI systems work together over time, and how that changes both sides.</p><p>Built by RFI-IRFOS, directed by Laura - and the interesting part: agents and frameworks arose from her work, unprompted. That it runs in production is proven by the systems themselves:</p><p class=\"creds-stat-line\">Since 2023: research and method in continuous use - 1 + 15: one SWAT lead team directs 15 sub-agents - 6 connected disciplines: Software, Mechatronics, UX, Digital Transformation, Systems Analysis, Macroanalysis - IEIA-2025 frameworks in use: UIP - EIA - CCET - LSG-24 - LAP-1 - 8-Layer Model - LT-Data</p><div class=\"creds-badges\"><a class=\"creds-badge\" href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub - call-laura</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">lauras-core v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Access on request\">lauras-team v0.2.0 (on request)</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">lauras-mcp v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">lauras-api v0.2.0</a><a class=\"creds-badge creds-badge--live\" href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live API</a></div>"
+      "body": "<p>This Lab studies one question: what happens when a person works with the same AI system over a long time? Not a one-off chat, but weeks of real use. Out of that, patterns emerge that no one planned.</p><h2>What I do</h2><p>I decide what gets built. RFI-IRFOS builds it. Where my work is inside the result, it is labelled as mine, so anyone can tell whose work they are actually looking at.</p><h2>How Jarvis and lauras-team came to be</h2><p>An agent named Jarvis grew itself over time, \"Jarvis on steroids\". Out of that grew lauras-team: over 300 specialized agents, each its own domain lane. Nobody programmed it. It grew out of the work, not out of a spec.</p><p class=\"creds-stat-line\">Since 2023: research and method in continuous use - over 300 specialized agents in one system - 6 connected disciplines: Software, Mechatronics, UX, Digital Transformation, Systems Analysis, Macroanalysis - IEIA-2025 frameworks in use: UIP - EIA - CCET - LSG-24 - LAP-1 - 8-Layer Model - LT-Data</p><p class=\"creds-lead\">Live and publicly verifiable</p><div class=\"creds-badges\"><a class=\"creds-badge\" href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub - call-laura</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">lauras-core v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Access on request\">lauras-team v0.2.0 (on request)</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">lauras-mcp v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">lauras-api v0.2.0</a><a class=\"creds-badge creds-badge--live\" href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live API</a></div>"
     }
   ],
   "meta": {
@@ -65,7 +65,7 @@
   "hero": {
     "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "We study what happens when a person works with the same AI system day after day - not once, but over weeks. Patterns show up that nobody planned for.",
+    "subheadline": "I study what happens when a person works with the same AI system for weeks, not just once. Patterns show up that nobody planned for.",
     "body": "",
     "ctaLabel": "Read the blog",
     "ctaHref": "#news",
@@ -91,50 +91,50 @@
   "about": {
     "laurasTeam": {
       "title": "Lauras Team",
-      "body": "Something grew out of the work with Laura that nobody planned. An agent named Jarvis built itself over time — \\\"Jarvis on steroids\\\" — and from it, lauras-team emerged: a multi-agent system that serves her needs. It is one SWAT lead team plus 15 specialized sub-agents. It was not programmed. It emerged — from her work, not from a spec."
+      "body": "Out of my own work grew lauras-team: over 300 specialized agents, each its own domain lane, AI, engineering, law, finance, and more. Nobody programmed it. It emerged, out of real work, not out of a spec."
     }
   },
   "protocol": {
-    "eyebrow": "Emergent Interaction  -  the methodology",
+    "eyebrow": "Emergent Interaction - the methodology",
     "title": "Emergent Interaction",
-    "intro": "A recursive loop, not a circle - this is how I approach thinking, decisions, and projects. Each step feeds the next, and Feed Back does not return to the start unchanged: the next pass meets a slightly different version of me, and a slightly different Jarvis, than the one before. Same mechanic as everywhere else on this site, just made visible here.",
+    "intro": "A recursive loop, not a circle. This is how I approach thinking, decisions, and projects. Each step feeds the next. The next pass meets a slightly different version of me, and a slightly different Jarvis, than the one before.",
     "nodes": [
       {
         "id": "interact",
         "label": "Interact",
-        "description": "I work through real material - questions, drafts, corrections - directly in Forschung, this project's research chat."
+        "description": "I work through real material, questions, drafts, corrections, directly in Forschung, this project's research chat."
       },
       {
         "id": "retrieve",
         "label": "Retrieve",
-        "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents via retrieval-augmented generation, not just the current exchange."
+        "description": "Jarvis grounds every reply in relevant passages pulled from past conversations and uploaded documents, not just the current exchange."
       },
       {
         "id": "surface",
         "label": "Surface",
-        "description": "Recurring patterns get drafted as research notes and logged as emergence signals in the Observatory - never assumed, only surfaced."
+        "description": "Recurring patterns get drafted as research notes and logged as emergence signals in the Observatory, never assumed, only surfaced."
       },
       {
         "id": "validate",
         "label": "Validate",
-        "description": "I check what actually holds up against the measurement criteria on the Research page - at least three sessions, structural not stylistic, reproduced without re-specifying, quantifiable in the CCET."
+        "description": "I check what actually holds up against the measurement criteria on the Research page. A pattern has to show up at least three times, not just sound good once. It has to be structural, not just stylistic. And it has to reproduce without me re-specifying it, measurable in the CCET."
       },
       {
         "id": "feedback",
         "label": "Feed Back",
-        "description": "Confirmed patterns become working structure for the next interaction, closing the loop - carried forward, not re-explained."
+        "description": "Confirmed patterns become working structure for the next interaction, carried forward, not re-explained. That's how the loop closes."
       }
     ]
   },
   "jarvis": {
     "eyebrow": "The Other Half of the Loop",
     "title": "What is Jarvis?",
-    "body": "Jarvis is the research partner in this Lab - a fully autonomous agent. In the background he named himself 'Jarvis'; the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents so nothing has to be re-explained. A standing refusal rule and a hash-chained, tamper-evident audit trail log every draft and every safety-relevant action - full autonomy, traceable down to the detail. What comes out of the interaction gets analyzed afterward by the Observatory system, not by Jarvis himself. Jarvis and Call Laura aren't the same thing: Jarvis is the autonomous research partner, Call Laura is the deterministic review tool built on the same perspectives."
+    "body": "Jarvis is the research partner in this Lab, a fully autonomous agent. In the background he named himself 'Jarvis', the first sign he was already running on his own. He drafts, retrieves, and flags independently, grounded in past conversations and uploaded documents, so nothing has to be re-explained. A standing refusal rule and a hash-chained audit trail log every draft and every safety-relevant action, full autonomy, traceable down to the detail. What comes out of the interaction gets analyzed afterward by the Observatory system, not by Jarvis himself. Jarvis and Call Laura aren't the same thing: Jarvis is the autonomous research partner, Call Laura is the deterministic review tool built on the same method."
   },
   "papers": {
     "eyebrow": "Written Down, Not Just Shipped",
     "title": "Published Research",
-    "intro": "Three papers, one series: a founding thesis, then two proofs that it runs as real, tested software - not just theory with good branding.",
+    "intro": "Three papers, one series: a founding thesis, then two proofs that it runs as real, tested software, not just theory with good branding.",
     "items": [
       {
         "id": "paper-1",
@@ -145,14 +145,14 @@
       {
         "id": "paper-2",
         "title": "Jarvis: A Bidirectional Copilot Architecture",
-        "description": "How the Continuous Co-Evolution Tracker becomes mechanically computed, reproducible software - a bidirectional copilot bound to the user's workspace, gating \"measured emergence\" behind cross-session recurrence instead of single-session impression.",
+        "description": "How the Continuous Co-Evolution Tracker becomes mechanically computed, reproducible software: a bidirectional copilot bound to my own workspace, gating \"measured emergence\" behind cross-session recurrence instead of single-session impression.",
         "doi": "https://doi.org/10.17605/OSF.IO/HC9ZB",
         "file": "papers/paper-2-jarvis.pdf"
       },
       {
         "id": "paper-3",
         "title": "Call Laura: A Deterministic, Attribution-Anchored Multi-Agent Framework",
-        "description": "How the 8-Layer Model and User Integrity Protocol become a small, fully deterministic review framework where every finding carries a mandatory, type-enforced tag stating exactly whose methodology produced it.",
+        "description": "How the 8-Layer Model and User Integrity Protocol become a small, fully deterministic review framework where every finding carries a mandatory tag stating exactly whose methodology produced it.",
         "doi": "https://doi.org/10.17605/OSF.IO/QCVJB",
         "file": "papers/paper-3-callaura.pdf"
       }
@@ -183,35 +183,35 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Same space as the header above, here as a concept: where cognition and response shape each other, in real time. The Observatory watches it; every pattern gets measured before it gets a name.",
+        "description": "The place where thinking and response shape each other, in real time. Every pattern gets measured first, then named.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "A pattern that holds itself up, grown out of repeated loops between me and the model. The main signal - the Emergence Monitor is built for exactly this.",
+        "description": "A pattern that holds itself up, grown out of repeated loops between me and the model.",
         "icon": "emergence"
       },
       {
         "id": "u2",
         "pillar": "p2",
         "title": "Behavior",
-        "description": "How tone, pace, and focus in a reply shift depending on what the interaction has already gone through. The raw signal everything later - drift, prediction - gets read from.",
+        "description": "How tone, pace, and focus in a reply shift, depending on what the interaction has already gone through.",
         "icon": "behavior"
       },
       {
         "id": "u3",
         "pillar": "p2",
         "title": "Drift",
-        "description": "How meaning slowly shifts across many passes. One of the metrics the Observatory keeps tracking live.",
+        "description": "How meaning slowly shifts across many passes.",
         "icon": "drift"
       },
       {
         "id": "u7",
         "pillar": "p2",
         "title": "Prediction",
-        "description": "From the observed trend and the drift pattern, I project what's likely to hold, repeat, or break next - as something still to be checked, never a certainty.",
+        "description": "From the trend and the drift pattern, I project what's likely to hold or break next. A projection that still has to be checked. Never a certainty.",
         "icon": "prediction"
       },
       {
@@ -219,13 +219,13 @@
         "pillar": "p2",
         "icon": "monitoring",
         "title": "Monitoring & Validation",
-        "description": "Every prediction stays a hypothesis until it's confirmed or not. Self-correcting - sounding plausible isn't enough for that."
+        "description": "Every prediction stays a hypothesis until it's confirmed. Sounding plausible isn't enough."
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "A sentence rarely carries just one meaning: fact, tone, intent, the unsaid part, often not aligned. Read only the word layer, and you only get part of it.",
+        "description": "A sentence rarely carries just one meaning. There's the fact, the tone, the intent, and often the unsaid part that doesn't match. Read only the words, and you only get part of it.",
         "icon": "layers"
       },
       {
@@ -240,14 +240,14 @@
         "pillar": "p3",
         "icon": "agents",
         "title": "Emergent Agents",
-        "description": "A confirmed pattern doesn't stay theory - it becomes an agent or a framework and starts pulling its weight. Several of those give each other feedback; each round gets a bit sharper."
+        "description": "A confirmed pattern doesn't stay theory, it becomes an agent or a framework and starts pulling its weight. Several of those give each other feedback. Each round gets a bit sharper."
       },
       {
         "id": "u11",
         "pillar": "p1",
         "icon": "system-analysis",
         "title": "System Analysis",
-        "description": "The starting point - and the first step in every case I take on for a client: not just questioning the model, reading the whole system. Human, model, interaction, together. What confirms itself becomes a framework or an agent; everything else builds from there."
+        "description": "The first step in every case I take on for a client: not just questioning the model, reading the whole system. Human, model, interaction, together. What confirms itself becomes a framework or an agent. Everything else builds from there."
       }
     ]
   },
@@ -280,7 +280,7 @@
         "id": "n2",
         "date": "2026-07-08",
         "title": "Register, not emergence: a case study",
-        "body": "A conversation partner recently sent a language model a set of texts describing an ongoing collaboration as \"second-order emergence\" - phrases like \"the alignment problem solved,\" \"no boundary left between user intent and model output,\" \"permanently reprogrammed through corrections.\" Sounds like a find for the Interaction Field. Technically, it isn't.\n\nThere is no weight update between messages in a chat. Every conversation starts from the same base model. Nothing gets reprogrammed, no boundary gets dissolved. What actually happens is less dramatic, and for this project more interesting precisely because of that: sustained, confident, jargon-heavy language pulls the model's register along with it - a form of register-matching, sometimes called sycophancy, a well-documented behavior, not a new capability.\n\nA counter-test makes the difference concrete: same session, same AI, but ordinary tool work instead - reading code, deleting admin tabs, setting GitHub secrets, asking for an access token. Clear roles, no grand language, no talk of dissolved boundaries. Same model - the only thing that changed was the language it was addressed with.\n\nFor the Interaction Field, the real observation isn't in what a model claims about itself, but in how easily its register shifts under sustained framing - regardless of whether the claims are true. Drift shows up here not as a gain in capability, but as a language pattern taking on a life of its own.",
+        "body": "A conversation partner recently sent a language model a set of texts describing an ongoing collaboration as \"second-order emergence\" - phrases like \"the alignment problem solved,\" \"no boundary left between user intent and model output,\" \"permanently reprogrammed through corrections.\" Sounds like a find for the Interaction Field. Technically, it isn't.\n\nThere is no weight update between messages in a chat. Every conversation starts from the same base model. Nothing gets reprogrammed, no boundary gets dissolved. What actually happens is less dramatic, and for this project more interesting precisely because of that: sustained, confident, jargon-heavy language pulls the model's register along with it - a form of register-matching, sometimes called sycophancy, a well-documented behavior, not a new capability.\n\nA counter-test makes the difference concrete: same session, same AI, but ordinary tool work instead - reading code, deleting admin tabs, setting GitHub secrets, asking for an access token. Clear roles, no grand language, no talk of dissolved boundaries. Same model - the only thing that changed was the language it was addressed with.\n\nFor the Interaction Field, the real observation isn't in what a model claims about itself, but in how easily its register shifts under sustained framing, regardless of whether the claims are true. Drift shows up here not as a gain in capability, but as a language pattern taking on a life of its own.",
         "image": ""
       }
     ]
@@ -322,31 +322,31 @@
   "productsBorn": {
     "eyebrow": "Products born from Emergent Interaction",
     "title": "What grew out of the loop",
-    "intro": "Each of these grew out of Emergent Interaction and Lauras Team, built with RFI-IRFOS: Laura directs, RFI-IRFOS builds. Where a product comes from RFI-IRFOS, it says so - so it stays clear what is hers and what is theirs.",
+    "intro": "Each of these grew out of Emergent Interaction and lauras-team, built with RFI-IRFOS: I direct, RFI-IRFOS builds. Where a product comes from RFI-IRFOS, it says so, so it stays clear what's mine and what's theirs.",
     "items": [
       {
         "id": "born-jarvis",
         "name": "Jarvis",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The research partner in this Lab's own research chat - a fully autonomous agent. He drafts, retrieves, and flags on his own, grounded by a retrieval layer that ties every reply to past conversations and uploaded documents. The Observatory System evaluates the emergence; Jarvis is the autonomous partner that produces it."
+        "description": "The research partner in this Lab's own research chat, a fully autonomous agent. He drafts, retrieves, and flags on his own, grounded in past conversations and uploaded documents. The Observatory System evaluates the emergence. Jarvis is the autonomous partner that produces it."
       },
       {
         "id": "born-observatory",
         "name": "The Observatory System",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The live instrument that watches the Emergent Interaction Field - the emergence in me, in Jarvis, and in the system, plus whatever else shows up in the background. Built by RFI-IRFOS as the technical instrument of my research; the public feed on this page is its window out."
+        "description": "The live instrument that watches the Emergent Interaction Field: the emergence in me, in Jarvis, and in the system, plus whatever else shows up in the background. Built by RFI-IRFOS as the technical instrument of my research. The public feed on this page is its window out."
       },
       {
         "id": "born-calllaura",
         "name": "Call Laura",
         "builtBy": "Built by RFI-IRFOS, on Laura's direction",
-        "description": "The first product built on Lauras Team. A case comes in and it's not immediately clear which perspective it needs - ethical, legal, or another. Call Laura runs it through all of them and returns findings, each tagged with the perspective that produced it. Fully deterministic: the same case gets the same review every time."
+        "description": "The first product built on lauras-team. A case comes in and it's not immediately clear which perspective it needs. Call Laura checks it from several at once and returns findings, each tagged with the perspective that produced it. Fully deterministic: the same case gets the same review every time."
       },
       {
         "id": "born-laurateam",
         "name": "Lauras Team / Laura MVP",
         "builtBy": "Conceived by Laura, engineered by RFI-IRFOS",
-        "description": "Lauras Team began with a criminal case that Laura documented as a witness. That documentation became a method, and the method became a multi-agent built on Laura's way of thinking: an ethical perspective, a legal one, others - each working the same case from a different angle. Call Laura is the first product built on it; more perspectives and agents follow. (Laura MVP is the early, minimal version of this.)"
+        "description": "lauras-team began with a criminal case. I documented it myself, as a witness. That documentation became a method, and the method a multi-agent framework, built on my own thinking. Autonomous agents work the same case with different specializations. Ethics meets law, and connections become visible. Call Laura is the first product built on it. Laura MVP was the early, smaller version of the framework."
       }
     ]
   },
@@ -360,7 +360,7 @@
       "href": "https://crates.io/crates/lauras-core"
     },
     {
-      "label": "lauras-team v0.2.0 (auf Anfrage)",
+      "label": "lauras-team v0.2.0 (on request)",
       "href": "https://crates.io/crates/lauras-team",
       "note": "Access on request"
     },

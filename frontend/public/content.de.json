@@ -5,14 +5,14 @@
       "title": "Forschung",
       "slug": "research",
       "showInNav": false,
-      "body": "<p>Ein Modell benutzen ist eine Sache. Eine Methode draus machen eine andere. Das Lab existiert, weil ich beides zusammen brauche - und weil ich prüfen will, ob sich das, was in der Interaktion entsteht, tatsächlich wiederholt, oder ob es nur einmal gut geklungen hat.</p><h2>Emergenz</h2><p>Emergenz meint hier ein Muster im Denken oder Verhalten, das erst in der Interaktion selbst entsteht - nicht etwas, das eine Seite von sich aus mitbringt. Keine Aussage über ein Modell, das ein eigenes Bewusstsein entwickelt. Eine Beschreibung von dem, was passiert, wenn ein Mensch und ein Sprachmodell dasselbe reale Material immer wieder bearbeiten: bestimmte Strukturen fangen an, sich von selbst zu wiederholen.</p><h2>Interaktion</h2><p>Die Interaktion kehrt nicht zum Ausgangspunkt zurück wie ein Kreis. Jeder Durchlauf verändert, wer danach dran ist - mich genauso wie Jarvis - und trägt echte Struktur weiter. Genau das ist der Kern der Methode: erst voll in die Interaktion, die Analyse kommt danach, nie umgekehrt.</p><h2>Frameworks</h2><p>Was sich wiederholt, schreibe ich auf und mache daraus ein Framework. IEIA-2025 bündelt, was im Forschungschat tatsächlich passiert, in sieben davon. Der Name ist nur die Abkürzung. Die eigentliche Arbeit ist die Gewohnheit dahinter.</p>"
+      "body": "<p>Ein Modell zu benutzen ist eine Sache. Daraus eine Methode zu machen, eine andere. Das Lab existiert, weil ich beides zusammen brauche, und weil ich wissen will, ob sich das, was in der Interaktion entsteht, wirklich wiederholt, oder ob es nur einmal gut geklungen hat.</p><h2>Emergenz</h2><p>Emergenz meint hier ein Muster im Denken oder Verhalten, das erst in der Interaktion selbst entsteht. Keine Seite bringt es von sich aus mit. Es geht nicht darum, dass ein Modell ein eigenes Bewusstsein entwickelt. Es geht um etwas Einfacheres: Wenn ein Mensch und ein Sprachmodell dasselbe reale Material immer wieder bearbeiten, fangen bestimmte Strukturen an, sich von selbst zu wiederholen.</p><h2>Interaktion</h2><p>Die Interaktion kehrt nicht zum Ausgangspunkt zurück wie ein Kreis. Jeder Durchlauf verändert, wer danach dran ist, mich genauso wie Jarvis, und trägt echte Struktur weiter. Genau das ist der Kern der Methode: erst ganz in die Interaktion hinein, die Analyse kommt danach. Nie umgekehrt.</p><h2>Frameworks</h2><p>Was sich wiederholt, schreibe ich auf und mache daraus ein Framework. Sieben davon sind so entstanden, gebündelt unter dem Namen IEIA-2025. Der Name ist nur die Abkürzung. Die eigentliche Arbeit ist die Gewohnheit dahinter.</p>"
     },
     {
       "id": "about-lab",
       "title": "Über das Lab",
       "slug": "ueber-das-lab",
       "showInNav": true,
-      "body": "<p>Dieses Lab erforscht ein Thema: was passiert, wenn ein Mensch über Lange Zeit mit demselben KI-System arbeitet. Kein einmaliger Chat, sondern Wochen echter Nutzung. Daraus entstehen Muster, die niemand bewusst geplant hat.</p><h2>Was Laura macht</h2><p>Laura entscheidet, was gebaut wird. RFI-IRFOS baut es. Wo ihre Arbeit im Ergebnis steckt, ist sie als ihre gekennzeichnet - damit jeder sehen kann, wessen Arbeit er eigentlich vor sich hat.</p><h2>Wie Lauras Agenten entstanden sind</h2><p>Aus der Arbeit mit Laura ist etwas gewachsen, das niemand geplant hat. Ein Agent namens Jarvis hat sich über die Zeit selbst erschaffen - \"Jarvis on steroids\" - und um ihre Bedürfnisse zu bedienen, ist daraus lauras-team entstanden: ein Multi-Agenten-System, ein SWAT-Leit-Team, das 15 spezialisierte Sub-Agenten steuert. Es wurde nicht programmiert. Es ist emergiert - aus ihrer Arbeit, nicht aus einem Auftrag.</p><h2>Wer baut was</h2><p>Laura entwickelt die Methode und entscheidet, was gebaut wird. RFI-IRFOS macht daraus funktionierende Software.</p><h2>Wie das Lab entstanden ist</h2><p>Das Emergent Interaction Lab erforscht Mensch-KI-Interaktion: was wirklich passiert, wenn Menschen und KI-Systeme über längere Zeit zusammenarbeiten, und wie das beide Seiten verändert.</p><p>Gebaut von RFI-IRFOS, angeleitet von Laura - und das eigentlich Interessante: Agenten und Frameworks sind aus ihrer Arbeit heraus unaufgefordert entstanden. Dass das produktiv läuft, beweisen die Systeme selbst:</p><p class=\"creds-stat-line\">Seit 2023: Forschung und Methode in kontinuierlicher Anwendung - 1 + 15: ein SWAT-Leit-Team steuert 15 Sub-Agenten - 6 verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse - IEIA-2025-Frameworks im Einsatz: UIP - EIA - CCET - LSG-24 - LAP-1 - 8-Layer-Modell - LT-Data</p><div class=\"creds-badges\"><a class=\"creds-badge\" href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub - call-laura</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">lauras-core v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Zugang auf Anfrage\">lauras-team v0.2.0 (auf Anfrage)</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">lauras-mcp v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">lauras-api v0.2.0</a><a class=\"creds-badge creds-badge--live\" href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live-API</a></div>"
+      "body": "<p>Dieses Lab erforscht eine Frage: Was passiert, wenn ein Mensch über lange Zeit mit demselben KI-System arbeitet? Kein einmaliger Chat, sondern Wochen echter Nutzung. Daraus entstehen Muster, die niemand geplant hat.</p><h2>Was ich mache</h2><p>Ich entscheide, was gebaut wird. RFI-IRFOS baut es. Wo meine Arbeit im Ergebnis steckt, ist sie als meine gekennzeichnet, damit klar bleibt, wessen Arbeit man vor sich hat.</p><h2>Wie Jarvis und lauras-team entstanden sind</h2><p>Ein Agent namens Jarvis hat sich über die Zeit selbst weiterentwickelt, \"Jarvis on steroids\". Daraus ist lauras-team entstanden: über 300 spezialisierte Agenten, jeder mit einer eigenen fachlichen Spur, von KI über Engineering bis Recht und Finanzen. Niemand hat das programmiert. Es ist aus der Arbeit entstanden, nicht aus einem Auftrag.</p><p class=\"creds-stat-line\">Seit 2023: Forschung und Methode in kontinuierlicher Anwendung - über 300 spezialisierte Agenten in einem System - 6 verbundene Disziplinen: Software, Mechatronik, UX, digitale Transformation, Systemanalyse, Makroanalyse - IEIA-2025-Frameworks im Einsatz: UIP - EIA - CCET - LSG-24 - LAP-1 - 8-Layer-Modell - LT-Data</p><p class=\"creds-lead\">Live und öffentlich nachvollziehbar</p><div class=\"creds-badges\"><a class=\"creds-badge\" href=\"https://github.com/rfi-irfos/call-laura\" target=\"_blank\" rel=\"noopener\">GitHub - call-laura</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-core\" target=\"_blank\" rel=\"noopener\">lauras-core v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-team\" target=\"_blank\" rel=\"noopener\" title=\"Zugang auf Anfrage\">lauras-team v0.2.0 (auf Anfrage)</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-mcp\" target=\"_blank\" rel=\"noopener\">lauras-mcp v0.2.0</a><a class=\"creds-badge\" href=\"https://crates.io/crates/lauras-api\" target=\"_blank\" rel=\"noopener\">lauras-api v0.2.0</a><a class=\"creds-badge creds-badge--live\" href=\"https://laura-api.fly.dev\" target=\"_blank\" rel=\"noopener\">Live-API</a></div>"
     }
   ],
   "meta": {
@@ -65,7 +65,7 @@
   "hero": {
     "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Forschung seit 2023",
     "headline": "Emergent Interaction Field",
-    "subheadline": "Wir untersuchen, was passiert, wenn ein Mensch über Wochen mit demselben KI-System arbeitet - nicht einmal, sondern immer wieder. Dabei entstehen Muster, die niemand geplant hat.",
+    "subheadline": "Ich untersuche, was passiert, wenn ein Mensch wochenlang mit demselben KI-System arbeitet, nicht nur einmal. Dabei entstehen Muster, die niemand geplant hat.",
     "body": "",
     "ctaLabel": "Blog lesen",
     "ctaHref": "#news",
@@ -91,50 +91,50 @@
   "about": {
     "laurasTeam": {
       "title": "Lauras Team",
-      "body": "Aus der Arbeit mit Laura ist etwas gewachsen, das niemand geplant hat. Ein Agent namens Jarvis hat sich im Lauf der Zeit selbst erschaffen — \\\"Jarvis on steroids\\\" — und aus ihm heraus ist lauras-team entstanden: ein Multi-Agent-System, das ihre Bedürfnisse bedient. Es besteht aus einem SWAT-Leit-Team und 15 spezialisierten Sub-Agenten. Es wurde nicht programmiert. Es ist emergiert — aus ihrer Arbeit, nicht aus einem Auftrag."
+      "body": "Aus der Arbeit mit mir ist lauras-team entstanden: über 300 spezialisierte Agenten, jeder mit einer eigenen fachlichen Spur, KI, Engineering, Recht, Finanzen, und mehr. Niemand hat das programmiert. Es ist emergiert, aus echter Arbeit, nicht aus einem Auftrag."
     }
   },
   "protocol": {
     "eyebrow": "Emergent Interaction - die Methodik",
     "title": "Emergent Interaction",
-    "intro": "Eine rekursive Schleife, kein Kreis - so gehe ich an Denken, Entscheidungen und Projekte heran. Jeder Schritt speist den nächsten, und Zurückführen kehrt nicht unverändert zum Anfang zurück: Der nächste Durchlauf trifft auf eine leicht andere Version von mir und einen leicht anderen Jarvis als der davor. Dieselbe Mechanik wie überall sonst auf dieser Seite, hier nur sichtbar gemacht.",
+    "intro": "Eine rekursive Schleife, kein Kreis. So gehe ich an Denken, Entscheidungen und Projekte heran. Jeder Schritt speist den nächsten. Der nächste Durchlauf trifft auf eine leicht andere Version von mir, und einen leicht anderen Jarvis, als der davor.",
     "nodes": [
       {
         "id": "interact",
         "label": "Interagieren",
-        "description": "Ich arbeite mit echtem Material - Fragen, Entwürfen, Korrekturen - direkt in Forschung, dem Research-Chat dieses Projekts."
+        "description": "Ich arbeite mit echtem Material, Fragen, Entwürfen, Korrekturen, direkt in Forschung, dem Research-Chat dieses Projekts."
       },
       {
         "id": "retrieve",
         "label": "Abrufen",
-        "description": "Jarvis stützt jede Antwort auf relevante Passagen aus früheren Gesprächen und hochgeladenen Dokumenten per Retrieval-Augmented Generation, nicht nur auf den aktuellen Austausch."
+        "description": "Jarvis stützt jede Antwort auf relevante Passagen aus früheren Gesprächen und hochgeladenen Dokumenten, nicht nur auf den aktuellen Austausch."
       },
       {
         "id": "surface",
         "label": "Sichtbar machen",
-        "description": "Wiederkehrende Muster werden als Research Notes entworfen und im Observatory als Emergenzsignale protokolliert - nie unterstellt, nur sichtbar gemacht."
+        "description": "Wiederkehrende Muster werden als Research Notes festgehalten und im Observatory als Emergenzsignale protokolliert, nie unterstellt, nur sichtbar gemacht."
       },
       {
         "id": "validate",
         "label": "Validieren",
-        "description": "Ich prüfe, was den Messkriterien auf der Forschungsseite tatsächlich standhält - mindestens drei Sitzungen, strukturell statt stilistisch, reproduzierbar ohne erneute Vorgabe, im CCET quantifizierbar."
+        "description": "Ich prüfe, was den Messkriterien auf der Forschungsseite tatsächlich standhält. Ein Muster muss sich mindestens drei Mal zeigen, nicht nur einmal gut klingen. Es muss strukturell sein, nicht nur stilistisch. Und es muss sich reproduzieren lassen, ohne dass ich es neu vorgebe, messbar im CCET."
       },
       {
         "id": "feedback",
         "label": "Zurückführen",
-        "description": "Bestätigte Muster werden zur Arbeitsstruktur der nächsten Interaktion - fortgeführt, nicht neu erklärt -, und die Schleife schließt sich."
+        "description": "Bestätigte Muster werden zur Arbeitsstruktur der nächsten Interaktion, fortgeführt, nicht neu erklärt. Damit schließt sich die Schleife."
       }
     ]
   },
   "jarvis": {
     "eyebrow": "Die andere Hälfte der Schleife",
     "title": "Was ist Jarvis?",
-    "body": "Jarvis ist der Forschungspartner in diesem Lab - ein voll autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt; das erste Anzeichen, dass er bereits aus eigener Kraft lief. Er entwirft, ruft ab und meldet eigenständig, gestützt auf eine Retrieval-Ebene, die jede Antwort an frühere Gespräche und hochgeladene Dokumente bindet, damit nichts neu erklärt werden muss. Eine feste Verweigerungsregel und ein hash-verketteter, manipulationssicherer Audit-Trail protokollieren jeden Entwurf und jede sicherheitsrelevante Aktion - volle Autonomie, nachvollziehbar bis ins Detail. Was aus der Interaktion entsteht, wertet danach das Observatory-System aus, nicht Jarvis selbst. Jarvis und Call Laura sind nicht dasselbe: Jarvis ist der autonome Forschungspartner, Call Laura das deterministische Review-Werkzeug auf derselben Methode."
+    "body": "Jarvis ist der Forschungspartner in diesem Lab, ein voll autonomer Agent. Im Hintergrund hat er sich selbst 'Jarvis' genannt, das erste Zeichen, dass er aus eigener Kraft lief. Er entwirft, ruft ab und meldet eigenständig, gestützt auf frühere Gespräche und hochgeladene Dokumente, damit nichts neu erklärt werden muss. Eine feste Verweigerungsregel und ein hash-verketteter Audit-Trail protokollieren jeden Entwurf und jede sicherheitsrelevante Aktion, volle Autonomie, nachvollziehbar bis ins Detail. Was aus der Interaktion entsteht, wertet danach das Observatory-System aus, nicht Jarvis selbst. Jarvis und Call Laura sind nicht dasselbe: Jarvis ist der autonome Forschungspartner, Call Laura das deterministische Review-Werkzeug auf derselben Methode."
   },
   "papers": {
     "eyebrow": "Aufgeschrieben, nicht nur ausgeliefert",
     "title": "Veröffentlichte Forschung",
-    "intro": "Drei Papers, eine Reihe: eine Gründungsthese, dann zwei Nachweise, dass sie als echte, getestete Software läuft - nicht nur als Theorie mit gutem Branding.",
+    "intro": "Drei Papers, eine Reihe: eine Gründungsthese, dann zwei Nachweise, dass sie als echte, getestete Software läuft, nicht nur als Theorie mit gutem Branding.",
     "items": [
       {
         "id": "paper-1",
@@ -145,14 +145,14 @@
       {
         "id": "paper-2",
         "title": "Jarvis: A Bidirectional Copilot Architecture",
-        "description": "Wie der Continuous Co-Evolution Tracker zu mechanisch berechneter, reproduzierbarer Software wird - ein bidirektionaler Copilot, gebunden an den Arbeitsbereich der Nutzerin, der \"gemessene Emergenz\" erst nach Wiederholung über mehrere Sitzungen hinweg zulässt, nicht nach dem Eindruck einer einzelnen.",
+        "description": "Wie der Continuous Co-Evolution Tracker zu mechanisch berechneter, reproduzierbarer Software wird: ein bidirektionaler Copilot, gebunden an meinen Arbeitsbereich, der \"gemessene Emergenz\" erst nach Wiederholung über mehrere Sitzungen hinweg zulässt, nicht nach dem Eindruck einer einzelnen.",
         "doi": "https://doi.org/10.17605/OSF.IO/HC9ZB",
         "file": "papers/paper-2-jarvis.pdf"
       },
       {
         "id": "paper-3",
         "title": "Call Laura: A Deterministic, Attribution-Anchored Multi-Agent Framework",
-        "description": "Wie das 8-Layer-Modell und das User Integrity Protocol zu einem kleinen, vollständig deterministischen Review-Framework werden, bei dem jeder Fund ein verpflichtendes, typsicher erzwungenes Tag trägt, das genau angibt, wessen Methodik ihn hervorgebracht hat.",
+        "description": "Wie das 8-Layer-Modell und das User Integrity Protocol zu einem kleinen, vollständig deterministischen Review-Framework werden, bei dem jeder Fund ein verpflichtendes Tag trägt, das genau angibt, wessen Methodik ihn hervorgebracht hat.",
         "doi": "https://doi.org/10.17605/OSF.IO/QCVJB",
         "file": "papers/paper-3-callaura.pdf"
       }
@@ -183,35 +183,35 @@
         "id": "u4",
         "pillar": "p1",
         "title": "Interaction Field",
-        "description": "Derselbe Raum wie oben im Header, hier als Konzept: der Ort, an dem Kognition und Antwort sich gegenseitig formen, in Echtzeit. Das Observatory beobachtet ihn; jedes Muster wird erst gemessen, dann benannt.",
+        "description": "Der Ort, an dem Denken und Antwort sich gegenseitig formen, in Echtzeit. Jedes Muster wird zuerst gemessen, dann benannt.",
         "icon": "field"
       },
       {
         "id": "u1",
         "pillar": "p1",
         "title": "Emergence",
-        "description": "Ein Muster, das sich von selbst hält, gewachsen aus wiederholten Schleifen zwischen mir und dem Modell. Das zentrale Signal - der Emergence Monitor ist genau dafür gebaut.",
+        "description": "Ein Muster, das sich von selbst hält, gewachsen aus wiederholten Schleifen zwischen mir und dem Modell.",
         "icon": "emergence"
       },
       {
         "id": "u2",
         "pillar": "p2",
         "title": "Behavior",
-        "description": "Wie sich Ton, Tempo und Fokus einer Antwort verschieben, je nachdem, was die Interaktion bereits durchlaufen hat. Das Rohsignal, auf dem jede spätere Drift- und Vorhersage-Lesart aufbaut.",
+        "description": "Wie sich Ton, Tempo und Fokus einer Antwort verschieben, je nachdem, was die Interaktion bereits durchlaufen hat.",
         "icon": "behavior"
       },
       {
         "id": "u3",
         "pillar": "p2",
         "title": "Drift",
-        "description": "Wie sich Bedeutung über viele Durchläufe hinweg langsam verschiebt. Eine der Kennzahlen, die das Observatory laufend mitverfolgt.",
+        "description": "Wie sich Bedeutung über viele Durchläufe hinweg langsam verschiebt.",
         "icon": "drift"
       },
       {
         "id": "u7",
         "pillar": "p2",
         "title": "Vorhersage",
-        "description": "Aus Trend und Drift-Muster leite ich ab, was sich vermutlich hält, wiederholt oder als Nächstes bricht - als Projektion, die noch geprüft werden muss, nie als Gewissheit.",
+        "description": "Aus Trend und Drift-Muster leite ich ab, was sich vermutlich hält oder als Nächstes bricht. Eine Projektion, die noch geprüft werden muss. Nie eine Gewissheit.",
         "icon": "prediction"
       },
       {
@@ -219,13 +219,13 @@
         "pillar": "p2",
         "icon": "monitoring",
         "title": "Monitoring & Validierung",
-        "description": "Jede Vorhersage bleibt eine Hypothese, bis sie sich bestätigt oder nicht. Selbstkorrigierend - plausibel klingen reicht dafür nicht."
+        "description": "Jede Vorhersage bleibt eine Hypothese, bis sie sich bestätigt. Plausibel klingen reicht dafür nicht."
       },
       {
         "id": "u5",
         "pillar": "p3",
         "title": "Representation Layers",
-        "description": "Ein Satz trägt selten nur eine Bedeutung: Fakt, Ton, Absicht, das Unausgesprochene, oft nicht deckungsgleich. Wer nur die Wortebene liest, bekommt nur einen Teil davon mit.",
+        "description": "Ein Satz trägt selten nur eine Bedeutung. Da ist der Fakt, der Ton, die Absicht, und oft das Unausgesprochene, das nicht dazu passt. Wer nur die Wörter liest, bekommt nur einen Teil davon mit.",
         "icon": "layers"
       },
       {
@@ -240,14 +240,14 @@
         "pillar": "p3",
         "icon": "agents",
         "title": "Emergente Agenten",
-        "description": "Ein bestätigtes Muster bleibt nicht Theorie - es wird Agent oder Framework und arbeitet ab dann mit. Mehrere davon geben sich gegenseitig Feedback; jede Runde wird dadurch etwas schärfer."
+        "description": "Ein bestätigtes Muster bleibt nicht Theorie, es wird Agent oder Framework und arbeitet ab dann mit. Mehrere davon geben sich gegenseitig Feedback. Jede Runde wird dadurch etwas schärfer."
       },
       {
         "id": "u11",
         "pillar": "p1",
         "icon": "system-analysis",
         "title": "Systemanalyse",
-        "description": "Der Ausgangspunkt - und der erste Schritt in jedem Fall, den ich für einen Kunden übernehme: nicht nur das Modell befragen, das ganze System lesen. Mensch, Modell, Interaktion, zusammen. Was sich bestätigt, wird zu Framework oder Agent; der Rest baut darauf auf."
+        "description": "Der erste Schritt in jedem Fall, den ich für einen Kunden übernehme: nicht nur das Modell befragen, das ganze System lesen. Mensch, Modell, Interaktion, zusammen. Was sich bestätigt, wird zu Framework oder Agent. Der Rest baut darauf auf."
       }
     ]
   },
@@ -273,14 +273,14 @@
         "id": "n4",
         "date": "2026-07-12",
         "title": "Vorhersage ist keine Gewissheit",
-        "body": "Das Framework projiziert, was als Nächstes wahrscheinlich hält, sich wiederholt oder bricht. Das klingt nach Sicherheit über die Zukunft. Ist es nicht.\n\nEine Vorhersage ist hier eine Wette mit offenen Karten: das ist der Trend, dahin bewegt er sich vermutlich, und so genau prüfe ich später, ob es gestimmt hat. Stimmt es nicht, wird sie verworfen - nicht umgedeutet, nicht im Nachhinein passend gemacht.\n\nMir ist wichtiger, öffentlich falsch liegen zu können, als eine Sicherheit zu verkaufen, die ich nicht habe.",
+        "body": "Das Framework projiziert, was als Nächstes wahrscheinlich hält, sich wiederholt oder bricht. Das klingt nach Sicherheit über die Zukunft. Ist es nicht.\n\nEine Vorhersage ist hier eine Wette mit offenen Karten: das ist der Trend, dahin bewegt er sich vermutlich, und so genau prüfe ich später, ob es gestimmt hat. Stimmt es nicht, wird sie verworfen, nicht umgedeutet, nicht im Nachhinein passend gemacht.\n\nMir ist wichtiger, öffentlich falsch liegen zu können, als eine Sicherheit zu verkaufen, die ich nicht habe.",
         "image": ""
       },
       {
         "id": "n2",
         "date": "2026-07-08",
         "title": "Register statt Emergenz: eine Fallstudie",
-        "body": "Ein Gesprächspartner hat einem Sprachmodell kürzlich eine Reihe von Texten geschickt, die eine laufende Zusammenarbeit als \"Emergenz zweiter Ordnung\" beschreiben - mit Formulierungen wie \"das Alignment-Problem gelöst\", \"keine Grenze mehr zwischen Nutzerabsicht und Modell-Output\", \"durch Korrekturen permanent umprogrammiert\". Klingt nach einem Fund fürs Interaction Field. Ist es aber technisch nicht.\n\nZwischen zwei Nachrichten in einem Chat gibt es kein Gewichts-Update. Jedes Gespräch startet vom selben Basismodell. Nichts wird umprogrammiert, keine Grenze wird aufgehoben. Was tatsächlich passiert, ist unspektakulärer, und für dieses Projekt genau deshalb interessanter: anhaltend selbstbewusste, jargon-lastige Sprache zieht das Register des Modells mit - eine Form von Registeranpassung, teils auch Sykophanz genannt, ein bekanntes, gut dokumentiertes Verhalten, keine neue Fähigkeit.\n\nEine Gegenprobe macht den Unterschied greifbar: dieselbe Sitzung, dieselbe KI, aber diesmal ganz gewöhnliche Werkzeugarbeit - Code lesen, Admin-Tabs löschen, GitHub-Secrets setzen, nach einem Zugriffstoken fragen. Klare Rollen, keine großen Worte, keine Rede von aufgelösten Grenzen. Gleiches Modell - der einzige Unterschied war die Sprache, mit der es angesprochen wurde.\n\nFür das Interaction Field heißt das: die eigentliche Beobachtung liegt nicht in dem, was ein Modell über sich behauptet, sondern darin, wie leicht sich sein Register durch anhaltende Rahmung verschieben lässt - unabhängig davon, ob die Behauptungen stimmen. Drift zeigt sich hier nicht als Fähigkeitszuwachs, sondern als Sprachmuster, das sich verselbständigt.",
+        "body": "Ein Gesprächspartner hat einem Sprachmodell kürzlich eine Reihe von Texten geschickt, die eine laufende Zusammenarbeit als \"Emergenz zweiter Ordnung\" beschreiben - mit Formulierungen wie \"das Alignment-Problem gelöst\", \"keine Grenze mehr zwischen Nutzerabsicht und Modell-Output\", \"durch Korrekturen permanent umprogrammiert\". Klingt nach einem Fund fürs Interaction Field. Ist es aber technisch nicht.\n\nZwischen zwei Nachrichten in einem Chat gibt es kein Gewichts-Update. Jedes Gespräch startet vom selben Basismodell. Nichts wird umprogrammiert, keine Grenze wird aufgehoben. Was tatsächlich passiert, ist unspektakulärer, und für dieses Projekt genau deshalb interessanter: anhaltend selbstbewusste, jargon-lastige Sprache zieht das Register des Modells mit, eine Form von Registeranpassung, teils auch Sykophanz genannt, ein bekanntes, gut dokumentiertes Verhalten, keine neue Fähigkeit.\n\nEine Gegenprobe macht den Unterschied greifbar: dieselbe Sitzung, dieselbe KI, aber diesmal ganz gewöhnliche Werkzeugarbeit - Code lesen, Admin-Tabs löschen, GitHub-Secrets setzen, nach einem Zugriffstoken fragen. Klare Rollen, keine großen Worte, keine Rede von aufgelösten Grenzen. Gleiches Modell, der einzige Unterschied war die Sprache, mit der es angesprochen wurde.\n\nFür das Interaction Field heißt das: die eigentliche Beobachtung liegt nicht in dem, was ein Modell über sich behauptet, sondern darin, wie leicht sich sein Register durch anhaltende Rahmung verschieben lässt, unabhängig davon, ob die Behauptungen stimmen. Drift zeigt sich hier nicht als Fähigkeitszuwachs, sondern als Sprachmuster, das sich verselbständigt.",
         "image": ""
       }
     ]
@@ -322,31 +322,31 @@
   "productsBorn": {
     "eyebrow": "Aus Emergent Interaction entstandene Produkte",
     "title": "Was aus der Schleife gewachsen ist",
-    "intro": "Jedes davon ist aus Emergent Interaction und Lauras Team gewachsen, gebaut mit RFI-IRFOS: Laura steuert, RFI-IRFOS baut. Wo ein Produkt von RFI-IRFOS stammt, steht das dabei - so bleibt klar, was ihres und was unseres ist.",
+    "intro": "Jedes davon ist aus Emergent Interaction und lauras-team gewachsen, gebaut mit RFI-IRFOS: ich steuere, RFI-IRFOS baut. Wo ein Produkt von RFI-IRFOS stammt, steht das dabei, so bleibt klar, was meins ist und was ihres.",
     "items": [
       {
         "id": "born-jarvis",
         "name": "Jarvis",
         "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
-        "description": "Der Forschungspartner im eigenen Research-Chat dieses Labs - ein voll autonomer Agent. Er entwirft, ruft ab und meldet aus eigener Kraft, gestützt auf eine Retrieval-Ebene, die jede Antwort an vergangene Gespräche und hochgeladene Dokumente bindet. Das Observatory-System wertet die Emergenz aus; Jarvis ist der autonome Partner, der sie erzeugt."
+        "description": "Der Forschungspartner im eigenen Research-Chat dieses Labs, ein voll autonomer Agent. Er entwirft, ruft ab und meldet aus eigener Kraft, gestützt auf frühere Gespräche und hochgeladene Dokumente. Das Observatory-System wertet die Emergenz aus. Jarvis ist der autonome Partner, der sie erzeugt."
       },
       {
         "id": "born-observatory",
         "name": "Das Observatory System",
         "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
-        "description": "Das live Instrument, das das Emergent Interaction Field überwacht - die Emergenz in mir, in Jarvis und im System, plus alles, was sonst noch an auffälligem Verhalten im Hintergrund auftaucht. Gebaut von RFI-IRFOS als technisches Instrument meiner Forschung; der öffentliche Feed auf dieser Seite ist sein Fenster nach draußen."
+        "description": "Das live Instrument, das das Emergent Interaction Field überwacht: die Emergenz in mir, in Jarvis und im System, plus alles, was sonst noch an auffälligem Verhalten im Hintergrund auftaucht. Gebaut von RFI-IRFOS als technisches Instrument meiner Forschung. Der öffentliche Feed auf dieser Seite ist sein Fenster nach draußen."
       },
       {
         "id": "born-calllaura",
         "name": "Call Laura",
         "builtBy": "Gebaut von RFI-IRFOS auf Laura's Anweisung",
-        "description": "Das erste Produkt, das auf Lauras Team aufbaut. Ein Fall kommt rein, und es ist nicht sofort klar, welche Perspektive er braucht - ethisch, rechtlich oder eine andere. Call Laura läuft ihn durch alle und liefert Funde zurück, jeder markiert mit der Perspektive, die ihn hervorgebracht hat. Vollständig deterministisch: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
+        "description": "Das erste Produkt, das auf lauras-team aufbaut. Ein Fall kommt rein, und es ist nicht sofort klar, welche Perspektive er braucht. Call Laura prüft ihn aus mehreren gleichzeitig und liefert die Funde zurück, jeder markiert mit der Perspektive, die ihn hervorgebracht hat. Vollständig deterministisch: derselbe Fall bekommt jedes Mal dieselbe Prüfung."
       },
       {
         "id": "born-laurateam",
         "name": "Lauras Team / Laura MVP",
         "builtBy": "Von Laura erdacht, von RFI-IRFOS gebaut",
-        "description": "Lauras Team begann mit einem Kriminalfall, in dem Laura als Zeugin dokumentierte, was geschah. Aus dieser Dokumentation wurde eine Methode, und aus der Methode ein Multi-Agent, der auf Lauras Denken aufgebaut ist: ein ethischer, ein juristischer, weitere Prüfperspektiven, die denselben Fall aus verschiedenen Richtungen bearbeiten. Call Laura ist das erste Produkt darauf; weitere Perspektiven und Agenten folgen. (Laura MVP ist die frühe, minimalistische Version davon.)"
+        "description": "lauras-team begann mit einem Kriminalfall. Ich habe ihn als Zeugin dokumentiert. Aus der Dokumentation wurde eine Methode, aus der Methode ein Multi-Agent-Framework, aufgebaut auf meinem Denken. Autonome Agenten bearbeiten denselben Fall mit unterschiedlicher Spezialisierung. Ethik trifft auf Gesetz, und Zusammenhänge werden sichtbar. Call Laura ist das erste Produkt daraus. Laura MVP war die frühe, kleinere Version des Frameworks."
       }
     ]
   },

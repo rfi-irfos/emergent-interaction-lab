@@ -135,8 +135,11 @@ button { cursor: pointer; font-family: inherit; }
   --on-cyan: #03050a;
   --price: #4cc38a;
   /* Glass-panel tokens: translucent surfaces over the shared emergence-field
-     backdrop, instead of flat opaque section colors — see .site-emergence-field. */
-  --glass-bg: rgba(16, 26, 44, .52);
+     backdrop, instead of flat opaque section colors — see .site-emergence-field.
+     Carries a faint wash of the site's own --accent-purple (#8b5cf6) so the
+     glass reads as dark violet-navy rather than plain blue-black - subtle by
+     design, not a new accent color. */
+  --glass-bg: rgba(24, 20, 46, .52);
   --glass-border: rgba(148, 197, 214, .16);
   --glass-blur: blur(18px);
   background: linear-gradient(180deg, #0a0e1a 0%, #0b1120 55%, #0a0e1a 100%);
@@ -214,9 +217,17 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="dark"] .site-livestats-tile,
 .site[data-theme="dark"] .site-protocol-diagram {
   background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  /* saturate() alongside the shared blur, plus an inset top highlight and a
+     soft ambient drop shadow - the plain blur alone read as flat/"raw"
+     rather than frosted glass against the mostly-uniform emergence-field
+     backdrop ("braucht mehr glassmorphism ... wie ne webpage von nem apple
+     produkt", flagged live). Boosted here rather than in the shared
+     --glass-blur token, so other glass-bg consumers (nav, pricing panels)
+     keep their existing, lighter treatment. */
+  backdrop-filter: var(--glass-blur) saturate(150%);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(150%);
   border-color: var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 20px 50px -24px rgba(0, 0, 0, .6);
 }
 .site[data-theme="dark"] .site-location-info:only-child {
   background: var(--glass-bg);
@@ -286,7 +297,18 @@ button { cursor: pointer; font-family: inherit; }
   padding: 0 60px; height: 70px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.site-nav-inner { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+/* Grid, not flex + space-between: with 3 unevenly-sized children (logo,
+   links, right-side controls), space-between pinned the outer two to the
+   edges but left the middle nav links only "roughly" centered - visually
+   skewed toward whichever side had the narrower neighbor ("menü oben soll
+   doch auch schön middle aligned sein", flagged live). The two 1fr side
+   columns force the middle column to sit at the true visual center
+   regardless of how wide the logo vs. the right-side controls are. */
+.site-nav-inner {
+  width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+}
+.site-nav-inner > :first-child { justify-self: start; }
+.site-nav-inner > :last-child { justify-self: end; }
 .site-logo-lockup { display: flex; align-items: center; gap: 10px; }
 .site-logo-img { height: 36px; width: auto; }
 .site-logo-text { font-size: 20px; font-weight: 900; color: var(--primary); }
@@ -2136,7 +2158,12 @@ button { cursor: pointer; font-family: inherit; }
    instead of the fixed 220px (usp cards vary more in length than the
    Born cards did) and no outer max-width clamp (each pillar's own grid
    context already constrains width). */
-.site-usp-carousel { max-width: none; }
+/* Clamped to the same 720px as .site-born-carousel - the "each pillar's own
+   grid context already constrains width" assumption above didn't hold in
+   practice, the single-card carousel stretched to the full section width
+   (1160px) with no grid siblings to bound it, reading as an oversized card
+   with too much empty space either side ("viel zu weite Karten", flagged live). */
+.site-usp-carousel { max-width: 720px; }
 .site-usp-carousel .site-born-track { min-height: 0; }
 .site-usp-card--carousel { width: 100%; }
 /* Slide-in transition, direction-aware (forward = next card enters from the
@@ -2208,8 +2235,8 @@ button { cursor: pointer; font-family: inherit; }
    correct version: same radial layout, smaller/tighter than the original,
    moved into a fixed-width left column instead of spanning full width. */
 .site-protocol-diagram {
-  max-width: 1140px; margin: 0 auto; padding: 40px 32px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  max-width: 960px; margin: 0 auto; padding: 40px 32px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
   display: flex; align-items: center; gap: 48px;
   overflow: visible;
 }
@@ -2390,7 +2417,10 @@ button { cursor: pointer; font-family: inherit; }
 @keyframes pageModalFade { from { opacity: 0 } to { opacity: 1 } }
 .page-modal-panel {
   position: relative; width: 100%; max-width: 760px;
-  background: linear-gradient(180deg, #0c1620 0%, #0a121a 100%);
+  /* Same faint violet-navy wash as --glass-bg above, for consistency between
+     the always-dark modal shell (Research/About the Lab/Certification) and
+     the inline glass panels on the homepage. */
+  background: linear-gradient(180deg, #0f1420 0%, #0c101a 100%);
   color: #dce8ee; border: 1px solid rgba(99, 240, 255, .18);
   border-radius: 18px; box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
   padding: 30px 32px 38px;
@@ -2419,7 +2449,16 @@ button { cursor: pointer; font-family: inherit; }
    instead of a plain link list, so they read as proof, not body text.
    Default = light theme (public page); the dark About-the-Lab modal
    re-skins them via the .page-modal-body override below. */
-.creds-badges { display: flex; flex-wrap: wrap; gap: 7px; margin: 22px 0 24px; }
+/* Small anchor label above the badge row - without it the pills floated
+   with no heading tying them to anything ("random ... ohne bezug mitten im
+   nirgendwo", flagged live), which read as clutter rather than a deliberate
+   proof strip. */
+.creds-lead {
+  font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-soft); margin: 0 0 10px;
+}
+.page-modal-body .creds-lead { color: #6f8590; }
+.creds-badges { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 24px; }
 .creds-badge {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 700; color: var(--text);
