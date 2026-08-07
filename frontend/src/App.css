@@ -853,6 +853,18 @@ button { cursor: pointer; font-family: inherit; }
 .site-usp-card p { font-size: 15px; color: var(--text); opacity: .8; line-height: 1.7; }
 
 .site-usp-pillars { display: flex; flex-direction: column; gap: 56px; max-width: 1160px; margin: 0 auto; }
+/* Each pillar's own bounded panel - was a bare div with no visual edge,
+   so one pillar's carousel arrows/dots ran straight into the next
+   pillar's, reading as "just a bunch of buttons" with no clear grouping
+   (flagged live). Same glass-panel treatment as the pricing carousel's
+   .site-webhub-group-panel, for a consistent sitewide "this is one unit"
+   language. */
+.site-usp-pillar {
+  max-width: 800px; margin: 0 auto; padding: 40px 32px;
+  background: var(--glass-bg, var(--surface)); border: 1px solid var(--glass-border, var(--border));
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 20px;
+}
 .site-usp-pillar-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 28px; text-align: center; }
 .site-usp-pillar-index { font-size: 13px; font-weight: 800; font-family: var(--mono); color: var(--primary); letter-spacing: .05em; }
 .site-usp-pillar-title { font-size: 22px; font-weight: 800; color: var(--text); }
