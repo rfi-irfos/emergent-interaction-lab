@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { SiteContent } from '../types/content'
-import { API_BASE } from '../lib/apiBase'
 import { adminFetch } from '../lib/adminApi'
 import type { Lang } from './useLang'
 
@@ -10,11 +9,14 @@ export function useContent(lang: Lang) {
   const [saving, setSaving]     = useState(false)
 
   // ── LOAD ────────────────────────────────────────────────────────────────
-  // Try the backend first (`/api/content?lang=`), which is the single source
-  // of truth once anything has been saved there (it lives on the persistent
-  // volume). GET is open (no auth needed) so the public site works too.
-  // Fall back to the static content.{lang}.json (served by the SPA / raw
-  // GitHub) for the GitHub Pages mirror where there is no backend at all.
+  // Frontend and backend are deliberately decoupled for content (2026-08-07):
+  // the backend's `/api/content` + persisted-volume + AdminPanel-publish path
+  // required an authenticated login and a separate JSON-import step for
+  // every single text change, on top of whatever deploy already shipped the
+  // code - a five-week source of exactly this friction, flagged live and
+  // repeatedly. Static content.{lang}.json (git-tracked, bundled into every
+  // build) is now the ONLY source: a normal `fly deploy` or GH Pages build
+  // already contains whatever text is in git, no extra publish step, ever.
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -33,23 +35,17 @@ export function useContent(lang: Lang) {
     }
 
     ;(async () => {
-      // 1) backend (works on fly.dev; 404/error on the GH Pages mirror)
-      const fromBackend = await fetchJson(`${API_BASE}/api/content?lang=${lang}`)
-      if (cancelled) return
-      if (fromBackend && Object.keys(fromBackend).length > 0) {
-        setContent(fromBackend); setLoading(false); return
-      }
-      // 2) static content.{lang}.json (SPA root / raw GitHub)
+      // 1) static content.{lang}.json (bundled with this exact build)
       const primary = await fetchJson(`${rawBase}content.${lang}.json${bust}`)
       if (cancelled) return
       if (primary) { setContent(primary); setLoading(false); return }
-      // 3) static EN fallback
+      // 2) static EN fallback
       if (lang !== 'en') {
         const en = await fetchJson(`${rawBase}content.json${bust}`)
         if (cancelled) return
         if (en) { setContent(en); setLoading(false); return }
       }
-      // 4) bundled default
+      // 3) bundled default
       const { defaultContent } = await import('../types/defaultContent')
       if (!cancelled) { setContent(defaultContent); setLoading(false) }
     })()
