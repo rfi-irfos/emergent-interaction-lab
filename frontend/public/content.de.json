@@ -63,14 +63,14 @@
     "headline": "Emergent Interaction Field",
     "subheadline": "Ich untersuche, was passiert, wenn ein Mensch wochenlang mit demselben KI-System arbeitet, nicht nur einmal. Dabei entstehen Muster, die niemand geplant hat.",
     "body": "",
-    "ctaLabel": "Blog lesen",
+    "ctaLabel": "Zum Blog",
     "ctaHref": "#news",
     "ctaSecLabel": "Über das Lab",
     "ctaSecHref": "#p/ueber-das-lab",
     "image": "",
     "bgX": 50,
     "bgY": 40,
-    "minHeight": 680
+    "minHeight": 520
   },
   "trust": {
     "items": []
@@ -153,6 +153,10 @@
         "file": "papers/paper-3-callaura.pdf"
       }
     ]
+  },
+  "pricing": {
+    "title": "Ein Paket für jede Phase",
+    "body": "Jeder Fall steht an einem anderen Punkt. Hier findest du das Paket, das zu deiner Phase passt, von der ersten Einschätzung bis zum laufenden Betrieb."
   },
   "usp": {
     "eyebrow": "Wie ich lese, bevor ich baue",

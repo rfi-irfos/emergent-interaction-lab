@@ -51,10 +51,12 @@ export function PricingTierCarousel({
       <div className={`site-webhub-carousel-featured${idx === defaultIdx ? ' is-default' : ''}`}>
         {active.isFlagship && <div className="site-webhub-flag">{flagshipBadge}</div>}
         <span className="site-webhub-chip">{active.phase}</span>
-        <h3 className="site-webhub-carousel-name">{active.name}</h3>
-        <div className="site-webhub-price">
-          {active.price}
-          {active.perLabel && <span className="site-webhub-per"> {active.perLabel}</span>}
+        <div className="site-webhub-carousel-title-row">
+          <h3 className="site-webhub-carousel-name">{active.name}</h3>
+          <div className="site-webhub-price">
+            {active.price}
+            {active.perLabel && <span className="site-webhub-per"> {active.perLabel}</span>}
+          </div>
         </div>
         {active.tagline && (
           <div className="site-webhub-blk">

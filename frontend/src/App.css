@@ -457,7 +457,9 @@ button { cursor: pointer; font-family: inherit; }
   .site-hero-tag::before, .site-news .site-eyebrow::before { animation: none; opacity: .85; }
 }
 .site-hero-h1 {
-  font-size: 72px; font-weight: 900; color: #fff; line-height: 1.0;
+  /* Scaled down from 72px - the hero read as oversized relative to the
+     rest of the page (flagged live, "der Hero ist uns zu groß"). */
+  font-size: 54px; font-weight: 900; color: #fff; line-height: 1.05;
   margin-bottom: 20px; letter-spacing: -.02em;
 }
 .site-hero-h1 span { color: var(--brand-cyan); }
@@ -2033,7 +2035,14 @@ button { cursor: pointer; font-family: inherit; }
   padding: 22px 22px 20px; margin-bottom: 16px;
 }
 .site-webhub-carousel-featured.is-default { border-color: var(--primary); }
-.site-webhub-carousel-name { font-size: 19px; font-weight: 800; margin: 8px 0 2px; color: var(--text); line-height: 1.25; }
+/* Name and price share one row - was two stacked blocks, flagged live
+   ("der Preis daneben, neben den Titel"). */
+.site-webhub-carousel-title-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin: 8px 0 2px; flex-wrap: wrap;
+}
+.site-webhub-carousel-name { font-size: 19px; font-weight: 800; margin: 0; color: var(--text); line-height: 1.25; }
+.site-webhub-carousel-title-row .site-webhub-price { margin-top: 0; white-space: nowrap; }
 /* Prev/next arrows flanking the filmstrip - previously tile-click was the
    only way to switch tiers, unlike every other carousel on the site (which
    all have .site-born-arrow buttons), flagged live as missing. */
@@ -2513,7 +2522,11 @@ button { cursor: pointer; font-family: inherit; }
 .creds-badge {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 700; color: var(--text);
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  /* A touch of the brand cyan instead of a flat grey pill - matched the
+     rest of the "too monochrome" complaint. */
+  background: color-mix(in srgb, var(--brand-cyan, var(--primary)) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand-cyan, var(--primary)) 30%, var(--border));
+  border-radius: 16px;
   padding: 5px 11px; text-decoration: none;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }

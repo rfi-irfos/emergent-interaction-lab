@@ -63,14 +63,14 @@
     "headline": "Emergent Interaction Field",
     "subheadline": "I study what happens when a person works with the same AI system for weeks, not just once. Patterns show up that nobody planned for.",
     "body": "",
-    "ctaLabel": "Read the blog",
+    "ctaLabel": "To the blog",
     "ctaHref": "#news",
     "ctaSecLabel": "About the Lab",
     "ctaSecHref": "#p/ueber-das-lab",
     "image": "",
     "bgX": 50,
     "bgY": 40,
-    "minHeight": 680
+    "minHeight": 520
   },
   "trust": {
     "items": []
@@ -153,6 +153,10 @@
         "file": "papers/paper-3-callaura.pdf"
       }
     ]
+  },
+  "pricing": {
+    "title": "A Package for Every Phase",
+    "body": "Every case stands at a different point. Find the package that matches your phase here, from the first read to ongoing operation."
   },
   "usp": {
     "eyebrow": "How I read, before I build",
