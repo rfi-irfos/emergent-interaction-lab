@@ -870,22 +870,30 @@ button { cursor: pointer; font-family: inherit; }
   /* A colored wash per pillar, not flat monochrome glass - the site name is
      "Emergent Interaction Lab" and uniform dark-grey panels read as flat/2D
      rather than emergent (flagged live, "schaut nur 2D aus, nicht
-     emergent"). Same three hues already used elsewhere on the site
-     (brand-cyan / accent-purple / the radial diagram's third stage color),
-     not new colors invented for this. */
-  background: linear-gradient(135deg, rgba(99, 240, 255, .1), transparent 60%), var(--glass-bg, var(--surface));
-  border: 1px solid var(--glass-border, var(--border));
+     emergent" / "zu eintönig"). Same three hues already used elsewhere on
+     the site (brand-cyan / accent-purple / the radial diagram's third stage
+     color), not new colors invented for this. Kept "ganz zart" (still a
+     wash, not a solid fill) per the explicit ask - just strong enough to
+     actually notice, which the first pass wasn't (bumped .10/.12 -> .18/.22
+     and the gradient now reaches most of the panel, not just one corner). */
+  background: linear-gradient(135deg, rgba(99, 240, 255, .18), rgba(99, 240, 255, .02) 90%), var(--glass-bg, var(--surface));
+  border: 1px solid color-mix(in srgb, #63f0ff 25%, var(--glass-border, var(--border)));
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 20px;
 }
 .site-usp-pillars > .site-usp-pillar:nth-of-type(2) {
-  background: linear-gradient(135deg, rgba(139, 92, 246, .1), transparent 60%), var(--glass-bg, var(--surface));
+  background: linear-gradient(135deg, rgba(139, 92, 246, .18), rgba(139, 92, 246, .02) 90%), var(--glass-bg, var(--surface));
+  border-color: color-mix(in srgb, #8b5cf6 25%, var(--glass-border, var(--border)));
 }
 .site-usp-pillars > .site-usp-pillar:nth-of-type(3) {
-  background: linear-gradient(135deg, rgba(20, 184, 166, .12), transparent 60%), var(--glass-bg, var(--surface));
+  background: linear-gradient(135deg, rgba(20, 184, 166, .2), rgba(20, 184, 166, .02) 90%), var(--glass-bg, var(--surface));
+  border-color: color-mix(in srgb, #14b8a6 25%, var(--glass-border, var(--border)));
 }
 .site-usp-pillar-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 28px; text-align: center; }
 .site-usp-pillar-index { font-size: 13px; font-weight: 800; font-family: var(--mono); color: var(--primary); letter-spacing: .05em; }
+.site-usp-pillars > .site-usp-pillar:nth-of-type(1) .site-usp-pillar-index { color: #63f0ff; }
+.site-usp-pillars > .site-usp-pillar:nth-of-type(2) .site-usp-pillar-index { color: #8b5cf6; }
+.site-usp-pillars > .site-usp-pillar:nth-of-type(3) .site-usp-pillar-index { color: #14b8a6; }
 .site-usp-pillar-title { font-size: 22px; font-weight: 800; color: var(--text); }
 .site-usp-pillar-subtitle { font-size: 14px; color: var(--text); opacity: .75; }
 .site-usp-pillar .site-usp-grid { grid-template-columns: repeat(2, 1fr); max-width: 860px; margin: 0 auto; gap: 32px; }
@@ -1967,8 +1975,6 @@ button { cursor: pointer; font-family: inherit; }
 
 /* ── PRICING ─────────────────────────────────────────────────────────────── */
 .site-pricing { background: var(--surface-alt); }
-.site-pricing-body { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-.site-pricing-body p { font-size: 17px; line-height: 1.8; color: var(--text); margin: 0; }
 
 /* ── WEBHUB OFFER LADDER ─────────────────────────────────────────────────── */
 /* The real, buyable service tiers (WebHubPricing.tsx) — deliberately more

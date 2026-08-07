@@ -177,6 +177,7 @@ export interface SiteContent {
   }
   creds?: CredLink[]
   pricing?: {
+    eyebrow?: string
     title: string
     body: string
   }

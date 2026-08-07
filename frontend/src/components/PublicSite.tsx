@@ -1647,13 +1647,16 @@ export function PublicSite({
             because the CMS intro text happens to be empty — see
             docs/superpowers/specs/2026-08-06-webhub-pricing-inline-carousel-design.md. */}
         <section className={reveal("site-section site-pricing")} id="pricing" data-cid="pricing.title">
-          {pricing?.title && <h2 className="site-section-title">{pricing.title}</h2>}
+          {pricing?.eyebrow && <div className="site-eyebrow">{pricing.eyebrow}</div>}
+          {pricing?.title && <Reveal from="bottom"><h2 className="site-section-title">{pricing.title}</h2></Reveal>}
           {pricing?.body && (
-            <div className="site-pricing-body">
-              {pricing.body.split('\n\n').map((para, i) => (
-                <p key={i}>{para}</p>
-              ))}
-            </div>
+            <Reveal from="bottom" delay={1}>
+              <div className="site-protocol-intro">
+                {pricing.body.split('\n\n').map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
+            </Reveal>
           )}
           <WebHubPricingCarousel content={content} />
         </section>

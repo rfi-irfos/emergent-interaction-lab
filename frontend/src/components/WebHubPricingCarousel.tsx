@@ -9,6 +9,33 @@ import { PricingTierCarousel, type PricingTier } from './PricingTierCarousel'
 // stops matching and no card gets the badge. Nothing breaks.
 const FLAGSHIP_NAME = 'Emergent Case Intelligence Sprint'
 
+// German display names — the product `name` comes straight from Stripe
+// (English-only, one name per product, no locale field) so the German site
+// showed English tier names even after the rest of the copy was translated
+// (flagged live, "die Pricings sind ja nicht mal auf Deutsch übersetzt").
+// Keyed by the same canonical (Stripe) name DETAIL uses; a name missing
+// here just falls back to the English original, same graceful-degradation
+// pattern as DETAIL. Names already German (Systemaudit, the *-review
+// products, Mangelcluster Sprint) aren't listed - nothing to translate.
+const NAME_DE: Record<string, string> = {
+  'Case Intake Scan': 'Fallaufnahme-Scan',
+  'Market & Competitor Intelligence': 'Markt- & Wettbewerbsanalyse',
+  'Framework Magnification': 'Framework-Schärfung',
+  'Emergent Case Intelligence Sprint': 'Emergente Fallrekonstruktion',
+  'Multi-Agent System Design': 'Multi-Agenten-Systemdesign',
+  'Implementation Build': 'Implementierung',
+  'Retainer / Monitoring': 'Betreuung / Monitoring',
+  'Framework Update': 'Framework-Aktualisierung',
+  'Root Level Review': 'Fundament-Review',
+  'Framework Design from Analysis': 'Framework-Entwurf aus der Analyse',
+  'System Design & Deployment': 'Systemdesign & Rollout',
+  'Watchtower Retainment': 'Watchtower-Lizenz',
+  'Multiagent System Coordination': 'Multi-Agenten-Koordination',
+  'Further Development': 'Weiterentwicklung',
+  'Behavior Analysis': 'Verhaltensanalyse',
+  'Behavior Model': 'Verhaltensmodell',
+}
+
 // Phase chip + single-language-at-a-time narrative, keyed by product name.
 // Deliberately outcome-only: what changes for the client / what they get,
 // never the internal mechanism (no "how it's built" language) — a client
@@ -662,7 +689,7 @@ export function WebHubPricingCarousel({ content }: { content: SiteContent }) {
 
   const buildTier = (p: PublicProduct): PricingTier => ({
     key: p.name,
-    name: p.name,
+    name: lang === 'de' ? (NAME_DE[p.name] ?? p.name) : p.name,
     phase: DETAIL[p.name]?.phase ?? p.category,
     tagline: DETAIL[p.name]?.[lang]?.tagline ?? (lang === 'en' ? p.description : (p.description_de ?? p.description)),
     points: DETAIL[p.name]?.[lang]?.points ?? [],
@@ -690,7 +717,7 @@ export function WebHubPricingCarousel({ content }: { content: SiteContent }) {
               buyLabel={c.buy}
               flagshipBadge={c.flagshipBadge}
               onBuy={tier => {
-                const p = items.find(p => p.name === tier.name)
+                const p = items.find(p => p.name === tier.key)
                 if (p) openCheckout(p)
               }}
             />
