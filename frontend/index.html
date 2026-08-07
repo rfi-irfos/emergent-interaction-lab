@@ -22,6 +22,16 @@
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Site-wide sans, actually loaded (previously the CSS named "Inter"
+         but never linked it, so every visitor silently fell through to
+         their OS's default UI font - Segoe UI, San Francisco, Roboto -
+         which read as generic/boring, flagged live. One family, full
+         100-900 weight range, replaces Inter everywhere per the existing
+         "no font-mixing" rule - not a font pairing, just a better single
+         choice with more character. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@100..900&display=swap" rel="stylesheet" />
     <!-- Static fallback shown until React hydrates and PublicSite's own
          document.title effect takes over from content.meta.title (see
          PublicSite.tsx) — was left as Vite's literal scaffold placeholder

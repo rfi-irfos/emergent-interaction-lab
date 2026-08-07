@@ -20,7 +20,7 @@
     "description": "Emergent Interaction Lab is a live research instrument studying how meaning, structure, and behavior emerge in continuous human-AI interaction.",
     "primaryColor": "#63f0ff",
     "accentColor": "#63f0ff",
-    "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
+    "font": "'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif"
   },
   "nav": {
     "logo": "",
@@ -117,7 +117,7 @@
       {
         "id": "validate",
         "label": "Validate",
-        "description": "I check what actually holds up against the measurement criteria on the Research page. A pattern has to show up at least three times, not just sound good once. It has to be structural, not just stylistic. And it has to reproduce without me re-specifying it, measurable in the CCET."
+        "description": "I check what actually holds up: at least three sessions, structural not stylistic, reproducible, measurable in the CCET."
       },
       {
         "id": "feedback",

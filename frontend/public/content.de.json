@@ -20,7 +20,7 @@
     "description": "Emergent Interaction Lab ist ein live laufendes Forschungsinstrument, das untersucht, wie Bedeutung, Struktur und Verhalten in kontinuierlicher Mensch-KI-Interaktion entstehen.",
     "primaryColor": "#63f0ff",
     "accentColor": "#63f0ff",
-    "font": "system-ui, -apple-system, 'Segoe UI', sans-serif"
+    "font": "'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif"
   },
   "nav": {
     "logo": "",
@@ -117,7 +117,7 @@
       {
         "id": "validate",
         "label": "Validieren",
-        "description": "Ich prüfe, was den Messkriterien auf der Forschungsseite tatsächlich standhält. Ein Muster muss sich mindestens drei Mal zeigen, nicht nur einmal gut klingen. Es muss strukturell sein, nicht nur stilistisch. Und es muss sich reproduzieren lassen, ohne dass ich es neu vorgebe, messbar im CCET."
+        "description": "Ich prüfe, was wirklich standhält: mindestens drei Sitzungen, strukturell statt stilistisch, reproduzierbar, messbar im CCET."
       },
       {
         "id": "feedback",

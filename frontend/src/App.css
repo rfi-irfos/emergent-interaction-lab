@@ -2,12 +2,14 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 /* ONE global sans across the whole admin/OS surface — matches Lighthouse's
-   own "no font-mixing" rule. Previously this read `var(--font, ...)` with
-   `--font` defined nowhere, so it silently always fell through to the
-   system-ui fallback while dozens of individual component rules separately
-   hardcoded `Inter, system-ui, ...` — meaning Inter was applied piecemeal,
-   not as a real base. Forced directly here instead. */
-body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+   own "no font-mixing" rule. Previously this named "Inter" but never
+   actually loaded it (no <link>/@import anywhere), so every visitor
+   silently fell through to their OS's default UI font - Segoe UI, San
+   Francisco, Roboto - which read as generic and boring (flagged live,
+   "furchtbare Schriftart"). Archivo is now genuinely loaded (index.html)
+   and used everywhere, full 100-900 weight range so existing bold/black
+   headline weights render as designed instead of clamping/faking bold. */
+body { font-family: 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
 /* `.mono` does NOT switch font family (that's the font-mixing this project
    wants gone) — it only keeps numbers/IDs/timestamps/money tabular so
    columns line up, same contract as Lighthouse's own `.mono`. */
@@ -1044,17 +1046,18 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="hc"] .site-footer-links a { color: #fff; }
 
 /* ── LANGUAGE TOGGLE (EN / DE) ────────────────────────────────────────────── */
-.lang-toggle {
-  display: inline-flex; gap: 2px; background: var(--surface-sunken);
-  border: 1px solid var(--border); border-radius: 9px; padding: 3px;
-}
+/* Single cycling button (see LanguageToggle in PublicSite.tsx), styled to
+   match .site-nav-icon-btn / .theme-toggle-btn - one consistent icon-button
+   family instead of a separate two-button pill group. */
 .lang-toggle-btn {
-  border: none; background: transparent; font-size: 12px; font-weight: 800;
-  letter-spacing: .03em; padding: 5px 10px; border-radius: 6px;
-  color: var(--text-soft); cursor: pointer; transition: background .2s, color .2s;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 38px; padding: 0 14px; border-radius: 9px;
+  background: transparent; border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; font-weight: 800; letter-spacing: .03em;
+  cursor: pointer; transition: background .15s, border-color .15s, transform .15s;
 }
-.lang-toggle-btn:hover { color: var(--text); }
-.lang-toggle-btn.active { background: var(--primary); color: var(--on-primary); }
+.lang-toggle-btn:hover { background: var(--surface, rgba(127,127,127,.08)); border-color: var(--primary); transform: translateY(-1px); }
+.lang-toggle-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* ── WHATSAPP FLOAT ──────────────────────────────────────────────────────── */
 .site-whatsapp-btn {
@@ -1636,19 +1639,17 @@ button { cursor: pointer; font-family: inherit; }
 /* ══════════════════════════════════════════════════════════════════════════════
    THEME TOGGLE (light / dark / high-contrast) — mandatory on every public page
 ══════════════════════════════════════════════════════════════════════════════ */
-.theme-toggle {
-  display: inline-flex; align-items: center; gap: 2px;
-  background: var(--surface-sunken); border: 1px solid var(--border);
-  border-radius: 9px; padding: 3px;
-}
+/* Single cycling icon button now (see ThemeToggle in PublicSite.tsx), not a
+   3-button group - styled to match .site-nav-icon-btn so the nav reads as
+   one consistent family of icon buttons ("sleeker", "mehr Übersicht",
+   flagged live) instead of a separate pill-group widget. */
 .theme-toggle-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 30px; border-radius: 6px;
-  background: none; border: none; color: var(--text-soft);
-  transition: background .15s, color .15s;
+  width: 38px; height: 38px; border-radius: 9px;
+  background: transparent; border: 1px solid var(--border); color: var(--text);
+  transition: background .15s, border-color .15s, transform .15s;
 }
-.theme-toggle-btn:hover { color: var(--text); }
-.theme-toggle-btn.active { background: var(--primary); color: var(--on-primary); }
+.theme-toggle-btn:hover { background: var(--surface, rgba(127,127,127,.08)); border-color: var(--primary); transform: translateY(-1px); }
 .theme-toggle-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1704,8 +1705,6 @@ button { cursor: pointer; font-family: inherit; }
   color: var(--text-soft); margin-bottom: 8px;
 }
 .site-mobile-theme-row { display: flex; }
-.site-mobile-theme-row .theme-toggle { flex: 1; justify-content: space-between; }
-.site-mobile-theme-row .theme-toggle-btn { flex: 1; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE — the live site reflows to a mobile-app-grade layout by viewport.

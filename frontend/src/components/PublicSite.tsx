@@ -706,51 +706,46 @@ const THEME_OPTS: { id: Theme; icon: React.ReactNode }[] = [
   { id: 'hc', icon: <IconContrast /> },
 ]
 
+// Single cycling button, not a 3-way button group: shows only the CURRENT
+// theme's icon and advances to the next one on click (same one-toggle
+// pattern as rfi-irfos-web's own nav) - three permanently-visible buttons
+// read as nav clutter, flagged live ("mehr Platz und Übersicht").
 function ThemeToggle({ theme, setTheme }: { theme: Theme; setTheme: (t: Theme) => void }) {
   const { t } = useLang()
   const labels: Record<Theme, string> = { light: t.themeLight, dark: t.themeDark, hc: t.themeContrast }
+  const idx = THEME_OPTS.findIndex(o => o.id === theme)
+  const current = THEME_OPTS[idx === -1 ? 0 : idx]
+  const next = THEME_OPTS[(idx === -1 ? 0 : idx + 1) % THEME_OPTS.length]
   return (
-    <div className="theme-toggle" role="group" aria-label={t.colorScheme}>
-      {THEME_OPTS.map(o => (
-        <button
-          key={o.id}
-          type="button"
-          className={`theme-toggle-btn ${theme === o.id ? 'active' : ''}`}
-          aria-pressed={theme === o.id}
-          aria-label={labels[o.id]}
-          title={labels[o.id]}
-          onClick={() => setTheme(o.id)}
-        >
-          {o.icon}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className="theme-toggle-btn theme-toggle-single"
+      aria-label={`${t.colorScheme}: ${labels[current.id]}`}
+      title={`${labels[current.id]} → ${labels[next.id]}`}
+      onClick={() => setTheme(next.id)}
+    >
+      {current.icon}
+    </button>
   )
 }
 
 // ── Language toggle (EN / DE) ─────────────────────────────────────────────────
-
-const LANG_OPTS: { id: Lang; label: string }[] = [
-  { id: 'en', label: 'EN' },
-  { id: 'de', label: 'DE' },
-]
+// Same single-button cycling pattern as ThemeToggle above, not two
+// permanently-visible EN/DE buttons.
 
 function LanguageToggle() {
   const { lang, setLang, t } = useLang()
+  const next: Lang = lang === 'en' ? 'de' : 'en'
   return (
-    <div className="lang-toggle" role="group" aria-label={t.language}>
-      {LANG_OPTS.map(o => (
-        <button
-          key={o.id}
-          type="button"
-          className={`lang-toggle-btn ${lang === o.id ? 'active' : ''}`}
-          aria-pressed={lang === o.id}
-          onClick={() => setLang(o.id)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className="lang-toggle-btn lang-toggle-single"
+      aria-label={`${t.language}: ${lang.toUpperCase()}`}
+      title={`${lang.toUpperCase()} → ${next.toUpperCase()}`}
+      onClick={() => setLang(next)}
+    >
+      {lang.toUpperCase()}
+    </button>
   )
 }
 
@@ -1237,7 +1232,12 @@ export function PublicSite({
                   </svg>
                 </a>
                 {nav.ctaLabel && (
-                  <E field="nav.ctaLabel" value={nav.ctaLabel} as="a" href={nav.ctaHref ?? '#'} className="site-nav-cta site-nav-cta-label" />
+                  <a href={nav.ctaHref ?? '#'} className="site-nav-icon-btn site-nav-cta-icon" aria-label={nav.ctaLabel} title={nav.ctaLabel}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="m2 6 10 7 10-7" />
+                    </svg>
+                  </a>
                 )}
               </div>
               {/* compact lang toggle — always visible on mobile, hidden on desktop */}
