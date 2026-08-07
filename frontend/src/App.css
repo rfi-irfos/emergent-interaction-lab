@@ -1970,6 +1970,18 @@ button { cursor: pointer; font-family: inherit; }
   max-width: 1160px; margin: 0 auto 28px; height: 1px;
   background: linear-gradient(90deg, var(--border), transparent);
 }
+/* One heading for the whole Systemaudit lens, its three sub-bundle panels
+   nested underneath - previously each of the three panels repeated
+   "Systemaudit - X" as its own top-level label, stacking "Systemaudit"
+   three times in a row with no shared parent (flagged live). Bigger than
+   .site-webhub-group-label since it's one level up, labelling a group of
+   panels rather than a single one. */
+.site-webhub-lens-group { margin-bottom: 48px; }
+.site-webhub-lens-label {
+  max-width: 1160px; margin: 0 auto 20px; font-size: 15px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--text);
+  text-align: center;
+}
 /* Systemaudit sub-bundles (reviews / system design & build / ongoing) -
    smaller, muted secondary header so it reads as "inside Systemaudit",
    not a fourth top-level domain competing with the other three. */
@@ -1999,6 +2011,11 @@ button { cursor: pointer; font-family: inherit; }
 }
 .site-webhub-carousel-featured.is-default { border-color: var(--primary); }
 .site-webhub-carousel-name { font-size: 19px; font-weight: 800; margin: 8px 0 2px; color: var(--text); line-height: 1.25; }
+/* Prev/next arrows flanking the filmstrip - previously tile-click was the
+   only way to switch tiers, unlike every other carousel on the site (which
+   all have .site-born-arrow buttons), flagged live as missing. */
+.site-webhub-carousel-controls { display: flex; align-items: center; gap: 10px; }
+.site-webhub-carousel-controls .site-webhub-carousel-strip { flex: 1; min-width: 0; }
 .site-webhub-carousel-strip {
   display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-behavior: smooth;
 }

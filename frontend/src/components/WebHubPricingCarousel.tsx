@@ -712,8 +712,14 @@ export function WebHubPricingCarousel({ content }: { content: SiteContent }) {
                 })).filter(g => g.items.length > 0)
                 const subLabel = (sg: SubgroupKey) =>
                   sg === 'reviews' ? c.subgroupReviews : sg === 'systemDesign' ? c.subgroupSystemDesign : c.subgroupOngoing
-                return subgroups.map(({ sg, items }) =>
-                  renderGroup(`${lens}-${sg}`, `${label} - ${subLabel(sg)}`, items),
+                // One "Systemaudit" heading for all three sub-bundles, not a
+                // repeated "Systemaudit - X" label on each of the three panels
+                // stacked on top of each other (flagged live).
+                return (
+                  <div key={lens} className="site-webhub-lens-group">
+                    <div className="site-webhub-lens-label">{label}</div>
+                    {subgroups.map(({ sg, items }) => renderGroup(`${lens}-${sg}`, subLabel(sg), items))}
+                  </div>
                 )
               }
               return renderGroup(lens, label, group)
