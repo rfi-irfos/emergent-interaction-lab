@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { LENS_ORDER, SUBGROUP_ORDER, defaultTierIndex, lensRank, subgroupRank } from './pricingTiers'
 
 describe('lensRank', () => {
-  it('ranks a Rekonstruktion product first', () => {
-    expect(lensRank('Case Intake Scan')).toBe(0)
+  it('ranks an Analysen product first', () => {
+    expect(lensRank('Emergent Case Intelligence Sprint')).toBe(0)
   })
-  it('ranks an Analysen product second', () => {
-    expect(lensRank('Emergent Case Intelligence Sprint')).toBe(1)
+  it('ranks a Rekonstruktion product second', () => {
+    expect(lensRank('Case Intake Scan')).toBe(1)
   })
   it('ranks a Systemaudit product last', () => {
     expect(lensRank('Rollenreview')).toBe(2)

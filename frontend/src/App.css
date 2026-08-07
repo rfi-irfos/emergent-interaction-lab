@@ -218,7 +218,11 @@ button { cursor: pointer; font-family: inherit; }
 .site[data-theme="dark"] .site-cert-card,
 .site[data-theme="dark"] .site-livestats-tile,
 .site[data-theme="dark"] .site-protocol-diagram {
-  background: var(--glass-bg);
+  /* Colored wash, not flat monochrome glass - uniform dark-grey cards
+     everywhere read as flat/2D rather than "emergent" (flagged live,
+     "schaut nur 2D aus, nicht emergent"), same fix as .site-usp-pillar /
+     .site-webhub-group-panel below. */
+  background: linear-gradient(135deg, rgba(99, 240, 255, .08), transparent 60%), var(--glass-bg);
   /* saturate() alongside the shared blur, plus an inset top highlight and a
      soft ambient drop shadow - the plain blur alone read as flat/"raw"
      rather than frosted glass against the mostly-uniform emergence-field
@@ -861,9 +865,22 @@ button { cursor: pointer; font-family: inherit; }
    language. */
 .site-usp-pillar {
   max-width: 800px; margin: 0 auto; padding: 40px 32px;
-  background: var(--glass-bg, var(--surface)); border: 1px solid var(--glass-border, var(--border));
+  /* A colored wash per pillar, not flat monochrome glass - the site name is
+     "Emergent Interaction Lab" and uniform dark-grey panels read as flat/2D
+     rather than emergent (flagged live, "schaut nur 2D aus, nicht
+     emergent"). Same three hues already used elsewhere on the site
+     (brand-cyan / accent-purple / the radial diagram's third stage color),
+     not new colors invented for this. */
+  background: linear-gradient(135deg, rgba(99, 240, 255, .1), transparent 60%), var(--glass-bg, var(--surface));
+  border: 1px solid var(--glass-border, var(--border));
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 20px;
+}
+.site-usp-pillars > .site-usp-pillar:nth-of-type(2) {
+  background: linear-gradient(135deg, rgba(139, 92, 246, .1), transparent 60%), var(--glass-bg, var(--surface));
+}
+.site-usp-pillars > .site-usp-pillar:nth-of-type(3) {
+  background: linear-gradient(135deg, rgba(20, 184, 166, .12), transparent 60%), var(--glass-bg, var(--surface));
 }
 .site-usp-pillar-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 28px; text-align: center; }
 .site-usp-pillar-index { font-size: 13px; font-weight: 800; font-family: var(--mono); color: var(--primary); letter-spacing: .05em; }
@@ -2000,7 +2017,13 @@ button { cursor: pointer; font-family: inherit; }
    light/dark/hc theme via the plain --surface/--text tokens. ── */
 .site-webhub-group-panel {
   max-width: 720px; margin: 0 auto 32px; padding: 28px 24px;
-  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  /* Colored wash, not flat monochrome glass - matches .site-usp-pillar's
+     fix for the same "schaut nur 2D aus" complaint. Also adds the
+     var(--surface) fallback .site-usp-pillar already had - --glass-bg is
+     dark-theme-only, so this panel had NO background at all in light/hc
+     before. */
+  background: linear-gradient(135deg, rgba(99, 240, 255, .08), transparent 60%), var(--glass-bg, var(--surface));
+  border: 1px solid var(--glass-border, var(--border));
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 18px;
 }

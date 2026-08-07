@@ -53,10 +53,6 @@
       {
         "label": "Pricing",
         "href": "#p/pricing"
-      },
-      {
-        "label": "Certification",
-        "href": "#p/zertifizierung"
       }
     ],
     "ctaLabel": "Contact",
@@ -304,6 +300,10 @@
     "description": "Research into human-AI interaction, since 2023.",
     "cols": [],
     "links": [
+      {
+        "label": "Certification",
+        "href": "#p/zertifizierung"
+      },
       {
         "label": "Datenschutz",
         "href": "/datenschutz"

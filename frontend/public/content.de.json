@@ -53,10 +53,6 @@
       {
         "label": "Preise",
         "href": "#p/pricing"
-      },
-      {
-        "label": "Zertifizierung",
-        "href": "#p/zertifizierung"
       }
     ],
     "ctaLabel": "Kontakt",
@@ -304,6 +300,10 @@
     "description": "Forschung zu Mensch-KI-Interaktion, seit 2023.",
     "cols": [],
     "links": [
+      {
+        "label": "Zertifizierung",
+        "href": "#p/zertifizierung"
+      },
       {
         "label": "Datenschutz",
         "href": "/datenschutz"

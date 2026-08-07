@@ -4,7 +4,11 @@
 // so it can be unit-tested without any rendering/DOM dependency.
 
 export type LensKey = 'rekonstruktion' | 'analysen' | 'systemaudit'
-export const LENS_ORDER: LensKey[] = ['rekonstruktion', 'analysen', 'systemaudit']
+// Analysen first - it carries the flagship product (Emergent Case
+// Intelligence Sprint) and should be the first thing a visitor sees in the
+// pricing ladder, not the second group down (flagged live, "die Analysen
+// oben rauf").
+export const LENS_ORDER: LensKey[] = ['analysen', 'rekonstruktion', 'systemaudit']
 
 const REKONSTRUKTION_NAMES = new Set([
   'Case Intake Scan', 'Mangelcluster Sprint',
