@@ -25,6 +25,7 @@ mod thinking_fragments;
 mod track;
 mod upload;
 mod eil_content;
+mod eil_crud;
 
 use axum::{http::HeaderName, routing::{get, post}, Router};
 use sqlx::SqlitePool;
@@ -427,6 +428,7 @@ async fn main() {
         .route("/api/dashboards/widgets/:id", axum::routing::patch(dashboards::update_widget).delete(dashboards::delete_widget))
         // EIL research content (Phase 4)
         .route("/api/eil/public-snapshot", get(eil_content::public_snapshot))
+        .nest("/api/eil/entities", eil_crud::router())
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))
