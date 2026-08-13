@@ -35,34 +35,66 @@ function writeHtml(relPath, html) {
   fs.writeFileSync(full, html);
 }
 
-function entityPage(entity, locale, typeLabel, allData) {
+function entityPage(entity, locale, typeLabel, allData, type) {
   const title = entity[`title_${locale}`] || entity.title_en;
   const desc = entity[`description_${locale}`] || entity.description_en || "";
   const summary = entity[`abstract_${locale}`] || entity[`core_question_${locale}`] || entity[`research_question_${locale}`] || desc;
   const url = `${BASE}/${locale}/${typeLabel}/${entity.slug}/`;
-  
-  // Build related links from all data
-  const related = [];
-  if (allData) {
-    for (const [key, route] of [
-      ["research_programs", "research"],
-      ["case_studies", "evidence"],
-      ["publications", "publications"],
-      ["frameworks", "frameworks"],
-      ["systems", "systems"],
-      ["methods", "methods"],
-      ["datasets", "datasets"],
-      ["profiles", "laura"]
-    ]) {
-      for (const e of (allData[key] || []).slice(0, 3)) {
-        const t = e[`title_${locale}`] || e.title_en || e.name_en;
-        if (t && e.slug !== entity.slug) {
-          related.push(`<li><a href="${BASE}/${locale}/${route}/${e.slug}/">${esc(t)}</a></li>`);
-        }
-      }
+
+  // Build a slug→entity+route lookup for all entities
+  const idToSlug = {};
+  const routeOf = {
+    research_programs: "research",
+    case_studies: "evidence",
+    publications: "publications",
+    frameworks: "frameworks",
+    systems: "systems",
+    methods: "methods",
+    datasets: "datasets",
+    profiles: "laura",
+  };
+  for (const k of Object.keys(routeOf)) {
+    for (const e of (allData[k] || [])) {
+      const t = e[`title_${locale}`] || e[`name_${locale}`] || e.title_en || e.name_en || "";
+      idToSlug[e.id] = { slug: e.slug, route: routeOf[k], title: t };
     }
   }
-  
+
+  // Collect related entity IDs from relations graph
+  const rels = allData.relations || {};
+  const relatedIds = new Set();
+  const idKey = {
+    research: "program_id",
+    evidence: "case_id",
+    publications: "publication_id",
+    frameworks: "framework_id",
+    systems: "system_id",
+    methods: "method_id",
+    datasets: "dataset_id",
+    laura: "profile_id",
+  }[type];
+  const relTables = {
+    research: ["research_program_frameworks:framework_id", "research_program_methods:method_id", "research_program_evidence:case_id", "research_program_publications:publication_id", "research_program_systems:system_id"],
+    frameworks: ["framework_methods:method_id", "research_program_frameworks:program_id", "system_frameworks:system_id"],
+    systems: ["system_frameworks:framework_id", "system_evidence:case_id", "research_program_systems:program_id"],
+    methods: ["framework_methods:framework_id", "research_program_methods:program_id"],
+    evidence: ["system_evidence:system_id", "research_program_evidence:program_id", "case_study_analytical_operations:op_id"],
+    publications: ["research_program_publications:program_id", "publication_authors:profile_id"],
+    laura: ["publication_authors:publication_id"],
+  }[type] || [];
+
+  for (const spec of relTables) {
+    const [tbl, otherKey] = spec.split(":");
+    for (const r of (rels[tbl] || [])) {
+      if (r[idKey] === entity.id) relatedIds.add(r[otherKey]);
+    }
+  }
+
+  const related = [...relatedIds]
+    .map((id) => idToSlug[id])
+    .filter(Boolean)
+    .map((e) => `<li><a href="${BASE}/${locale}/${e.route}/${e.slug}/">${esc(e.title)}</a></li>`);
+
   // JSON-LD structured data
   const jsonLd = {
     "@context": "https://schema.org",
@@ -186,8 +218,8 @@ async function main() {
   ];
   for (const [key, route] of types) {
     for (const e of snap[key] || []) {
-      writeHtml(`en/${route}/${e.slug}/index.html`, entityPage(e, "en", route, snap));
-      writeHtml(`de/${route}/${e.slug}/index.html`, entityPage(e, "de", route, snap));
+      writeHtml(`en/${route}/${e.slug}/index.html`, entityPage(e, "en", route, snap, route));
+      writeHtml(`de/${route}/${e.slug}/index.html`, entityPage(e, "de", route, snap, route));
     }
   }
   writeSitemap(snap);

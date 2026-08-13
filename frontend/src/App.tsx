@@ -64,14 +64,61 @@ function EntityView({ data, locale, type, slug }: { data: any; locale: string; t
   const desc = field(item, locale, "description") || field(item, locale, "abstract") || field(item, locale, "bio");
   const back = `/${locale}/`;
 
-  const related: string[] = [];
-  for (const s of SECTIONS) {
-    for (const e of (data[s.key] || [])) {
-      if (e.slug === item.slug) continue;
-      const t = e[`title_${locale}`] || e[`name_${locale}`] || e.title_en || e.name_en;
-      if (t) related.push(`/${locale}/${s.route}/${e.slug}/`);
+  // Build a slug→entity+route lookup for all entities
+  const idToSlug: Record<string, { slug: string; route: string; title: string }> = {};
+  const routeOf: Record<string, string> = {
+    research_programs: "research",
+    case_studies: "evidence",
+    publications: "publications",
+    frameworks: "frameworks",
+    systems: "systems",
+    methods: "methods",
+    datasets: "datasets",
+    profiles: "laura",
+  };
+  for (const k of Object.keys(routeOf)) {
+    for (const e of (data[k] || [])) {
+      const t = e[`title_${locale}`] || e[`name_${locale}`] || e.title_en || e.name_en || "";
+      idToSlug[e.id] = { slug: e.slug, route: routeOf[k], title: t };
     }
   }
+
+  // Collect related entity IDs from the relations graph
+  const rels = data.relations || {};
+  const relatedIds = new Set<string>();
+
+  if (type === "research") {
+    for (const r of rels.research_program_frameworks || []) if (r.program_id === item.id) relatedIds.add(r.framework_id);
+    for (const r of rels.research_program_methods || []) if (r.program_id === item.id) relatedIds.add(r.method_id);
+    for (const r of rels.research_program_evidence || []) if (r.program_id === item.id) relatedIds.add(r.case_id);
+    for (const r of rels.research_program_publications || []) if (r.program_id === item.id) relatedIds.add(r.publication_id);
+    for (const r of rels.research_program_systems || []) if (r.program_id === item.id) relatedIds.add(r.system_id);
+  } else if (type === "frameworks") {
+    for (const r of rels.framework_methods || []) if (r.framework_id === item.id) relatedIds.add(r.method_id);
+    for (const r of rels.research_program_frameworks || []) if (r.framework_id === item.id) relatedIds.add(r.program_id);
+    for (const r of rels.system_frameworks || []) if (r.framework_id === item.id) relatedIds.add(r.system_id);
+  } else if (type === "systems") {
+    for (const r of rels.system_frameworks || []) if (r.system_id === item.id) relatedIds.add(r.framework_id);
+    for (const r of rels.system_evidence || []) if (r.system_id === item.id) relatedIds.add(r.case_id);
+    for (const r of rels.research_program_systems || []) if (r.system_id === item.id) relatedIds.add(r.program_id);
+  } else if (type === "methods") {
+    for (const r of rels.framework_methods || []) if (r.method_id === item.id) relatedIds.add(r.framework_id);
+    for (const r of rels.research_program_methods || []) if (r.method_id === item.id) relatedIds.add(r.program_id);
+  } else if (type === "evidence") {
+    for (const r of rels.system_evidence || []) if (r.case_id === item.id) relatedIds.add(r.system_id);
+    for (const r of rels.research_program_evidence || []) if (r.case_id === item.id) relatedIds.add(r.program_id);
+    for (const r of rels.case_study_analytical_operations || []) if (r.case_id === item.id) relatedIds.add(r.op_id);
+  } else if (type === "publications") {
+    for (const r of rels.research_program_publications || []) if (r.publication_id === item.id) relatedIds.add(r.program_id);
+    for (const r of rels.publication_authors || []) if (r.publication_id === item.id) relatedIds.add(r.profile_id);
+  } else if (type === "laura") {
+    for (const r of rels.publication_authors || []) if (r.profile_id === item.id) relatedIds.add(r.publication_id);
+  }
+
+  const related = [...relatedIds]
+    .map((id) => idToSlug[id])
+    .filter(Boolean)
+    .map((e) => ({ href: `/${locale}/${e.route}/${e.slug}/`, label: e.title }));
 
   let details: React.ReactNode = null;
   if (type === "research") {
@@ -183,8 +230,8 @@ function EntityView({ data, locale, type, slug }: { data: any; locale: string; t
         <section>
           <h2>{locale === "de" ? "Verwandt" : "Related"}</h2>
           <ul>
-            {related.slice(0, 12).map((href, idx) => (
-              <li key={idx}><a href={href}>{href.split("/").filter(Boolean).pop()?.replace(/-/g, " ")}</a></li>
+            {related.slice(0, 12).map((e, idx) => (
+              <li key={idx}><a href={e.href}>{e.label}</a></li>
             ))}
           </ul>
         </section>

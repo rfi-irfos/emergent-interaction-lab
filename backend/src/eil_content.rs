@@ -1,4 +1,4 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json, Router, routing::get};
 use serde_json::{json, Map, Value};
 use sqlx::sqlite::SqlitePool;
 use sqlx::{Row, Column};
@@ -35,6 +35,14 @@ fn row_to_json(row: &sqlx::sqlite::SqliteRow) -> Value {
         m.insert(name.to_string(), val);
     }
     Value::Object(m)
+}
+
+async fn fetch_rels(pool: &SqlitePool, table: &str, cols: &[&str]) -> Vec<Value> {
+    let q = format!("SELECT {} FROM {}", cols.join(", "), table);
+    match sqlx::query(&q).fetch_all(pool).await {
+        Ok(rows) => rows.iter().map(row_to_json).collect(),
+        Err(_) => Vec::new(),
+    }
 }
 
 /// Public projection: only Published entities, private/restricted fields excluded.
@@ -102,6 +110,18 @@ pub async fn get_public_snapshot(pool: &SqlitePool) -> Result<Value, sqlx::Error
     .fetch_all(pool)
     .await?;
 
+    // Relations for linking detail pages
+    let rel_program_frameworks = fetch_rels(pool, "research_program_frameworks", &["program_id", "framework_id"]).await;
+    let rel_program_methods = fetch_rels(pool, "research_program_methods", &["program_id", "method_id"]).await;
+    let rel_program_evidence = fetch_rels(pool, "research_program_evidence", &["program_id", "case_id"]).await;
+    let rel_program_publications = fetch_rels(pool, "research_program_publications", &["program_id", "publication_id"]).await;
+    let rel_program_systems = fetch_rels(pool, "research_program_systems", &["program_id", "system_id"]).await;
+    let rel_framework_methods = fetch_rels(pool, "framework_methods", &["framework_id", "method_id"]).await;
+    let rel_system_frameworks = fetch_rels(pool, "system_frameworks", &["system_id", "framework_id"]).await;
+    let rel_system_evidence = fetch_rels(pool, "system_evidence", &["system_id", "case_id"]).await;
+    let rel_case_ops = fetch_rels(pool, "case_study_analytical_operations", &["case_id", "op_id"]).await;
+    let rel_publication_authors = fetch_rels(pool, "publication_authors", &["publication_id", "profile_id"]).await;
+
     Ok(json!({
         "schema_version": "1.0.0",
         "research_programs": programs.iter().map(row_to_json).collect::<Vec<_>>(),
@@ -112,6 +132,18 @@ pub async fn get_public_snapshot(pool: &SqlitePool) -> Result<Value, sqlx::Error
         "methods": methods.iter().map(row_to_json).collect::<Vec<_>>(),
         "datasets": datasets.iter().map(row_to_json).collect::<Vec<_>>(),
         "profiles": profiles.iter().map(row_to_json).collect::<Vec<_>>(),
+        "relations": {
+            "research_program_frameworks": rel_program_frameworks,
+            "research_program_methods": rel_program_methods,
+            "research_program_evidence": rel_program_evidence,
+            "research_program_publications": rel_program_publications,
+            "research_program_systems": rel_program_systems,
+            "framework_methods": rel_framework_methods,
+            "system_frameworks": rel_system_frameworks,
+            "system_evidence": rel_system_evidence,
+            "case_study_analytical_operations": rel_case_ops,
+            "publication_authors": rel_publication_authors,
+        }
     }))
 }
 
@@ -121,4 +153,9 @@ pub async fn public_snapshot(State(state): State<AppState>) -> impl IntoResponse
         Ok(v) => Json(v).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
+}
+
+/// Router for EIL content endpoints.
+pub fn router() -> Router<AppState> {
+    Router::new().route("/public-snapshot", get(public_snapshot))
 }
