@@ -35,6 +35,30 @@
       "system_class": "Multi-Agent",
       "title_de": "Multi-Agenten-Koordinationsmuster",
       "title_en": "Multi-Agent Coordination Patterns"
+    },
+    {
+      "claim_or_question_de": "Können Mensch–KI-Entscheidungssysteme die Entscheidungsqualität aufrechterhalten, wenn Eingabesignale adversarieller Manipulation ausgesetzt sind?",
+      "claim_or_question_en": "Can human–AI decision systems maintain decision quality when input signals are subject to adversarial manipulation?",
+      "derived_output": "Finding",
+      "epistemic_status": "Open",
+      "evidence_access": "Public",
+      "id": "cs_adv",
+      "slug": "adversarial-robustness-human-ai",
+      "system_class": "Human–AI",
+      "title_de": "Adversariale Robustheit in Mensch–KI-Entscheidungssystemen",
+      "title_en": "Adversarial Robustness in Human–AI Decision Systems"
+    },
+    {
+      "claim_or_question_de": "Wie werden analytische Methoden aus technischen Domänen in institutionelle Praxis übersetzt, und welche Transformationen treten auf?",
+      "claim_or_question_en": "How are analytical methods from technical domains translated into institutional practice, and what transformations occur?",
+      "derived_output": "Finding",
+      "epistemic_status": "Open",
+      "evidence_access": "Public",
+      "id": "cs_inst",
+      "slug": "institutional-translation-of-methods",
+      "system_class": "Institutional",
+      "title_de": "Institutionelle Übersetzung analytischer Methoden",
+      "title_en": "Institutional Translation of Analytical Methods"
     }
   ],
   "datasets": [
@@ -58,6 +82,17 @@
       "name_de": "User-Integritäts-Metriken",
       "name_en": "User Integrity Metrics",
       "slug": "user-integrity-metrics",
+      "version": "1.0"
+    },
+    {
+      "access": "Anonymized",
+      "data_type": "Interaction log",
+      "description_de": "Kontrollierte Entscheidungssitzungen unter adversariellen Bedingungen zur Prüfung der Robustheit von Mensch–KI-Systemen.",
+      "description_en": "Controlled decision-making sessions under adversarial conditions to test human–AI system robustness.",
+      "id": "ds_adv",
+      "name_de": "Adversariale Entscheidungssitzungen",
+      "name_en": "Adversarial Decision Sessions",
+      "slug": "adversarial-decision-sessions",
       "version": "1.0"
     }
   ],
@@ -131,6 +166,26 @@
       "status": "Published",
       "title_de": "Agenten-Trace-Analyse",
       "title_en": "Agent Trace Analysis",
+      "version": "1.0"
+    },
+    {
+      "description_de": "Methode: die Robustheit von Entscheidungssystemen durch kontrollierte adversarielle Manipulationen bewerten und den Grad der Entscheidungsqualität messen.",
+      "description_en": "Method: evaluate decision system robustness by introducing controlled adversarial manipulations and measuring decision quality degradation.",
+      "id": "m_ada",
+      "slug": "adversarial-decision-assessment",
+      "status": "Published",
+      "title_de": "Adversariale Entscheidungsbewertung",
+      "title_en": "Adversarial Decision Assessment",
+      "version": "1.0"
+    },
+    {
+      "description_de": "Methode: nachverfolgen, wie technische Methoden bei ihrem Eintritt in institutionelle Kontexte transformiert werden, und Anpassungsmuster sowie generative Übersetzungen identifizieren.",
+      "description_en": "Method: trace how technical methods are transformed when entering institutional contexts, identifying adaptation patterns and generative translations.",
+      "id": "m_ita",
+      "slug": "institutional-translation-analysis",
+      "status": "Published",
+      "title_de": "Institutionelle Übersetzungsanalyse",
+      "title_en": "Institutional Translation Analysis",
       "version": "1.0"
     }
   ],
