@@ -6,6 +6,7 @@ use axum::{
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::{Deserialize, Serialize};
+use sha2::{Sha256, Digest};
 use uuid::Uuid;
 
 use crate::{AppState, SessionData};
@@ -27,7 +28,58 @@ fn make_cookie(token: String) -> Cookie<'static> {
         .build()
 }
 
+fn hash_password(password: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(password.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
 // ── handlers ─────────────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct LoginRequest {
+    password: String,
+}
+
+#[derive(Serialize)]
+pub struct LoginResponse {
+    ok: bool,
+    error: Option<String>,
+}
+
+pub async fn password_login(
+    State(state): State<AppState>,
+    jar: CookieJar,
+    Json(body): Json<LoginRequest>,
+) -> impl IntoResponse {
+    let expected_hash = std::env::var("ADMIN_PASSWORD_HASH")
+        .unwrap_or_default();
+
+    if expected_hash.is_empty() {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(LoginResponse {
+            ok: false,
+            error: Some("ADMIN_PASSWORD_HASH not configured".into()),
+        })).into_response();
+    }
+
+    if hash_password(&body.password) != expected_hash {
+        return (StatusCode::UNAUTHORIZED, Json(LoginResponse {
+            ok: false,
+            error: Some("Invalid password".into()),
+        })).into_response();
+    }
+
+    let token = Uuid::new_v4().to_string();
+    state.sessions.write().unwrap().insert(token.clone(), SessionData {
+        email: "admin@rfi-irfos.local".into(),
+        name: "Admin".into(),
+        picture: "".into(),
+    });
+
+    crate::auditlog::record(&state, "admin@rfi-irfos.local", "admin_login", "Admin-Login via password", None).await;
+
+    (jar.add(make_cookie(token)), Json(LoginResponse { ok: true, error: None })).into_response()
+}
 
 pub async fn google_login(
     State(state): State<AppState>,

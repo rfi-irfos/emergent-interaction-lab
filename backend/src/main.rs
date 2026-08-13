@@ -317,6 +317,9 @@ async fn main() {
         .route("/auth/google", get(auth::google_login))
         .route("/auth/callback", get(auth::google_callback))
         .route("/auth/logout", post(auth::logout))
+        .route("/auth/login", post(auth::password_login))
+        // Admin UI
+        .route("/admin", get(|| async { axum::response::Redirect::to("/admin/index.html") }))
         // API
         .route("/api/me", get(auth::get_me))
         .route("/api/content", get(content::get_content).put(content::update_content))
