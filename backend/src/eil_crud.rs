@@ -64,11 +64,11 @@ async fn update_entity(pool: &SqlitePool, table: &str, id: &str, data: Value) ->
     for (k, v) in data.as_object().unwrap() {
         if k == "id" { continue; }
         if !first { q.push(", "); }
-        q.push(format!("{}=?", k));
+        q.push(format!("{}=", k));
         q.push_bind(v.as_str().unwrap_or_default());
         first = false;
     }
-    q.push(" WHERE id=?");
+    q.push(" WHERE id=");
     q.push_bind(id);
     q.build().execute(pool).await?;
     get_entity(pool, table, id).await
@@ -94,7 +94,7 @@ pub fn router() -> Router<AppState> {
     for table in tables {
         let t = table.to_string();
         router = router
-            .route(&format!("/api/eil/entities/{}", table), get({
+            .route(&format!("/{}/list", table), get({
                 let t = table.to_string();
                 move |State(state): State<AppState>| async move {
                     match list_entities(&state.db, &t).await {
@@ -103,7 +103,7 @@ pub fn router() -> Router<AppState> {
                     }
                 }
             }))
-            .route(&format!("/api/eil/entities/{}/:id", table), get({
+            .route(&format!("/{}/:id", table), get({
                 let t = table.to_string();
                 move |State(state): State<AppState>, Path(id): Path<String>| async move {
                     match get_entity(&state.db, &t, &id).await {
@@ -112,7 +112,7 @@ pub fn router() -> Router<AppState> {
                     }
                 }
             }))
-            .route(&format!("/api/eil/entities/{}", table), post({
+            .route(&format!("/{}/create", table), post({
                 let t = table.to_string();
                 move |State(state): State<AppState>, Json(data): Json<Value>| async move {
                     match create_entity(&state.db, &t, data).await {
@@ -121,7 +121,7 @@ pub fn router() -> Router<AppState> {
                     }
                 }
             }))
-            .route(&format!("/api/eil/entities/{}/:id", table), put({
+            .route(&format!("/{}/:id", table), put({
                 let t = table.to_string();
                 move |State(state): State<AppState>, Path(id): Path<String>, Json(data): Json<Value>| async move {
                     match update_entity(&state.db, &t, &id, data).await {
@@ -130,7 +130,7 @@ pub fn router() -> Router<AppState> {
                     }
                 }
             }))
-            .route(&format!("/api/eil/entities/{}/:id", table), delete({
+            .route(&format!("/{}/:id/delete", table), delete({
                 let t = table.to_string();
                 move |State(state): State<AppState>, Path(id): Path<String>| async move {
                     match delete_entity(&state.db, &t, &id).await {
