@@ -14,7 +14,6 @@ async function fetchSnapshot() {
     if (!res.ok) throw new Error(`snapshot fetch failed: ${res.status}`);
     return res.json();
   } catch (e) {
-    // Fallback: use local snapshot.json (committed build artifact)
     const fs = await import("fs");
     const path = await import("path");
     const local = path.resolve("snapshot.json");
@@ -36,28 +35,69 @@ function writeHtml(relPath, html) {
   fs.writeFileSync(full, html);
 }
 
-function entityPage(entity, locale, typeLabel) {
+function entityPage(entity, locale, typeLabel, allData) {
   const title = entity[`title_${locale}`] || entity.title_en;
   const desc = entity[`description_${locale}`] || entity.description_en || "";
-  const summary = entity[`abstract_${locale}`] || entity[`core_question_${locale}`] || desc;
+  const summary = entity[`abstract_${locale}`] || entity[`core_question_${locale}`] || entity[`research_question_${locale}`] || desc;
   const url = `${BASE}/${locale}/${typeLabel}/${entity.slug}/`;
-  const other = locale === "en" ? "de" : "en";
+  
+  // Build related links from all data
+  const related = [];
+  if (allData) {
+    for (const [key, route] of [
+      ["research_programs", "research"],
+      ["case_studies", "evidence"],
+      ["publications", "publications"],
+      ["frameworks", "frameworks"],
+      ["systems", "systems"],
+      ["methods", "methods"],
+      ["datasets", "datasets"],
+      ["profiles", "laura"]
+    ]) {
+      for (const e of (allData[key] || []).slice(0, 3)) {
+        const t = e[`title_${locale}`] || e.title_en || e.name_en;
+        if (t && e.slug !== entity.slug) {
+          related.push(`<li><a href="${BASE}/${locale}/${route}/${e.slug}/">${esc(t)}</a></li>`);
+        }
+      }
+    }
+  }
+  
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "name": title,
+    "description": summary,
+    "url": url,
+    "inLanguage": locale,
+    "datePublished": entity.published_at || entity.created_at || new Date().toISOString().split("T")[0],
+  };
+
   return `<!DOCTYPE html>
 <html lang="${locale}">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(title)} — Emergent Interaction Lab</title>
   <meta name="description" content="${esc(summary).slice(0, 160)}">
   <link rel="canonical" href="${url}">
   <link rel="alternate" hreflang="en" href="${BASE}/en/${typeLabel}/${entity.slug}/">
   <link rel="alternate" hreflang="de" href="${BASE}/de/${typeLabel}/${entity.slug}/">
   <link rel="alternate" hreflang="x-default" href="${BASE}/en/${typeLabel}/${entity.slug}/">
+  <link rel="preconnect" href="https://rfi-irfos.github.io">
   <meta name="robots" content="index,follow">
+  <script type="application/ld+json">${esc(JSON.stringify(jsonLd))}</script>
 </head>
 <body>
-  <h1>${esc(title)}</h1>
-  <p>${esc(desc)}</p>
-  <nav><a href="/en/">English</a> · <a href="/de/">Deutsch</a></nav>
+  <article>
+    <h1>${esc(title)}</h1>
+    <p class="summary">${esc(summary)}</p>
+    ${entity[`abstract_${locale}`] ? `<section><h2>Abstract</h2><p>${esc(entity[`abstract_${locale}`])}</p></section>` : ""}
+    ${entity.doi ? `<p><strong>DOI:</strong> <a href="https://doi.org/${esc(entity.doi)}">${esc(entity.doi)}</a></p>` : ""}
+    ${related.length ? `<nav><h2>Related</h2><ul>${related.slice(0, 6).join("")}</ul></nav>` : ""}
+    <nav class="lang"><a href="/en/">English</a> · <a href="/de/">Deutsch</a></nav>
+  </article>
 </body>
 </html>`;
 }
@@ -67,26 +107,71 @@ function rootPage() {
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Emergent Interaction Lab</title>
   <meta name="description" content="Complex Systems · Interaction · Intelligence · Architecture">
   <link rel="canonical" href="${BASE}/">
   <link rel="alternate" hreflang="x-default" href="${BASE}/">
   <link rel="alternate" hreflang="en" href="${BASE}/en/">
   <link rel="alternate" hreflang="de" href="${BASE}/de/">
+  <link rel="preconnect" href="https://rfi-irfos.github.io">
   <meta name="robots" content="index,follow">
+  <script type="application/ld+json">${esc(JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Emergent Interaction Lab",
+    "url": BASE,
+    "description": "Complex Systems · Interaction · Intelligence · Architecture"
+  }))}</script>
 </head>
 <body>
-  <h1>Emergent Interaction Lab</h1>
-  <nav><a href="/en/">English</a> · <a href="/de/">Deutsch</a></nav>
+  <main>
+    <h1>Emergent Interaction Lab</h1>
+    <p class="claim">Different systems. Same analytical core.</p>
+    <nav><a href="${BASE}/en/">English</a> · <a href="${BASE}/de/">Deutsch</a></nav>
+  </main>
 </body>
 </html>`;
+}
+
+function writeSitemap(snap) {
+  const urls = [`${BASE}/`, `${BASE}/en/`, `${BASE}/de/`];
+  const add = (loc, slug, typeLabel) => {
+    if (!slug) return;
+    urls.push(`${BASE}/${loc}/${typeLabel}/${slug}/`);
+  };
+  for (const loc of ["en", "de"]) {
+    for (const [key, route] of [
+      ["research_programs", "research"],
+      ["case_studies", "evidence"],
+      ["publications", "publications"],
+      ["frameworks", "frameworks"],
+      ["systems", "systems"],
+      ["methods", "methods"],
+      ["datasets", "datasets"],
+      ["profiles", "laura"]
+    ]) {
+      for (const e of (snap[key] || [])) add(loc, e.slug, route);
+    }
+  }
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(u => `  <url><loc>${esc(u)}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`).join("\n")}
+</urlset>`;
+  fs.writeFileSync(path.join(OUT, "sitemap.xml"), xml);
+}
+
+function writeRobots() {
+  const txt = `User-agent: *
+Allow: /
+Sitemap: ${BASE}/sitemap.xml
+`;
+  fs.writeFileSync(path.join(OUT, "robots.txt"), txt);
 }
 
 async function main() {
   const snap = await fetchSnapshot();
   writeHtml("index.html", rootPage());
-
-  // write full snapshot as index.json for client-side SPA/preview
   fs.writeFileSync(path.join(OUT, "index.json"), JSON.stringify(snap, null, 2));
 
   const types = [
@@ -101,11 +186,13 @@ async function main() {
   ];
   for (const [key, route] of types) {
     for (const e of snap[key] || []) {
-      writeHtml(`en/${route}/${e.slug}/index.html`, entityPage(e, "en", route));
-      writeHtml(`de/${route}/${e.slug}/index.html`, entityPage(e, "de", route));
+      writeHtml(`en/${route}/${e.slug}/index.html`, entityPage(e, "en", route, snap));
+      writeHtml(`de/${route}/${e.slug}/index.html`, entityPage(e, "de", route, snap));
     }
   }
-  console.log(`STATIC BUILD OK — programs:${snap.research_programs?.length||0} cases:${snap.case_studies?.length||0} pubs:${snap.publications?.length||0} | root + locale routes + index.json -> dist-static/`);
+  writeSitemap(snap);
+  writeRobots();
+  console.log(`STATIC BUILD OK — programs:${snap.research_programs?.length||0} cases:${snap.case_studies?.length||0} pubs:${snap.publications?.length||0} | root + locale routes + sitemap + robots -> dist-static/`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
