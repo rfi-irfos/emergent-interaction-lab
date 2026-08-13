@@ -215,6 +215,200 @@
       "url": "https://osf.io/ieia2025"
     }
   ],
+  "relations": {
+    "case_study_analytical_operations": [
+      {
+        "case_id": "cs_xdom",
+        "op_id": "op_observe"
+      },
+      {
+        "case_id": "cs_xdom",
+        "op_id": "op_connect"
+      },
+      {
+        "case_id": "cs_xdom",
+        "op_id": "op_reconstruct"
+      },
+      {
+        "case_id": "cs_xdom",
+        "op_id": "op_synthesize"
+      },
+      {
+        "case_id": "cs_uip",
+        "op_id": "op_observe"
+      },
+      {
+        "case_id": "cs_uip",
+        "op_id": "op_connect"
+      },
+      {
+        "case_id": "cs_uip",
+        "op_id": "op_reconstruct"
+      },
+      {
+        "case_id": "cs_mac",
+        "op_id": "op_observe"
+      },
+      {
+        "case_id": "cs_mac",
+        "op_id": "op_connect"
+      },
+      {
+        "case_id": "cs_mac",
+        "op_id": "op_synthesize"
+      },
+      {
+        "case_id": "cs_adv",
+        "op_id": "op_observe"
+      },
+      {
+        "case_id": "cs_adv",
+        "op_id": "op_connect"
+      },
+      {
+        "case_id": "cs_adv",
+        "op_id": "op_reconstruct"
+      },
+      {
+        "case_id": "cs_inst",
+        "op_id": "op_observe"
+      },
+      {
+        "case_id": "cs_inst",
+        "op_id": "op_connect"
+      },
+      {
+        "case_id": "cs_inst",
+        "op_id": "op_formalize"
+      }
+    ],
+    "framework_methods": [
+      {
+        "framework_id": "fw_ieia2025",
+        "method_id": "m_cdr"
+      },
+      {
+        "framework_id": "fw_ieia2025",
+        "method_id": "m_ada"
+      },
+      {
+        "framework_id": "fw_ieia2025",
+        "method_id": "m_ita"
+      }
+    ],
+    "publication_authors": [
+      {
+        "profile_id": "pr_laura",
+        "publication_id": "pub_ieia2025"
+      }
+    ],
+    "research_program_evidence": [
+      {
+        "case_id": "cs_xdom",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "case_id": "cs_uip",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "case_id": "cs_mac",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "case_id": "cs_adv",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "case_id": "cs_inst",
+        "program_id": "rp_eil-core"
+      }
+    ],
+    "research_program_frameworks": [
+      {
+        "framework_id": "fw_ieia2025",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "framework_id": "fw_8layer",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "framework_id": "fw_uip",
+        "program_id": "rp_eil-core"
+      }
+    ],
+    "research_program_methods": [
+      {
+        "method_id": "m_cdr",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "method_id": "m_uia",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "method_id": "m_ata",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "method_id": "m_ada",
+        "program_id": "rp_eil-core"
+      },
+      {
+        "method_id": "m_ita",
+        "program_id": "rp_eil-core"
+      }
+    ],
+    "research_program_publications": [
+      {
+        "program_id": "rp_eil-core",
+        "publication_id": "pub_ieia2025"
+      }
+    ],
+    "research_program_systems": [
+      {
+        "program_id": "rp_eil-core",
+        "system_id": "sys_lauras-agents"
+      },
+      {
+        "program_id": "rp_eil-core",
+        "system_id": "sys_coevo"
+      }
+    ],
+    "system_evidence": [
+      {
+        "case_id": "cs_xdom",
+        "system_id": "sys_lauras-agents"
+      },
+      {
+        "case_id": "cs_mac",
+        "system_id": "sys_lauras-agents"
+      },
+      {
+        "case_id": "cs_mac",
+        "system_id": "sys_coevo"
+      },
+      {
+        "case_id": "cs_adv",
+        "system_id": "sys_lauras-agents"
+      },
+      {
+        "case_id": "cs_inst",
+        "system_id": "sys_lauras-agents"
+      }
+    ],
+    "system_frameworks": [
+      {
+        "framework_id": "fw_ieia2025",
+        "system_id": "sys_lauras-agents"
+      },
+      {
+        "framework_id": "fw_ieia2025",
+        "system_id": "sys_coevo"
+      }
+    ]
+  },
   "research_programs": [
     {
       "core_question_de": "Welche analytischen Operationen sind über materiell unterschiedliche Systemdomänen hinweg geteilt?",
