@@ -15,6 +15,110 @@ pub async fn init_schema(pool: &SqlitePool) {
     tracing::info!("EIL research content schema ready");
 }
 
+/// Seed the EIL entities from the bundled public-projection snapshot.
+///
+/// `eil_seed.json` is the *public projection* (the fields `get_public_snapshot`
+/// selects), so it is missing the deeper NOT NULL columns the schema requires
+/// (reconstruction_en, limitations_en, provenance_en, created_at, ...). We fill
+/// those with safe defaults here so the inserts pass, then upsert. This keeps a
+/// fresh deploy (which starts from an empty SQLite on the volume) from showing
+/// an empty site until someone runs the live seed script by hand.
+///
+/// NOTE: the seeded rows carry only the projection fields + defaults — the
+/// richer editorial fields stay empty until a full content export replaces
+/// them. This is the safety net, not the canonical editorial source.
+pub async fn seed(pool: &SqlitePool) {
+    let raw = include_str!("eil_seed.json");
+    let snap: Value = match serde_json::from_str(raw) {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!("EIL seed: failed to parse eil_seed.json: {e}");
+            return;
+        }
+    };
+
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // (json_key, table, required NOT NULL columns the projection lacks -> default)
+    let tables: &[(&str, &str, &[(&str, &str)])] = &[
+        ("research_programs", "research_programs", &[
+            ("status", "Published"), ("lifecycle", "Active"),
+            ("program_type", "Core"), ("created_at", "PLACEHOLDER"),
+            ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("publications", "publications", &[
+            ("publication_type", "Article"), ("publication_status", "Published"),
+            ("created_at", "PLACEHOLDER"), ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("case_studies", "case_studies", &[
+            ("available_signals_en", ""), ("reconstruction_en", ""),
+            ("synthesis_or_system_model_en", ""), ("limitations_en", ""),
+            ("status", "Published"), ("created_at", "PLACEHOLDER"),
+            ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("methods", "methods", &[
+            ("status", "Published"), ("lifecycle", "Active"),
+            ("created_at", "PLACEHOLDER"), ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("frameworks", "frameworks", &[
+            ("status", "Published"), ("lifecycle", "Active"),
+            ("created_at", "PLACEHOLDER"), ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("systems", "systems", &[
+            ("lifecycle", "Active"), ("status", "Published"),
+            ("created_at", "PLACEHOLDER"), ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("datasets", "datasets", &[
+            ("provenance_en", ""), ("status", "Published"),
+            ("created_at", "PLACEHOLDER"), ("updated_at", "PLACEHOLDER"),
+        ]),
+        ("profiles", "profiles", &[
+            ("role", "Researcher"), ("status", "Published"),
+            ("created_at", "PLACEHOLDER"), ("updated_at", "PLACEHOLDER"),
+        ]),
+    ];
+
+    let mut seeded = 0usize;
+    for (json_key, table, fills) in tables {
+        let rows = match snap.get(*json_key).and_then(|v| v.as_array()) {
+            Some(r) => r,
+            None => continue,
+        };
+        for row in rows {
+            let mut obj = match row.as_object() {
+                Some(o) => o.clone(),
+                None => continue,
+            };
+            for (col, def) in *fills {
+                let val = if *def == "PLACEHOLDER" {
+                    now.clone()
+                } else {
+                    (*def).to_string()
+                };
+                obj.entry((*col).to_string())
+                    .or_insert_with(|| Value::String(val));
+            }
+            let cols: Vec<String> = obj.keys().cloned().collect();
+            let placeholders = vec!["?"; cols.len()].join(",");
+            let sql = format!(
+                "INSERT OR IGNORE INTO {} ({}) VALUES ({})",
+                table,
+                cols.join(","),
+                placeholders
+            );
+            let mut q = sqlx::query(&sql);
+            for c in &cols {
+                let v = obj.get(c).and_then(|x| x.as_str()).unwrap_or_default();
+                q = q.bind(v);
+            }
+            if q.execute(pool).await.is_ok() {
+                seeded += 1;
+            }
+        }
+    }
+    tracing::info!("EIL seed complete: {seeded} entity rows upserted");
+}
+
 fn row_to_json(row: &sqlx::sqlite::SqliteRow) -> Value {
     let mut m = Map::new();
     for col in row.columns() {

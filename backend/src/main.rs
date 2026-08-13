@@ -232,6 +232,7 @@ async fn main() {
     dashboards::init_schema(&db).await;
 
     eil_content::init_schema(&db).await;
+    eil_content::seed(&db).await;
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
