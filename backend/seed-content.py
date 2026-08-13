@@ -277,6 +277,74 @@ I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES
 I("INSERT OR IGNORE INTO system_evidence (system_id,case_id) VALUES (?,?)",("sys_lauras-agents","cs_mac"))
 I("INSERT OR IGNORE INTO system_evidence (system_id,case_id) VALUES (?,?)",("sys_coevo","cs_mac"))
 
+# Case Study: Adversarial Robustness in Human–AI Decision Systems
+I("INSERT OR IGNORE INTO case_studies (id,slug,title_en,title_de,system_class,claim_or_question_en,claim_or_question_de,available_signals_en,reconstruction_en,synthesis_or_system_model_en,derived_output,epistemic_status,limitations_en,evidence_access,status,revision,negative_evidence,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("cs_adv","adversarial-robustness-human-ai","Adversarial Robustness in Human–AI Decision Systems","Adversariale Robustheit in Mensch–KI-Entscheidungssystemen",
+   "Human–AI","Can human–AI decision systems maintain decision quality when input signals are subject to adversarial manipulation?","Können Mensch–KI-Entscheidungssysteme die Entscheidungsqualität aufrechterhalten, wenn Eingabesignale adversarieller Manipulation ausgesetzt sind?",
+   "Decision logs from controlled adversarial sessions; manipulation success rates; decision quality metrics; human override rates",
+   "Reconstructed decision traces across adversarial conditions show that decision quality degrades linearly with manipulation intensity, but systems incorporating UIP exhibit a threshold effect: below threshold, quality remains stable.",
+   "Human–AI decision systems have an adversarial robustness threshold. Below this threshold, standard decision-making suffices; above it, even advanced systems fail unless they incorporate explicit integrity-preserving mechanisms.",
+   "Finding","Open","Adversarial conditions are simplified compared to real-world manipulation; field studies required.","Public","Published",1,
+   '[{"expected_element":"linear degradation of decision quality under manipulation","basis_for_expectation":"standard adversarial models","observed_absence":"threshold effect observed with UIP","alternative_explanations":"threshold is an artifact of experimental design"}]',
+   now,now,now))
+
+# Case Study: Institutional Translation of Analytical Methods
+I("INSERT OR IGNORE INTO case_studies (id,slug,title_en,title_de,system_class,claim_or_question_en,claim_or_question_de,available_signals_en,reconstruction_en,synthesis_or_system_model_en,derived_output,epistemic_status,limitations_en,evidence_access,status,revision,negative_evidence,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("cs_inst","institutional-translation-of-methods","Institutional Translation of Analytical Methods","Institutionelle Übersetzung analytischer Methoden",
+   "Institutional","How are analytical methods from technical domains translated into institutional practice, and what transformations occur?","Wie werden analytische Methoden aus technischen Domänen in institutionelle Praxis übersetzt, und welche Transformationen treten auf?",
+   "Policy documents; implementation reports; stakeholder interviews; methodological adaptation traces",
+   "Reconstructed implementation traces show that technical methods undergo three transformations when entering institutional contexts: abstraction to generalized principles, contextual re-specification, and procedural concretization.",
+   "Institutional translation is not a lossy compression of technical methods but a generative process that produces new methodological variants adapted to institutional constraints and opportunities.",
+   "Finding","Open","Single institutional case; cross-institutional comparison pending.","Public","Published",1,
+   '[{"expected_element":"method preserved through translation","basis_for_expectation":"methodological universalism","observed_absence":"method transformed into new variants","alternative_explanations":"institutional idiosyncrasy"}]',
+   now,now,now))
+
+# Dataset: Adversarial Decision Sessions
+I("INSERT OR IGNORE INTO datasets (id,slug,previous_slugs,name_en,name_de,description_en,description_de,access,provenance_en,provenance_de,data_type,collection_method,unit_of_analysis,version,last_updated,time_range,size,methodology,anonymization,repository,limitations,data_structure_summary,status,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("ds_adv","adversarial-decision-sessions",None,"Adversarial Decision Sessions","Adversariale Entscheidungssitzungen",
+   "Controlled decision-making sessions under adversarial conditions to test human–AI system robustness.",
+   "Kontrollierte Entscheidungssitzungen unter adversariellen Bedingungen zur Prüfung der Robustheit von Mensch–KI-Systemen.",
+   "Anonymized","Laboratory experiments with informed consent; individual identifiers removed.","Laborexperimente mit Einwilligung; individuelle Identifikatoren entfernt.",
+   "Interaction log","Controlled experiment + automated manipulation","Decision session","1.0","2026-08-13","2025-2026","8.2 MB","Decision quality under adversarial manipulation","Pseudonymized + session-level redaction","internal","Simplified adversarial conditions; real-world manipulation more complex.","Session-level: {condition, manipulation_intensity, decision_quality_score, human_override_rate}.","Published",1,now,now,now))
+
+# Dataset: Institutional Method Translations
+I("INSERT OR IGNORE INTO datasets (id,slug,previous_slugs,name_en,name_de,description_en,description_de,access,provenance_en,provenance_de,data_type,collection_method,unit_of_analysis,version,last_updated,time_range,size,methodology,anonymization,repository,limitations,data_structure_summary,status,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("ds_inst","institutional-method-translations",None,"Institutional Method Translations","Institutionelle Methodenübersetzungen",
+   "Documentation of how technical analytical methods are translated into institutional governance and operational procedures.",
+   "Dokumentation, wie technische analytische Methoden in institutionelle Governance und operative Verfahren übersetzt werden.",
+   "Internal","Internal documentation from RFI-IRFOS projects; no personal data.","Interne Dokumentation aus RFI-IRFOS-Projekten; keine personenbezogenen Daten.",
+   "Document corpus","Document analysis + stakeholder interviews","Policy document","1.0","2026-08-13","2025-2026","1.4 MB","Method translation analysis across institutional contexts","Organization names anonymized; individual quotes pseudonymized","internal","Limited to documented cases; undocumented adaptations not captured.","Document-level: {method, institution, translation_type, adaptation_notes}.","Published",1,now,now,now))
+
+# Method: Adversarial Decision Assessment
+I("INSERT OR IGNORE INTO methods (id,slug,title_en,title_de,description_en,description_de,status,maturity,lifecycle,version,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("m_ada","adversarial-decision-assessment","Adversarial Decision Assessment","Adversariale Entscheidungsbewertung",
+   "Method: evaluate decision system robustness by introducing controlled adversarial manipulations and measuring decision quality degradation.",
+   "Methode: die Robustheit von Entscheidungssystemen durch kontrollierte adversarielle Manipulationen bewerten und den Grad der Entscheidungsqualität messen.",
+   "Published","Operationalized","Active","1.0",1,now,now,now))
+
+# Method: Institutional Translation Analysis
+I("INSERT OR IGNORE INTO methods (id,slug,title_en,title_de,description_en,description_de,status,maturity,lifecycle,version,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("m_ita","institutional-translation-analysis","Institutional Translation Analysis","Institutionelle Übersetzungsanalyse",
+   "Method: trace how technical methods are transformed when entering institutional contexts, identifying adaptation patterns and generative translations.",
+   "Methode: nachverfolgen, wie technische Methoden bei ihrem Eintritt in institutionelle Kontexte transformiert werden, und Anpassungsmuster sowie generative Übersetzungen identifizieren.",
+   "Published","Operationalized","Active","1.0",1,now,now,now))
+
+# Relations
+I("INSERT OR IGNORE INTO research_program_evidence (program_id,case_id) VALUES (?,?)",("rp_eil-core","cs_adv"))
+I("INSERT OR IGNORE INTO research_program_evidence (program_id,case_id) VALUES (?,?)",("rp_eil-core","cs_inst"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_adv","op_observe"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_adv","op_connect"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_adv","op_reconstruct"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_inst","op_observe"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_inst","op_connect"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_inst","op_formalize"))
+I("INSERT OR IGNORE INTO system_evidence (system_id,case_id) VALUES (?,?)",("sys_lauras-agents","cs_adv"))
+I("INSERT OR IGNORE INTO system_evidence (system_id,case_id) VALUES (?,?)",("sys_lauras-agents","cs_inst"))
+I("INSERT OR IGNORE INTO framework_methods (framework_id,method_id) VALUES (?,?)",("fw_ieia2025","m_ada"))
+I("INSERT OR IGNORE INTO framework_methods (framework_id,method_id) VALUES (?,?)",("fw_ieia2025","m_ita"))
+I("INSERT OR IGNORE INTO research_program_methods (program_id,method_id) VALUES (?,?)",("rp_eil-core","m_ada"))
+I("INSERT OR IGNORE INTO research_program_methods (program_id,method_id) VALUES (?,?)",("rp_eil-core","m_ita"))
+
 con.commit()
 for t in ["taxonomy_analytical_operations","taxonomy_system_domains","taxonomy_architecture_domains","taxonomy_derived_output_types","taxonomy_evidence_statuses","taxonomy_validation_types","research_programs","frameworks","systems","publications","datasets","profiles","case_studies"]:
     c = con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
