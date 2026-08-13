@@ -2,7 +2,7 @@ name: Deploy EIL Static Research Site
 
 on:
   push:
-    branches: [main]
+    branches: [main, hermes-research-engine]
     paths:
       - "frontend/build-static.mjs"
       - "backend/src/eil_schema.sql"
