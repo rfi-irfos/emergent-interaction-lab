@@ -24,6 +24,7 @@ mod simulation;
 mod thinking_fragments;
 mod track;
 mod upload;
+mod eil_content;
 
 use axum::{http::HeaderName, routing::{get, post}, Router};
 use sqlx::SqlitePool;
@@ -229,6 +230,8 @@ async fn main() {
     // simply as the newest addition.
     dashboards::init_schema(&db).await;
 
+    eil_content::init_schema(&db).await;
+
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").unwrap_or_default();
     match nvidia_api_key.len() {
         0 => tracing::warn!("NVIDIA_API_KEY missing at startup"),
@@ -421,10 +424,9 @@ async fn main() {
         .route("/api/dashboards", get(dashboards::list_dashboards).post(dashboards::create_dashboard))
         .route("/api/dashboards/:id", get(dashboards::get_dashboard).delete(dashboards::delete_dashboard))
         .route("/api/dashboards/:id/widgets", post(dashboards::add_widget))
-        .route(
-            "/api/dashboards/widgets/:id",
-            axum::routing::patch(dashboards::update_widget).delete(dashboards::delete_widget),
-        )
+        .route("/api/dashboards/widgets/:id", axum::routing::patch(dashboards::update_widget).delete(dashboards::delete_widget))
+        // EIL research content (Phase 4)
+        .route("/api/eil/public-snapshot", get(eil_content::public_snapshot))
         // Blog (agent can draft, only a human publishes)
         .route("/api/blog/posts", get(blog::list_posts).post(blog::create_post))
         .route("/api/blog/posts/:id", get(blog::get_post).put(blog::update_post).delete(blog::delete_post))
