@@ -9,9 +9,21 @@ const OUT = path.resolve("dist-static");
 const BASE = "https://rfi-irfos.github.io/emergent-interaction-lab";
 
 async function fetchSnapshot() {
-  const res = await fetch(SNAPSHOT_URL);
-  if (!res.ok) throw new Error(`snapshot fetch failed: ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(SNAPSHOT_URL);
+    if (!res.ok) throw new Error(`snapshot fetch failed: ${res.status}`);
+    return res.json();
+  } catch (e) {
+    // Fallback: use local snapshot.json (committed build artifact)
+    const fs = await import("fs");
+    const path = await import("path");
+    const local = path.resolve("snapshot.json");
+    if (fs.existsSync(local)) {
+      console.log("WARN: live snapshot failed, using local snapshot.json");
+      return JSON.parse(fs.readFileSync(local, "utf8"));
+    }
+    throw e;
+  }
 }
 
 function esc(s = "") {
