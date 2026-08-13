@@ -63,11 +63,55 @@ pub async fn get_public_snapshot(pool: &SqlitePool) -> Result<Value, sqlx::Error
     .fetch_all(pool)
     .await?;
 
+    let frameworks = sqlx::query(
+        "SELECT id, slug, title_en, title_de, description_en, description_de,
+                framework_type, status, maturity, lifecycle, version
+         FROM frameworks WHERE status='Published'"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let systems = sqlx::query(
+        "SELECT id, slug, title_en, title_de, description_en, description_de,
+                system_class, status, version
+         FROM systems WHERE status='Published'"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let methods = sqlx::query(
+        "SELECT id, slug, title_en, title_de, description_en, description_de,
+                status, version
+         FROM methods WHERE status='Published'"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let datasets = sqlx::query(
+        "SELECT id, slug, name_en, name_de, description_en, description_de,
+                access, data_type, version
+         FROM datasets WHERE status='Published'"
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let profiles = sqlx::query(
+        "SELECT id, slug, name_en, name_de, bio_en, bio_de, role, status
+         FROM profiles WHERE status='Published'"
+    )
+    .fetch_all(pool)
+    .await?;
+
     Ok(json!({
         "schema_version": "1.0.0",
         "research_programs": programs.iter().map(row_to_json).collect::<Vec<_>>(),
         "case_studies": cases.iter().map(row_to_json).collect::<Vec<_>>(),
-        "publications": pubs.iter().map(row_to_json).collect::<Vec<_>>()
+        "publications": pubs.iter().map(row_to_json).collect::<Vec<_>>(),
+        "frameworks": frameworks.iter().map(row_to_json).collect::<Vec<_>>(),
+        "systems": systems.iter().map(row_to_json).collect::<Vec<_>>(),
+        "methods": methods.iter().map(row_to_json).collect::<Vec<_>>(),
+        "datasets": datasets.iter().map(row_to_json).collect::<Vec<_>>(),
+        "profiles": profiles.iter().map(row_to_json).collect::<Vec<_>>(),
     }))
 }
 

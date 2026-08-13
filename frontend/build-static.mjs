@@ -192,7 +192,7 @@ async function main() {
   }
   writeSitemap(snap);
   writeRobots();
-  console.log(`STATIC BUILD OK — programs:${snap.research_programs?.length||0} cases:${snap.case_studies?.length||0} pubs:${snap.publications?.length||0} | root + locale routes + sitemap + robots -> dist-static/`);
+  console.log(`STATIC BUILD OK — programs:${snap.research_programs?.length||0} cases:${snap.case_studies?.length||0} pubs:${snap.publications?.length||0} frameworks:${snap.frameworks?.length||0} systems:${snap.systems?.length||0} methods:${snap.methods?.length||0} datasets:${snap.datasets?.length||0} profiles:${snap.profiles?.length||0} | root + locale routes + sitemap + robots -> dist-static/`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
