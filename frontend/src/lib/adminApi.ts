@@ -8,7 +8,12 @@ import { API_BASE } from './apiBase'
 const SECRET = import.meta.env.VITE_CHAT_API_SECRET as string | undefined
 
 export function authHeaders(extra?: Record<string, string>): Record<string, string> {
-  return { ...(SECRET ? { 'x-chat-secret': SECRET } : {}), ...(extra ?? {}) }
+  const token = sessionStorage.getItem('rfi_admin_token')
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(SECRET ? { 'x-chat-secret': SECRET } : {}),
+    ...(extra ?? {}),
+  }
 }
 
 /// Shared fetch-on-mount pattern for the Observatory modules (10 near-identical

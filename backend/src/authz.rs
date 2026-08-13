@@ -1,4 +1,4 @@
-use axum::http::HeaderMap;
+use axum::http::{header, HeaderMap};
 
 use crate::AppState;
 
@@ -13,11 +13,33 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-/// The one auth mechanism the shipped admin UI actually round-trips through
-/// today: a shared secret header, checked against `CHAT_API_SECRET`. Empty
-/// secret means "no auth configured" (local/dev convenience), matching the
-/// behavior this was extracted from (chat.rs's prior `is_authorized`).
+/// Accept the password-login session token used by the admin UI, with the
+/// shared secret as a backwards-compatible machine/agent credential. The
+/// bearer form is needed for the GitHub Pages -> Fly deployment, where the
+/// browser cannot rely on a same-origin cookie.
 pub fn require_admin(state: &AppState, headers: &HeaderMap) -> bool {
+    if let Some(token) = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+    {
+        if state.sessions.read().unwrap().contains_key(token) {
+            return true;
+        }
+    }
+
+    // Same-origin fallback for the HttpOnly cookie issued by the login route.
+    if let Some(cookie_header) = headers.get(header::COOKIE).and_then(|v| v.to_str().ok()) {
+        if let Some(token) = cookie_header.split(';').find_map(|part| {
+            let (name, value) = part.trim().split_once('=')?;
+            (name == "rfi_session").then_some(value)
+        }) {
+            if state.sessions.read().unwrap().contains_key(token) {
+                return true;
+            }
+        }
+    }
+
     if state.chat_secret.is_empty() {
         return true;
     }

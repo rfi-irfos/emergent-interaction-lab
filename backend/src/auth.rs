@@ -45,6 +45,7 @@ pub struct LoginRequest {
 pub struct LoginResponse {
     ok: bool,
     error: Option<String>,
+    token: Option<String>,
 }
 
 pub async fn password_login(
@@ -59,6 +60,7 @@ pub async fn password_login(
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(LoginResponse {
             ok: false,
             error: Some("ADMIN_PASSWORD_HASH not configured".into()),
+            token: None,
         })).into_response();
     }
 
@@ -66,6 +68,7 @@ pub async fn password_login(
         return (StatusCode::UNAUTHORIZED, Json(LoginResponse {
             ok: false,
             error: Some("Invalid password".into()),
+            token: None,
         })).into_response();
     }
 
@@ -78,7 +81,7 @@ pub async fn password_login(
 
     crate::auditlog::record(&state, "admin@rfi-irfos.local", "admin_login", "Admin-Login via password", None).await;
 
-    (jar.add(make_cookie(token)), Json(LoginResponse { ok: true, error: None })).into_response()
+    (jar.add(make_cookie(token.clone())), Json(LoginResponse { ok: true, error: None, token: Some(token) })).into_response()
 }
 
 pub async fn google_login(

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { SiteContent, PageItem } from '../types/content'
 
 function isAdminLoggedIn(): boolean {
-  try { return localStorage.getItem('rfi_admin_ok') === '1' } catch { return false }
+  try { return sessionStorage.getItem('rfi_admin_token') !== null } catch { return false }
 }
 
 export function DynamicPage({ page, content }: { page: PageItem; content: SiteContent }) {

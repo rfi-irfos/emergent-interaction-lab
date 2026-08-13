@@ -3,4 +3,8 @@
 // This must point at the Fly-hosted backend when the frontend isn't served
 // from that same origin (empty string keeps relative paths for local dev/
 // the Fly-served copy, where frontend and backend already share an origin).
-export const API_BASE = import.meta.env.VITE_API_BASE || ''
+// Keep the deployed Pages build functional even if the optional repository
+// variable is missing. Same-origin Fly/local builds can still override this
+// with VITE_API_BASE or use their own origin explicitly.
+const deployedPagesOrigin = typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')
+export const API_BASE = import.meta.env.VITE_API_BASE || (deployedPagesOrigin ? 'https://emergent-interaction-lab.fly.dev' : '')

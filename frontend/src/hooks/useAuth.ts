@@ -1,17 +1,18 @@
 import { useState } from 'react'
+import { API_BASE } from '../lib/apiBase'
 
 export interface User { name: string; email: string; picture: string }
 
-const SESSION_KEY = 'rfi_admin_ok'
+const SESSION_KEY = 'rfi_admin_token'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(() =>
-    localStorage.getItem(SESSION_KEY) ? { name: 'Admin', email: '', picture: '' } : null
+    sessionStorage.getItem(SESSION_KEY) ? { name: 'Admin', email: '', picture: '' } : null
   )
 
   const login = async (password: string): Promise<boolean> => {
     try {
-      const res = await fetch('/auth/login', {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
@@ -19,7 +20,8 @@ export function useAuth() {
       if (!res.ok) return false
       const data = await res.json().catch(() => ({}))
       if (!data.ok) return false
-      localStorage.setItem(SESSION_KEY, '1')
+      if (!data.token) return false
+      sessionStorage.setItem(SESSION_KEY, data.token)
       setUser({ name: 'Admin', email: '', picture: '' })
       return true
     } catch {
@@ -28,7 +30,7 @@ export function useAuth() {
   }
 
   const logout = () => {
-    localStorage.removeItem(SESSION_KEY)
+    sessionStorage.removeItem(SESSION_KEY)
     setUser(null)
     window.location.hash = ''
     window.location.href = import.meta.env.BASE_URL || '/'
