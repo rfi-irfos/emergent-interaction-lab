@@ -64,6 +64,15 @@ function EntityView({ data, locale, type, slug }: { data: any; locale: string; t
   const desc = field(item, locale, "description") || field(item, locale, "abstract") || field(item, locale, "bio");
   const back = `/${locale}/`;
 
+  const related: string[] = [];
+  for (const s of SECTIONS) {
+    for (const e of (data[s.key] || [])) {
+      if (e.slug === item.slug) continue;
+      const t = e[`title_${locale}`] || e[`name_${locale}`] || e.title_en || e.name_en;
+      if (t) related.push(`/${locale}/${s.route}/${e.slug}/`);
+    }
+  }
+
   let details: React.ReactNode = null;
   if (type === "research") {
     details = (
@@ -170,6 +179,16 @@ function EntityView({ data, locale, type, slug }: { data: any; locale: string; t
       <h1>{title}</h1>
       {desc && <p className="lead">{desc}</p>}
       {details && <section className="meta"><h2>{locale === "de" ? "Details" : "Details"}</h2>{details}</section>}
+      {related.length ? (
+        <section>
+          <h2>{locale === "de" ? "Verwandt" : "Related"}</h2>
+          <ul>
+            {related.slice(0, 12).map((href, idx) => (
+              <li key={idx}><a href={href}>{href.split("/").filter(Boolean).pop()?.replace(/-/g, " ")}</a></li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <section>
         <h2>{locale === "de" ? "Rohdaten" : "Raw"}</h2>
         <pre style={{ whiteSpace: "pre-wrap", fontFamily: "system-ui" }}>
