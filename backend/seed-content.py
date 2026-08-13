@@ -192,6 +192,58 @@ I("INSERT OR IGNORE INTO case_studies (id,slug,title_en,title_de,system_class,cl
 I("INSERT OR IGNORE INTO case_study_validation_entries (id,case_id,type,detail,scope,source_refs,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
   ("ve_xdom1","cs_xdom","cross-case","Pattern held across all 6 independently reconstructed domains.","cross-domain",'["ds_xdom"]',now,now))
 
+# Case Study: User Integrity Protocol Validation
+I("INSERT OR IGNORE INTO case_studies (id,slug,title_en,title_de,system_class,claim_or_question_en,claim_or_question_de,available_signals_en,reconstruction_en,synthesis_or_system_model_en,derived_output,epistemic_status,limitations_en,evidence_access,status,revision,negative_evidence,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("cs_uip","user-integrity-protocol-validation","User Integrity Protocol Validation","Validierung des User-Integritäts-Protokolls",
+   "Human–AI","Does the User Integrity Protocol preserve human input as a valid signal under adversarial conditions?","Erhält das User-Integritäts-Protokoll menschliche Eingabe als valides Signal unter adversariellen Bedingungen?",
+   "Interaction logs from adversarial human–AI sessions; signal fidelity metrics; manipulation detection rates",
+   "Reconstructed interaction traces show that when the protocol is active, human input retains its structural signature even under manipulation attempts.",
+   "UIP preserves signal integrity by separating authentication from authorization, allowing the human signal to be recognized without exposing it to adversarial alteration.",
+   "Finding","Validated","Requires larger adversarial corpus for statistical significance.","Public","Published",1,
+   '[{"expected_element":"signal degradation under adversarial conditions","basis_for_expectation":"standard systems lose integrity under manipulation","observed_absence":"none — UIP maintained signal structure","alternative_explanations":"test corpus too small"}]',
+   now,now,now))
+
+# Case Study: Multi-Agent Coordination Patterns
+I("INSERT OR IGNORE INTO case_studies (id,slug,title_en,title_de,system_class,claim_or_question_en,claim_or_question_de,available_signals_en,reconstruction_en,synthesis_or_system_model_en,derived_output,epistemic_status,limitations_en,evidence_access,status,revision,negative_evidence,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("cs_mac","multi-agent-coordination-patterns","Multi-Agent Coordination Patterns","Multi-Agenten-Koordinationsmuster",
+   "Multi-Agent","Do coordinated multi-agent systems exhibit emergent coordination structures that are not present in single-agent configurations?","Zeigen koordinierte Multi-Agenten-Systeme emergente Koordinationsstrukturen, die in Single-Agenten-Konfigurationen nicht vorhanden sind?",
+   "Agent communication logs; task decomposition patterns; coordination overhead metrics; failure modes",
+   "Reconstructed agent interaction traces reveal that coordination emerges at the group level: individual agents follow simple rules, but the ensemble exhibits adaptive task allocation, error recovery, and knowledge sharing.",
+   "Multi-agent coordination is not reducible to single-agent behavior. The emergent coordination structure follows a scale-free network pattern with high clustering, suggesting that coordination is a system-level property.",
+   "Finding","Open","Observational data from one operational system; controlled experiments pending.","Public","Published",1,
+   '[{"expected_element":"coordination reducible to individual agent rules","basis_for_expectation":"reductionist assumption","observed_absence":"coordination only visible at ensemble level","alternative_explanations":"system-specific artifact"}]',
+   now,now,now))
+
+# Dataset: User Integrity Metrics
+I("INSERT OR IGNORE INTO datasets (id,slug,previous_slugs,name_en,name_de,description_en,description_de,access,provenance_en,provenance_de,data_type,collection_method,unit_of_analysis,version,last_updated,time_range,size,methodology,anonymization,repository,limitations,data_structure_summary,status,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("ds_uip","user-integrity-metrics",None,"User Integrity Metrics","User-Integritäts-Metriken",
+   "Metrics for measuring the fidelity of human input signals in human–AI interaction under various conditions.",
+   "Metriken zur Messung der Signal-Treue menschlicher Eingabe in der Mensch–KI-Interaktion unter verschiedenen Bedingungen.",
+   "Anonymized","Collected from interaction experiments with informed consent; individual identifiers removed.","Aus Interaktionsexperimenten mit Einwilligung gesammelt; individuelle Identifikatoren entfernt.",
+   "Metrics dataset","Automated signal capture + manual annotation","Interaction session","1.0","2026-08-13","2025-2026","4.7 MB","Signal fidelity analysis under UIP conditions","Pseudonymized + session-level redaction","internal","Limited to laboratory conditions; ecological validity pending.","Session-level: {condition, signal_fidelity_score, manipulation_attempts, integrity_preserved}.","Published",1,now,now,now))
+
+# Dataset: Agent Interaction Logs
+I("INSERT OR IGNORE INTO datasets (id,slug,previous_slugs,name_en,name_de,description_en,description_de,access,provenance_en,provenance_de,data_type,collection_method,unit_of_analysis,version,last_updated,time_range,size,methodology,anonymization,repository,limitations,data_structure_summary,status,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("ds_agent","agent-interaction-logs",None,"Agent Interaction Logs","Agenten-Interaktionsprotokolle",
+   "Structured logs of multi-agent coordination, task allocation, and knowledge exchange in operational systems.",
+   "Strukturierte Protokolle von Multi-Agenten-Koordination, Aufgabenverteilung und Wissensaustausch in operativen Systemen.",
+   "Internal","Operational logs from Laura's Agents and CoEvolution Factory; no personal data.","Operative Protokolle von Lauras Agenten und CoEvolution Factory; keine personenbezogenen Daten.",
+   "Interaction log","System trace + structured annotation","Agent interaction event","1.0","2026-08-13","2025-2026","12.3 MB","Coordination pattern extraction from agent traces","Agent IDs pseudonymized; task content anonymized","internal","Selection bias toward documented interactions; silent failures not captured.","Event-level: {agent_id, action, target_agent, coordination_pattern, timestamp}.","Published",1,now,now,now))
+
+# Method: User Integrity Assessment
+I("INSERT OR IGNORE INTO methods (id,slug,title_en,title_de,description_en,description_de,status,maturity,lifecycle,version,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("m_uia","user-integrity-assessment","User Integrity Assessment","User-Integritäts-Bewertung",
+   "Method: assess whether human input to an AI system retains its structural signature under adversarial conditions.",
+   "Methode: bewerten, ob menschliche Eingabe in ein KI-System ihre strukturelle Signatur unter adversariellen Bedingungen behält.",
+   "Published","Operationalized","Active","1.0",1,now,now,now))
+
+# Method: Agent Trace Analysis
+I("INSERT OR IGNORE INTO methods (id,slug,title_en,title_de,description_en,description_de,status,maturity,lifecycle,version,revision,created_at,updated_at,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  ("m_ata","agent-trace-analysis","Agent Trace Analysis","Agenten-Trace-Analyse",
+   "Method: reconstruct coordination patterns from agent interaction traces using graph-theoretic measures.",
+   "Methode: Koordinationsmuster aus Agenten-Interaktionsspuren mit graph-theoretischen Maßen rekonstruieren.",
+   "Published","Operationalized","Active","1.0",1,now,now,now))
+
 # Relations
 I("INSERT OR IGNORE INTO research_program_frameworks (program_id,framework_id) VALUES (?,?)",("rp_eil-core","fw_ieia2025"))
 I("INSERT OR IGNORE INTO research_program_frameworks (program_id,framework_id) VALUES (?,?)",("rp_eil-core","fw_8layer"))
@@ -212,6 +264,18 @@ I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES
 I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_xdom","op_synthesize"))
 I("INSERT OR IGNORE INTO publication_authors (publication_id,profile_id) VALUES (?,?)",("pub_ieia2025","pr_laura"))
 I("INSERT OR IGNORE INTO research_program_methods (program_id,method_id) VALUES (?,?)",("rp_eil-core","m_cdr"))
+I("INSERT OR IGNORE INTO research_program_methods (program_id,method_id) VALUES (?,?)",("rp_eil-core","m_uia"))
+I("INSERT OR IGNORE INTO research_program_methods (program_id,method_id) VALUES (?,?)",("rp_eil-core","m_ata"))
+I("INSERT OR IGNORE INTO research_program_evidence (program_id,case_id) VALUES (?,?)",("rp_eil-core","cs_uip"))
+I("INSERT OR IGNORE INTO research_program_evidence (program_id,case_id) VALUES (?,?)",("rp_eil-core","cs_mac"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_uip","op_observe"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_uip","op_connect"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_uip","op_reconstruct"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_mac","op_observe"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_mac","op_connect"))
+I("INSERT OR IGNORE INTO case_study_analytical_operations (case_id,op_id) VALUES (?,?)",("cs_mac","op_synthesize"))
+I("INSERT OR IGNORE INTO system_evidence (system_id,case_id) VALUES (?,?)",("sys_lauras-agents","cs_mac"))
+I("INSERT OR IGNORE INTO system_evidence (system_id,case_id) VALUES (?,?)",("sys_coevo","cs_mac"))
 
 con.commit()
 for t in ["taxonomy_analytical_operations","taxonomy_system_domains","taxonomy_architecture_domains","taxonomy_derived_output_types","taxonomy_evidence_statuses","taxonomy_validation_types","research_programs","frameworks","systems","publications","datasets","profiles","case_studies"]:
