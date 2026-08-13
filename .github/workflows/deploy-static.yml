@@ -5,15 +5,14 @@ on:
     branches: [main, hermes-research-engine]
     paths:
       - "frontend/build-static.mjs"
+      - "frontend/snapshot.json"
       - "backend/src/eil_schema.sql"
       - "backend/src/eil_content.rs"
       - ".github/workflows/deploy-static.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages-static
@@ -41,16 +40,11 @@ jobs:
         env:
           EIL_SNAPSHOT_URL: ${{ vars.EIL_SNAPSHOT_URL || 'https://emergent-interaction-lab.fly.dev/api/eil/public-snapshot' }}
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: frontend/dist-static
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist-static
+          publish_branch: gh-pages
+          user_name: rfi-irfos-bot
+          user_email: bot@rfi-irfos.dev
