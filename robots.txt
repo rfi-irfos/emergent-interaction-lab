@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://rfi-irfos.github.io/emergent-interaction-lab/sitemap.xml
