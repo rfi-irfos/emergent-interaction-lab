@@ -6,7 +6,7 @@
       "derived_output": "Finding",
       "epistemic_status": "Open",
       "evidence_access": "Public",
-      "id": "cs_xdom",
+      "id": "case_studies_cc972a6017054a92a56d8e5f23070f03",
       "slug": "cross-domain-analytical-core",
       "system_class": "Technical",
       "title_de": "Analytischer Kern über Domänen hinweg",
@@ -18,7 +18,7 @@
       "derived_output": "Finding",
       "epistemic_status": "Validated",
       "evidence_access": "Public",
-      "id": "cs_uip",
+      "id": "case_studies_327cb2cf5ad74f6f93994d4d93d9f0cf",
       "slug": "user-integrity-protocol-validation",
       "system_class": "Human–AI",
       "title_de": "Validierung des User-Integritäts-Protokolls",
@@ -30,7 +30,7 @@
       "derived_output": "Finding",
       "epistemic_status": "Open",
       "evidence_access": "Public",
-      "id": "cs_mac",
+      "id": "case_studies_4a15e630ae7847cb98f1486164c37abf",
       "slug": "multi-agent-coordination-patterns",
       "system_class": "Multi-Agent",
       "title_de": "Multi-Agenten-Koordinationsmuster",
@@ -42,7 +42,7 @@
       "derived_output": "Finding",
       "epistemic_status": "Open",
       "evidence_access": "Public",
-      "id": "cs_adv",
+      "id": "case_studies_ef95ce2c6ae24440b9b2badc4f62622e",
       "slug": "adversarial-robustness-human-ai",
       "system_class": "Human–AI",
       "title_de": "Adversariale Robustheit in Mensch–KI-Entscheidungssystemen",
@@ -54,7 +54,7 @@
       "derived_output": "Finding",
       "epistemic_status": "Open",
       "evidence_access": "Public",
-      "id": "cs_inst",
+      "id": "case_studies_db2d6981d1434eab8a6ac19ae47fed05",
       "slug": "institutional-translation-of-methods",
       "system_class": "Institutional",
       "title_de": "Institutionelle Übersetzung analytischer Methoden",
@@ -67,7 +67,7 @@
       "data_type": "Interaction log",
       "description_de": "Strukturierte Interaktionsprotokolle über menschliche, technische und institutionelle Systemklassen, genutzt um die Hypothese des geteilten analytischen Kerns zu prüfen.",
       "description_en": "Structured interaction logs across human, technical, and institutional system classes, used to test the shared analytical core hypothesis.",
-      "id": "ds_xdom",
+      "id": "datasets_7ff8965aab2440e58e0fdca06576488d",
       "name_de": "Korpus fallübergreifender Signale",
       "name_en": "Cross-Domain Signal Corpus",
       "slug": "cross-domain-signals",
@@ -78,7 +78,7 @@
       "data_type": "Metrics dataset",
       "description_de": "Metriken zur Messung der Signal-Treue menschlicher Eingabe in der Mensch–KI-Interaktion unter verschiedenen Bedingungen.",
       "description_en": "Metrics for measuring the fidelity of human input signals in human–AI interaction under various conditions.",
-      "id": "ds_uip",
+      "id": "datasets_c476569623874783af9d452d5210ca81",
       "name_de": "User-Integritäts-Metriken",
       "name_en": "User Integrity Metrics",
       "slug": "user-integrity-metrics",
@@ -89,7 +89,7 @@
       "data_type": "Interaction log",
       "description_de": "Kontrollierte Entscheidungssitzungen unter adversariellen Bedingungen zur Prüfung der Robustheit von Mensch–KI-Systemen.",
       "description_en": "Controlled decision-making sessions under adversarial conditions to test human–AI system robustness.",
-      "id": "ds_adv",
+      "id": "datasets_da5b7e68a62e4b9888bc9c8953e1c64e",
       "name_de": "Adversariale Entscheidungssitzungen",
       "name_en": "Adversarial Decision Sessions",
       "slug": "adversarial-decision-sessions",
@@ -101,7 +101,7 @@
       "description_de": "Integrierende Architektur für Interaktion, Emergenz, Intelligenz und Agentik (2025). Ein Rahmen zur Analyse, wie strukturierte Interaktion über Systemklassen hinweg emergente Fähigkeit erzeugt.",
       "description_en": "Integrating architecture for interaction, emergence, intelligence, and agency (2025). A framework for analyzing how structured interaction produces emergent capability across system classes.",
       "framework_type": "System Model",
-      "id": "fw_ieia2025",
+      "id": "frameworks_1e8c05a49e3145f0ac57e66c6b47c3f5",
       "lifecycle": "Active",
       "maturity": "Operationalized",
       "slug": "ieia-2025",
@@ -114,7 +114,7 @@
       "description_de": "Ein Modell der geschichteten Struktur, durch die Interaktion zu Fähigkeit wird: Signal, Relation, Muster, Modell, Erzählung, Protokoll, Institution und Meta-Institution.",
       "description_en": "A model of the layered structure through which interaction becomes capability: signal, relation, pattern, model, narrative, protocol, institution, and meta-institution.",
       "framework_type": "Analytical Model",
-      "id": "fw_8layer",
+      "id": "frameworks_b1bb4bf05e7345dcb1ef0a0f0398bbeb",
       "lifecycle": "Active",
       "maturity": "Operationalized",
       "slug": "eight-layer-model",
@@ -127,7 +127,7 @@
       "description_de": "Ein Protokoll, das die Integritätsbedingungen festlegt, unter denen menschliche Eingabe in ein KI-System ein valides Signal bleibt statt Rauschen oder Manipulation.",
       "description_en": "A protocol defining the integrity conditions under which human input to an AI system remains a valid signal rather than noise or manipulation.",
       "framework_type": "Protocol",
-      "id": "fw_uip",
+      "id": "frameworks_6b85b896fc964f68a12d88560e219868",
       "lifecycle": "Active",
       "maturity": "Operationalized",
       "slug": "user-integrity-protocol",
@@ -141,7 +141,7 @@
     {
       "description_de": "Methode: die interne Logik jedes Systems unabhängig rekonstruieren, dann rekonstruierte Strukturen vergleichen, um den geteilten analytischen Kern sichtbar zu machen.",
       "description_en": "Method: reconstruct each system's internal logic independently, then compare reconstructed structures to surface the shared analytical core.",
-      "id": "m_cdr",
+      "id": "methods_6b6a68db5aef4a219fbb22a899fb924a",
       "slug": "cross-domain-reconstruction",
       "status": "Published",
       "title_de": "Fallübergreifende Rekonstruktion",
@@ -151,7 +151,7 @@
     {
       "description_de": "Methode: bewerten, ob menschliche Eingabe in ein KI-System ihre strukturelle Signatur unter adversariellen Bedingungen behält.",
       "description_en": "Method: assess whether human input to an AI system retains its structural signature under adversarial conditions.",
-      "id": "m_uia",
+      "id": "methods_012747329bf341b2869b1c4038ecbbb2",
       "slug": "user-integrity-assessment",
       "status": "Published",
       "title_de": "User-Integritäts-Bewertung",
@@ -161,7 +161,7 @@
     {
       "description_de": "Methode: Koordinationsmuster aus Agenten-Interaktionsspuren mit graph-theoretischen Maßen rekonstruieren.",
       "description_en": "Method: reconstruct coordination patterns from agent interaction traces using graph-theoretic measures.",
-      "id": "m_ata",
+      "id": "methods_ceb53ce85dc44f28970b0944f94083bb",
       "slug": "agent-trace-analysis",
       "status": "Published",
       "title_de": "Agenten-Trace-Analyse",
@@ -171,7 +171,7 @@
     {
       "description_de": "Methode: die Robustheit von Entscheidungssystemen durch kontrollierte adversarielle Manipulationen bewerten und den Grad der Entscheidungsqualität messen.",
       "description_en": "Method: evaluate decision system robustness by introducing controlled adversarial manipulations and measuring decision quality degradation.",
-      "id": "m_ada",
+      "id": "methods_ff9c4e5daafa4e17bf644a2d322146f3",
       "slug": "adversarial-decision-assessment",
       "status": "Published",
       "title_de": "Adversariale Entscheidungsbewertung",
@@ -181,7 +181,7 @@
     {
       "description_de": "Methode: nachverfolgen, wie technische Methoden bei ihrem Eintritt in institutionelle Kontexte transformiert werden, und Anpassungsmuster sowie generative Übersetzungen identifizieren.",
       "description_en": "Method: trace how technical methods are transformed when entering institutional contexts, identifying adaptation patterns and generative translations.",
-      "id": "m_ita",
+      "id": "methods_dec9ae551ad54c3eab9adedbb96d0e8f",
       "slug": "institutional-translation-analysis",
       "status": "Published",
       "title_de": "Institutionelle Übersetzungsanalyse",
@@ -193,7 +193,7 @@
     {
       "bio_de": "Forscherin für Mensch–KI-Koevolution. Autorin von IEIA-2025, dem 8-Ebenen-Modell und dem User-Integritäts-Protokoll. Mitgründerin von RFI-IRFOS.",
       "bio_en": "Researcher in human–AI co-evolution. Author of IEIA-2025, the 8-Layer Model, and the User Integrity Protocol. Co-founder of RFI-IRFOS.",
-      "id": "pr_laura",
+      "id": "profiles_42e7fa42e0f047e896b12176c86946a2",
       "name_de": "Laura Serna Gaviria",
       "name_en": "Laura Serna Gaviria",
       "role": "Researcher",
@@ -207,7 +207,7 @@
       "abstract_en": "This work proposes IEIA-2025, a framework for analyzing how structured interaction produces emergent capability across system classes, and demonstrates a shared analytical core across human, technical, and institutional domains.",
       "citation": "Serna Gaviria, L. (2025). IEIA-2025. OSF.",
       "doi": "10.17605/OSF.IO/IEIA2025",
-      "id": "pub_ieia2025",
+      "id": "publications_5e2e6fef899145ff94afbfe673cd4188",
       "publication_type": "Preprint",
       "slug": "ieia-2025",
       "title_de": "Integrierende Architektur für Interaktion, Emergenz, Intelligenz und Agentik (2025)",
@@ -215,207 +215,13 @@
       "url": "https://osf.io/ieia2025"
     }
   ],
-  "relations": {
-    "case_study_analytical_operations": [
-      {
-        "case_id": "cs_xdom",
-        "op_id": "op_observe"
-      },
-      {
-        "case_id": "cs_xdom",
-        "op_id": "op_connect"
-      },
-      {
-        "case_id": "cs_xdom",
-        "op_id": "op_reconstruct"
-      },
-      {
-        "case_id": "cs_xdom",
-        "op_id": "op_synthesize"
-      },
-      {
-        "case_id": "cs_uip",
-        "op_id": "op_observe"
-      },
-      {
-        "case_id": "cs_uip",
-        "op_id": "op_connect"
-      },
-      {
-        "case_id": "cs_uip",
-        "op_id": "op_reconstruct"
-      },
-      {
-        "case_id": "cs_mac",
-        "op_id": "op_observe"
-      },
-      {
-        "case_id": "cs_mac",
-        "op_id": "op_connect"
-      },
-      {
-        "case_id": "cs_mac",
-        "op_id": "op_synthesize"
-      },
-      {
-        "case_id": "cs_adv",
-        "op_id": "op_observe"
-      },
-      {
-        "case_id": "cs_adv",
-        "op_id": "op_connect"
-      },
-      {
-        "case_id": "cs_adv",
-        "op_id": "op_reconstruct"
-      },
-      {
-        "case_id": "cs_inst",
-        "op_id": "op_observe"
-      },
-      {
-        "case_id": "cs_inst",
-        "op_id": "op_connect"
-      },
-      {
-        "case_id": "cs_inst",
-        "op_id": "op_formalize"
-      }
-    ],
-    "framework_methods": [
-      {
-        "framework_id": "fw_ieia2025",
-        "method_id": "m_cdr"
-      },
-      {
-        "framework_id": "fw_ieia2025",
-        "method_id": "m_ada"
-      },
-      {
-        "framework_id": "fw_ieia2025",
-        "method_id": "m_ita"
-      }
-    ],
-    "publication_authors": [
-      {
-        "profile_id": "pr_laura",
-        "publication_id": "pub_ieia2025"
-      }
-    ],
-    "research_program_evidence": [
-      {
-        "case_id": "cs_xdom",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "case_id": "cs_uip",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "case_id": "cs_mac",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "case_id": "cs_adv",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "case_id": "cs_inst",
-        "program_id": "rp_eil-core"
-      }
-    ],
-    "research_program_frameworks": [
-      {
-        "framework_id": "fw_ieia2025",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "framework_id": "fw_8layer",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "framework_id": "fw_uip",
-        "program_id": "rp_eil-core"
-      }
-    ],
-    "research_program_methods": [
-      {
-        "method_id": "m_cdr",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "method_id": "m_uia",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "method_id": "m_ata",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "method_id": "m_ada",
-        "program_id": "rp_eil-core"
-      },
-      {
-        "method_id": "m_ita",
-        "program_id": "rp_eil-core"
-      }
-    ],
-    "research_program_publications": [
-      {
-        "program_id": "rp_eil-core",
-        "publication_id": "pub_ieia2025"
-      }
-    ],
-    "research_program_systems": [
-      {
-        "program_id": "rp_eil-core",
-        "system_id": "sys_lauras-agents"
-      },
-      {
-        "program_id": "rp_eil-core",
-        "system_id": "sys_coevo"
-      }
-    ],
-    "system_evidence": [
-      {
-        "case_id": "cs_xdom",
-        "system_id": "sys_lauras-agents"
-      },
-      {
-        "case_id": "cs_mac",
-        "system_id": "sys_lauras-agents"
-      },
-      {
-        "case_id": "cs_mac",
-        "system_id": "sys_coevo"
-      },
-      {
-        "case_id": "cs_adv",
-        "system_id": "sys_lauras-agents"
-      },
-      {
-        "case_id": "cs_inst",
-        "system_id": "sys_lauras-agents"
-      }
-    ],
-    "system_frameworks": [
-      {
-        "framework_id": "fw_ieia2025",
-        "system_id": "sys_lauras-agents"
-      },
-      {
-        "framework_id": "fw_ieia2025",
-        "system_id": "sys_coevo"
-      }
-    ]
-  },
   "research_programs": [
     {
       "core_question_de": "Welche analytischen Operationen sind über materiell unterschiedliche Systemdomänen hinweg geteilt?",
       "core_question_en": "Which analytical operations are shared across materially different system domains?",
       "description_de": "Forschung dazu, wie Bedeutung, Struktur und Verhalten aus anhaltender Mensch–KI-Interaktion entstehen, und wie derselbe analytische Kern über materiell unterschiedliche Systemdomänen hinweg wiederkehrt.",
       "description_en": "Research on how meaning, structure, and behavior emerge from sustained human–AI interaction, and how the same analytical core recurs across materially different system domains.",
-      "id": "rp_eil-core",
+      "id": "research_programs_2d178b06cd05454f927dc7563a0ad59e",
       "lifecycle": "Active",
       "maturity": "Operationalized",
       "research_context": "Experimental",
@@ -429,7 +235,7 @@
     {
       "description_de": "Multi-Agenten-Forschungssystem, das aus expliziten analytischen Primitien komponiert ist (beobachten, verbinden, rekonstruieren, synthetisieren).",
       "description_en": "Multi-agent research system composed from explicit analytical primitives (observe, connect, reconstruct, synthesize).",
-      "id": "sys_lauras-agents",
+      "id": "systems_499292a6a49c48f394ef2e9a5657fe8e",
       "slug": "lauras-agents",
       "status": "Published",
       "system_class": "Multi-Agent",
@@ -440,7 +246,7 @@
     {
       "description_de": "Registry-first autonome Agenten-Plattform. Tochter-Agenten bauen und betreiben Produktunternehmen.",
       "description_en": "Registry-first autonomous agent platform. Daughter agents build and operate product companies.",
-      "id": "sys_coevo",
+      "id": "systems_53a31d3cdd1c41889b143ca3de04da77",
       "slug": "coevolution-factory",
       "status": "Published",
       "system_class": "Multi-Agent",
