@@ -3,6 +3,10 @@ import type { SiteContent } from '../types/content'
 import { adminFetch } from '../lib/adminApi'
 import type { Lang } from './useLang'
 
+export function staticContentFilename(lang: Lang): string {
+  return lang === 'en' ? 'content.json' : `content.${lang}.json`
+}
+
 export function useContent(lang: Lang) {
   const [content, setContent]   = useState<SiteContent | null>(null)
   const [loading, setLoading]   = useState(true)
@@ -35,8 +39,10 @@ export function useContent(lang: Lang) {
     }
 
     ;(async () => {
-      // 1) static content.{lang}.json (bundled with this exact build)
-      const primary = await fetchJson(`${rawBase}content.${lang}.json${bust}`)
+      // English is the canonical content.json file; translated variants use
+      // content.<lang>.json. Asking for content.en.json caused two guaranteed
+      // 404s on every English page load because that file has never existed.
+      const primary = await fetchJson(`${rawBase}${staticContentFilename(lang)}${bust}`)
       if (cancelled) return
       if (primary) { setContent(primary); setLoading(false); return }
       // 2) static EN fallback

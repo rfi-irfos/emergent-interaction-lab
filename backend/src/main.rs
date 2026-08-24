@@ -40,7 +40,7 @@ use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
 };
-use tower_http::{cors::{Any, CorsLayer}, services::{ServeDir, ServeFile}};
+use tower_http::{cors::CorsLayer, services::{ServeDir, ServeFile}};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
