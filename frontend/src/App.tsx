@@ -1,4 +1,5 @@
 import { lazy, useState, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import './App.css'
 import { useContent } from './hooks/useContent'
 import { useAuth } from './hooks/useAuth'
@@ -71,8 +72,12 @@ export default function App() {
     const navigate = (url: URL, replace = false) => {
       const update = () => {
         window.history[replace ? 'replaceState' : 'pushState']({}, '', url)
-        setChapter(getChapter())
-        window.scrollTo({ top: 0, behavior: 'instant' })
+        flushSync(() => setChapter(getChapter()))
+        if (url.hash) {
+          requestAnimationFrame(() => document.getElementById(decodeURIComponent(url.hash.slice(1)))?.scrollIntoView({ behavior: 'smooth' }))
+        } else {
+          window.scrollTo(0, 0)
+        }
       }
       if (document.startViewTransition) document.startViewTransition(update)
       else update()

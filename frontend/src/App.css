@@ -2,14 +2,17 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
+html, body, #root { background: #07141d; }
 @view-transition { navigation: auto; }
-::view-transition-old(root) { animation: chapter-out .22s ease both; }
-::view-transition-new(root) { animation: chapter-in .32s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes chapter-out { to { opacity: 0; transform: translateX(-28px); } }
-@keyframes chapter-in { from { opacity: 0; transform: translateX(34px); } }
+::view-transition-group(root) { animation-duration: .46s; }
+::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
+::view-transition-old(root) { animation: chapter-out .46s cubic-bezier(.4,0,.2,1) both; }
+::view-transition-new(root) { animation: chapter-in .46s cubic-bezier(.4,0,.2,1) both; }
+@keyframes chapter-out { to { transform: translateX(-18vw); opacity: .35; } }
+@keyframes chapter-in { from { transform: translateX(100vw); } }
 
 /* Real static documents with one shared authored section system. */
-.site[data-chapter="home"] :is(#protocol,#categories,#products,#usp,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="home"] :is(#protocol,#categories,#products,#usp,#news,#pricing,#papers,#certificates,#ssp) { display: none; }
 .site[data-chapter="about"] :is(.site-hero,#trust,#protocol,#products-born,#categories,#products,#usp,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
 .site[data-chapter="method"] :is(.site-hero,.site-lauras-team,#trust,#products-born,#categories,#products,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
 .site[data-chapter="research"] :is(.site-hero,.site-lauras-team,#trust,#protocol,#products-born,#categories,#products,#usp,#pricing,#papers,#certificates,#location,#ssp) { display: none; }

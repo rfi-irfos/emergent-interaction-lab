@@ -110,7 +110,7 @@ function CredPills({ items, tone = 'light' }: { items?: CredLink[]; tone?: 'ligh
 function safeHref(href: string): string {
   const chapters: Record<string, string> = {
     '#usp': 'method/', '#protocol': 'method/', '#news': 'research/', '#papers': 'papers/',
-    '#products': 'products/', '#products-born': 'products/', '#pricing': 'pricing/', '#location': 'pricing/#location',
+    '#products': 'products/', '#products-born': 'products/', '#pricing': 'pricing/', '#location': '#location',
     '#p/pricing': 'pricing/', '#p/research': 'research/', '#p/ueber-das-lab': 'about/',
   }
   if (chapters[href]) return `${import.meta.env.BASE_URL}${chapters[href]}`
