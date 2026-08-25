@@ -18,11 +18,8 @@ html { scroll-behavior: smooth; }
 .site[data-chapter="pricing"] :is(.site-hero,.site-lauras-team,#trust,#protocol,#products-born,#categories,#products,#usp,#news,#papers,#certificates,#ssp) { display: none; }
 .site[data-chapter]:not([data-chapter="home"]) { padding-top: 76px; }
 
-.site-chapter-rail { display: flex; gap: 6px; padding: 18px max(24px, calc((100vw - 1160px)/2)); overflow-x: auto; background: var(--surface-sunken); border-top: 1px solid var(--border); }
-.site-chapter-rail a { flex: 1 0 auto; min-width: 104px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; color: var(--text-soft); text-decoration: none; font-size: 13px; font-weight: 700; transition: transform .18s ease, border-color .18s ease, color .18s ease; }
-.site-chapter-rail a:hover { transform: translateY(-2px); border-color: var(--primary); color: var(--text); }
-.site-chapter-rail a.active { color: var(--primary); border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); }
-.site-chapter-rail span { display: block; margin-bottom: 4px; font: 10px var(--mono); opacity: .65; }
+.site-logo-home { display: inline-flex; align-items: center; border-radius: 10px; }
+.site-logo-home:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; }

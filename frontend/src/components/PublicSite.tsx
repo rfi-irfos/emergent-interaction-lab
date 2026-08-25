@@ -1133,10 +1133,12 @@ export function PublicSite({
         {/* ── NAV ──────────────────────────────────────────────────────── */}
         <header className={`site-nav ${navScrolled ? 'scrolled' : ''}`}>
           <div className="site-nav-inner">
-            {nav.logo
-              ? <EImg field="nav.logo" src={nav.logo} alt={nav.brand} className="site-logo-img" />
-              : <BrandMark />
-            }
+            <a href={import.meta.env.BASE_URL} className="site-logo-home" aria-label={`${nav.brand} — Home`}>
+              {nav.logo
+                ? <EImg field="nav.logo" src={nav.logo} alt={nav.brand} className="site-logo-img" />
+                : <BrandMark />
+              }
+            </a>
             <nav className="site-main-nav">
               {nav.links.map((l, i) => (
                 <E key={i} field={`nav.links.${i}.label`} value={l.label} as="a" href={safeHref(l.href)} />
@@ -1715,24 +1717,6 @@ export function PublicSite({
               )}
             </div>
           </section>
-        )}
-
-        {!editMode && (
-          <nav className="site-chapter-rail" aria-label={lang === 'de' ? 'Kapitel' : 'Chapters'}>
-            {[
-              ['home', '', lang === 'de' ? 'Start' : 'Home'],
-              ['method', 'method/', lang === 'de' ? 'Methode' : 'Method'],
-              ['research', 'research/', lang === 'de' ? 'Forschung' : 'Research'],
-              ['papers', 'papers/', 'Papers'],
-              ['products', 'products/', lang === 'de' ? 'Systeme' : 'Systems'],
-              ['pricing', 'pricing/', lang === 'de' ? 'Preise' : 'Pricing'],
-              ['about', 'about/', lang === 'de' ? 'Über das Lab' : 'About'],
-            ].map(([id, path, label], i) => (
-              <a key={id} href={`${import.meta.env.BASE_URL}${path}`} className={chapter === id ? 'active' : ''}>
-                <span>{String(i + 1).padStart(2, '0')}</span>{label}
-              </a>
-            ))}
-          </nav>
         )}
 
         <footer className="site-footer">

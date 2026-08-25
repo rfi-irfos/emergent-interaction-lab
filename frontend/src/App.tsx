@@ -44,7 +44,7 @@ function getRoute(hash: string) {
 }
 
 export default function App() {
-  const chapter = getChapter()
+  const [chapter, setChapter] = useState<Chapter>(() => getChapter())
   const { lang } = useLang()
   const { content, loading } = useContent(lang)
   // The admin always edits the German content, independent of whatever
@@ -63,6 +63,42 @@ export default function App() {
         })()
       : null,
   )
+
+  // Keep real static URLs and direct-entry documents, but make navigation
+  // between them instant once React is running. This is progressive MPA
+  // navigation: reload/share/back all work without turning routes into hashes.
+  useEffect(() => {
+    const navigate = (url: URL, replace = false) => {
+      const update = () => {
+        window.history[replace ? 'replaceState' : 'pushState']({}, '', url)
+        setChapter(getChapter())
+        window.scrollTo({ top: 0, behavior: 'instant' })
+      }
+      if (document.startViewTransition) document.startViewTransition(update)
+      else update()
+    }
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const anchor = (event.target as Element).closest<HTMLAnchorElement>('a[href]')
+      if (!anchor || anchor.target || anchor.hasAttribute('download')) return
+      const url = new URL(anchor.href, window.location.href)
+      if (url.origin !== window.location.origin || !url.pathname.startsWith(import.meta.env.BASE_URL)) return
+      const route = url.pathname.slice(import.meta.env.BASE_URL.length).split('/')[0]
+      if (route && !['about', 'method', 'research', 'papers', 'products', 'pricing'].includes(route)) return
+      event.preventDefault()
+      navigate(url)
+    }
+    const onPopState = () => {
+      setChapter(getChapter())
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+    document.addEventListener('click', onClick)
+    window.addEventListener('popstate', onPopState)
+    return () => {
+      document.removeEventListener('click', onClick)
+      window.removeEventListener('popstate', onPopState)
+    }
+  }, [])
 
   useEffect(() => {
     const onHash = () => {
