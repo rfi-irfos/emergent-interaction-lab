@@ -27,16 +27,12 @@
     "brand": "Emergent Interaction Lab",
     "links": [
       {
-        "label": "Framework",
-        "href": "#usp"
-      },
-      {
         "label": "Method",
         "href": "#protocol"
       },
       {
-        "label": "Blog",
-        "href": "#news"
+        "label": "Systems",
+        "href": "#products-born"
       },
       {
         "label": "Papers",

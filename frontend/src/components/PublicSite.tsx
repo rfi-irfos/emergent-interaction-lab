@@ -108,6 +108,12 @@ function CredPills({ items, tone = 'light' }: { items?: CredLink[]; tone?: 'ligh
   )
 }
 function safeHref(href: string): string {
+  const chapters: Record<string, string> = {
+    '#usp': 'method/', '#protocol': 'method/', '#news': 'research/', '#papers': 'papers/',
+    '#products': 'products/', '#products-born': 'products/', '#pricing': 'pricing/', '#location': 'pricing/#location',
+    '#p/pricing': 'pricing/', '#p/research': 'research/', '#p/ueber-das-lab': 'about/',
+  }
+  if (chapters[href]) return `${import.meta.env.BASE_URL}${chapters[href]}`
   return href.startsWith('/') && !href.startsWith('//') ? `#p${href}` : href
 }
 
@@ -736,6 +742,7 @@ interface Props {
   // hijack listens on `window` regardless of target. This flag is how App
   // tells PublicSite to suspend it while a modal is open.
   modalOpen?: boolean
+  chapter?: 'home' | 'about' | 'method' | 'research' | 'papers' | 'products' | 'pricing'
 }
 
 // call-laura — a real, deployed instrument built on two of Laura's own
@@ -748,7 +755,7 @@ interface Props {
 // deliberately not linked yet, to avoid a dead/premature link.
 export function PublicSite({
   content, editMode = false, rearrangeMode = false, initPositions = {},
-  onTextChange, onImageClick, onUpdate,
+  onTextChange, onImageClick, onUpdate, chapter = 'home',
 }: Props) {
   const { meta, nav, hero, trust, categories, products, usp, news, contact, whatsapp, footer, pricing, certificates, papers } = content
   const hiddenSections = content.hiddenSections ?? []
@@ -1130,7 +1137,7 @@ export function PublicSite({
 
   return (
     <Ctx.Provider value={ctx}>
-      <div style={vars} className="site" data-theme={theme}>
+      <div style={vars} className="site" data-theme={theme} data-chapter={chapter}>
         <div className="site-emergence-field" aria-hidden="true">
           <div className="ef-blob ef-blob-1" />
           <div className="ef-blob ef-blob-2" />
@@ -1150,7 +1157,7 @@ export function PublicSite({
             }
             <nav className="site-main-nav">
               {nav.links.map((l, i) => (
-                <E key={i} field={`nav.links.${i}.label`} value={l.label} as="a" href={l.href} />
+                <E key={i} field={`nav.links.${i}.label`} value={l.label} as="a" href={safeHref(l.href)} />
               ))}
             </nav>
             <div className="site-nav-right">
@@ -1173,7 +1180,7 @@ export function PublicSite({
                   </svg>
                 </a>
                 {nav.ctaLabel && (
-                  <a href={nav.ctaHref ?? '#'} className="site-nav-icon-btn site-nav-cta-icon" aria-label={nav.ctaLabel} title={nav.ctaLabel}>
+                  <a href={safeHref(nav.ctaHref ?? '#')} className="site-nav-icon-btn site-nav-cta-icon" aria-label={nav.ctaLabel} title={nav.ctaLabel}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="2" y="4" width="20" height="16" rx="2" />
                       <path d="m2 6 10 7 10-7" />
@@ -1203,7 +1210,7 @@ export function PublicSite({
           </div>
           <nav className="site-mobile-links">
             {nav.links.map((l, i) => (
-              <a key={i} href={l.href} onClick={() => setMenuOpen(false)}>{l.label}</a>
+              <a key={i} href={safeHref(l.href)} onClick={() => setMenuOpen(false)}>{l.label}</a>
             ))}
           </nav>
           <div className="site-mobile-actions">
@@ -1220,7 +1227,7 @@ export function PublicSite({
               </a>
             )}
             {nav.ctaLabel && (
-              <a href={nav.ctaHref ?? '#'} className="site-mobile-cta" onClick={() => setMenuOpen(false)}>{nav.ctaLabel}</a>
+              <a href={safeHref(nav.ctaHref ?? '#')} className="site-mobile-cta" onClick={() => setMenuOpen(false)}>{nav.ctaLabel}</a>
             )}
           </div>
         </aside>
@@ -1264,8 +1271,8 @@ export function PublicSite({
               </div>
             )}
             <div className="site-hero-btns">
-              <E field="hero.ctaLabel" value={hero.ctaLabel} as="a" href={hero.ctaHref} className="site-btn-lime-lg" />
-              {hero.ctaSecLabel && <E field="hero.ctaSecLabel" value={hero.ctaSecLabel} as="a" href={hero.ctaSecHref ?? '#'} className="site-btn-ghost-lg" />}
+              <E field="hero.ctaLabel" value={hero.ctaLabel} as="a" href={safeHref(hero.ctaHref)} className="site-btn-lime-lg" />
+              {hero.ctaSecLabel && <E field="hero.ctaSecLabel" value={hero.ctaSecLabel} as="a" href={safeHref(hero.ctaSecHref ?? '#')} className="site-btn-ghost-lg" />}
             </div>
           </div>
           {editMode && (
@@ -1726,6 +1733,24 @@ export function PublicSite({
               )}
             </div>
           </section>
+        )}
+
+        {!editMode && (
+          <nav className="site-chapter-rail" aria-label={lang === 'de' ? 'Kapitel' : 'Chapters'}>
+            {[
+              ['home', '', lang === 'de' ? 'Start' : 'Home'],
+              ['method', 'method/', lang === 'de' ? 'Methode' : 'Method'],
+              ['research', 'research/', lang === 'de' ? 'Forschung' : 'Research'],
+              ['papers', 'papers/', 'Papers'],
+              ['products', 'products/', lang === 'de' ? 'Systeme' : 'Systems'],
+              ['pricing', 'pricing/', lang === 'de' ? 'Preise' : 'Pricing'],
+              ['about', 'about/', lang === 'de' ? 'Über das Lab' : 'About'],
+            ].map(([id, path, label], i) => (
+              <a key={id} href={`${import.meta.env.BASE_URL}${path}`} className={chapter === id ? 'active' : ''}>
+                <span>{String(i + 1).padStart(2, '0')}</span>{label}
+              </a>
+            ))}
+          </nav>
         )}
 
         <footer className="site-footer">

@@ -14,6 +14,16 @@ const BlogPostPage = lazy(() => import('./components/BlogPostPage').then(m => ({
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
 const BLOG_PREFIX = '#p/blog/'
+type Chapter = 'home' | 'about' | 'method' | 'research' | 'papers' | 'products' | 'pricing'
+
+function getChapter(): Chapter {
+  const base = import.meta.env.BASE_URL.replace(/^\/|\/$/g, '')
+  const parts = window.location.pathname.split('/').filter(Boolean)
+  const candidate = parts[base && parts[0] === base ? 1 : 0]
+  return ['about', 'method', 'research', 'papers', 'products', 'pricing'].includes(candidate)
+    ? candidate as Chapter
+    : 'home'
+}
 
 function getRoute(hash: string) {
   if (hash === '#admin' || hash.startsWith('#admin/')) return { isAdmin: true, legalSlug: null, pageSlug: null, blogId: null }
@@ -34,6 +44,7 @@ function getRoute(hash: string) {
 }
 
 export default function App() {
+  const chapter = getChapter()
   const { lang } = useLang()
   const { content, loading } = useContent(lang)
   // The admin always edits the German content, independent of whatever
@@ -48,7 +59,7 @@ export default function App() {
     window.location.hash.startsWith('#p/')
       ? (() => {
           const slug = window.location.hash.slice(3)
-          return ['impressum', 'datenschutz', 'agb'].includes(slug) ? null : slug
+          return ['impressum', 'datenschutz', 'agb'].includes(slug) || slug === 'pricing' ? null : slug
         })()
       : null,
   )
@@ -78,16 +89,6 @@ export default function App() {
   // so this hash just scrolls there instead. Guarded on `content` so a cold
   // page load on a #p/pricing deep link (content still fetching, PublicSite
   // not mounted yet) waits for content to arrive before trying to scroll.
-  useEffect(() => {
-    if (pageModalSlug !== 'pricing' || !content) return
-    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
-    setPageModalSlug(null)
-    if (window.location.hash.startsWith('#p/')) {
-      window.history.pushState('', document.title, window.location.pathname + window.location.search)
-      setRoute(getRoute(window.location.hash))
-    }
-  }, [pageModalSlug, content])
-
   if (loading) {
     return (
       <div className="loading-screen">
@@ -188,7 +189,7 @@ export default function App() {
   // root instead of removing the animation.
   return (
     <>
-      <PublicSite content={content} modalOpen={modalActive} />
+      <PublicSite content={content} modalOpen={modalActive} chapter={chapter} />
       {isCertModal
         ? <CertificationPage content={content} onClose={closeModal} />
         : isBlogModal && blogItem

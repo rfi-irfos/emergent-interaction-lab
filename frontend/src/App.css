@@ -1,6 +1,32 @@
 /* ── Reset ──────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: chapter-out .22s ease both; }
+::view-transition-new(root) { animation: chapter-in .32s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes chapter-out { to { opacity: 0; transform: translateX(-28px); } }
+@keyframes chapter-in { from { opacity: 0; transform: translateX(34px); } }
+
+/* Real static documents with one shared authored section system. */
+.site[data-chapter="home"] :is(#protocol,#categories,#products,#usp,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="about"] :is(.site-hero,#trust,#protocol,#products-born,#categories,#products,#usp,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="method"] :is(.site-hero,.site-lauras-team,#trust,#products-born,#categories,#products,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="research"] :is(.site-hero,.site-lauras-team,#trust,#protocol,#products-born,#categories,#products,#usp,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="papers"] :is(.site-hero,.site-lauras-team,#trust,#protocol,#products-born,#categories,#products,#usp,#news,#pricing,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="products"] :is(.site-hero,.site-lauras-team,#trust,#protocol,#usp,#news,#pricing,#papers,#certificates,#location,#ssp) { display: none; }
+.site[data-chapter="pricing"] :is(.site-hero,.site-lauras-team,#trust,#protocol,#products-born,#categories,#products,#usp,#news,#papers,#certificates,#ssp) { display: none; }
+.site[data-chapter]:not([data-chapter="home"]) { padding-top: 76px; }
+
+.site-chapter-rail { display: flex; gap: 6px; padding: 18px max(24px, calc((100vw - 1160px)/2)); overflow-x: auto; background: var(--surface-sunken); border-top: 1px solid var(--border); }
+.site-chapter-rail a { flex: 1 0 auto; min-width: 104px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; color: var(--text-soft); text-decoration: none; font-size: 13px; font-weight: 700; transition: transform .18s ease, border-color .18s ease, color .18s ease; }
+.site-chapter-rail a:hover { transform: translateY(-2px); border-color: var(--primary); color: var(--text); }
+.site-chapter-rail a.active { color: var(--primary); border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.site-chapter-rail span { display: block; margin-bottom: 4px; font: 10px var(--mono); opacity: .65; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
 /* ONE global sans across the whole admin/OS surface — matches Lighthouse's
    own "no font-mixing" rule. Previously this named "Inter" but never
    actually loaded it (no <link>/@import anywhere), so every visitor
@@ -4846,4 +4872,3 @@ button { cursor: pointer; font-family: inherit; }
    heavy boxed chrome so it reads as BI tooling, not a toy. */
 .observatory-hud .monetization .obs-item-card { margin-bottom: 10px; }
 .observatory-hud .monetization .obs-section-label { margin-top: 18px; }
-

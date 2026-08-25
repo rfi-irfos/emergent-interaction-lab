@@ -12,8 +12,8 @@ export const defaultContent: SiteContent = {
     logo: '',
     brand: 'Emergent Interaction Lab',
     links: [
-      { label: 'Framework', href: '#usp' },
-      { label: 'Blog', href: '#news' },
+      { label: 'Methode', href: '#protocol' },
+      { label: 'Systeme', href: '#products-born' },
     ],
     ctaLabel: 'Kontakt',
     ctaHref: '#location',
