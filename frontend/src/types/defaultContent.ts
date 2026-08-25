@@ -12,7 +12,6 @@ export const defaultContent: SiteContent = {
     logo: '',
     brand: 'Emergent Interaction Lab',
     links: [
-      { label: 'Über das Lab', href: '#p/ueber-das-lab' },
       { label: 'Framework', href: '#usp' },
       { label: 'Blog', href: '#news' },
     ],
@@ -113,6 +112,8 @@ export const defaultContent: SiteContent = {
     description: 'Emergent Interaction-Based System Research.',
     cols: [],
     links: [
+      { label: 'Über das Lab', href: '#p/ueber-das-lab' },
+      { label: 'Forschung', href: '#p/research' },
       { label: 'Datenschutz', href: '/datenschutz' },
       { label: 'Impressum', href: '/impressum' },
     ],

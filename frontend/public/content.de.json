@@ -27,10 +27,6 @@
     "brand": "Emergent Interaction Lab",
     "links": [
       {
-        "label": "Über das Lab",
-        "href": "#p/ueber-das-lab"
-      },
-      {
         "label": "Framework",
         "href": "#usp"
       },
@@ -41,10 +37,6 @@
       {
         "label": "Blog",
         "href": "#news"
-      },
-      {
-        "label": "Forschung",
-        "href": "#p/research"
       },
       {
         "label": "Papers",
@@ -305,6 +297,14 @@
     "description": "Forschung zu Mensch-KI-Interaktion, seit 2023.",
     "cols": [],
     "links": [
+      {
+        "label": "Über das Lab",
+        "href": "#p/ueber-das-lab"
+      },
+      {
+        "label": "Forschung",
+        "href": "#p/research"
+      },
       {
         "label": "Zertifizierung",
         "href": "#p/zertifizierung"
