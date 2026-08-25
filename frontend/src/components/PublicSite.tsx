@@ -125,77 +125,28 @@ export function Reveal({
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = ref.current; if (!el) return
-    let rafId = 0
-    const update = () => {
-      if (_revealSuppressed) { el.style.opacity = '1'; el.style.transform = 'none'; return }
-      const rect = el.getBoundingClientRect(), vh = window.innerHeight
-      const startFrac = 0.96 - delay * 0.05
-      // Window widened from an earlier 0.22*vh to 0.7*vh: at the old width,
-      // the eased/accelerated wheel-scroll (see useFastScroll) covers the
-      // whole transition in 2-3 animation frames on a normal scroll gesture
-      // — technically animating, but too fast to ever actually see. This
-      // spans most of a screen's height of scroll distance instead, so the
-      // fade-and-slide is visible at any realistic scroll speed.
-      const raw = (vh * startFrac - rect.top) / (vh * 0.7)
-      const p = Math.max(0, Math.min(1, raw))
-      el.style.opacity = String(p)
-      const d = (1 - p) * 64
-      el.style.transform = from === 'left'  ? `translateX(${-d}px)` :
-                           from === 'right' ? `translateX(${d}px)`  :
-                           from === 'scale' ? `scale(${0.82 + p * 0.18})` :
-                           `translateY(${d}px)`
+    const reveal = () => {
+      el.style.opacity = '1'
+      el.style.transform = 'none'
+      el.style.willChange = 'auto'
     }
-    const onScroll = () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(update) }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    update()
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(rafId) }
+    if (_revealSuppressed || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      reveal()
+      return
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      reveal()
+      observer.disconnect()
+    }, { rootMargin: `0px 0px -${Math.max(0, delay) * 4}% 0px`, threshold: 0.08 })
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [delay, from])
-  return <div ref={ref} style={{ opacity: 0, willChange: 'transform, opacity', ...extra }}>{children}</div>
-}
-
-// Eased "super smooth" wheel-scroll accelerator — ported from rfi-irfos-web's
-// own PublicSite.tsx (same technique, ~40 self-contained lines, no library).
-// Intercepts wheel deltas, boosts them, and lerps toward the target scroll
-// position every animation frame instead of jumping straight there — this is
-// what makes the page-build/explode feel driven by Reveal above read as
-// smooth scrubbing rather than a jittery native scroll. Respects
-// prefers-reduced-motion (bails out entirely) and skips any element marked
-// [data-native-scroll] (nested overflow-scroll panels) so the wheel hijack
-// never fights an internal scrollable list.
-function useFastScroll(enabled: boolean, mult = 1.55, ease = 0.16) {
-  useEffect(() => {
-    if (!enabled) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    let target = window.scrollY
-    let current = window.scrollY
-    let rafId = 0
-    const maxScroll = () => document.documentElement.scrollHeight - window.innerHeight
-
-    const tick = () => {
-      current += (target - current) * ease
-      if (Math.abs(target - current) < 0.5) { current = target; window.scrollTo(0, current); rafId = 0; return }
-      window.scrollTo(0, current)
-      rafId = requestAnimationFrame(tick)
-    }
-
-    const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.deltaY === 0) return
-      if ((e.target as HTMLElement)?.closest?.('[data-native-scroll]')) return
-      e.preventDefault()
-      if (!rafId) { target = window.scrollY; current = window.scrollY }
-      target = Math.max(0, Math.min(maxScroll(), target + e.deltaY * mult))
-      if (!rafId) rafId = requestAnimationFrame(tick)
-    }
-    const onResize = () => { target = Math.min(target, maxScroll()) }
-
-    window.addEventListener('wheel', onWheel, { passive: false })
-    window.addEventListener('resize', onResize)
-    return () => {
-      window.removeEventListener('wheel', onWheel)
-      window.removeEventListener('resize', onResize)
-      cancelAnimationFrame(rafId)
-    }
-  }, [enabled, mult, ease])
+  const startTransform = from === 'left' ? 'translateX(-40px)'
+    : from === 'right' ? 'translateX(40px)'
+      : from === 'scale' ? 'scale(.94)'
+        : 'translateY(40px)'
+  return <div ref={ref} style={{ opacity: 0, transform: startTransform, transition: 'opacity .55s ease, transform .55s ease', willChange: 'transform, opacity', ...extra }}>{children}</div>
 }
 
 // ── Edit context ─────────────────────────────────────────────────────────────
@@ -797,7 +748,7 @@ interface Props {
 // deliberately not linked yet, to avoid a dead/premature link.
 export function PublicSite({
   content, editMode = false, rearrangeMode = false, initPositions = {},
-  onTextChange, onImageClick, onUpdate, modalOpen = false,
+  onTextChange, onImageClick, onUpdate,
 }: Props) {
   const { meta, nav, hero, trust, categories, products, usp, news, contact, whatsapp, footer, pricing, certificates, papers } = content
   const hiddenSections = content.hiddenSections ?? []
@@ -812,16 +763,6 @@ export function PublicSite({
   const [activeNewsCategory, setActiveNewsCategory] = useState<string | null>(null)
   const { theme, setTheme } = useTheme()
   const { t, lang } = useLang()
-  // Only on the live public page — an editor dragging/rearranging sections
-  // in the builder shouldn't have their scroll wheel hijacked mid-edit.
-  // Also suspended while a content-page modal is open (modalOpen prop) - the
-  // hijack listens on `window` and calls preventDefault() on every wheel
-  // event regardless of target, which was silently swallowing scroll
-  // attempts over the modal (body is scroll-locked while it's open, so the
-  // hijacked scroll had nothing to actually move) instead of letting the
-  // modal's own native internal scroll handle it.
-  useFastScroll(!editMode && !modalOpen)
-
   // Tracking pixel — fires once per page load in production (skipped in edit
   // mode). Published articles now navigate to their own #p/blog/<id> route
   // (see BlogPostPage.tsx) instead of a modal here, so this component's own

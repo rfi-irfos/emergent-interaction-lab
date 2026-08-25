@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
+import { lazy, useState, useEffect } from 'react'
 import './App.css'
 import { useContent } from './hooks/useContent'
 import { useAuth } from './hooks/useAuth'
 import { useLang } from './hooks/useLang'
 import { PublicSite } from './components/PublicSite'
-import { AdminPanel } from './components/AdminPanel'
-import { LoginPage } from './components/LoginPage'
-import { LegalPage } from './components/LegalPage'
-import { DynamicPage } from './components/DynamicPage'
-import { PageModal } from './components/PageModal'
-import { CertificationPage } from './components/CertificationPage'
-import { BlogPostPage } from './components/BlogPostPage'
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })))
+const LoginPage = lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })))
+const LegalPage = lazy(() => import('./components/LegalPage').then(m => ({ default: m.LegalPage })))
+const DynamicPage = lazy(() => import('./components/DynamicPage').then(m => ({ default: m.DynamicPage })))
+const PageModal = lazy(() => import('./components/PageModal').then(m => ({ default: m.PageModal })))
+const CertificationPage = lazy(() => import('./components/CertificationPage').then(m => ({ default: m.CertificationPage })))
+const BlogPostPage = lazy(() => import('./components/BlogPostPage').then(m => ({ default: m.BlogPostPage })))
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
 const BLOG_PREFIX = '#p/blog/'
