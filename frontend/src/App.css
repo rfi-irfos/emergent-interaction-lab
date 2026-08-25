@@ -8,6 +8,13 @@ html, body, #root { background: #07141d; }
 ::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
 ::view-transition-old(root) { animation: chapter-out .46s cubic-bezier(.4,0,.2,1) both; }
 ::view-transition-new(root) { animation: chapter-in .46s cubic-bezier(.4,0,.2,1) both; }
+/* The header exists continuously across client-side chapter changes. Giving
+   it a stable transition identity removes it from the sliding root snapshot,
+   so only the content plane beneath it moves. */
+.site:not(.edit-mode) > .site-nav { view-transition-name: eil-topbar; }
+::view-transition-group(eil-topbar),
+::view-transition-old(eil-topbar),
+::view-transition-new(eil-topbar) { animation: none; }
 @keyframes chapter-out { to { transform: translateX(-18vw); opacity: .35; } }
 @keyframes chapter-in { from { transform: translateX(100vw); } }
 
