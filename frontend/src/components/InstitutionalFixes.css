@@ -38,7 +38,7 @@
 .eil-official-mark {
   display: block;
   flex: 0 0 auto;
-  background: linear-gradient(135deg, #0C3830 5%, #164A3E 62%, #3D8562 115%);
+  background: linear-gradient(135deg, #063F43 5%, #063F43 62%, #A8D94A 115%);
   -webkit-mask: url('/emergent-interaction-lab/eil-official-mark-black.png') center / contain no-repeat;
   mask: url('/emergent-interaction-lab/eil-official-mark-black.png') center / contain no-repeat;
 }
