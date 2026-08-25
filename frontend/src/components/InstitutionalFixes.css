@@ -1,0 +1,62 @@
+.eil-program-questions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+}
+
+.eil-program-questions article {
+  display: block;
+  min-width: 0;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.eil-program-questions article strong {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--cyan);
+  font: 700 11px/1.35 ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.eil-program-questions article p {
+  margin: 0;
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.35;
+}
+
+@media (max-width: 720px) {
+  .eil-program-questions { grid-template-columns: 1fr; }
+}
+
+.eil-official-mark {
+  display: block;
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, #063F43 5%, #063F43 62%, #A8D94A 115%);
+  -webkit-mask: url('/emergent-interaction-lab/eil-official-mark-black.png') center / contain no-repeat;
+  mask: url('/emergent-interaction-lab/eil-official-mark-black.png') center / contain no-repeat;
+}
+
+.eil-official-mark--compact {
+  width: 42px;
+  height: 42px;
+}
+
+.eil-official-mark--hero {
+  width: min(390px, 31vw);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 22px 50px rgba(39, 169, 164, .18));
+}
+
+.eil-brand .eil-official-mark { width: 40px; height: 40px; }
+.eil-footer .eil-official-mark { width: 40px; height: 40px; }
+
+@media (max-width: 720px) {
+  .eil-official-mark--hero { width: 260px; }
+}

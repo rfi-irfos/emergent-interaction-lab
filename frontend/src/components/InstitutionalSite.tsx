@@ -4,6 +4,7 @@ import type { SiteContent } from '../types/content'
 import { useLang } from '../hooks/useLang'
 import { useTheme } from '../hooks/useTheme'
 import './InstitutionalSite.css'
+import './InstitutionalFixes.css'
 
 export type InstitutionalRoute = 'home' | 'lab' | 'research' | 'methods' | 'systems' | 'publications' | 'observatory' | 'notes' | 'applied-research'
 
@@ -96,6 +97,23 @@ const systemDetails = [
   ['World Model', 'How can observed states and plausible transitions be represented without collapsing uncertainty?', 'state records · relations · hypotheses', 'state representation · transition candidates', 'Experimental'],
 ]
 
+const publicCapabilities = [
+  ['System Reconstruction', 'CORE CAPABILITY', 'Technische, organisatorische und sozio-technische Systeme aus fragmentierter, verteilter oder widersprüchlicher Evidenz untersuchen.', 'Investigating technical, organizational and socio-technical systems from fragmented, distributed or contradictory evidence.'],
+  ['Behavioral Analysis', 'RESEARCH CAPABILITY', 'Beobachtbare Muster, Variation und Veränderung über Zeit untersuchen.', 'Studying observable patterns, variation and change over time.'],
+  ['Longitudinal Analysis', 'RESEARCH CAPABILITY', 'Interaktionen und Zustandsveränderungen über längere Zeiträume vergleichen.', 'Comparing interaction and state change over extended periods.'],
+  ['Adversarial Analysis', 'RESEARCH CAPABILITY', 'Konkurrierende Erklärungen und Gegenbelege systematisch berücksichtigen.', 'Systematically considering competing explanations and counter-evidence.'],
+  ['System Integrity Analysis', 'RESEARCH CAPABILITY', 'Formale, berichtete und beobachtbare Systemzustände voneinander unterscheiden.', 'Distinguishing formal, reported and observable system states.'],
+  ['Human–AI Interaction Research', 'RESEARCH DOMAIN', 'Ko-Adaption, Drift und Rollenbildung in wiederholter Interaktion untersuchen.', 'Studying co-adaptation, drift and role formation in repeated interaction.'],
+]
+
+const programQuestions = [
+  ['Emergent Interaction', 'Welche stabilen Strukturen entstehen über wiederholte Interaktion – und unter welchen Bedingungen bleiben sie bestehen?', 'Which stable structures emerge through repeated interaction—and under which conditions do they persist?'],
+  ['Behavioral Dynamics', 'Welche beobachtbaren Übergänge unterscheiden temporäre Variation von anhaltender Zustandsveränderung?', 'Which observable transitions distinguish temporary variation from persistent state change?'],
+  ['System Reconstruction', 'Welche belastbaren Aussagen über ein System sind trotz unvollständiger oder widersprüchlicher Evidenz möglich?', 'Which defensible claims about a system remain possible despite incomplete or contradictory evidence?'],
+  ['System Integrity', 'Wo weichen formale Rollen, Prozesse und Zustände von beobachtbarem Verhalten ab?', 'Where do formal roles, processes and states diverge from observable behavior?'],
+  ['Computational Research Agents', 'Welche Forschungsoperationen lassen sich operationalisieren, ohne Attribution und Evidenzgrenzen zu verlieren?', 'Which research operations can be operationalized without losing attribution and evidence boundaries?'],
+]
+
 const engagements = [
   ['System Reconstruction', 'Case Intake Scan', '€700', 'Intake, erste Evidenzgrenzen und priorisierte offene Fragen.', 'Intake, initial evidence boundaries and prioritized open questions.'],
   ['System Reconstruction', 'Mangelcluster Sprint', '€2,200', 'Quellengebundene Mängel-, Themen- und Widerspruchsstruktur.', 'Source-traceable defect, theme and contradiction structure.'],
@@ -107,7 +125,8 @@ const engagements = [
   ['Ongoing Research Support', 'Retainer / Monitoring', '€2,700 / month', 'Review, Drift-Checks, Framework-Updates und laufende Kontrolle.', 'Review, drift checks, framework updates and ongoing control.'],
 ]
 
-function Mark() { return <img src={`${BASE}eil-mark.svg`} alt="" width="42" height="42" /> }
+function Mark() { return <span className="eil-official-mark eil-official-mark--compact" aria-hidden="true" /> }
+function HeroMark() { return <span className="eil-official-mark eil-official-mark--hero" aria-hidden="true" /> }
 function Status({ children }: { children: string }) { return <span className="eil-status">{children}</span> }
 
 export function InstitutionalSite({ route, content }: { route: InstitutionalRoute; content: SiteContent }) {
@@ -149,7 +168,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   const ResearchMap = () => <section className="eil-section"><div className="eil-section-head"><Status>RESEARCH MAP</Status><h2>{tx('Vom Forschungsfeld zum Ergebnis', 'From domain to output')}</h2><p>Domain → Program → Method → Instrument → Output</p></div><div className="eil-research-map">{researchMap.map(row=><article key={row[0]}>{row.map((cell,i)=><div key={cell}><small>{['DOMAIN','PROGRAM','METHOD','INSTRUMENT','OUTPUT'][i]}</small><strong>{cell}</strong>{i<4&&<span>→</span>}</div>)}</article>)}</div></section>
 
   const Home = () => <>
-    <section className="eil-home-hero"><div><Status>{tx('KOMPLEXE SYSTEME · VERHALTEN · INTERAKTION · EMERGENZ', 'COMPLEX SYSTEMS · BEHAVIOR · INTERACTION · EMERGENCE')}</Status><h1>Emergent<br/>Interaction Lab</h1><p className="eil-lead">{tx('Ein unabhängiges Forschungslabor für Verhalten, Systemrekonstruktion und Interaktionsdynamik in komplexen Systemen.', 'An independent research lab for behavior, system reconstruction and interaction dynamics in complex systems.')}</p><div className="eil-actions"><a href={href('research')}>{tx('Forschung ansehen', 'Explore research')} →</a><a href={href('methods')}>{tx('Methoden', 'Methods')}</a></div></div><div className="eil-hero-mark"><Mark /></div></section>
+    <section className="eil-home-hero"><div><Status>{tx('KOMPLEXE SYSTEME · VERHALTEN · INTERAKTION · EMERGENZ', 'COMPLEX SYSTEMS · BEHAVIOR · INTERACTION · EMERGENCE')}</Status><h1>Emergent<br/>Interaction Lab</h1><p className="eil-lead">{tx('Ein unabhängiges Forschungslabor für Verhalten, Systemrekonstruktion und Interaktionsdynamik in komplexen Systemen.', 'An independent research lab for behavior, system reconstruction and interaction dynamics in complex systems.')}</p><div className="eil-actions"><a href={href('research')}>{tx('Forschung ansehen', 'Explore research')} →</a><a href={href('methods')}>{tx('Methoden', 'Methods')}</a></div></div><div className="eil-hero-mark"><HeroMark /></div></section>
     <section className="eil-thesis"><Status>RESEARCH THESIS</Status><h2>{tx('Systeme hinterlassen Spuren.', 'Systems leave traces.')}</h2><p>{tx('Entscheidungen, Interaktionen, Fehler, Widersprüche und Zustandswechsel machen Struktur sichtbar. Das Lab rekonstruiert diese Spuren, um zu verstehen, wie komplexe Systeme tatsächlich operieren.', 'Decisions, interactions, failures, contradictions and state changes reveal structure. The Lab reconstructs these traces to understand how complex systems actually operate.')}</p></section>
     <section className="eil-spine"><Status>THEORETICAL SPINE</Status><h2>{tx('Wie Zustände entstehen, sich verändern und beobachtbar werden.', 'How states emerge, change and become observable.')}</h2><p>{tx('Interaktion, Verhalten, Rekonstruktion, Integrität, Prediction und Emergenz werden als Zustände und Übergänge unter Kontext untersucht.', 'Interaction, behavior, reconstruction, integrity, prediction and emergence are studied as states and transitions under context.')}</p></section>
     <Domains />
@@ -189,17 +208,27 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   const EngagementProcess = () => <section className="eil-section"><div className="eil-section-head"><Status>ENGAGEMENT PROCESS</Status><h2>{tx('Vom Scope zum Ergebnisartefakt', 'From scope to output artifact')}</h2><p>{tx('Finale Preise hängen von Evidenzvolumen, Systemgrenze und Komplexität ab.', 'Final pricing depends on evidence volume, system boundary and complexity.')}</p></div><div className="eil-process">{['Scope','Evidence','Investigation','Reconstruction / Analysis','Deliverable','Optional Engineering'].map((x,i)=><article key={x}><span>{String(i+1).padStart(2,'0')}</span><strong>{x}</strong></article>)}</div></section>
 
+  const ProgramQuestionMap = () => <section className="eil-section"><div className="eil-section-head"><Status>PROGRAM QUESTIONS</Status><h2>{tx('Forschungsprogramme beginnen mit Fragen.', 'Research programs begin with questions.')}</h2></div><div className="eil-question-section eil-program-questions">{programQuestions.map(([name,d,e])=><article key={name}><strong>{name}</strong><p>{tx(d,e)}</p></article>)}</div></section>
+
+  const MethodsPublic = () => <><PageHero eyebrow="PUBLIC METHODOLOGY" title={tx('Methoden & Fähigkeiten','Methods & capabilities')} body={tx('Öffentlich beschreibbare Forschungsprinzipien, methodische Fähigkeiten und bereits publizierte Instrumente. Interne Operationalisierung bleibt geschützt.', 'Publicly describable research principles, methodological capabilities and already published instruments. Internal operationalization remains protected.')} /><section className="eil-principles"><h2>{tx('Öffentliche Forschungslogik','Public research logic')}</h2>{['Observe before explaining','Separate reported, expected and observed states','Preserve context and provenance','Test competing explanations','Keep uncertainty visible','Validate projections longitudinally'].map(x=><span key={x}>{x}</span>)}</section><section className="eil-callout eil-transition-rule"><Status>GOVERNING RULE</Status><h2>{tx('Jeder Übergang erhält Herkunft, Evidenzstatus und Unsicherheit.','Every transition preserves provenance, evidence status and uncertainty.')}</h2></section><section className="eil-section"><div className="eil-section-head"><Status>PUBLIC CAPABILITY LAYER</Status><h2>{tx('Was das Lab methodisch leisten kann','What the Lab can do methodologically')}</h2><p>{tx('Die Website beschreibt Forschungszweck und Ergebnisraum – nicht interne Inferenz-, Scoring-, Orchestrierungs- oder State-Machine-Mechanik.','The website describes research purpose and output space—not internal inference, scoring, orchestration or state-machine mechanics.')}</p></div><div className="eil-program-grid">{publicCapabilities.map(([name,status,d,e])=><article className="eil-card" key={name}><Status>{status}</Status><h3>{name}</h3><p>{tx(d,e)}</p></article>)}</div></section><section className="eil-section"><div className="eil-section-head"><Status>PUBLISHED METHOD SUITE</Status><h2>{tx('Öffentlich dokumentierte Artefakte','Publicly documented artifacts')}</h2><p>{tx('Nur Umfang und Status, die bereits aus öffentlichen Papers, Repositories oder Instrumenten hervorgehen.','Only scope and status already evidenced by public papers, repositories or instruments.')}</p></div><div className="eil-library-grid">{methodLibrary.map(([name,status,full,,,,domain])=><article key={name}><Status>{status}</Status><h2>{name}</h2><p>{full}</p><dl><dt>Domain</dt><dd>{domain}</dd><dt>Disclosure</dt><dd>{tx('öffentliche Capability-Ebene','public capability level')}</dd></dl></article>)}</div></section><EvidenceModel/></>
+
+  const AppliedPublic = () => <><PageHero eyebrow="APPLIED RESEARCH" title="Applied Research" body={tx('Beauftragbare Untersuchung komplexer technischer, organisatorischer und sozio-technischer Systeme – mit klaren Ergebnissen, Evidenzgrenzen und Preisen.', 'Commissioned investigation of complex technical, organizational and socio-technical systems—with clear outputs, evidence boundaries and pricing.')} /><EngagementProcess/><section className="eil-section"><div className="eil-section-head"><Status>TRANSPARENT ENGAGEMENTS</Status><h2>{tx('Pakete & Einstiegspreise','Packages & starting prices')}</h2><p>{tx('Evidenzvolumen, Systemgrenze und Komplexität bestimmen den finalen Scope. Die bestehenden Preisstufen bleiben unverändert.', 'Evidence volume, system boundary and complexity determine the final scope. Existing price tiers remain unchanged.')}</p></div><div className="eil-engagement-list">{engagements.map(([category,name,price,d,e])=><article key={name}><div><Status>{category.toUpperCase()}</Status><strong>{price}</strong></div><h2>{name}</h2><p>{tx(d,e)}</p><dl><dt>Deliverable</dt><dd>{tx('definierter Untersuchungsumfang und dokumentiertes Ergebnisartefakt','defined investigation scope and documented output artifact')}</dd><dt>Research owner</dt><dd>Laura / Emergent Interaction Lab</dd>{category==='Implementation'&&<><dt>Engineering owner</dt><dd>RFI-IRFOS</dd></>}</dl><a href={`${href('home')}#contact`}>{tx('Research Engagement anfragen','Request research engagement')} →</a></article>)}</div></section><section className="eil-attribution-note"><h2>{tx('Forschung und Umsetzung greifen klar ineinander.','Research and implementation connect through explicit roles.')}</h2><p>{tx('Das Emergent Interaction Lab entwickelt Forschungsfragen, Methoden und Forschungsarchitekturen. Wo Software oder Infrastruktur erforderlich ist, übernimmt RFI-IRFOS die technische Umsetzung als separat ausgewiesener Engineering-Partner.','The Emergent Interaction Lab develops research questions, methods and research architectures. Where software or infrastructure is required, RFI-IRFOS provides implementation as a separately attributed engineering partner.')}</p></section></>
+
+  // Legacy page bodies remain temporarily available for content comparison
+  // during the beta, but are intentionally not exposed as public routes.
+  void Methods
+  void Applied
+  void MethodLibrary
+
   const LabLineage = () => <section className="eil-spine"><Status>RESEARCH LINEAGE</Status><h2>{tx('Von longitudinaler Mensch–KI-Forschung zu einer allgemeinen Systemmethodik.', 'From longitudinal human–AI research to a general systems methodology.')}</h2><p>{tx('Das Lab entstand aus Langzeitforschung zu Mensch–KI-Interaktion. Wiederkehrende Operationen wurden auf Behavioral Dynamics, Systemrekonstruktion, Integritätsanalyse und Computational Research Systems übertragen.', 'The Lab emerged from longitudinal human–AI research. Recurring operations were extended to behavioral dynamics, system reconstruction, integrity analysis and computational research systems.')}</p></section>
 
   const LabDeep = () => <><Lab/><LabLineage/><EvidenceModel/></>
-  const ResearchDeep = () => <><Research/><ResearchMap/><EvidenceModel/></>
-  const MethodsDeep = () => <><Methods/><MethodLibrary/><EvidenceModel/></>
+  const ResearchDeep = () => <><Research/><ProgramQuestionMap/><ResearchMap/><EvidenceModel/></>
   const SystemsDeep = () => <><Systems/><SystemArchitecture/><SystemRecords/></>
   const PublicationsDeep = () => <><Publications/><PublicationArchitecture/></>
   const ObservatoryDeep = () => <><Observatory/><ObservatoryModel/><EvidenceModel/></>
-  const AppliedDeep = () => <><Applied/><EngagementProcess/></>
 
-  const pages: Record<InstitutionalRoute, () => ReactElement> = { home: Home, lab: LabDeep, research: ResearchDeep, methods: MethodsDeep, systems: SystemsDeep, publications: PublicationsDeep, observatory: ObservatoryDeep, notes: Notes, 'applied-research': AppliedDeep }
+  const pages: Record<InstitutionalRoute, () => ReactElement> = { home: Home, lab: LabDeep, research: ResearchDeep, methods: MethodsPublic, systems: SystemsDeep, publications: PublicationsDeep, observatory: ObservatoryDeep, notes: Notes, 'applied-research': AppliedPublic }
   const Page = pages[route]
   return <div className="eil-site" data-theme={theme}><Header/><main className="eil-main"><Page/></main><Footer/></div>
 }
