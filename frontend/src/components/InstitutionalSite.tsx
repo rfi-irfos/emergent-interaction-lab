@@ -125,8 +125,8 @@ const engagements = [
   ['Ongoing Research Support', 'Retainer / Monitoring', '€2,700 / month', 'Review, Drift-Checks, Framework-Updates und laufende Kontrolle.', 'Review, drift checks, framework updates and ongoing control.'],
 ]
 
-function Mark() { return <span className="eil-official-mark eil-official-mark--compact" aria-hidden="true" /> }
-function HeroMark() { return <span className="eil-official-mark eil-official-mark--hero" aria-hidden="true" /> }
+function Mark() { return <span className="eil-wordmark eil-wordmark--compact" aria-hidden="true">&#926;IL</span> }
+function HeroMark() { return <span className="eil-wordmark eil-wordmark--hero" aria-hidden="true"><span className="eil-wordmark-line">&#926;M&#926;RG&#926;NT</span><span className="eil-wordmark-sub">INTERACTION LAB</span></span> }
 function Status({ children }: { children: string }) { return <span className="eil-status">{children}</span> }
 
 export function InstitutionalSite({ route, content }: { route: InstitutionalRoute; content: SiteContent }) {

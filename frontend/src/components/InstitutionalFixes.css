@@ -35,28 +35,44 @@
   .eil-program-questions { grid-template-columns: 1fr; }
 }
 
-.eil-official-mark {
-  display: block;
+.eil-wordmark {
+  display: inline-flex;
   flex: 0 0 auto;
-  background: linear-gradient(135deg, #2E6FD9 0%, #3FC7D8 45%, #4FAE7A 100%);
-  -webkit-mask: url('/emergent-interaction-lab/eil-spiral-mark-black.png') center / contain no-repeat;
-  mask: url('/emergent-interaction-lab/eil-spiral-mark-black.png') center / contain no-repeat;
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  background: linear-gradient(135deg, #c9d1d6 0%, #ffffff 45%, #aeb8bf 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.eil-official-mark--compact {
-  width: 42px;
-  height: 42px;
+.eil-wordmark--compact {
+  font-size: 20px;
 }
 
-.eil-official-mark--hero {
-  width: min(390px, 31vw);
-  aspect-ratio: 1;
-  filter: drop-shadow(0 22px 50px rgba(39, 169, 164, .18));
+.eil-wordmark--hero {
+  flex-direction: column;
+  gap: 14px;
+  white-space: normal;
 }
 
-.eil-brand .eil-official-mark { width: 40px; height: 40px; }
-.eil-footer .eil-official-mark { width: 40px; height: 40px; }
+.eil-wordmark-line {
+  font-size: clamp(40px, 5.2vw, 84px);
+  letter-spacing: 0.06em;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, .35));
+}
+
+.eil-wordmark-sub {
+  font-size: clamp(13px, 1.3vw, 18px);
+  letter-spacing: 0.42em;
+  font-weight: 600;
+  opacity: 0.85;
+}
 
 @media (max-width: 720px) {
-  .eil-official-mark--hero { width: 260px; }
+  .eil-wordmark-line { font-size: 34px; }
+  .eil-hero-mark { opacity: .9; }
 }
