@@ -126,7 +126,6 @@ const engagements = [
 ]
 
 function Mark() { return <span className="eil-wordmark eil-wordmark--compact" aria-hidden="true">&#926;IL</span> }
-function HeroMark() { return <span className="eil-wordmark eil-wordmark--hero" aria-hidden="true"><span className="eil-wordmark-line">&#926;M&#926;RG&#926;NT</span><span className="eil-wordmark-sub">INTERACTION LAB</span></span> }
 function Status({ children }: { children: string }) { return <span className="eil-status">{children}</span> }
 
 export function InstitutionalSite({ route, content }: { route: InstitutionalRoute; content: SiteContent }) {
@@ -146,7 +145,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   }, [route, lang])
 
   const Header = () => <header className="eil-header">
-    <a className="eil-brand" href={href('home')} aria-label="Emergent Interaction Lab — Home"><Mark /><span>Emergent Interaction Lab</span></a>
+    <a className="eil-brand" href={href('home')} aria-label="Emergent Interaction Lab — Home"><Mark /></a>
     <nav className="eil-nav" aria-label={tx('Hauptnavigation', 'Primary navigation')}>
       {navigation.map(([id, d, e]) => <a key={id} href={href(id)} className={route === id ? 'active' : ''}>{tx(d, e)}</a>)}
     </nav>
@@ -168,7 +167,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   const ResearchMap = () => <section className="eil-section"><div className="eil-section-head"><Status>RESEARCH MAP</Status><h2>{tx('Vom Forschungsfeld zum Ergebnis', 'From domain to output')}</h2><p>Domain → Program → Method → Instrument → Output</p></div><div className="eil-research-map">{researchMap.map(row=><article key={row[0]}>{row.map((cell,i)=><div key={cell}><small>{['DOMAIN','PROGRAM','METHOD','INSTRUMENT','OUTPUT'][i]}</small><strong>{cell}</strong>{i<4&&<span>→</span>}</div>)}</article>)}</div></section>
 
   const Home = () => <>
-    <section className="eil-home-hero"><div><Status>{tx('KOMPLEXE SYSTEME · VERHALTEN · INTERAKTION · EMERGENZ', 'COMPLEX SYSTEMS · BEHAVIOR · INTERACTION · EMERGENCE')}</Status><h1>Emergent<br/>Interaction Lab</h1><p className="eil-lead">{tx('Ein unabhängiges Forschungslabor für Verhalten, Systemrekonstruktion und Interaktionsdynamik in komplexen Systemen.', 'An independent research lab for behavior, system reconstruction and interaction dynamics in complex systems.')}</p><div className="eil-actions"><a href={href('research')}>{tx('Forschung ansehen', 'Explore research')} →</a><a href={href('methods')}>{tx('Methoden', 'Methods')}</a></div></div><div className="eil-hero-mark"><HeroMark /></div></section>
+    <section className="eil-home-hero"><div><Status>{tx('KOMPLEXE SYSTEME · VERHALTEN · INTERAKTION · EMERGENZ', 'COMPLEX SYSTEMS · BEHAVIOR · INTERACTION · EMERGENCE')}</Status><h1 className="eil-wordmark eil-wordmark--h1"><span className="eil-wordmark-line">&#926;M&#926;RG&#926;NT</span><span className="eil-wordmark-sub">INTERACTION LAB</span></h1><p className="eil-lead">{tx('Ein unabhängiges Forschungslabor für Verhalten, Systemrekonstruktion und Interaktionsdynamik in komplexen Systemen.', 'An independent research lab for behavior, system reconstruction and interaction dynamics in complex systems.')}</p><div className="eil-actions"><a href={href('research')}>{tx('Forschung ansehen', 'Explore research')} →</a><a href={href('methods')}>{tx('Methoden', 'Methods')}</a></div></div></section>
     <section className="eil-thesis"><Status>RESEARCH THESIS</Status><h2>{tx('Systeme hinterlassen Spuren.', 'Systems leave traces.')}</h2><p>{tx('Entscheidungen, Interaktionen, Fehler, Widersprüche und Zustandswechsel machen Struktur sichtbar. Das Lab rekonstruiert diese Spuren, um zu verstehen, wie komplexe Systeme tatsächlich operieren.', 'Decisions, interactions, failures, contradictions and state changes reveal structure. The Lab reconstructs these traces to understand how complex systems actually operate.')}</p></section>
     <section className="eil-spine"><Status>THEORETICAL SPINE</Status><h2>{tx('Wie Zustände entstehen, sich verändern und beobachtbar werden.', 'How states emerge, change and become observable.')}</h2><p>{tx('Interaktion, Verhalten, Rekonstruktion, Integrität, Prediction und Emergenz werden als Zustände und Übergänge unter Kontext untersucht.', 'Interaction, behavior, reconstruction, integrity, prediction and emergence are studied as states and transitions under context.')}</p></section>
     <Domains />
