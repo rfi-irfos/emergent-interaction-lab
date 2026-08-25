@@ -4,7 +4,7 @@ import './App.css'
 import { useContent } from './hooks/useContent'
 import { useAuth } from './hooks/useAuth'
 import { useLang } from './hooks/useLang'
-import { PublicSite } from './components/PublicSite'
+import { InstitutionalSite, type InstitutionalRoute } from './components/InstitutionalSite'
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })))
 const LoginPage = lazy(() => import('./components/LoginPage').then(m => ({ default: m.LoginPage })))
 const LegalPage = lazy(() => import('./components/LegalPage').then(m => ({ default: m.LegalPage })))
@@ -15,15 +15,14 @@ const BlogPostPage = lazy(() => import('./components/BlogPostPage').then(m => ({
 
 const LEGAL_SLUGS = ['impressum', 'datenschutz', 'agb']
 const BLOG_PREFIX = '#p/blog/'
-type Chapter = 'home' | 'about' | 'method' | 'research' | 'papers' | 'products' | 'pricing'
-
-function getChapter(): Chapter {
+function getChapter(): InstitutionalRoute {
   const base = import.meta.env.BASE_URL.replace(/^\/|\/$/g, '')
   const parts = window.location.pathname.split('/').filter(Boolean)
   const candidate = parts[base && parts[0] === base ? 1 : 0]
-  return ['about', 'method', 'research', 'papers', 'products', 'pricing'].includes(candidate)
-    ? candidate as Chapter
-    : 'home'
+  const aliases: Record<string, InstitutionalRoute> = { about: 'lab', method: 'methods', papers: 'publications', products: 'systems', pricing: 'applied-research' }
+  const resolved = aliases[candidate] ?? candidate
+  return ['lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research'].includes(resolved)
+    ? resolved as InstitutionalRoute : 'home'
 }
 
 function getRoute(hash: string) {
@@ -45,7 +44,7 @@ function getRoute(hash: string) {
 }
 
 export default function App() {
-  const [chapter, setChapter] = useState<Chapter>(() => getChapter())
+  const [chapter, setChapter] = useState<InstitutionalRoute>(() => getChapter())
   const { lang } = useLang()
   const { content, loading } = useContent(lang)
   // The admin always edits the German content, independent of whatever
@@ -89,7 +88,7 @@ export default function App() {
       const url = new URL(anchor.href, window.location.href)
       if (url.origin !== window.location.origin || !url.pathname.startsWith(import.meta.env.BASE_URL)) return
       const route = url.pathname.slice(import.meta.env.BASE_URL.length).split('/')[0]
-      if (route && !['about', 'method', 'research', 'papers', 'products', 'pricing'].includes(route)) return
+      if (route && !['lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research', 'about', 'method', 'papers', 'products', 'pricing'].includes(route)) return
       event.preventDefault()
       navigate(url)
     }
@@ -230,7 +229,7 @@ export default function App() {
   // root instead of removing the animation.
   return (
     <>
-      <PublicSite content={content} modalOpen={modalActive} chapter={chapter} />
+      <InstitutionalSite content={content} route={chapter} />
       {isCertModal
         ? <CertificationPage content={content} onClose={closeModal} />
         : isBlogModal && blogItem

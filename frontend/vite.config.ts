@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react'
 import { copyFileSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const chapterRoutes = ['about', 'method', 'research', 'papers', 'products', 'pricing']
+const chapterRoutes = [
+  'lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research',
+  // Transitional aliases keep already-shared beta links alive.
+  'about', 'method', 'papers', 'products', 'pricing',
+]
 
 export default defineConfig({
   plugins: [react(), {
