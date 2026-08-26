@@ -146,6 +146,17 @@ const engagements = [
 function Mark() { return <span className="eil-wordmark eil-wordmark--compact" aria-hidden="true">&#926;IL</span> }
 function Status({ children }: { children: string }) { return <span className="eil-status">{children}</span> }
 
+function ProgramDetails({ de }: { de: boolean }) {
+  const records = [
+    ['Emergent Interaction', 'Longitudinal interaction, co-adaptation and emergent structure.', 'IEIA · EIA · CEI', 'Observatory · World Model', 'Research paper · longitudinal record', 'No single interaction episode establishes a stable emergent structure.'],
+    ['Behavioral Dynamics', 'Observable pattern stability, strategy change and state transitions.', 'Behavioral Drift Analysis · CCET', 'Observatory · Knowledge Graph', 'Drift signal · change-point record', 'Behavioral traces do not establish intent or causality.'],
+    ['System Reconstruction', 'Defensible system representations from incomplete and contradictory traces.', 'Outside-In Inference · State Separation', 'Knowledge Graph · Call Laura', 'Evidence graph · reconstruction report', 'External traces cannot guarantee complete internal access.'],
+    ['System Integrity', 'Comparison of formal roles, expected behavior and observed system state.', 'UIP · Contradiction Mapping', 'Call Laura · Observatory', 'Integrity finding · technical report', 'A contradiction identifies an open explanation, not misconduct.'],
+    ['Computational Research Agents', 'Operationalizing research operations while preserving attribution and evidence boundaries.', 'Public Research Logic · orchestration studies', 'Specialized Rust research agents · orchestrator', 'Attributed research artifact · execution trace', 'Agent agreement never substitutes for source evidence.'],
+  ]
+  return <section className="eil-section eil-program-records"><div className="eil-section-head"><Status>PROGRAM RECORDS</Status><h2>{de ? 'Forschungsprogramme als überprüfbare Records' : 'Research programs as inspectable records'}</h2><p>{de ? 'Jedes Programm verbindet Frage, Operation, Infrastruktur, Output und eine explizite Grenze.' : 'Each program connects a question, operation, infrastructure, output and an explicit limitation.'}</p></div><div className="eil-library-grid">{records.map(([name,description,methods,systems,output,limits])=><article className="eil-card" key={name}><Status>RESEARCH PROGRAM</Status><h2>{name}</h2><p>{description}</p><dl><dt>{de ? 'Methoden' : 'Methods'}</dt><dd>{methods}</dd><dt>{de ? 'Systeme' : 'Systems'}</dt><dd>{systems}</dd><dt>{de ? 'Output' : 'Output'}</dt><dd>{output}</dd><dt>{de ? 'Grenze' : 'Limitation'}</dt><dd>{limits}</dd></dl></article>)}</div></section>
+}
+
 export function InstitutionalSite({ route, content }: { route: InstitutionalRoute; content: SiteContent }) {
   const { lang, setLang } = useLang()
   const { theme, cycle } = useTheme()
@@ -246,7 +257,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   const LabLineage = () => <section className="eil-spine"><Status>RESEARCH LINEAGE</Status><h2>{tx('Von longitudinaler Mensch–KI-Forschung zu einer allgemeinen Systemmethodik.', 'From longitudinal human–AI research to a general systems methodology.')}</h2><p>{tx('Das Lab entstand aus Langzeitforschung zu Mensch–KI-Interaktion. Wiederkehrende Operationen wurden auf Behavioral Dynamics, Systemrekonstruktion, Integritätsanalyse und Computational Research Systems übertragen.', 'The Lab emerged from longitudinal human–AI research. Recurring operations were extended to behavioral dynamics, system reconstruction, integrity analysis and computational research systems.')}</p></section>
 
   const LabDeep = () => <><Lab/><LabLineage/><EvidenceModel/></>
-  const ResearchDeep = () => <><Research/><ProgramQuestionMap/><ResearchMap/><EvidenceModel/></>
+  const ResearchDeep = () => <><Research/><ProgramQuestionMap/><ProgramDetails de={de}/><ResearchMap/><EvidenceModel/></>
   const SystemsDeep = () => <><Systems/><SystemArchitecture/><SystemRecords/></>
   const PublicationsDeep = () => <><Publications/><PublicationArchitecture/></>
   const ObservatoryDeep = () => <><Observatory/><ObservatoryModel/><EvidenceModel/></>
