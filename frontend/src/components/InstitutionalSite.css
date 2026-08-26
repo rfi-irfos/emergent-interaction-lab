@@ -23,8 +23,10 @@
 
 /* Hero lockup: the wordmark is the primary visual, with generous editorial spacing. */
 .eil-home-hero{min-height:820px}
+.eil-home-hero{padding-left:24px;padding-right:24px}
+.eil-home-hero>div{width:100%;max-width:none}
 .eil-home-hero>div>.eil-status{margin-bottom:0}
-.eil-hero-wordmark-image{width:min(1800px,98vw);margin:72px auto 82px;filter:drop-shadow(0 22px 42px rgba(0,0,0,.3))}
+.eil-hero-wordmark-image{width:min(1800px,98vw);max-width:none;margin:72px auto 82px;filter:drop-shadow(0 22px 42px rgba(0,0,0,.3))}
 @media(max-width:720px){.eil-home-hero{min-height:730px}.eil-hero-wordmark-image{width:min(900px,100%);margin:52px auto 58px}}
 .eil-mobile-menu{display:none;position:relative}.eil-mobile-menu summary{list-style:none;cursor:pointer;padding:9px;color:var(--text)}.eil-mobile-menu summary::-webkit-details-marker{display:none}.eil-mobile-menu nav{position:absolute;right:0;top:46px;width:230px;padding:10px;display:grid;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.3)}.eil-mobile-menu nav a{padding:11px;color:var(--text);text-decoration:none;border-bottom:1px solid var(--line)}
 .eil-contact-form{width:min(100%,520px);display:grid;grid-template-columns:1fr 1fr;gap:10px}.eil-contact-form input,.eil-contact-form textarea{min-width:0;padding:13px 14px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);font:inherit}.eil-contact-form textarea{grid-column:1/-1;resize:vertical}.eil-contact-form button{grid-column:1/-1;justify-self:end;padding:12px 17px;border:0;border-radius:9px;background:var(--cyan);color:var(--bg);font-weight:800;cursor:pointer}
