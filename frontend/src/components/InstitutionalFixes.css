@@ -53,6 +53,30 @@
   font-size: 20px;
 }
 
+/* Reserved hero lockup slot for Laura's approved image asset. The asset is
+   intentionally not recreated here; once supplied, this keeps its left edge
+   aligned with the eyebrow and gives the lockup enough breathing room. */
+.eil-brand-lockup {
+  width: min(560px, 72vw);
+  margin: 0 0 clamp(38px, 5.5vh, 72px);
+  line-height: 0;
+  pointer-events: none;
+}
+
+.eil-brand-lockup img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+  mix-blend-mode: screen;
+}
+
+.eil-home-hero > div > .eil-status {
+  display: block;
+  margin-bottom: clamp(34px, 4.5vh, 58px);
+}
+
 .eil-home-hero h1.eil-wordmark--h1 {
   display: flex;
   flex-direction: column;
@@ -78,4 +102,8 @@
 @media (max-width: 720px) {
   .eil-wordmark-line { font-size: 34px; }
   .eil-hero-mark { opacity: .9; }
+  .eil-brand-lockup {
+    width: min(430px, 88vw);
+    margin-bottom: 34px;
+  }
 }
