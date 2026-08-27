@@ -136,7 +136,7 @@
 .eil-home-taxonomy .eil-card h3 { font-size: 17px; margin: 0; }
 .eil-home-taxonomy .eil-card .eil-index { font-size: 11px; }
 .eil-home-taxonomy .eil-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
-.eil-hero-statement {
+.eil-home-hero .eil-hero-statement {
   width: min(1040px, calc(100vw - 48px));
   max-width: 1040px;
   margin: 0 auto 18px;
@@ -194,10 +194,10 @@
   .eil-home-hero { min-height: 730px; }
   .eil-hero-wordmark-image { width: 94vw; margin: 46px auto 44px; }
   .eil-home-hero .eil-lead { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
-  .eil-hero-statement,
+  .eil-home-hero .eil-hero-statement,
   .eil-home-hero .eil-lead,
   .eil-home-hero .eil-actions { width: calc(100vw - 48px); margin-left: auto; margin-right: auto; }
-  .eil-hero-statement { font-size: 22px !important; text-align: center; }
+  .eil-home-hero .eil-hero-statement { font-size: 22px !important; text-align: center; }
   .eil-home-hero .eil-lead { text-align: center; }
   .eil-home-hero .eil-actions { justify-content: center; }
   .eil-home-taxonomy .eil-domain-grid { grid-template-columns: 1fr 1fr; }
