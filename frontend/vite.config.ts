@@ -26,7 +26,10 @@ export default defineConfig({
     name: 'static-chapter-pages',
     closeBundle() {
       const dist = resolve(__dirname, 'dist')
+      // closeBundle can be invoked more than once by tooling; always start from
+      // a clean root so a previous home fallback cannot bleed into every route.
       const template = readFileSync(resolve(dist, 'index.html'), 'utf8')
+        .replace(/<div id="root">[\s\S]*?<\/div>/, '<div id="root"></div>')
       for (const [route, body] of Object.entries(staticFallback)) {
         const html = template.replace('<div id="root"></div>', `<div id="root"><main class="eil-static-fallback">${body}</main></div>`)
         if (route === 'home') writeFileSync(resolve(dist, 'index.html'), html)
