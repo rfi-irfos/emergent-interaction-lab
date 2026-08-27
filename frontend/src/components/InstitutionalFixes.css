@@ -177,6 +177,11 @@
   color: var(--text);
   font-size: 13px;
 }
+.eil-home-convergence { background: var(--surface); }
+.eil-convergence-copy { max-width: 940px; margin: 0; color: var(--soft); font-size: clamp(19px, 1.8vw, 26px); line-height: 1.55; }
+.eil-lineage-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.eil-lineage-strip span { min-height: 138px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; background: var(--surface); color: var(--text); font-size: 13px; line-height: 1.4; }
+.eil-lineage-strip b { color: var(--cyan); font: 700 10px ui-monospace,monospace; }
 .eil-environment-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .eil-environment-grid article { padding: 24px; background: var(--surface); }
 .eil-environment-grid h3 { margin: 0 0 9px; }
@@ -217,4 +222,6 @@
   .eil-observatory-groups { grid-template-columns: 1fr; }
   .eil-approved-mark { width: 38px; height: 38px; }
   .eil-environment-grid { grid-template-columns: 1fr; }
+  .eil-lineage-strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .eil-lineage-strip span { min-width: 72vw; min-height: 112px; scroll-snap-align: start; }
 }
