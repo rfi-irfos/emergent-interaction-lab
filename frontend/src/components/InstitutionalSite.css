@@ -22,7 +22,7 @@
 @media(max-width:720px){.eil-evidence-grid,.eil-library-grid,.eil-observatory-grid,.eil-system-architecture>div{grid-template-columns:1fr}.eil-research-map article{grid-template-columns:1fr;gap:14px}.eil-research-map span{display:none}.eil-process{grid-template-columns:repeat(2,1fr)}}
 
 /* Hero lockup: the wordmark is the primary visual, with generous editorial spacing. */
-.eil-home-hero{min-height:820px}
+.eil-home-hero{min-height:820px;background:var(--bg)}
 .eil-home-hero{padding-left:24px;padding-right:24px}
 .eil-home-hero>div{width:100%;max-width:none}
 .eil-home-hero>div>.eil-status{margin-bottom:0}
