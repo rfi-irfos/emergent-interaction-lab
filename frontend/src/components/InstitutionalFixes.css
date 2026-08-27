@@ -141,6 +141,7 @@
   justify-content: center;
 }
 .eil-home-taxonomy .eil-card h3 { font-size: 17px; margin: 0; }
+.eil-home-taxonomy .eil-fold-card > summary { min-height: 102px; }
 .eil-home-taxonomy .eil-card .eil-index { font-size: 11px; }
 .eil-home-taxonomy .eil-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
 .eil-home-hero .eil-hero-statement {
@@ -211,6 +212,7 @@
   .eil-home-hero .eil-actions { justify-content: center; }
   .eil-home-taxonomy .eil-domain-grid { grid-template-columns: 1fr 1fr; }
   .eil-home-taxonomy .eil-card { min-height: 96px; padding: 14px; }
+  .eil-home-taxonomy .eil-fold-card > summary { min-height: 94px; padding: 14px 44px 14px 14px; }
   .eil-evidence-axes { grid-template-columns: 1fr; }
   .eil-observatory-groups { grid-template-columns: 1fr; }
   .eil-approved-mark { width: 38px; height: 38px; }
