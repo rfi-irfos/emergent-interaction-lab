@@ -136,6 +136,29 @@
 .eil-home-taxonomy .eil-card h3 { font-size: 17px; margin: 0; }
 .eil-home-taxonomy .eil-card .eil-index { font-size: 11px; }
 .eil-home-taxonomy .eil-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
+.eil-hero-statement {
+  width: min(980px, calc(100vw - 48px));
+  max-width: 980px;
+  margin: 0 auto 18px;
+  font-size: clamp(24px, 3.1vw, 46px) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.035em !important;
+  overflow-wrap: anywhere;
+}
+.eil-domain-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+.eil-domain-chips span {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+}
+.eil-environment-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.eil-environment-grid article { padding: 24px; background: var(--surface); }
+.eil-environment-grid h3 { margin: 0 0 9px; }
+.eil-environment-grid p { margin: 0; color: var(--soft); line-height: 1.55; }
+.eil-lineage-distinction { color: var(--text) !important; border-left: 2px solid var(--cyan); padding-left: 18px; }
 .eil-evidence-axes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -158,9 +181,11 @@
   .eil-home-hero { min-height: 650px; }
   .eil-hero-wordmark-image { width: 94vw; margin: 38px auto 42px; }
   .eil-home-hero .eil-lead { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
+  .eil-hero-statement { width: calc(100vw - 48px); font-size: 24px !important; }
   .eil-home-taxonomy .eil-domain-grid { grid-template-columns: 1fr 1fr; }
   .eil-home-taxonomy .eil-card { min-height: 96px; padding: 14px; }
   .eil-evidence-axes { grid-template-columns: 1fr; }
   .eil-observatory-groups { grid-template-columns: 1fr; }
   .eil-approved-mark { width: 38px; height: 38px; }
+  .eil-environment-grid { grid-template-columns: 1fr; }
 }
