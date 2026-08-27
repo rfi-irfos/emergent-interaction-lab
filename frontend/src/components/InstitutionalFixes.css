@@ -73,8 +73,15 @@
 }
 
 .eil-home-hero > div > .eil-status {
-  display: block;
-  margin-bottom: clamp(34px, 4.5vh, 58px);
+  display: table;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 7px 13px;
+  border: 1px solid rgba(220, 220, 216, .34);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(235, 233, 228, .12), rgba(165, 164, 161, .05));
+  color: #d7d6d2;
+  box-shadow: inset 0 1px rgba(255,255,255,.08);
 }
 
 .eil-home-hero h1.eil-wordmark--h1 {
@@ -118,10 +125,10 @@
   border-radius: 9px;
 }
 .eil-footer .eil-approved-mark { grid-row: 1 / 3; }
-.eil-home-hero { min-height: 820px; }
+.eil-home-hero { min-height: 780px; }
 .eil-hero-wordmark-image {
   width: min(1460px, 85vw);
-  margin: 64px auto 58px;
+  margin: -12px auto 46px;
 }
 .eil-home-taxonomy .eil-section { padding-top: 72px; padding-bottom: 72px; }
 .eil-home-taxonomy .eil-domain-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -191,8 +198,8 @@
 .eil-preview-detail p { margin: 0; }
 
 @media (max-width: 720px) {
-  .eil-home-hero { min-height: 730px; }
-  .eil-hero-wordmark-image { width: 94vw; margin: 46px auto 44px; }
+  .eil-home-hero { min-height: 680px; }
+  .eil-hero-wordmark-image { width: 94vw; margin: -6px auto 34px; }
   .eil-home-hero .eil-lead { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
   .eil-home-hero .eil-hero-statement,
   .eil-home-hero .eil-lead,
