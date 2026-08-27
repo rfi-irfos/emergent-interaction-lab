@@ -137,15 +137,27 @@
 .eil-home-taxonomy .eil-card .eil-index { font-size: 11px; }
 .eil-home-taxonomy .eil-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
 .eil-hero-statement {
-  width: min(1120px, calc(100vw - 48px));
-  max-width: 1120px;
-  margin: 0 auto 20px;
-  font-size: clamp(26px, 2.15vw, 34px) !important;
-  line-height: 1.2 !important;
+  width: min(780px, calc(100vw - 48px));
+  max-width: 780px;
+  margin: 0 auto 18px max(0px, calc((100vw - 1160px) / 2 - 24px));
+  text-align: left;
+  font-size: clamp(25px, 1.85vw, 32px) !important;
+  line-height: 1.22 !important;
   letter-spacing: -0.025em !important;
   overflow-wrap: anywhere;
 }
-.eil-home-hero .eil-lead { max-width: 900px; font-size: clamp(18px, 1.45vw, 22px); }
+.eil-home-hero .eil-lead {
+  width: min(760px, calc(100vw - 48px));
+  max-width: 760px;
+  margin: 0 auto 0 max(0px, calc((100vw - 1160px) / 2 - 24px));
+  text-align: left;
+  font-size: clamp(18px, 1.35vw, 21px);
+}
+.eil-home-hero .eil-actions {
+  width: min(760px, calc(100vw - 48px));
+  margin: 30px auto 0 max(0px, calc((100vw - 1160px) / 2 - 24px));
+  justify-content: flex-start;
+}
 .eil-domain-chips { display: flex; flex-wrap: wrap; gap: 9px; }
 .eil-domain-chips span {
   padding: 10px 14px;
@@ -182,7 +194,12 @@
   .eil-home-hero { min-height: 730px; }
   .eil-hero-wordmark-image { width: 94vw; margin: 46px auto 44px; }
   .eil-home-hero .eil-lead { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
-  .eil-hero-statement { width: calc(100vw - 48px); font-size: 22px !important; }
+  .eil-hero-statement,
+  .eil-home-hero .eil-lead,
+  .eil-home-hero .eil-actions { width: calc(100vw - 48px); margin-left: auto; margin-right: auto; }
+  .eil-hero-statement { font-size: 22px !important; text-align: center; }
+  .eil-home-hero .eil-lead { text-align: center; }
+  .eil-home-hero .eil-actions { justify-content: center; }
   .eil-home-taxonomy .eil-domain-grid { grid-template-columns: 1fr 1fr; }
   .eil-home-taxonomy .eil-card { min-height: 96px; padding: 14px; }
   .eil-evidence-axes { grid-template-columns: 1fr; }
