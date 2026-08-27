@@ -72,6 +72,7 @@ export default function App() {
       const update = () => {
         window.history[replace ? 'replaceState' : 'pushState']({}, '', url)
         flushSync(() => setChapter(getChapter()))
+        setRoute(getRoute(url.hash))
         if (url.hash) {
           requestAnimationFrame(() => document.getElementById(decodeURIComponent(url.hash.slice(1)))?.scrollIntoView({ behavior: 'smooth' }))
         } else {
@@ -94,6 +95,7 @@ export default function App() {
     }
     const onPopState = () => {
       setChapter(getChapter())
+      setRoute(getRoute(window.location.hash))
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
     document.addEventListener('click', onClick)

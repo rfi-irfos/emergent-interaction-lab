@@ -151,6 +151,8 @@
   font-size: clamp(25px, 1.85vw, 32px) !important;
   line-height: 1.22 !important;
   letter-spacing: -0.025em !important;
+  color: var(--soft);
+  font-weight: 560;
   overflow-wrap: anywhere;
 }
 .eil-home-hero .eil-lead {
