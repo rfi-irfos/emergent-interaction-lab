@@ -84,6 +84,14 @@ export interface PaperItem {
   id: string
   title: string
   description: string
+  authors: string[]
+  date: string
+  type: string
+  version: string
+  status: string
+  peerReviewStatus: string
+  pages: number
+  repository?: string
   doi?: string    // full https://doi.org/... URL; omitted while a DOI isn't yet assigned
   file: string     // local static asset path, e.g. /papers/paper-1-osf-preprint.pdf
 }

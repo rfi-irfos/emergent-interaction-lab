@@ -19,7 +19,7 @@
 [![OSF](https://img.shields.io/badge/OSF-IEIA--2025%20preprint-10b981)](https://doi.org/10.17605/OSF.IO/HC9ZB)
 [![lauras-core](https://img.shields.io/crates/v/lauras-core?color=dea584)](https://crates.io/crates/lauras-core)
 
-**Emergent Interaction Lab (EIL)** is the operating-system base of the RFI-IRFOS stack — the instrument everything else is orchestrated from or emerges into. The Laura agent system, the CoEvolution Factory, the ternary OS work, and the public research all hang off this repo.
+**Emergent Interaction Lab (EIL)** is an independent research institution investigating behavior, interaction and change in complex systems. **RFI-IRFOS is a separate engineering institution.** Neither entity is subordinate to the other; joint work is identified only where a contribution is actually shared.
 
 Built for Laura Serna Gaviria's Emergent Interaction Lab research (RFI-IRFOS). See the [`v1.0.0` release](../../releases/tag/v1.0.0) for the full feature history.
 
@@ -212,9 +212,9 @@ The engine choice changes *who thinks*, not what the system learns from it.
 
 ---
 
-## Ecosystem — the RFI-IRFOS stack
+## Related research and engineering systems
 
-EIL is the base OS. Everything below is either orchestrated from it or emerges out of it.
+The systems below have different research and engineering roles. Their presence here does not make EIL the base of RFI-IRFOS or RFI-IRFOS a department of EIL.
 
 **Laura — Human–AI Co-Evolution research framework**
 - Deterministic MCP review server (public sibling): [github.com/rfi-irfos/call-laura](https://github.com/rfi-irfos/call-laura)
@@ -231,7 +231,9 @@ EIL is the base OS. Everything below is either orchestrated from it or emerges o
 - Live: [coevolution-factory-sparkling-mountain-1802.fly.dev](https://coevolution-factory-sparkling-mountain-1802.fly.dev)
 - Source: [github.com/rfi-irfos/coevolution-factory](https://github.com/rfi-irfos/coevolution-factory)
 
-**Peer-reviewed research (Open Science Framework)**
+**Public preprints and research reports (Open Science Framework)**
+
+Repository publication or DOI assignment does not imply external peer review.
 - IEIA-2025 framework preprint: [doi.org/10.17605/OSF.IO/HC9ZB](https://doi.org/10.17605/OSF.IO/HC9ZB)
 - Companion preprint: [doi.org/10.17605/OSF.IO/QCVJB](https://doi.org/10.17605/OSF.IO/QCVJB)
 

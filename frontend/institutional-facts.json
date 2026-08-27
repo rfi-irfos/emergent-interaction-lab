@@ -1,0 +1,4 @@
+{
+  "specializedResearchAgentCrates": 315,
+  "agentCountSemantics": "Individually authored specialist Rust crates invoked by the orchestrator"
+}
