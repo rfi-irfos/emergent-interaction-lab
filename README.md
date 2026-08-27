@@ -12,7 +12,7 @@
 [![Frontend](https://img.shields.io/badge/frontend-React%20%2F%20TypeScript-3178C6)](frontend)
 [![Database](https://img.shields.io/badge/database-SQLite-003B57)](backend/src)
 [![Hosting](https://img.shields.io/badge/hosted%20on-Fly.io-8B5CF6)](https://fly.io)
-[![Status](https://img.shields.io/badge/status-live%20research%20instrument-10b981)](https://rfi-irfos.github.io/emergent-interaction-lab/)
+[![Status](https://img.shields.io/badge/status-public%20institutional%20site-10b981)](https://rfi-irfos.github.io/emergent-interaction-lab/)
 [![License](https://img.shields.io/badge/license-proprietary-lightgrey)](#)
 [![Laura](https://img.shields.io/badge/Laura-Human%E2%80%93AI%20Co--Evolution-ff69b4)](https://github.com/rfi-irfos/call-laura)
 [![CoEvolution Factory](https://img.shields.io/badge/CoEvolution%20Factory-50%20live%20centers-8B5CF6)](https://coevolution-factory-sparkling-mountain-1802.fly.dev)
@@ -21,14 +21,14 @@
 
 **Emergent Interaction Lab (EIL)** is an independent research institution investigating behavior, interaction and change in complex systems. **RFI-IRFOS is a separate engineering institution.** Neither entity is subordinate to the other; joint work is identified only where a contribution is actually shared.
 
-Built for Laura Serna Gaviria's Emergent Interaction Lab research (RFI-IRFOS). See the [`v1.0.0` release](../../releases/tag/v1.0.0) for the full feature history.
+This repository contains EIL research-site and research-system code. Research and engineering contributions are attributed separately where collaboration with RFI-IRFOS occurred. See the [`v1.0.0` release](../../releases/tag/v1.0.0) for the feature history.
 
 ---
 
 ## What's actually in here
 
-**Research instrument**
-- **Jarvis** — an self improving, recursive AI research partner embedded and growing from within the Forschung tab: RAG chat over uploaded documents and past conversations, autonomous tool use (research notes, simulation runs, blog drafts, live web search), a four-level signal classification (Human / AI / Interaction / System), and a reasoning-mode toggle.
+**Research-system interfaces**
+- **Jarvis** — a research-agent interface designed for bounded recurring workflows: RAG chat over uploaded documents and past conversations, tool-supported research notes and simulations, a four-level signal classification (Human / AI / Interaction / System), and a reasoning-mode toggle. This description states public purpose and interface scope; it does not assert an unverified maturity level or autonomous self-improvement capability.
 - **Observatory dashboard** — Emergence Monitor, Simulation Center, Research Pulse, Knowledge Graph, System Map, System State, Interaction Dynamics, Behavioral Landscape, Information Dynamics — each surfacing real queried data, never a fabricated placeholder.
 - A deliberate **no-fabrication principle** running through the whole system: heuristic connections are labeled as heuristic, missing data is left honestly absent rather than invented, and this is enforced structurally (schema, UI, system prompt), not left to convention.
 

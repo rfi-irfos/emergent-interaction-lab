@@ -127,12 +127,15 @@
 .eil-home-taxonomy .eil-domain-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .eil-home-taxonomy .eil-card {
   padding: 18px 20px;
-  min-height: 72px;
+  min-height: 104px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
 }
 .eil-home-taxonomy .eil-card h3 { font-size: 17px; margin: 0; }
 .eil-home-taxonomy .eil-card .eil-index { font-size: 11px; }
+.eil-home-taxonomy .eil-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
 .eil-evidence-axes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -146,13 +149,18 @@
 .eil-evidence-axes p { margin: 0; color: var(--soft); line-height: 1.6; }
 .eil-research-map--examples article { grid-template-columns: repeat(4, 1fr); }
 .eil-process article p { margin: 0; color: var(--soft); font-size: 13px; line-height: 1.5; }
+.eil-observatory-groups { grid-template-columns: repeat(2, 1fr); }
+.eil-preview-detail + .eil-preview-detail { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.eil-preview-detail h3 { margin: 0 0 6px; }
+.eil-preview-detail p { margin: 0; }
 
 @media (max-width: 720px) {
   .eil-home-hero { min-height: 650px; }
   .eil-hero-wordmark-image { width: 94vw; margin: 38px auto 42px; }
   .eil-home-hero .eil-lead { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
   .eil-home-taxonomy .eil-domain-grid { grid-template-columns: 1fr 1fr; }
-  .eil-home-taxonomy .eil-card { min-height: 64px; padding: 14px; }
+  .eil-home-taxonomy .eil-card { min-height: 96px; padding: 14px; }
   .eil-evidence-axes { grid-template-columns: 1fr; }
+  .eil-observatory-groups { grid-template-columns: 1fr; }
   .eil-approved-mark { width: 38px; height: 38px; }
 }
