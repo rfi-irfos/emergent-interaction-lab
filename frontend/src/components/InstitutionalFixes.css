@@ -137,26 +137,26 @@
 .eil-home-taxonomy .eil-card .eil-index { font-size: 11px; }
 .eil-home-taxonomy .eil-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.4; }
 .eil-hero-statement {
-  width: min(780px, calc(100vw - 48px));
-  max-width: 780px;
-  margin: 0 auto 18px max(0px, calc((100vw - 1160px) / 2 - 24px));
-  text-align: left;
+  width: min(1040px, calc(100vw - 48px));
+  max-width: 1040px;
+  margin: 0 auto 18px;
+  text-align: center;
   font-size: clamp(25px, 1.85vw, 32px) !important;
   line-height: 1.22 !important;
   letter-spacing: -0.025em !important;
   overflow-wrap: anywhere;
 }
 .eil-home-hero .eil-lead {
-  width: min(760px, calc(100vw - 48px));
-  max-width: 760px;
-  margin: 0 auto 0 max(0px, calc((100vw - 1160px) / 2 - 24px));
-  text-align: left;
+  width: min(820px, calc(100vw - 48px));
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: center;
   font-size: clamp(18px, 1.35vw, 21px);
 }
 .eil-home-hero .eil-actions {
-  width: min(760px, calc(100vw - 48px));
-  margin: 30px auto 0 max(0px, calc((100vw - 1160px) / 2 - 24px));
-  justify-content: flex-start;
+  width: min(820px, calc(100vw - 48px));
+  margin: 30px auto 0;
+  justify-content: center;
 }
 .eil-domain-chips { display: flex; flex-wrap: wrap; gap: 9px; }
 .eil-domain-chips span {
