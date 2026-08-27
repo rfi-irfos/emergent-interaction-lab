@@ -44,7 +44,10 @@ export default defineConfig({
       }
     },
   }],
-  base: process.env.VITE_BASE_URL || '/',
+  // GitHub Pages serves this project below its repository path. Keeping the
+  // repository base as the default also makes favicon and asset URLs resolve
+  // correctly for fresh browsers instead of falling back to a stale site icon.
+  base: process.env.VITE_BASE_URL || '/emergent-interaction-lab/',
   test: {
     // Only pure-logic modules (e.g. lib/svgPanZoom.ts) are unit-tested today
     // — no component/DOM tests exist yet, so a 'node' environment is enough
