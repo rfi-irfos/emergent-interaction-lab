@@ -331,7 +331,7 @@ export function SystemMap({ onOpenConversation }: { onOpenConversation?: (conver
       return (
         <div className="obs-panel">
           <div className="obs-empty">
-            Netzwerk-Darstellung ist live nur auf <a href="https://emergent-interaction-lab.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>emergent-interaction-lab.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
+            Netzwerk-Darstellung ist live nur auf <a href="https://eil.fly.dev/#admin" style={{ color: 'var(--hud-cyan, #22d3ee)' }}>eil.fly.dev</a> verfügbar — diese GitHub-Pages-Spiegelung hat keinen Backend-Zugriff.
           </div>
         </div>
       )

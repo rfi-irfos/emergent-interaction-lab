@@ -1,4 +1,4 @@
-app = "emergent-interaction-lab"
+app = "eil"
 primary_region = "fra"
 
 [build]
@@ -17,7 +17,7 @@ primary_region = "fra"
   UPLOADS_DIR = "/app/data/uploads"
   CONTENT_PATH = "/app/data/content.json"
   DB_PATH = "/app/data/app.db"
-  REDIRECT_URI = "https://emergent-interaction-lab.fly.dev/auth/callback"
+  REDIRECT_URI = "https://eil.fly.dev/auth/callback"
   # SECURITY (C2, 2026-07-19): DEV_MODE MUST be false in production. When true,
   # auth::google_login short-circuits BEFORE any Google OAuth / ALLOWED_EMAIL
   # check and mints a valid rfi_session admin cookie for ANY caller — a live

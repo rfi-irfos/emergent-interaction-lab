@@ -9,7 +9,7 @@
 # daily no-op write just costs one rotated backup slot, never real content.
 set -u
 
-APP="https://emergent-interaction-lab.fly.dev"
+APP="https://eil.fly.dev"
 NTFY_TOPIC="rfi-eil-healthcheck"
 COOKIES="$(mktemp)"
 trap 'rm -f "$COOKIES"' EXIT

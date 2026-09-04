@@ -547,7 +547,7 @@ async fn main() {
         // GitHub Pages, see frontend/src/lib/apiBase.ts).
         .layer(CorsLayer::new()
             .allow_origin([
-                "https://emergent-interaction-lab.fly.dev".parse().unwrap(),
+                "https://eil.fly.dev".parse().unwrap(),
                 "https://rfi-irfos.github.io".parse().unwrap(),
             ])
             .allow_methods([

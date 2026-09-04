@@ -14,7 +14,7 @@
 # a bare `fly deploy` and that gap closes itself, going forward, automatically.
 #
 # Usage:
-#   scripts/deploy.sh                 # fly deploy -a emergent-interaction-lab
+#   scripts/deploy.sh                 # fly deploy -a eil
 #   scripts/deploy.sh --local-only     # skip the deploy-log POST entirely
 #   FLY_APP=other-app scripts/deploy.sh
 #
@@ -30,7 +30,7 @@ if [ "${1:-}" = "--local-only" ]; then
   shift
 fi
 
-APP="${FLY_APP:-emergent-interaction-lab}"
+APP="${FLY_APP:-eil}"
 API_BASE="${DEPLOY_LOG_API_BASE:-https://${APP}.fly.dev}"
 
 echo "==> fly deploy -a ${APP}"
