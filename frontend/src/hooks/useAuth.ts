@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { API_BASE } from '../lib/apiBase'
 
 export interface User { name: string; email: string; picture: string }
+export type LoginResult = { ok: true } | { ok: false; reason: 'wrong-password' | 'network' }
 
 const SESSION_KEY = 'rfi_admin_ok'
 const ADMIN_HASH = import.meta.env.VITE_ADMIN_HASH as string
@@ -38,14 +39,21 @@ export function useAuth() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const login = async (password: string): Promise<boolean> => {
-    if (!ADMIN_HASH) return false
+  const login = async (password: string): Promise<LoginResult> => {
+    if (!ADMIN_HASH) return { ok: false, reason: 'wrong-password' }
     const hash = await sha256(password)
-    if (hash !== ADMIN_HASH) return false
+    if (hash !== ADMIN_HASH) return { ok: false, reason: 'wrong-password' }
 
     // Frontend hash check passed — mint a backend session without Google OAuth.
     // This keeps the Pages -> Fly cross-origin case alive, because it no longer
     // depends on a fetch()-wrapped Google redirect chain that dies in CORS.
+    //
+    // A failure past this point (non-OK response or a thrown fetch error, e.g.
+    // a CORS block) means the *password was correct* but no backend session
+    // could be established — a distinct 'network' reason so the UI doesn't
+    // tell the admin their correct password is wrong (see 2026-09-04 incident:
+    // a stale Fly deploy served permissive/wildcard CORS, which is incompatible
+    // with this fetch's `credentials: 'include'` and silently threw here).
     try {
       const res = await fetch(`${API_BASE}/auth/admin-session`, {
         method: 'POST',
@@ -55,16 +63,16 @@ export function useAuth() {
       })
       if (!res.ok) {
         console.error('Failed to establish backend session:', res.status)
-        return false
+        return { ok: false, reason: 'network' }
       }
     } catch (e) {
       console.error('Backend session request failed:', e)
-      return false
+      return { ok: false, reason: 'network' }
     }
 
     localStorage.setItem(SESSION_KEY, '1')
     setUser({ name: 'Admin', email: '', picture: '' })
-    return true
+    return { ok: true }
   }
 
   const logout = () => {

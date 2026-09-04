@@ -1,19 +1,20 @@
 import { useState } from 'react'
+import type { LoginResult } from '../hooks/useAuth'
 
-interface Props { onLogin: (pw: string) => Promise<boolean> }
+interface Props { onLogin: (pw: string) => Promise<LoginResult> }
 
 export function LoginPage({ onLogin }: Props) {
   const [pw, setPw] = useState('')
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<null | 'wrong-password' | 'network'>(null)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
-    const ok = await onLogin(pw)
+    const result = await onLogin(pw)
     setBusy(false)
-    if (!ok) {
-      setError(true)
+    if (!result.ok) {
+      setError(result.reason)
       setPw('')
     }
   }
@@ -33,12 +34,13 @@ export function LoginPage({ onLogin }: Props) {
           <input
             type="password"
             value={pw}
-            onChange={e => { setPw(e.target.value); setError(false) }}
+            onChange={e => { setPw(e.target.value); setError(null) }}
             placeholder="Passwort"
             autoFocus
             className="login-pw-input"
           />
-          {error && <p className="login-error">Falsches Passwort. Bitte nochmal.</p>}
+          {error === 'wrong-password' && <p className="login-error">Falsches Passwort. Bitte nochmal.</p>}
+          {error === 'network' && <p className="login-error">Verbindung zum Server fehlgeschlagen. Bitte später erneut versuchen.</p>}
           <button type="submit" disabled={busy} className="login-submit-btn">
             {busy ? 'Anmelden…' : 'Anmelden'}
           </button>
