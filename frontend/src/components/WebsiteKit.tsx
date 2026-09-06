@@ -363,7 +363,7 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                     <input value={draft.meta?.title ?? ''} onChange={e => update('meta.title', e.target.value)} />
                   </Field>
                   <div className="obs-provenance-note" style={{ marginTop: -4, marginBottom: 12, fontSize: 11.5 }}>
-                    Ausnahme: wird als Browser-Tab-Titel auf Unterseiten, Blog-Beiträgen und der Zertifizierungsseite verwendet — nicht auf der Startseite.
+                    Ausnahme: erscheint als sichtbarer Fußnotentext im Forschungs-Modal und dient zusätzlich als Browser-Tab-Titel-Fallback auf Unterseiten, Blog-Beiträgen und der Zertifizierungsseite — nicht auf der Startseite.
                   </div>
                   <Field label="Beschreibung">
                     <textarea rows={2} value={draft.meta?.description ?? ''} onChange={e => update('meta.description', e.target.value)} />
