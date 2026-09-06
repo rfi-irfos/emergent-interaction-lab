@@ -4,7 +4,7 @@ import type { AdminSection } from '../types/admin'
 import { PublicSite } from './PublicSite'
 import { InstitutionalSite } from './InstitutionalSite'
 
-type PanelTab = 'hero' | 'contact' | 'style' | 'pages' | 'about'
+type PanelTab = 'pages' | 'contact' | 'archive'
 type DeviceView = 'edit' | 'desktop' | 'tablet' | 'mobile'
 
 // ── Device preview switch (Edit / Desktop / Tablet / Mobile) ──────────────────
@@ -29,12 +29,16 @@ const DEVICE_OPTS: { id: DeviceView; label: string; icon: React.ReactNode }[] = 
   { id: 'mobile', label: 'Mobil', icon: <IconMobile /> },
 ]
 
+// Order + labels are honest about live effect now (see Task 5b report):
+// Pages is fully live, Contact is partially live (see the note in that
+// tab), Archiv is the former Hero/About/Style tabs plus the dead Contact
+// sub-fields (WhatsApp/map/form) — none of it reaches the live site, but
+// none of it is deleted either (Laura may have real typed content sitting
+// in those fields already; see the banner on that tab).
 const TABS: Array<{ id: PanelTab; label: string }> = [
-  { id: 'hero',    label: 'Hero' },
-  { id: 'about',   label: 'About' },
   { id: 'pages',   label: 'Pages' },
   { id: 'contact', label: 'Contact' },
-  { id: 'style',   label: 'Style' },
+  { id: 'archive', label: 'Archiv (nicht mehr live)' },
 ]
 
 interface Props {
@@ -57,7 +61,7 @@ interface Props {
 /// (they're shared with Blog tab edits and Jarvis's get_content_section tool,
 /// so they have to live at the AdminPanel level regardless).
 export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, uploadTarget, saving, saved, saveErr, onSaveClick, onNavigate, onEditNews }: Props) {
-  const [activeTab, setActiveTab] = useState<PanelTab>('hero')
+  const [activeTab, setActiveTab] = useState<PanelTab>('pages')
   const [device, setDevice] = useState<DeviceView>('edit')
   const [editingPage, setEditingPage] = useState<string | null>(null)
   const [panelWidth, setPanelWidth] = useState(380)
@@ -77,16 +81,17 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
     const el = target.closest('[data-cid]') as HTMLElement | null
     if (!el) return
     const cid = el.dataset.cid ?? ''
-    if (cid.startsWith('hero.') || cid.startsWith('nav.')) {
-      setActiveTab('hero')
+    // Canvas fields routed here are all in PublicSite (the retired editor
+    // surface, out of scope for Task 5b) — hero/nav/meta/footer/whatsapp
+    // now live under the Archiv tab, not their old dedicated tabs.
+    if (cid.startsWith('hero.') || cid.startsWith('nav.') || cid.startsWith('meta.') || cid.startsWith('footer.') || cid.startsWith('whatsapp.')) {
+      setActiveTab('archive')
     } else if (cid.startsWith('news.items.')) {
       const idx = parseInt(cid.split('.')[2])
       const item = draft.news?.items?.[idx]
       if (item) { onNavigate('blog'); onEditNews(item.id) }
-    } else if (cid.startsWith('contact.') || cid.startsWith('whatsapp.')) {
+    } else if (cid.startsWith('contact.')) {
       setActiveTab('contact')
-    } else if (cid.startsWith('meta.') || cid.startsWith('footer.')) {
-      setActiveTab('style')
     }
   }
 
@@ -186,8 +191,30 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
           </div>
 
           <div className="builder-panel-body">
-            {activeTab === 'hero' && (
+            {activeTab === 'contact' && (
               <>
+                <PanelSection title="Kontaktdaten">
+                  <div className="obs-provenance-note" style={{ marginBottom: 12 }}>
+                    Wirkt sich auf Datenschutz/Impressum aus, nicht auf die Startseite.
+                  </div>
+                  <Field label="E-Mail">
+                    <input type="email" value={draft.contact?.email ?? ''} onChange={e => update('contact.email', e.target.value)} />
+                  </Field>
+                  <Field label="Telefon">
+                    <input value={draft.contact?.phone ?? ''} onChange={e => update('contact.phone', e.target.value)} />
+                  </Field>
+                  <Field label="Adresse">
+                    <textarea rows={2} value={draft.contact?.address ?? ''} onChange={e => update('contact.address', e.target.value)} />
+                  </Field>
+                </PanelSection>
+              </>
+            )}
+
+            {activeTab === 'archive' && (
+              <>
+                <div className="obs-warning-note" style={{ margin: '10px 14px 4px' }}>
+                  Diese Felder wirken sich nicht auf die aktuelle Website aus. Änderungen bitte per Code/PR. Nichts hier wird gelöscht — die Werte bleiben gespeichert.
+                </div>
                 <PanelSection title="Hintergrundbild">
                   <UploadRow src={draft.hero?.image ?? ''} onUpload={() => onImageClick('hero.image')} uploading={uploading && uploadTarget === 'hero.image'} />
                 </PanelSection>
@@ -223,24 +250,45 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                     <input value={draft.nav?.phone ?? ''} onChange={e => update('nav.phone', e.target.value)} />
                   </Field>
                 </PanelSection>
-              </>
-            )}
-
-            {activeTab === 'contact' && (
-              <>
-                <PanelSection title="Kontaktdaten">
-                  <Field label="Titel">
-                    <input value={draft.contact?.title ?? ''} onChange={e => update('contact.title', e.target.value)} />
+                <PanelSection title="About: Text">
+                  <Field label="Eyebrow (small, top)">
+                    <input value={draft.about?.eyebrow ?? ''} onChange={e => update('about.eyebrow', e.target.value)} placeholder="About us" />
                   </Field>
-                  <Field label="E-Mail">
-                    <input type="email" value={draft.contact?.email ?? ''} onChange={e => update('contact.email', e.target.value)} />
+                  <Field label="Headline">
+                    <input value={draft.about?.headline ?? ''} onChange={e => update('about.headline', e.target.value)} placeholder="Hello, we're..." />
                   </Field>
-                  <Field label="Telefon">
-                    <input value={draft.contact?.phone ?? ''} onChange={e => update('contact.phone', e.target.value)} />
+                  <Field label="Bio text">
+                    <textarea rows={5} value={draft.about?.bio ?? ''} onChange={e => update('about.bio', e.target.value)} placeholder="A few warm sentences about who you are..." />
                   </Field>
-                  <Field label="Adresse">
-                    <textarea rows={2} value={draft.contact?.address ?? ''} onChange={e => update('contact.address', e.target.value)} />
-                  </Field>
+                </PanelSection>
+                <PanelSection title="About: Photo">
+                  <UploadRow
+                    src={draft.about?.photo ?? ''}
+                    onUpload={() => onImageClick('about.photo')}
+                    uploading={uploading && uploadTarget === 'about.photo'}
+                  />
+                </PanelSection>
+                <PanelSection title="About: Stats">
+                  {(draft.about?.stats ?? []).map((s, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                      <input style={{ width: 80, flexShrink: 0 }} value={s.value} placeholder="10+" onChange={e => {
+                        const stats = [...(draft.about?.stats ?? [])]
+                        stats[i] = { ...stats[i], value: e.target.value }
+                        update('about.stats', stats)
+                      }} />
+                      <input style={{ flex: 1 }} value={s.label} placeholder="years active" onChange={e => {
+                        const stats = [...(draft.about?.stats ?? [])]
+                        stats[i] = { ...stats[i], label: e.target.value }
+                        update('about.stats', stats)
+                      }} />
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sem-danger)', padding: '0 4px', fontSize: 18, lineHeight: 1 }}
+                        onClick={() => update('about.stats', (draft.about?.stats ?? []).filter((_, j) => j !== i))}>×</button>
+                    </div>
+                  ))}
+                  <button className="panel-add-big-btn" onClick={() => update('about.stats', [...(draft.about?.stats ?? []), { value: '', label: '' }])}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add stat
+                  </button>
                 </PanelSection>
                 <PanelSection title="WhatsApp">
                   <Field label="Nummer (int. Format)">
@@ -256,7 +304,10 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                     </label>
                   </Field>
                 </PanelSection>
-                <PanelSection title="Karte">
+                <PanelSection title="Karte & Formular (Kontakt)">
+                  <Field label="Titel (Kontaktblock)">
+                    <input value={draft.contact?.title ?? ''} onChange={e => update('contact.title', e.target.value)} />
+                  </Field>
                   <Field label="Google Maps Embed-URL">
                     <textarea rows={2} value={draft.contact?.mapSrc ?? ''} onChange={e => update('contact.mapSrc', e.target.value)} placeholder="https://maps.google.com/maps?q=…&output=embed" />
                   </Field>
@@ -267,11 +318,6 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                     </label>
                   </Field>
                 </PanelSection>
-              </>
-            )}
-
-            {activeTab === 'style' && (
-              <>
                 <PanelSection title="Farben">
                   <ColorRow label="Primärfarbe" value={draft.meta?.primaryColor ?? '#0099CC'} onChange={v => update('meta.primaryColor', v)} />
                   <ColorRow label="Akzentfarbe" value={draft.meta?.accentColor ?? '#B3E600'} onChange={v => update('meta.accentColor', v)} />
@@ -316,6 +362,9 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                   <Field label="Seitentitel">
                     <input value={draft.meta?.title ?? ''} onChange={e => update('meta.title', e.target.value)} />
                   </Field>
+                  <div className="obs-provenance-note" style={{ marginTop: -4, marginBottom: 12, fontSize: 11.5 }}>
+                    Ausnahme: wird als Browser-Tab-Titel auf Unterseiten, Blog-Beiträgen und der Zertifizierungsseite verwendet — nicht auf der Startseite.
+                  </div>
                   <Field label="Beschreibung">
                     <textarea rows={2} value={draft.meta?.description ?? ''} onChange={e => update('meta.description', e.target.value)} />
                   </Field>
@@ -403,51 +452,6 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
                 </div>
               )
             })()}
-
-            {activeTab === 'about' && (
-              <>
-                <PanelSection title="Text">
-                  <Field label="Eyebrow (small, top)">
-                    <input value={draft.about?.eyebrow ?? ''} onChange={e => update('about.eyebrow', e.target.value)} placeholder="About us" />
-                  </Field>
-                  <Field label="Headline">
-                    <input value={draft.about?.headline ?? ''} onChange={e => update('about.headline', e.target.value)} placeholder="Hello, we're..." />
-                  </Field>
-                  <Field label="Bio text">
-                    <textarea rows={5} value={draft.about?.bio ?? ''} onChange={e => update('about.bio', e.target.value)} placeholder="A few warm sentences about who you are..." />
-                  </Field>
-                </PanelSection>
-                <PanelSection title="Photo">
-                  <UploadRow
-                    src={draft.about?.photo ?? ''}
-                    onUpload={() => onImageClick('about.photo')}
-                    uploading={uploading && uploadTarget === 'about.photo'}
-                  />
-                </PanelSection>
-                <PanelSection title="Stats">
-                  {(draft.about?.stats ?? []).map((s, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                      <input style={{ width: 80, flexShrink: 0 }} value={s.value} placeholder="10+" onChange={e => {
-                        const stats = [...(draft.about?.stats ?? [])]
-                        stats[i] = { ...stats[i], value: e.target.value }
-                        update('about.stats', stats)
-                      }} />
-                      <input style={{ flex: 1 }} value={s.label} placeholder="years active" onChange={e => {
-                        const stats = [...(draft.about?.stats ?? [])]
-                        stats[i] = { ...stats[i], label: e.target.value }
-                        update('about.stats', stats)
-                      }} />
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sem-danger)', padding: '0 4px', fontSize: 18, lineHeight: 1 }}
-                        onClick={() => update('about.stats', (draft.about?.stats ?? []).filter((_, j) => j !== i))}>×</button>
-                    </div>
-                  ))}
-                  <button className="panel-add-big-btn" onClick={() => update('about.stats', [...(draft.about?.stats ?? []), { value: '', label: '' }])}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add stat
-                  </button>
-                </PanelSection>
-              </>
-            )}
           </div>
 
           <div className="builder-panel-foot">
