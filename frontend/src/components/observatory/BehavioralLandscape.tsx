@@ -136,7 +136,7 @@ export function BehavioralLandscape() {
             <Stat value={mind?.mean_idle_seconds} label="Mittlere Pause (s)" format={fmtSec} accent="var(--obs-blue)" />
             <Stat value={mind?.avg_prompt_length} label="Ø Prompt-Länge (Zeichen)" format={fmtInt} accent="var(--obs-blue)" />
             <Stat value={mind?.scroll_activity?.event_count} label="Scroll-Events" format={fmtInt} accent="var(--obs-blue)" />
-            <Stat value={mind?.scroll_activity?.mean_scroll_depth_ratio} label="Ø Scrolltiefe" format={fmtPct} accent="var(--obs-blue)" />
+            <Stat value={mind?.scroll_activity?.mean_scroll_depth_ratio} label="Ø Scroll-Position" format={fmtPct} accent="var(--obs-blue)" />
           </div>
         </HudTile>
         <HudTile title="Kommunikation" badge="STATE" accent="var(--obs-amber)" span={2} bucket="human">
@@ -150,6 +150,9 @@ export function BehavioralLandscape() {
 
       <HudGrid cols={4}>
         <HudTile title="Entscheidungen" badge="TRAIT" accent="var(--obs-purple)" span={2} bucket="human">
+          <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', margin: '0 0 8px' }}>
+            Gleiche Rohdaten wie „Laura flaggt Jarvis" (Dyade-Perspektive).
+          </p>
           {amr ? (
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <Stat value={amr.accepted} label="Akzeptiert" format={fmtInt} accent="var(--obs-purple)" />

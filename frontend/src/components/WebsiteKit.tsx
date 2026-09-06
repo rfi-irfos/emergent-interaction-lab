@@ -62,7 +62,7 @@ interface Props {
 /// so they have to live at the AdminPanel level regardless).
 export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, uploadTarget, saving, saved, saveErr, onSaveClick, onNavigate, onEditNews }: Props) {
   const [activeTab, setActiveTab] = useState<PanelTab>('pages')
-  const [device, setDevice] = useState<DeviceView>('edit')
+  const [device, setDevice] = useState<DeviceView>('desktop')
   const [editingPage, setEditingPage] = useState<string | null>(null)
   const [panelWidth, setPanelWidth] = useState(380)
   const previewRef = useRef<HTMLDivElement>(null)
@@ -141,15 +141,20 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
           // here (see task-5a-report.md). The device-preview stage below is
           // the one that was actively lying about what visitors see, so that's
           // the one this task fixes.
-          <div className="builder-canvas-pane" ref={previewRef} onClick={handleCanvasClick}>
-            <PublicSite
-              content={draft}
-              editMode={true}
-              initPositions={{}}
-              onTextChange={(field, value) => update(field, value)}
-              onImageClick={onImageClick}
-              onUpdate={(field, value) => update(field, value)}
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+            <div className="obs-warning-note" style={{ margin: '10px 14px 4px' }}>
+              Diese Ansicht zeigt eine veraltete Vorschau und wirkt sich nicht auf die aktuelle Website aus. Nutze die Desktop/Tablet/Mobile-Vorschau oben für ein realistisches Bild.
+            </div>
+            <div className="builder-canvas-pane" ref={previewRef} onClick={handleCanvasClick}>
+              <PublicSite
+                content={draft}
+                editMode={true}
+                initPositions={{}}
+                onTextChange={(field, value) => update(field, value)}
+                onImageClick={onImageClick}
+                onUpdate={(field, value) => update(field, value)}
+              />
+            </div>
           </div>
         ) : (
           <div className="builder-device-stage">

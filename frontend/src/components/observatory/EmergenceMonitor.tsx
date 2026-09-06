@@ -482,6 +482,9 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         </HudTile>
 
         <HudTile title="Laura flaggt Jarvis" badge="META" accent="var(--sem-warning, var(--obs-amber))" span={2} bucket="dyad">
+          <p style={{ fontSize: 11, color: 'var(--gotham-text-dim, #6b7280)', margin: '0 0 8px' }}>
+            Gleiche Rohdaten wie „Entscheidungen" (Mensch-Perspektive).
+          </p>
           {flagging && flagging.matrix.laura_flags_jarvis.total > 0 ? (
             <div style={{ display: 'flex', gap: 18 }}>
               <HudStat value={flagging.matrix.laura_flags_jarvis.modify} label="Modify" />
