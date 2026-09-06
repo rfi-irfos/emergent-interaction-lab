@@ -13,16 +13,26 @@ function I(paths: React.ReactNode) {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{paths}</svg>
 }
 
-// Three genuinely different kinds of information, not one flat list: a
+// Two genuinely different kinds of information, not one flat list: a
 // research observable (Emergenz) must never read with the same weight as a
-// technical figure (Embedding-Chunk count) — see the plan for the full
+// system-health figure (Embedding-Chunk count) — see the plan for the full
 // reasoning. Tiers drive both the sidebar grouping and LiveCards' rows.
-export type ObservatoryTier = 'research' | 'system' | 'technical'
+//
+// There used to be a third tier here, `technical`. It's gone (2026-09):
+// it held zero registered modules for as long as this tier system has
+// existed — nothing was ever actually assigned to it — yet AdminPanel.tsx
+// still rendered its "Technische Ebene" sidebar section-header
+// unconditionally, floating above an empty group on every page load. The
+// one real candidate that was ever considered for `technical` — Information
+// Dynamics — was deliberately folded into `system` instead when it merged
+// with Interaction Dynamics (see that module's own comment below), so by
+// the time anyone would have populated `technical`, the need for it was
+// already gone. Removing the tier here removes the dead label with it.
+export type ObservatoryTier = 'research' | 'system'
 
 export const TIER_LABELS: Record<ObservatoryTier, string> = {
   research: 'Forschungsebene',
   system: 'Systemebene',
-  technical: 'Technische Ebene',
 }
 
 export interface ObservatoryModuleDef {
@@ -113,7 +123,6 @@ export function groupByTier(modules: ObservatoryModuleDef[] = OBSERVATORY_MODULE
   return {
     research: modules.filter(m => m.tier === 'research'),
     system: modules.filter(m => m.tier === 'system'),
-    technical: modules.filter(m => m.tier === 'technical'),
   }
 }
 
