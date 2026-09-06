@@ -49,3 +49,6 @@ backend/uploads/
 
 # subagent-driven-development scratch workspace (ledgers, briefs, reports)
 .superpowers/
+
+# git worktrees used for isolated subagent work (never commit worktree contents)
+.worktrees/
