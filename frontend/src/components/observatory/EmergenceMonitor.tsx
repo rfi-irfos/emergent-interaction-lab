@@ -4,7 +4,7 @@ import { downloadJson } from '../../lib/export'
 import { hudStagger } from '../../lib/hudStagger'
 import { ExportButtons } from './ExportButtons'
 import { HudSkeleton } from './HudSkeleton'
-import { FilterPanel, HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
+import { BucketBadge, FilterPanel, HudGrid, HudTile, HudStat, HudSectionHeader, useHeaderActions } from './Hud'
 import { ObsDonut } from './ObsDonut'
 import { ObsGauge } from './ObsGauge'
 import { ObsBarStack } from './ObsBarStack'
@@ -469,9 +469,9 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
         </HudTile>
       </HudGrid>
 
-      <HudSectionHeader title="Geteiltes Feld" sub="Dyad & Meta (META-Layer)" />
+      <HudSectionHeader title="Geteiltes Feld" sub="Dyad & Meta (META-Layer)" actions={<BucketBadge bucket="dyad" />} />
       <HudGrid cols={4}>
-        <HudTile title="Einfluss-Richtung" badge="TRAIT" accent="var(--obs-purple)" span={2}>
+        <HudTile title="Einfluss-Richtung" badge="TRAIT" accent="var(--obs-purple)" span={2} bucket="dyad">
           {influence && (influence.balance.laura_to_jarvis_count > 0 || influence.balance.jarvis_to_laura_count > 0) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <DirectionBar label="Laura → Jarvis" value={influence.balance.laura_to_jarvis_count} max={Math.max(influence.balance.laura_to_jarvis_count, influence.balance.jarvis_to_laura_count)} accent="var(--obs-purple)" />
@@ -481,7 +481,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           ) : <div className="obs-empty">Noch keine gerichtete Einfluss-Beobachtung.</div>}
         </HudTile>
 
-        <HudTile title="Laura flaggt Jarvis" badge="META" accent="var(--sem-warning, var(--obs-amber))" span={2}>
+        <HudTile title="Laura flaggt Jarvis" badge="META" accent="var(--sem-warning, var(--obs-amber))" span={2} bucket="dyad">
           {flagging && flagging.matrix.laura_flags_jarvis.total > 0 ? (
             <div style={{ display: 'flex', gap: 18 }}>
               <HudStat value={flagging.matrix.laura_flags_jarvis.modify} label="Modify" />
@@ -491,7 +491,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           ) : <div className="obs-empty">Noch kein Flag von Laura.</div>}
         </HudTile>
 
-        <HudTile title="Jarvis flaggt" badge="META" accent="var(--sem-danger)" span={2}>
+        <HudTile title="Jarvis flaggt" badge="META" accent="var(--sem-danger)" span={2} bucket="dyad">
           {flagging && flagging.matrix.jarvis_flags.total > 0 ? (
             <div style={{ display: 'flex', gap: 18 }}>
               <HudStat value={flagging.matrix.jarvis_flags.hallucination_mismatch} label="Mismatch (Selbst)" />
@@ -501,7 +501,7 @@ export function EmergenceMonitor({ onOpenConversation, focusSignalId, onFocusSig
           ) : <div className="obs-empty">Noch kein maschinelles Flag.</div>}
         </HudTile>
 
-        <HudTile title="Flag-Auflösung" badge="META" accent="var(--sem-success)" span={2}>
+        <HudTile title="Flag-Auflösung" badge="META" accent="var(--sem-success)" span={2} bucket="dyad">
           {flagging && flagging.flag_resolution.total > 0 ? (
             <div style={{ display: 'flex', gap: 18 }}>
               <HudStat value={flagging.flag_resolution.resolved} label="aufgelöst" />
