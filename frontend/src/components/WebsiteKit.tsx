@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import type { SiteContent, PageItem, SectionId } from '../types/content'
 import type { AdminSection } from '../types/admin'
 import { PublicSite } from './PublicSite'
+import { InstitutionalSite } from './InstitutionalSite'
 
 type PanelTab = 'hero' | 'contact' | 'style' | 'pages' | 'about'
 type DeviceView = 'edit' | 'desktop' | 'tablet' | 'mobile'
@@ -125,6 +126,16 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
       <div className="builder-body">
         {/* LEFT: Canvas editor OR device preview */}
         {device === 'edit' ? (
+          // Click-to-edit canvas — still PublicSite (the retired homepage
+          // component), NOT the real live public component. InstitutionalSite
+          // has no inline-edit affordances at all (no onTextChange/onImageClick/
+          // onUpdate props, no data-cid click-routing) — it's plain
+          // `{ route, content }` with everything but papers/news hardcoded
+          // bilingual literals. Reimplementing click-to-edit against it would
+          // be a real feature build, not a preview swap, so it's out of scope
+          // here (see task-5a-report.md). The device-preview stage below is
+          // the one that was actively lying about what visitors see, so that's
+          // the one this task fixes.
           <div className="builder-canvas-pane" ref={previewRef} onClick={handleCanvasClick}>
             <PublicSite
               content={draft}
@@ -139,7 +150,22 @@ export function WebsiteKit({ draft, onUpdate: update, onImageClick, uploading, u
           <div className="builder-device-stage">
             <div className="device-frame-wrap">
               <div className={`device-frame device-${device}`}>
-                <PublicSite content={draft} />
+                {/* Read-only device preview — now renders the SAME component
+                    App.tsx mounts for real visitors (InstitutionalSite), with
+                    the same draft content, instead of the retired PublicSite.
+                    'home' is the sane fixed route for this preview: it's the
+                    actual landing page real visitors land on. Verified live:
+                    InstitutionalSite's Home reads only two fields off the
+                    whole SiteContent — content.papers?.items and
+                    content.news?.items — neither shown on Home; everything
+                    else on this panel (hero/about/style) is hardcoded
+                    bilingual copy in InstitutionalSite itself, so edits there
+                    correctly show NO visible change here. That's not a bug in
+                    this swap — it's this task's whole point: the preview now
+                    tells the truth about what those fields do on the real
+                    site (nothing), instead of lying via the retired
+                    PublicSite. See task-5a-report.md. */}
+                <InstitutionalSite content={draft} route="home" />
               </div>
               <div className="device-frame-label">
                 {device === 'desktop' ? 'Web · 1280 px' : device === 'tablet' ? 'Tablet · 834 px' : 'Mobil · 390 px'}
