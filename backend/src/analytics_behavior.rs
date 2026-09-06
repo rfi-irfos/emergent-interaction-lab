@@ -261,6 +261,58 @@ pub async fn mean_idle_seconds_global(db: &SqlitePool) -> Option<f64> {
     mean(&all)
 }
 
+/// Global scroll-behavior signal — the one Human/Attention metric from
+/// Laura's own 40/40/20 spec that had zero backend read path until now, even
+/// though `human_behavior::ingest` has been storing `scroll` rows all along
+/// (client sends `{event_type: 'scroll', payload: {scrollTop, scrollHeight}}`,
+/// stored verbatim as a JSON-string `payload` column per `ingest`'s "not a
+/// string → `to_string()` the JSON" branch). Folds across every conversation,
+/// same `_global` convention as this file's other all-conversations folds.
+///
+/// `{event_count, mean_scroll_depth_ratio}`:
+///   * `event_count` — total `scroll` rows, always present; `0` is an honest
+///     count, not a fabrication, so it's never null.
+///   * `mean_scroll_depth_ratio` — mean of `scrollTop / scrollHeight` over
+///     rows whose `payload` parses as JSON and whose `scrollHeight` is a
+///     positive number. Rows with a non-JSON/malformed payload, a missing
+///     field, or `scrollHeight <= 0` are silently skipped (never a divide-by-
+///     zero, never a panic) — same silent-skip-a-bad-element doctrine as
+///     `human_behavior::ingest`. `null` when nothing valid was left to
+///     average, matching every other honest-empty mean in this file.
+///
+/// Backs human_ai's `scroll_activity`.
+pub async fn scroll_activity_global(db: &SqlitePool) -> Value {
+    let rows: Vec<(Option<String>,)> =
+        sqlx::query_as("SELECT payload FROM human_behavior WHERE event_type = 'scroll'")
+            .fetch_all(db)
+            .await
+            .unwrap_or_default();
+
+    let event_count = rows.len();
+    let mut ratios: Vec<f64> = Vec::new();
+    for (payload,) in &rows {
+        let Some(payload) = payload else { continue };
+        let Ok(parsed) = serde_json::from_str::<Value>(payload) else {
+            continue;
+        };
+        let Some(scroll_top) = parsed.get("scrollTop").and_then(|v| v.as_f64()) else {
+            continue;
+        };
+        let Some(scroll_height) = parsed.get("scrollHeight").and_then(|v| v.as_f64()) else {
+            continue;
+        };
+        if scroll_height <= 0.0 {
+            continue;
+        }
+        ratios.push(scroll_top / scroll_height);
+    }
+
+    json!({
+        "event_count": event_count,
+        "mean_scroll_depth_ratio": mean(&ratios),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -278,6 +330,17 @@ mod tests {
         .bind(conv)
         .bind(event_type)
         .bind(ts_ms)
+        .execute(db)
+        .await
+        .unwrap();
+    }
+
+    async fn insert_scroll_event(db: &SqlitePool, conv: &str, payload: &str) {
+        sqlx::query(
+            "INSERT INTO human_behavior (conversation_id, event_type, payload) VALUES (?1, 'scroll', ?2)",
+        )
+        .bind(conv)
+        .bind(payload)
         .execute(db)
         .await
         .unwrap();
@@ -415,5 +478,46 @@ mod tests {
         assert!(typing_velocity_global(&db).await.is_none());
         assert!(backspace_ratio_global(&db).await.is_none());
         assert!(mean_idle_seconds_global(&db).await.is_none());
+    }
+
+    // ── scroll_activity_global ──────────────────────────────────────────────
+
+    #[tokio::test]
+    async fn scroll_activity_global_computes_mean_depth_ratio() {
+        let db = test_db().await;
+        insert_scroll_event(&db, "c1", r#"{"scrollTop":50,"scrollHeight":100}"#).await; // 0.5
+        insert_scroll_event(&db, "c1", r#"{"scrollTop":90,"scrollHeight":100}"#).await; // 0.9
+        insert_scroll_event(&db, "c2", r#"{"scrollTop":30,"scrollHeight":300}"#).await; // 0.1
+
+        let v = scroll_activity_global(&db).await;
+        assert_eq!(v["event_count"], 3, "{v}");
+        assert!(
+            (v["mean_scroll_depth_ratio"].as_f64().unwrap() - (0.5 + 0.9 + 0.1) / 3.0).abs() < 1e-9,
+            "{v}"
+        );
+    }
+
+    #[tokio::test]
+    async fn scroll_activity_global_honest_empty() {
+        let db = test_db().await;
+        let v = scroll_activity_global(&db).await;
+        assert_eq!(v["event_count"], 0, "{v}");
+        assert!(v["mean_scroll_depth_ratio"].is_null(), "{v}");
+    }
+
+    #[tokio::test]
+    async fn scroll_activity_global_skips_malformed_payload() {
+        let db = test_db().await;
+        insert_scroll_event(&db, "c1", "not json").await; // malformed, skipped
+        insert_scroll_event(&db, "c1", r#"{"scrollTop":40,"scrollHeight":0}"#).await; // scrollHeight <= 0, skipped
+        insert_scroll_event(&db, "c1", r#"{"scrollTop":20,"scrollHeight":200}"#).await; // valid, 0.1
+
+        let v = scroll_activity_global(&db).await;
+        assert_eq!(v["event_count"], 3, "every row counts, even the unparseable one: {v}");
+        assert_eq!(
+            v["mean_scroll_depth_ratio"].as_f64().unwrap(),
+            0.1,
+            "only the one valid row contributes to the mean: {v}"
+        );
     }
 }
