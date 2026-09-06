@@ -42,6 +42,10 @@ interface AcceptModifyReject {
   modify_ratio: number
   reject_ratio: number
 }
+interface ScrollActivity {
+  event_count: number
+  mean_scroll_depth_ratio: number | null
+}
 interface HumanAiData {
   range: string
   user_messages: number | null
@@ -49,6 +53,7 @@ interface HumanAiData {
   typing_velocity_cpm: number | null
   backspace_ratio: number | null
   mean_idle_seconds: number | null
+  scroll_activity: ScrollActivity | null
   avg_prompt_length: number | null
   avg_structured_prompt_ratio: number | null
   avg_constraint_density: number | null
@@ -130,6 +135,8 @@ export function BehavioralLandscape() {
             <Stat value={mind?.backspace_ratio} label="Backspace-Anteil" format={fmtPct} accent="var(--obs-blue)" />
             <Stat value={mind?.mean_idle_seconds} label="Mittlere Pause (s)" format={fmtSec} accent="var(--obs-blue)" />
             <Stat value={mind?.avg_prompt_length} label="Ø Prompt-Länge (Zeichen)" format={fmtInt} accent="var(--obs-blue)" />
+            <Stat value={mind?.scroll_activity?.event_count} label="Scroll-Events" format={fmtInt} accent="var(--obs-blue)" />
+            <Stat value={mind?.scroll_activity?.mean_scroll_depth_ratio} label="Ø Scrolltiefe" format={fmtPct} accent="var(--obs-blue)" />
           </div>
         </HudTile>
         <HudTile title="Kommunikation" badge="STATE" accent="var(--obs-amber)" span={2} bucket="human">

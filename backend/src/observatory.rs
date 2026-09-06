@@ -350,6 +350,14 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
     let behavior_backspace_ratio = crate::analytics_behavior::backspace_ratio_global(db).await;
     let mean_idle_seconds = crate::analytics_behavior::mean_idle_seconds_global(db).await;
 
+    // Scroll behavior (Wave 2 follow-up, framework v2.1 Dimension 1
+    // "Attention") — the one Human metric in Laura's own 40/40/20 spec that
+    // was captured client-side (`scroll` rows in human_behavior) but never
+    // read anywhere on the backend until now. `{event_count,
+    // mean_scroll_depth_ratio}`, honest-empty per
+    // analytics_behavior::scroll_activity_global's own doc comment.
+    let scroll_activity = crate::analytics_behavior::scroll_activity_global(db).await;
+
     // Lifetime token + reasoning accounting for the Forschung KPI wall's
     // "Token & Reasoning" tile. All-time (same convention as the other
     // `*_messages` totals above — these back a cumulative KPI, not the
@@ -401,6 +409,7 @@ pub async fn human_ai(State(state): State<AppState>, headers: HeaderMap, jar: Co
         "typing_velocity_cpm": typing_velocity_cpm,
         "backspace_ratio": behavior_backspace_ratio,
         "mean_idle_seconds": mean_idle_seconds,
+        "scroll_activity": scroll_activity,
         "avg_prompt_length": avg_prompt_length,
         "avg_structured_prompt_ratio": avg_structured_prompt_ratio,
         "avg_constraint_density": avg_constraint_density,
