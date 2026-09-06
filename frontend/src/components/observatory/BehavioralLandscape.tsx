@@ -124,7 +124,7 @@ export function BehavioralLandscape() {
     <div className="obs-panel">
       <HudSectionHeader title="Laura · Kognitive Signatur" sub="Tipp- und Entscheidungsverhalten im gewählten Zeitraum." />
       <HudGrid cols={4}>
-        <HudTile title="Tippgeschwindigkeit" badge="STATE" accent="var(--obs-blue)" span={2}>
+        <HudTile title="Tippgeschwindigkeit" badge="STATE" accent="var(--obs-blue)" span={2} bucket="human">
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Stat value={mind?.typing_velocity_cpm} label="CPM" format={fmtInt} accent="var(--obs-blue)" />
             <Stat value={mind?.backspace_ratio} label="Backspace-Anteil" format={fmtPct} accent="var(--obs-blue)" />
@@ -132,7 +132,7 @@ export function BehavioralLandscape() {
             <Stat value={mind?.avg_prompt_length} label="Ø Prompt-Länge (Zeichen)" format={fmtInt} accent="var(--obs-blue)" />
           </div>
         </HudTile>
-        <HudTile title="Kommunikation" badge="STATE" accent="var(--obs-amber)" span={2}>
+        <HudTile title="Kommunikation" badge="STATE" accent="var(--obs-amber)" span={2} bucket="human">
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Stat value={mind?.avg_structured_prompt_ratio} label="Strukturierungsanteil" format={fmtPct} accent="var(--obs-amber)" />
             <Stat value={mind?.avg_constraint_density} label="Constraint-Dichte" format={fmtPct} accent="var(--obs-amber)" />
@@ -142,7 +142,7 @@ export function BehavioralLandscape() {
       </HudGrid>
 
       <HudGrid cols={4}>
-        <HudTile title="Entscheidungen" badge="TRAIT" accent="var(--obs-purple)" span={2}>
+        <HudTile title="Entscheidungen" badge="TRAIT" accent="var(--obs-purple)" span={2} bucket="human">
           {amr ? (
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <Stat value={amr.accepted} label="Akzeptiert" format={fmtInt} accent="var(--obs-purple)" />
@@ -152,9 +152,23 @@ export function BehavioralLandscape() {
             </div>
           ) : <div className="obs-empty">Noch keine Daten</div>}
         </HudTile>
-        <HudTile title="Reaktion & Reparatur" badge="TRAIT" accent="var(--obs-teal)" span={2}>
+        {/* Split from a single former "Reaktion & Reparatur" tile (see
+            Task 2 bucket retrofit): Laura's own reaction latency is a
+            Human-bucket metric (Attention/Decision-Making style "how fast
+            does she respond" — an individual behavior), while clarification
+            efficiency and repair-success ratio are both named verbatim in
+            Laura's own Dyad list ("Clarification efficiency (misunderstanding
+            → resolution time)" and "Repair success after errors" — see
+            CHATGPT_ORIGINAL_40_40_20_PROMPT.md's 20% section) — genuinely
+            relational/interaction metrics, not individual ones. Same badge/
+            accent/data-fetching as before, split only by bucket. */}
+        <HudTile title="Reaktionszeit" badge="TRAIT" accent="var(--obs-teal)" span={1} bucket="human">
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Stat value={mind?.reverse_latency_seconds} label="Reaktionszeit Laura (s)" format={fmtSec} accent="var(--obs-teal)" />
+          </div>
+        </HudTile>
+        <HudTile title="Klarstellung & Reparatur" badge="TRAIT" accent="var(--obs-teal)" span={1} bucket="dyad">
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <Stat value={mind?.clarification_efficiency_seconds} label="Klarstellungseffizienz (s)" format={fmtSec} accent="var(--obs-teal)" />
             <Stat value={mind?.repair_success_ratio} label="Reparatur-Erfolg" format={fmtPct} accent="var(--obs-teal)" />
           </div>
@@ -163,7 +177,7 @@ export function BehavioralLandscape() {
 
       <HudSectionHeader title="8-Layer-Verteilung" sub="Welche der 8 Denkebenen (IEIA-2025) Lauras Turns tragen — alle auf derselben Zähl-Skala, deshalb als Radar." />
       <HudGrid cols={4}>
-        <HudTile title="Layer-Radar" badge="TRAIT" accent="var(--obs-green)" span={4} tall>
+        <HudTile title="Layer-Radar" badge="TRAIT" accent="var(--obs-green)" span={4} tall bucket="human">
           {radarAxes.length > 0 ? (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <ObsRadar axes={radarAxes} size={320} />
@@ -174,7 +188,7 @@ export function BehavioralLandscape() {
 
       <HudSectionHeader title="Jarvis · Werkzeugverhalten" sub={RANGE_SUFFIX[behavior?.range ?? range] ?? range} />
       <HudGrid cols={4}>
-        <HudTile title="Werkzeug-Verteilung" badge="MACHINE" accent="var(--obs-teal)" span={2}>
+        <HudTile title="Werkzeug-Verteilung" badge="MACHINE" accent="var(--obs-teal)" span={2} bucket="machine">
           {toolDist.length === 0 || toolDist.every(d => d.value === 0)
             ? <div className="obs-empty">Noch keine Werkzeugaufrufe.</div>
             : <ObsDonut data={toolDist} gradientIdPrefix="behavioral-tool-distribution" />
