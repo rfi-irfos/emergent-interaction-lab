@@ -349,7 +349,7 @@ export function AdminPanel({ content, saving, onSave, onUpload, onLogout }: Prop
               {!sidebarCollapsed && 'Website Kit'}
             </button>
 
-            {(['research', 'system', 'technical'] as ObservatoryTier[]).map(tier => (
+            {(['research', 'system'] as ObservatoryTier[]).map(tier => (
               <div key={tier}>
                 {!sidebarCollapsed && <div className="crm-nav-group-label crm-nav-group-label--tier">{TIER_LABELS[tier]}</div>}
                 {groupByTier()[tier].map(mod => (
