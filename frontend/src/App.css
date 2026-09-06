@@ -3719,6 +3719,26 @@ button { cursor: pointer; font-family: inherit; }
   letter-spacing: .06em; text-transform: uppercase; color: var(--hud-accent);
   border: 1px solid color-mix(in srgb, var(--hud-accent) 40%, transparent); padding: 1px 6px; border-radius: 4px;
 }
+/* Human/Dyad/Machine bucket pill (Hud.tsx's `bucket` prop / `BucketBadge`) —
+   a SECOND, orthogonal axis from `.hud-tile-badge` above, so it's built to
+   read as a different kind of thing at a glance even where a tile's own
+   `--hud-accent` happens to land near one of the three fixed
+   `--bucket-color` values: solid filled pill (this) vs outlined text-only
+   pill (`.hud-tile-badge`), never just a third hue in the same treatment.
+   `--bucket-color` is set inline per instance from Hud.tsx's BUCKET_COLORS —
+   fixed `--obs-*`/`--sem-*` token references, never `--hud-accent`. */
+.hud-tile-bucket-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 9.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--bucket-color);
+  background: color-mix(in srgb, var(--bucket-color) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bucket-color) 55%, transparent);
+  padding: 1px 6px 1px 5px; border-radius: 4px;
+}
+.hud-tile-bucket-dot {
+  width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bucket-color);
+}
 .hud-tile-body { position: relative; height: calc(100% - 24px); display: flex; flex-direction: column; }
 /* Flat surface + a thin accent-tinted edge (color-mix, no blur) — reads as
    an instrument by its border hue alone, not by glowing. Replaces the
