@@ -58,12 +58,99 @@ export function HudHeaderActions({ search, filters, action }: {
 
 export type HudTileSpan = 1 | 2 | 3 | 4
 
+/// Laura's own 40/40/20 research taxonomy (Human/Dyad/Machine) — an axis
+/// ORTHOGONAL to every other classification already living in/around this
+/// file (the `badge` prop's STATE/TRAIT/MACHINE/META stability-of-signal
+/// axis; EmergenceMonitor's LEVEL_SECTIONS `human`/`ai`/`interaction`/
+/// `system` emergence-layer keys — note its `ai` is NOT this `machine`;
+/// SystemState's local `kind: 'signal' | 'technical'`; registry's
+/// STATUS_ACCENT signal lifecycle). Before this, nothing in the UI reliably
+/// told Laura which of her three buckets a given tile's number belongs to.
+/// All three values get identical, symmetric treatment everywhere — there is
+/// deliberately no disclosure/flagging mechanism for `machine`.
+export type ObservatoryBucket = 'human' | 'dyad' | 'machine'
+
+/// German, matching this file's own established convention (EmergenceMonitor
+/// consumers already use German badge strings like "SIGNALE"/"VERLAUF"
+/// alongside English ones like "STATE"/"TRAIT" — not a consistently-English
+/// file, so no reason to introduce a new English-only label set here).
+export const BUCKET_LABELS: Record<ObservatoryBucket, string> = {
+  human: 'MENSCH',
+  dyad: 'DYADE',
+  machine: 'MASCHINE',
+}
+
+/// Three FIXED token references — deliberately NOT derived from
+/// `--hud-accent` (see `.hud-tile-badge` in App.css, which colors the
+/// existing `badge` prop from whatever accent hue the tile's author picked).
+/// If this bucket badge also inherited `--hud-accent`, it would render in the
+/// exact same color as a tile's existing `badge` span whenever both are
+/// present, defeating the entire point of having two independent axes on one
+/// tile. Picked from the already-theme-verified `--obs-*`/`--sem-*` tokens
+/// (App.css `:root`, explicitly theme-invariant — see the block comment
+/// above them) rather than inventing new custom properties:
+/// Verified by grepping every `accent=` passed to `HudTile`/`Stat`/
+/// `DirectionBar` in both files Task 2 retrofits: BehavioralLandscape.tsx
+/// uses --obs-blue, --obs-amber, --obs-purple, --obs-teal, --obs-green (every
+/// tile there sets an explicit accent). EmergenceMonitor.tsx uses --obs-blue,
+/// --obs-purple, --obs-teal, --obs-amber, --sem-warning, --sem-danger,
+/// --sem-success (also all explicit). That's 6 distinct rendered hues already
+/// spoken for (amber/warning share a hex, as do green/success and red/
+/// danger). Of the 9 distinct hues the whole `--obs-*`/`--sem-*` token set
+/// actually contains, only 3 are untouched by that list: --obs-cyan,
+/// --sem-info, --sem-neutral — and --obs-cyan renders pixel-identical to
+/// --sem-info in the dark/gotham theme specifically (App.css redefines
+/// `--obs-cyan: #38d9cc` under `.observatory-hud`/`.gotham`, same hex as
+/// `--sem-info`'s fixed #38d9cc), so it can't be used alongside --sem-info
+/// without breaking the "distinct from each other" requirement in that
+/// theme. That leaves genuinely only TWO fully clean, mutually-distinct,
+/// non-colliding hues in the whole design system today — not three. Rather
+/// than invent a new token (explicitly disallowed) or leave one bucket
+/// colliding with whichever of the 6 already-spoken-for hues is thematically
+/// likeliest to land on the same tile, the third color below accepts the
+/// least-risk collision:
+///   - human   → --sem-info (cyan/turquoise): "neutral factual label,
+///     category, or count" per its own App.css comment — a good semantic
+///     fit, and confirmed absent from both files' accent lists above.
+///   - machine → --sem-neutral (gray): also confirmed absent from both
+///     accent lists; its desaturation additionally makes it trivially
+///     distinguishable from every saturated `--obs-*` hue a tile might
+///     already be using, which matters more than hue alone for at-a-glance
+///     legibility.
+///   - dyad    → --obs-blue: this IS already used as an accent (on
+///     "Tippgeschwindigkeit"/"Status-Mix" in BehavioralLandscape and
+///     "Status-Mix" in EmergenceMonitor), so it isn't perfectly clean — but
+///     of the 6 already-used hues it's the one attached to the tiles least
+///     likely to receive `bucket="dyad"` in Task 2 (typing-speed/status-mix
+///     read as pure human-behavior or system metrics, not Human↔Machine
+///     interaction). --obs-purple was rejected for this slot specifically:
+///     it's the accent on "Entscheidungen" (accept/modify/reject an AI
+///     suggestion) and "Einfluss-Richtung" (Laura→Jarvis/Jarvis→Laura
+///     direction) — both textbook dyad-bucket candidates, which would make a
+///     purple dyad badge collide with that same tile's own existing badge
+///     outline almost as soon as Task 2 ships. The `.hud-tile-bucket-badge`
+///     shape (solid filled pill + dot vs. `.hud-tile-badge`'s outlined
+///     text-only pill, see App.css) is the deliberate backstop for this one
+///     residual case — two badges of the same hue stay tellable-apart by
+///     shape even if a future tile's accent lands on --obs-blue.
+export const BUCKET_COLORS: Record<ObservatoryBucket, string> = {
+  human: 'var(--sem-info)',
+  dyad: 'var(--obs-blue)',
+  machine: 'var(--sem-neutral)',
+}
+
 export interface HudTileProps {
   title?: string
   /** Short uppercase status caption rendered right of the title (e.g. "LIVE", "ANALYSIS"). */
   badge?: string
   /** Accent hue for the soft glow + LED. Defaults to the cyan telemetry accent. */
   accent?: string
+  /** Which of Laura's Human/Dyad/Machine buckets this tile's metric belongs
+      to. Renders as a SECOND badge span, alongside (never replacing) `badge`
+      — a tile may have zero, one, or both. Colored from the fixed
+      `BUCKET_COLORS` map, independent of `accent`/`--hud-accent`, so it
+      reads as a visually distinct axis even when both badges are present. */
+  bucket?: ObservatoryBucket
   /** Column span inside the HudGrid (1–4 of 4). 2 = half-width on desktop. */
   span?: HudTileSpan
   /** Render as a tall tile (maps/large donuts) vs normal. Mostly affects min-height. */
@@ -77,12 +164,37 @@ export interface HudTileProps {
   headerActions?: React.ReactNode
 }
 
+/// The bucket pill itself, shared by `HudTile` (embedded in the tile header)
+/// and this file's standalone `BucketBadge` export (for section-header/prose
+/// contexts, e.g. next to EmergenceMonitor's "Geteiltes Feld" header). Solid
+/// filled background rather than the existing `.hud-tile-badge`'s outlined
+/// text-only treatment — a deliberate SHAPE difference on top of the color
+/// difference, so the two badges stay tellable-apart at a glance even in the
+/// rare case a future tile's own `accent` happens to land near a bucket hue.
+function BucketBadgeSpan({ bucket }: { bucket: ObservatoryBucket }) {
+  const color = BUCKET_COLORS[bucket]
+  return (
+    <span className="hud-tile-bucket-badge" style={{ ['--bucket-color' as string]: color }}>
+      <span className="hud-tile-bucket-dot" aria-hidden />
+      {BUCKET_LABELS[bucket]}
+    </span>
+  )
+}
+
+/// Standalone export of the same pill for placement outside a `HudTile`'s own
+/// header — e.g. next to a `HudSectionHeader` or in prose that currently only
+/// names its bucket in plain text. Not wired into any consumer yet (that's a
+/// later task); this just makes the piece available.
+export function BucketBadge({ bucket }: { bucket: ObservatoryBucket }) {
+  return <BucketBadgeSpan bucket={bucket} />
+}
+
 /// A framed instrument panel: hairline border with a soft accent glow,
 /// a monospace title bar with a live LED, hairline inner grid. Sized by the
 /// grid, never by its content, so a chart can't blow the layout out.
 /// No corner brackets — the frame reads as a lit instrument, not a boxed
 /// label (the corner-bracket decoration was removed app-wide per feedback).
-export function HudTile({ title, badge, accent, span = 1, tall, className, children, headerActions }: HudTileProps) {
+export function HudTile({ title, badge, accent, bucket, span = 1, tall, className, children, headerActions }: HudTileProps) {
   const style = accent ? ({ ['--hud-accent' as string]: accent } as React.CSSProperties) : undefined
   return (
     <section
@@ -96,6 +208,7 @@ export function HudTile({ title, badge, accent, span = 1, tall, className, child
               <span className="hud-led" aria-hidden />
               <span className="hud-tile-title">{title}</span>
               {badge && <span className="hud-tile-badge">{badge}</span>}
+              {bucket && <BucketBadgeSpan bucket={bucket} />}
             </>
           )}
           {headerActions && <span className="hud-tile-head-actions">{headerActions}</span>}
