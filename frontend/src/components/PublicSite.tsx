@@ -1258,6 +1258,16 @@ export function PublicSite({
               <E field="hero.ctaLabel" value={hero.ctaLabel} as="a" href={safeHref(hero.ctaHref)} className="site-btn-lime-lg" />
               {hero.ctaSecLabel && <E field="hero.ctaSecLabel" value={hero.ctaSecLabel} as="a" href={safeHref(hero.ctaSecHref ?? '#')} className="site-btn-ghost-lg" />}
             </div>
+            {(hero.metrics ?? []).length > 0 && (
+              <div className="site-hero-metrics">
+                {(hero.metrics ?? []).map((m, i) => (
+                  <div key={i} className="site-hero-metric">
+                    <strong>{m.value}</strong>
+                    <span>{m.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           {editMode && (
             <div className="hero-resize-handle" onMouseDown={e => { e.preventDefault(); heightDragRef.current = { startY: e.clientY, startH: heroHeight } }} />
