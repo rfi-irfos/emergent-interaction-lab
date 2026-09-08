@@ -205,7 +205,16 @@
 .eil-preview-detail h3 { margin: 0 0 6px; }
 .eil-preview-detail p { margin: 0; }
 
+.eil-footer-groups { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 36px; align-items: flex-start; }
+.eil-footer-groups > div > strong { display: block; color: #dff4f7; font-size: 12px; letter-spacing: .04em; margin-bottom: 10px; }
+.eil-footer-groups > div > p { margin: 0; }
+.eil-footer-groups > div > p a { display: block; color: #9ab6bd; text-decoration: none; font-size: 12px; margin: 7px 0; }
+.eil-footer-groups > div > p a:hover { color: #55E1EE; }
+.eil-site[data-theme="light"] .eil-footer-groups > div > strong { color: #061a1c; }
+.eil-site[data-theme="light"] .eil-footer-groups > div > p a { color: #4A5D52; }
+
 @media (max-width: 720px) {
+  .eil-footer-groups { justify-content: flex-start; gap: 26px; }
   .eil-home-hero { min-height: 680px; }
   .eil-hero-wordmark-image { width: 94vw; margin: -6px auto 34px; }
   .eil-home-hero .eil-lead { width: 100%; max-width: 100%; overflow-wrap: anywhere; }

@@ -137,9 +137,11 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   const { theme, cycle } = useTheme()
   const de = lang === 'de'
   const tx = (german: string, english: string) => de ? german : english
+  // Mirrors the zip content package's own <nav> order (index.html etc.):
+  // Lab, Research, Systems, Methods, Publications, Observatory, Applied Research.
   const navigation: Array<[InstitutionalRoute, string, string]> = [
-    ['lab', 'Lab', 'Lab'], ['research', 'Forschung', 'Research'], ['methods', 'Methoden', 'Methods'],
-    ['systems', 'Systeme', 'Systems'], ['publications', 'Publikationen', 'Publications'],
+    ['lab', 'Lab', 'Lab'], ['research', 'Forschung', 'Research'], ['systems', 'Systeme', 'Systems'],
+    ['methods', 'Methoden', 'Methods'], ['publications', 'Publikationen', 'Publications'],
     ['observatory', 'Observatory', 'Observatory'], ['applied-research', 'Applied Research', 'Applied Research'],
   ]
 
@@ -167,9 +169,19 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <div className="eil-tools"><button onClick={() => setLang(de ? 'en' : 'de')}>{lang.toUpperCase()}</button><button onClick={cycle} aria-label={tx('Farbschema wechseln', 'Change color scheme')}>{theme === 'dark' ? '◐' : theme === 'light' ? '○' : '◉'}</button><a className="eil-contact-link" href={`${href('home')}#contact`}>{tx('Kontakt', 'Contact')}</a><details className="eil-mobile-menu"><summary aria-label={tx('Menü öffnen', 'Open menu')}>☰</summary><nav>{navigation.map(([id,d,e])=><a key={id} href={href(id)}>{tx(d,e)}</a>)}<a href={href('notes')}>Research Notes</a></nav></details></div>
   </header>
 
+  // Footer content/structure mirrors the zip content package's own <footer>
+  // (Explore: Research/Systems/Publications · Lab: About EIL/Observatory/
+  // Applied Research). Only the functional necessities from the previous
+  // footer are kept wired: language/theme toggles live in the header, and
+  // the legal routes (#p/impressum, #p/datenschutz) plus GitHub/Research
+  // Notes links stay reachable since those routes still exist server-side.
   const Footer = () => <footer className="eil-footer">
-    <div><Mark /><strong>Emergent Interaction Lab</strong><p>{tx('Unabhängiges, founder-led Forschungslabor.', 'Independent founder-led research lab.')}</p></div>
-    <div className="eil-footer-links"><a href={href('notes')}>Research Notes</a><a href="https://github.com/rfi-irfos/emergent-interaction-lab">GitHub</a><a href={`${href('home')}#p/datenschutz`}>Datenschutz</a><a href={`${href('home')}#p/impressum`}>Impressum</a></div>
+    <div><Mark /><strong>Emergent Interaction Lab</strong><p>{tx('Interdisziplinäre Forschungsumgebung für emergente Interaktion, komplexe Systeme, Rekonstruktion und intelligente Systemarchitekturen.', 'Interdisciplinary research environment for emergent interaction, complex systems, reconstruction and intelligent system architectures.')}</p></div>
+    <div className="eil-footer-groups">
+      <div><strong>{tx('Erkunden', 'Explore')}</strong><p><a href={href('research')}>{tx('Forschung', 'Research')}</a><br/><a href={href('systems')}>{tx('Systeme', 'Systems')}</a><br/><a href={href('publications')}>{tx('Publikationen', 'Publications')}</a></p></div>
+      <div><strong>Lab</strong><p><a href={href('lab')}>{tx('Über EIL', 'About EIL')}</a><br/><a href={href('observatory')}>Observatory</a><br/><a href={href('applied-research')}>Applied Research</a></p></div>
+      <div className="eil-footer-links"><a href={href('notes')}>Research Notes</a><a href="https://github.com/rfi-irfos/emergent-interaction-lab">GitHub</a><a href={`${href('home')}#p/datenschutz`}>Datenschutz</a><a href={`${href('home')}#p/impressum`}>Impressum</a></div>
+    </div>
     <p className="eil-doctrine">Human rights are not subject to negotiation.<small>{tx('Emergent Interaction Lab · unabhängige Forschungsinstitution', 'Emergent Interaction Lab · independent research institution')}</small></p>
   </footer>
 
