@@ -262,7 +262,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     </section>
   </>
 
-  const ResearchDomainDetail = (d: Domain) => <>
+  const ResearchDomainDetail = (d: Domain) => <div className="eil-domain-detail">
     <PageHero eyebrow={tx('FORSCHUNGSDOMÄNE', 'RESEARCH DOMAIN')} title={tx(d.titleDe, d.titleEn)} body={tx(d.leadDe, d.leadEn)} />
     <section className="eil-section"><div className="eil-section-head"><Status>SCOPE</Status></div>
       <div className="eil-domain-chips">{(de ? d.scopeDe : d.scopeEn).map(x => <span key={x}>{x}</span>)}</div>
@@ -273,7 +273,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
       <article><Status>{tx('FORSCHUNGSANSATZ', 'RESEARCH APPROACH')}</Status><p>{tx(RESEARCH_APPROACH[0], RESEARCH_APPROACH[1])}</p></article>
     </section>
     <section className="eil-callout"><Status>{tx('BEZUG ZU EIL', 'RELATIONSHIP TO EIL')}</Status><p>{tx(RESEARCH_RELATIONSHIP[0], RESEARCH_RELATIONSHIP[1])}</p><a className="eil-text-link" href={href('research')}>{tx('Alle Domains ansehen', 'View all domains')} →</a></section>
-  </>
+  </div>
 
   // -- Methods ------------------------------------------------------------
   const methodEntries = [
