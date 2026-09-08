@@ -21,7 +21,9 @@ function getChapter(): InstitutionalRoute {
   const candidate = parts[base && parts[0] === base ? 1 : 0]
   const aliases: Record<string, InstitutionalRoute> = { about: 'lab', method: 'methods', papers: 'publications', products: 'systems', pricing: 'applied-research' }
   const resolved = aliases[candidate] ?? candidate
-  return ['lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research'].includes(resolved)
+  return ['lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research',
+    'research-complex', 'research-behavioral', 'research-reconstruction', 'research-human-ai',
+    'research-integrity', 'research-causality', 'research-computational'].includes(resolved)
     ? resolved as InstitutionalRoute : 'home'
 }
 
@@ -89,7 +91,9 @@ export default function App() {
       const url = new URL(anchor.href, window.location.href)
       if (url.origin !== window.location.origin || !url.pathname.startsWith(import.meta.env.BASE_URL)) return
       const route = url.pathname.slice(import.meta.env.BASE_URL.length).split('/')[0]
-      if (route && !['lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research', 'about', 'method', 'papers', 'products', 'pricing'].includes(route)) return
+      if (route && !['lab', 'research', 'methods', 'systems', 'publications', 'observatory', 'notes', 'applied-research', 'about', 'method', 'papers', 'products', 'pricing',
+        'research-complex', 'research-behavioral', 'research-reconstruction', 'research-human-ai',
+        'research-integrity', 'research-causality', 'research-computational'].includes(route)) return
       event.preventDefault()
       navigate(url)
     }
