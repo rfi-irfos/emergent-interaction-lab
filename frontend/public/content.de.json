@@ -47,18 +47,23 @@
     "ctaHref": "#location"
   },
   "hero": {
-    "tag": "Mensch-KI-Dynamik · Live-Observatory-Feed · Forschung seit 2023",
-    "headline": "Emergent Interaction Field",
-    "subheadline": "Ich untersuche, was passiert, wenn ein Mensch wochenlang mit demselben KI-System arbeitet, nicht nur einmal. Dabei entstehen Muster, die niemand geplant hat.",
+    "tag": "UNABHÄNGIGES FORSCHUNGSLABOR",
+    "headline": "EMERGENT INTERACTION LAB",
+    "subheadline": "EIL untersucht, wie menschliche, computational und sozio-technische Systeme sich verhalten, interagieren, verändern und beobachtbar werden.",
     "body": "",
-    "ctaLabel": "Zum Blog",
-    "ctaHref": "#news",
-    "ctaSecLabel": "Über das Lab",
-    "ctaSecHref": "#p/ueber-das-lab",
-    "image": "",
+    "ctaLabel": "Forschung ansehen →",
+    "ctaHref": "#research",
+    "ctaSecLabel": "Methoden",
+    "ctaSecHref": "#methods",
+    "image": "/eil-hero-wordmark-full-alpha.png",
     "bgX": 50,
     "bgY": 40,
-    "minHeight": 520
+    "minHeight": 520,
+    "metrics": [
+      {"value": "2023", "label": "Forschung seit"},
+      {"value": "300+", "label": "Agenten"},
+      {"value": "6", "label": "Disziplinen"}
+    ]
   },
   "trust": {
     "items": []
@@ -343,6 +348,89 @@
       }
     ],
     "copyright": "© 2026 Emergent Interaction Lab - made with <3 in Graz by RFI-IRFOS, for Laura"
+  },
+  "lab": {
+    "eyebrow": "Lab",
+    "title": "Eine interdisziplinäre Umgebung zum Rekonstruieren und Entwerfen komplexer intelligenter Systeme.",
+    "body": "EIL untersucht Emergenz, Interaktion, verborgene Zustände, Systemverhalten und Intelligenz über menschliche, computational und sozio-technische Systeme. Methoden, Agenten, Datensätze und Software sind Instrumente innerhalb dieser Forschungsumgebung.",
+    "cards": [
+      {"meta": "Lab", "title": "Emergent Interaction", "desc": "Wie Interaktion zwischen Komponenten, Agenten, Menschen und Systemen Verhalten erzeugt, das nicht aus isolierten Teilen verstanden werden kann."},
+      {"meta": "Rekonstruktion", "title": "Rekonstruktion", "desc": "Wie verborgene Zustände, Constraints, Beziehungen und kausale Strukturen aus unvollständiger Evidenz abgeleitet werden können."},
+      {"meta": "Intelligenz", "title": "Intelligente Architekturen", "desc": "Wie Schlussfolgerung, Zustand, Speicher, Evidenz, Koordination, Validierung und Wiederherstellung in autonomen und Multi-Agenten-Systemen entworfen werden."}
+    ],
+    "sections": [
+      {"title": "KI-gestützt durch Architektur", "body": "KI ist Teil des Forschungs-Substrats, nicht nur ein Werkzeug, das durch Prompts bedient wird."},
+      {"title": "Gründerin / Forschung & Intelligenzarchitektur", "body": "Laura Serna Gaviria gründete EIL. Ihre Arbeit dreht sich um Forschungsarchitektur, Intelligenzdesign, Multi-Agenten-Architektur, Systemrekonstruktion, verborgene-Zustands-Schlussfolgerung, Verhaltens-/Systemanalyse, kausale und Übergangslogik, Evaluationsarchitektur und experimentelles Forschungsdesign."},
+      {"title": "Verhältnis zu RFI-IRFOS", "body": "EIL und RFI-IRFOS sind unterschiedlich. Kollaborative Systeme müssen Forschungs-/Intelligenzarchitektur von technischer Implementierung und Infrastruktur trennen, statt aller Arbeit einer Seite zuzuschreiben."}
+    ]
+  },
+  "research": {
+    "eyebrow": "Forschung",
+    "title": "Forschungsdomänen, verbunden durch Interaktion, Zustand und Systemwandel.",
+    "body": "Die Forschungskarte trennt Fragen von den Systemen, Methoden und Outputs, mit denen sie untersucht werden. EIL bleibt die übergreifende Umgebung für alle Domänen.",
+    "domains": [
+      {"meta": "Forschungsdomäne", "title": "Emergente & komplexe Systeme", "desc": "Emergenz, verteiltes Verhalten, interaktionsgetriebener Wandel und systemübergreifende Dynamiken."},
+      {"meta": "Forschungsdomäne", "title": "Verhaltens- & Interaktionsintelligenz", "desc": "Beobachtetes Verhalten, Entscheidungsmuster, Interaktionseffekte und adversariale Analyse."},
+      {"meta": "Forschungsdomäne", "title": "Systemrekonstruktion", "desc": "Verborgene Zustände, unvollständige Evidenz, zeitliche Struktur, kausale Ketten und Übergänge."},
+      {"meta": "Forschungsdomäne", "title": "Mensch–KI-Systeme", "desc": "Langzeitinteraktion, HMI, Adaption, Agency, Abhängigkeit und Evaluierung."},
+      {"meta": "Forschungsdomäne", "title": "Systemintegrität & Runtime", "desc": "Drift, Widersprüche, Regression, Kontinuität, Constraints, Fehler und Wiederherstellung."},
+      {"meta": "Forschungsdomäne", "title": "Kausalität, Prediction & DINGIR", "desc": "Kausale Struktur, Zustandsübergänge, Gegenfaktuale, Prognose und DINGIR."},
+      {"meta": "Forschungsdomäne", "title": "Intelligente & computationale Forschungssysteme", "desc": "Intelligenzarchitektur, Agentensysteme, Multi-Agenten-Koordination, Kernel, Daten und Visualisierung."}
+    ]
+  },
+  "systems": {
+    "eyebrow": "Systeme",
+    "title": "Entworfene Intelligenz über Agenten, Runtime und Forschungssysteme.",
+    "body": "Die Systemebene operationalisiert die EIL-Forschung. Einzelne Agenten sind spezialisierte Intelligenzkomponenten innerhalb größerer Architekturen — keine eigenständigen Chatbot-Produkte.",
+    "systems": [
+      {"meta": "Forschungsbetrieb", "title": "JARVIS", "desc": "Forschungsbetrieb, Untersuchung und Kontinuität."},
+      {"meta": "Multi-Agenten-Intelligenz", "title": "ROBERT", "desc": "Koordinierte Forschungsintelligenz über spezialisierte Agentenrollen."},
+      {"meta": "Autonome Untersuchung", "title": "NYX", "desc": "Untersuchungsintelligenz strukturiert um Hypothesen, Pfade, Priorisierung und Evidenz."},
+      {"meta": "Systemintegrität", "title": "MIRROR", "desc": "Widersprüche, Drift, Regression und Abweichung von korrekten Systemzuständen."},
+      {"meta": "Informationsintelligenz", "title": "ARGUS", "desc": "Spezialisierte Informations- und LinkedIn-Intelligenz."},
+      {"meta": "Orchestrierung", "title": "ATLAS", "desc": "Orchestrierung und Koordination innerhalb größerer Agenten-Workflows."},
+      {"meta": "Ausführung", "title": "KOPERNIKUS", "desc": "Ausführungsorientierter spezialisierter Agent in der breiteren Architektur."},
+      {"meta": "Spezialisierter Agent", "title": "JANUS", "desc": "Spezialisiertes Intelligenzsystem; öffentliche Details bewusst begrenzt."},
+      {"meta": "Spezialisierter Agent", "title": "DAEDALUS", "desc": "Spezialisiertes Intelligenzsystem; öffentliche Details bewusst begrenzt."},
+      {"meta": "Spezialisierter Agent", "title": "DELTA", "desc": "Spezialisiertes Intelligenzsystem; öffentliche Details bewusst begrenzt."}
+    ],
+    "kernel": ["Agent Logic", "Runtime", "State", "Context", "Memory", "Drift", "Monitoring", "Feedback", "Recovery", "Audit Trails"],
+    "dingir": ["Evidence", "Hidden State", "Causal Structure", "Transition", "Possible Futures"]
+  },
+  "methods": {
+    "eyebrow": "Methoden",
+    "title": "Methoden und Instrumente, die in der EIL-Forschung entwickelt wurden.",
+    "body": "Dies sind unterstützende Forschungswerkzeuge. Sie definieren das Lab nicht als Ganzes und sollten den Forschungsfragen und Systemen untergeordnet bleiben, die sie unterstützen.",
+    "items": [
+      {"summary": "LIIE — Longitudinal Interaction Impact Evaluation", "body": "Open-Research-Benchmark für multi-jährige Mensch–KI-Interaktionstrajektorien, einschließlich vorteilhafter, erhaltender und verschlechternder Muster, Rekonstruktionsgenauigkeit, Agency, semantische Integrität, Abhängigkeit, Unsicherheitskalibrierung, Wiederherstellung und False-State-Controls."},
+      {"summary": "IEIA / EIA", "body": "Forschungsstrukturen zur Analyse emergent Interaktion und Interaktionstrajektorien."},
+      {"summary": "CEI", "body": "Metrik in der longitudinalen Interaktionsforschung zur Verfolgung von Interaktions-/Evolutionsdynamiken."},
+      {"summary": "UIP / CCET", "body": "Forschungsinstrumente im breiteren EIL-Methoden-Portfolio."},
+      {"summary": "LSG-24 / LAP-1 / LT-Data", "body": "Strukturierte Forschungs- und Dateninstrumente im EIL-Arbeitsfeld."},
+      {"summary": "8-Layer Model", "body": "Ein konzeptuelles Forschungsmodell im historischen EIL-Framework-Portfolio."}
+    ]
+  },
+  "publications": {
+    "eyebrow": "Publikationen",
+    "title": "Forschungsoutputs und offene Arbeit.",
+    "body": "Publikationen, Benchmarks, Datensätze, Software und technische Notizen werden als Outputs der breiteren EIL-Forschungsumgebung präsentiert.",
+    "items": [
+      {"title": "Emergente KI-Interaktion", "type": "Paper", "desc": "Langzeitforschung zu emergentem Mensch–KI-Kontakt über einen multi-jährigen Korpus.", "status": "Published"},
+      {"title": "LIIE", "type": "Open Benchmark", "desc": "Longitudinal Interaction Impact Evaluation für Trajektorien, Integrität, Agency, Abhängigkeit und Wiederherstellung.", "status": "Active Research"},
+      {"title": "Research Software & Infrastructure", "type": "Software", "desc": "Agent-, Runtime- und computationale Forschungskomponenten, entwickelt durch EIL und kollaborative Arbeit.", "status": "Active Research"}
+    ]
+  },
+  "applied-research": {
+    "eyebrow": "Applied Research",
+    "title": "Forschungsmethoden angewandt auf begrenzte reale Systeme.",
+    "body": "EIL kann Rekonstruktion, Verhaltensanalyse, KI-augmentierte Systemdiagnostik und adversariale Systemanalyse auf konkrete externe Systeme anwenden, ohne das Lab zu einer generischen Beratung zu machen.",
+    "items": ["Problem", "Research Question", "Boundary", "Evidence", "Reconstruction"],
+    "details": [
+      {"summary": "System Reconstruction", "body": "Rekonstruiere Systemzustand, Ereignissequenzen, Constraints oder kausale Struktur aus unvollständiger und verteilter Evidenz."},
+      {"summary": "AI-Augmented System Diagnostics", "body": "Nutze strukturierte Intelligenzsysteme, um Verhalten, Systemzustände, Fehlermuster und versteckte Constraints zu untersuchen."},
+      {"summary": "Behavioral / Interaction Analysis", "body": "Analysiere beobachtete Interaktionsmuster, Entscheidungsdynamiken, Abweichungen und langfristige Veränderungen."},
+      {"summary": "Adversarial Systems Analysis", "body": "Challange Annahmen und behauptetes Systemverhalten gegen widersprüchliche Evidenz, Edge-Cases und Fehlerbedingungen."}
+    ]
   },
   "productsBorn": {
     "eyebrow": "Aus Emergent Interaction entstandene Produkte",

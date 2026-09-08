@@ -47,18 +47,23 @@
     "ctaHref": "#location"
   },
   "hero": {
-    "tag": "Human-AI Dynamics · Live Observatory Feed · Research since 2023",
-    "headline": "Emergent Interaction Field",
-    "subheadline": "I study what happens when a person works with the same AI system for weeks, not just once. Patterns show up that nobody planned for.",
+    "tag": "UNABHÄNGIGES FORSCHUNGSLABOR",
+    "headline": "EMERGENT INTERACTION LAB",
+    "subheadline": "EIL untersucht, wie menschliche, computational und sozio-technische Systeme sich verhalten, interagieren, verändern und beobachtbar werden.",
     "body": "",
-    "ctaLabel": "To the blog",
-    "ctaHref": "#news",
-    "ctaSecLabel": "About the Lab",
-    "ctaSecHref": "#p/ueber-das-lab",
-    "image": "",
+    "ctaLabel": "Forschung ansehen →",
+    "ctaHref": "#research",
+    "ctaSecLabel": "Methoden",
+    "ctaSecHref": "#methods",
+    "image": "/eil-hero-wordmark-full-alpha.png",
     "bgX": 50,
     "bgY": 40,
-    "minHeight": 520
+    "minHeight": 520,
+    "metrics": [
+      {"value": "2023", "label": "Research since"},
+      {"value": "300+", "label": "Agents"},
+      {"value": "6", "label": "Disciplines"}
+    ]
   },
   "trust": {
     "items": []
@@ -343,6 +348,89 @@
       }
     ],
     "copyright": "© 2026 Emergent Interaction Lab - made with <3 in Graz by RFI-IRFOS, for Laura"
+  },
+  "lab": {
+    "eyebrow": "Lab",
+    "title": "An interdisciplinary environment for reconstructing and designing complex intelligent systems.",
+    "body": "EIL investigates emergence, interaction, hidden state, system behavior and intelligence across human, computational and socio-technical systems. Its methods, agents, datasets and software are instruments inside that larger research environment.",
+    "cards": [
+      {"meta": "Lab", "title": "Emergent Interaction", "desc": "How interaction between components, agents, people and systems generates behavior that cannot be understood from isolated parts."},
+      {"meta": "Reconstruction", "title": "Reconstruction", "desc": "How hidden states, constraints, relationships and causal structures can be inferred from incomplete evidence."},
+      {"meta": "Intelligence", "title": "Intelligent Architectures", "desc": "How reasoning, state, memory, evidence, coordination, validation and recovery are designed into autonomous and multi-agent systems."}
+    ],
+    "sections": [
+      {"title": "AI-supported by architecture", "body": "AI is part of the research substrate, not merely a tool used through prompts.", "items": ["State", "Context", "Memory", "Evidence", "Reasoning", "Hypotheses", "Reconstruction", "Challenge", "Validation", "Recovery"]},
+      {"title": "Founder / Research & Intelligence Architecture", "body": "Laura Serna Gaviria founded EIL. Her work centers on research architecture, intelligence design, multi-agent architecture, system reconstruction, hidden-state reasoning, behavioral/system analysis, causal and transition logic, evaluation architecture and experimental research design."},
+      {"title": "Relationship with RFI-IRFOS", "body": "EIL and RFI-IRFOS are distinct. Collaborative systems must separate research/intelligence architecture from technical implementation and infrastructure contributions instead of attributing all work to one side."}
+    ]
+  },
+  "research": {
+    "eyebrow": "Research",
+    "title": "Research domains connected by interaction, state and system change.",
+    "body": "The research map separates questions from the systems, methods and outputs used to investigate them. EIL remains the overarching environment across all domains.",
+    "domains": [
+      {"meta": "Research Domain", "title": "Emergent & Complex Systems", "desc": "Emergence, distributed behavior, interaction-driven change and cross-system dynamics."},
+      {"meta": "Research Domain", "title": "Behavioral & Interaction Intelligence", "desc": "Observed behavior, decision patterns, interaction effects and adversarial analysis."},
+      {"meta": "Research Domain", "title": "System Reconstruction", "desc": "Hidden states, incomplete evidence, temporal structure, causal chains and transitions."},
+      {"meta": "Research Domain", "title": "Human–AI Systems", "desc": "Longitudinal interaction, HMI, adaptation, agency, dependency and evaluation."},
+      {"meta": "Research Domain", "title": "System Integrity & Runtime", "desc": "Drift, contradiction, regression, continuity, constraints, failure and recovery."},
+      {"meta": "Research Domain", "title": "Causality, Prediction & DINGIR", "desc": "Causal structure, state transitions, counterfactual reasoning, forecasting and DINGIR."},
+      {"meta": "Research Domain", "title": "Intelligent & Computational Research Systems", "desc": "Intelligence architecture, agent systems, multi-agent coordination, Kernel, data and visualization."}
+    ]
+  },
+  "systems": {
+    "eyebrow": "Systems",
+    "title": "Designed intelligence across agents, runtime and research systems.",
+    "body": "The systems layer operationalizes EIL research. Individual agents are specialized intelligence components inside larger architectures — not standalone chatbot products.",
+    "systems": [
+      {"meta": "Research Operations", "title": "JARVIS", "desc": "Research operations, investigation and continuity."},
+      {"meta": "Multi-Agent Intelligence", "title": "ROBERT", "desc": "Coordinated research intelligence across specialized agent roles."},
+      {"meta": "Autonomous Investigation", "title": "NYX", "desc": "Investigation intelligence structured around hypotheses, paths, prioritization and evidence."},
+      {"meta": "System Integrity", "title": "MIRROR", "desc": "Contradiction, drift, regression and divergence from prior correct system states."},
+      {"meta": "Information Intelligence", "title": "ARGUS", "desc": "Specialized information and LinkedIn intelligence."},
+      {"meta": "Orchestration", "title": "ATLAS", "desc": "Orchestration and coordination within larger agent workflows."},
+      {"meta": "Execution", "title": "KOPERNIKUS", "desc": "Execution-oriented specialized agent within the broader architecture."},
+      {"meta": "Specialized Agent", "title": "JANUS", "desc": "Specialized intelligence system; public detail intentionally limited."},
+      {"meta": "Specialized Agent", "title": "DAEDALUS", "desc": "Specialized intelligence system; public detail intentionally limited."},
+      {"meta": "Specialized Agent", "title": "DELTA", "desc": "Specialized intelligence system; public detail intentionally limited."}
+    ],
+    "kernel": ["Agent Logic", "Runtime", "State", "Context", "Memory", "Drift", "Monitoring", "Feedback", "Recovery", "Audit Trails"],
+    "dingir": ["Evidence", "Hidden State", "Causal Structure", "Transition", "Possible Futures"]
+  },
+  "methods": {
+    "eyebrow": "Methods",
+    "title": "Methods and instruments developed inside EIL research.",
+    "body": "These are supporting research tools. They do not define the lab as a whole and should remain subordinate to the research questions and systems they support.",
+    "items": [
+      {"summary": "LIIE — Longitudinal Interaction Impact Evaluation", "body": "Open research benchmark for multi-year Human–AI interaction trajectories, including beneficial, preserving and deteriorating patterns, reconstruction accuracy, agency, semantic integrity, dependency, uncertainty calibration, recovery and false-state controls."},
+      {"summary": "IEIA / EIA", "body": "Research structures for analyzing emergent interaction and interaction trajectories."},
+      {"summary": "CEI", "body": "Metric used within longitudinal interaction research to track interaction/evolution dynamics."},
+      {"summary": "UIP / CCET", "body": "Research instruments within the broader EIL method portfolio."},
+      {"summary": "LSG-24 / LAP-1 / LT-Data", "body": "Structured research and data instruments used across EIL work."},
+      {"summary": "8-Layer Model", "body": "A conceptual research model within the historical EIL framework portfolio."}
+    ]
+  },
+  "publications": {
+    "eyebrow": "Publications",
+    "title": "Research outputs and open work.",
+    "body": "Publications, benchmarks, datasets, software and technical notes are presented as outputs of the broader EIL research environment.",
+    "items": [
+      {"title": "Emergente KI-Interaktion", "type": "Paper", "desc": "Longitudinal research on emergent Human–AI interaction across a multi-year corpus.", "status": "Published"},
+      {"title": "LIIE", "type": "Open Benchmark", "desc": "Longitudinal Interaction Impact Evaluation for studying trajectories, integrity, agency, dependency and recovery.", "status": "Active Research"},
+      {"title": "Research Software & Infrastructure", "type": "Software", "desc": "Agent, runtime and computational research components developed through EIL and collaborative work.", "status": "Active Research"}
+    ]
+  },
+  "applied-research": {
+    "eyebrow": "Applied Research",
+    "title": "Research methods applied to bounded real-world systems.",
+    "body": "EIL can apply reconstruction, behavioral analysis, AI-augmented system diagnostics and adversarial systems thinking to concrete external systems without turning the lab into a generic consultancy.",
+    "items": ["Problem", "Research Question", "Boundary", "Evidence", "Reconstruction"],
+    "details": [
+      {"summary": "System Reconstruction", "body": "Reconstruct system state, event sequences, constraints or causal structure from incomplete and distributed evidence."},
+      {"summary": "AI-Augmented System Diagnostics", "body": "Use structured intelligence systems to investigate behavior, system conditions, failure patterns and hidden constraints."},
+      {"summary": "Behavioral / Interaction Analysis", "body": "Analyze observed interaction patterns, decision dynamics, deviations and longitudinal change."},
+      {"summary": "Adversarial Systems Analysis", "body": "Challenge assumptions and stated system behavior against conflicting evidence, edge cases and failure conditions."}
+    ]
   },
   "productsBorn": {
     "eyebrow": "Products born from Emergent Interaction",

@@ -96,12 +96,20 @@ export interface PaperItem {
   file: string     // local static asset path, e.g. /papers/paper-1-osf-preprint.pdf
 }
 
-export type SectionId = 'trust' | 'categories' | 'products' | 'usp' | 'news' | 'location'
+export type SectionId = 'trust' | 'categories' | 'products' | 'usp' | 'news' | 'location' | 'lab' | 'research' | 'systems' | 'methods' | 'publications' | 'appliedResearch'
 export const DEFAULT_SECTION_ORDER: SectionId[] = ['trust', 'categories', 'products', 'usp', 'news', 'location']
 
 export interface CanvasPos { x: number; y: number }
 
 export interface NavLink { label: string; href: string }
+
+export interface LabSection { title: string; body?: string; items?: string[] }
+export interface LabCard { meta: string; title: string; desc: string }
+export interface ResearchDomain { meta: string; title: string; desc: string }
+export interface SystemCard { meta: string; title: string; desc: string }
+export interface MethodItem { summary: string; body: string }
+export interface PublicationItem { title: string; type: string; desc: string; status: string }
+export interface AppliedDetail { summary: string; body: string }
 
 export interface SiteContent {
   sectionOrder?: SectionId[]
@@ -138,6 +146,7 @@ export interface SiteContent {
     bgX?: number
     bgY?: number
     minHeight?: number
+    metrics?: Array<{ value: string; label: string }>
   }
   trust: { items: TrustItem[] }
   categories: { eyebrow?: string; title: string; items: CategoryItem[] }
@@ -223,5 +232,45 @@ export interface SiteContent {
     title: string
     intro?: string
     items: Array<{ id: string; name: string; builtBy?: string; description: string }>
+  }
+  lab?: {
+    eyebrow?: string
+    title: string
+    body?: string
+    cards: LabCard[]
+    sections: LabSection[]
+  }
+  research?: {
+    eyebrow?: string
+    title: string
+    body?: string
+    domains: ResearchDomain[]
+  }
+  systems?: {
+    eyebrow?: string
+    title: string
+    body?: string
+    systems: SystemCard[]
+    kernel?: string[]
+    dingir?: string[]
+  }
+  methods?: {
+    eyebrow?: string
+    title: string
+    body?: string
+    items: MethodItem[]
+  }
+  publications?: {
+    eyebrow?: string
+    title: string
+    body?: string
+    items: PublicationItem[]
+  }
+  appliedResearch?: {
+    eyebrow?: string
+    title: string
+    body?: string
+    items?: string[]
+    details?: AppliedDetail[]
   }
 }

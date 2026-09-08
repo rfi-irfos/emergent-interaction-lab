@@ -481,10 +481,11 @@ button { cursor: pointer; font-family: inherit; }
   .site-hero-tag::before, .site-news .site-eyebrow::before { animation: none; opacity: .85; }
 }
 .site-hero-h1 {
-  /* Scaled down from 72px - the hero read as oversized relative to the
-     rest of the page (flagged live, "der Hero ist uns zu groß"). */
-  font-size: 54px; font-weight: 900; color: #fff; line-height: 1.05;
-  margin-bottom: 20px; letter-spacing: -.02em;
+  font-size: clamp(3rem, 8vw, 8rem); font-weight: 900; color: #fff; line-height: .95;
+  margin-bottom: 22px; letter-spacing: -.04em;
+  background: linear-gradient(180deg, #fff 0%, #c8d8e8 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .site-hero-h1 span { color: var(--brand-cyan); }
 .site-hero-sub {
