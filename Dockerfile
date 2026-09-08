@@ -17,6 +17,17 @@ COPY frontend/ ./
 # footer — so safe to bake in directly rather than needing a Fly secret.
 ENV VITE_GH_OWNER=rfi-irfos
 ENV VITE_GH_REPO=emergent-interaction-lab
+# vite.config.ts defaults `base` to '/emergent-interaction-lab/' (correct for
+# the GitHub Pages mirror, which deploy.yml builds with VITE_BASE_URL set
+# explicitly to that same path). This Docker build never set it, so it
+# inherited that same subpath default even though Fly serves this app at the
+# domain root — every asset URL in the built index.html pointed at
+# /emergent-interaction-lab/assets/... which 404s on eil.fly.dev, so the JS/CSS
+# bundle never loaded and every visitor was stuck on the pre-hydration static
+# fallback (unstyled, no hero image, no nav) indefinitely. Confirmed live
+# 2026-09-08 by diffing index.html's asset paths against what actually 200s.
+ARG VITE_BASE_URL=/
+ENV VITE_BASE_URL=${VITE_BASE_URL}
 # Admin password hash for the Website Kit login (SHA256 of "emergent2026!").
 # Defaulted here (not a secret — the password itself is in this comment and
 # in fly.toml) because CI's `flyctl deploy --remote-only` in deploy.yml
