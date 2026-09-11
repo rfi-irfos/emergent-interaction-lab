@@ -75,7 +75,7 @@
 .eil-home-hero > div > .eil-status {
   display: table;
   width: fit-content;
-  margin: 0 auto 28px;
+  margin: 0 auto 14px;
   padding: 7px 13px;
   border: 1px solid color-mix(in srgb, var(--cyan) 45%, transparent);
   border-radius: 999px;
@@ -268,16 +268,62 @@
 }
 .eil-back-link:hover { color: var(--cyan); border-color: var(--cyan); }
 
-/* Systems page agent cards were static — flagged live as wanting to click
-   through to more info, like the Methods accordion. Four agents (Mirror,
-   Argus, Atlas, Kopernikus) now render as FoldCard within the same 2-col
-   .eil-system-grid as the plain cards. Opening one would hit the exact same
-   grid row-stretch bug just fixed on Methods — but here it's a MIXED grid
-   (some plain cards, some FoldCards), so collapsing to one column would
-   needlessly flatten the whole page. Instead: an [open] FoldCard spans both
-   columns, so it gets its own full-width row instead of sharing one with
-   a shorter neighbor, and everything below reflows down naturally. */
-.eil-system-grid .eil-fold-card[open] { grid-column: 1 / -1; }
+/* Research-domain detail pages' "Forschungsfrage / Forschungsansatz" two-col:
+   left rendered as a 40px <h2> headline, right as an 18px muted <p> — the
+   right side read as an afterthought next to the left, flagged live as
+   "rechts ist voll klein". Bring both to a comparable visual weight instead
+   of one being a headline and the other body text. */
+.eil-domain-qa h2 { font-size: 30px; }
+.eil-domain-qa p { font-size: 21px; line-height: 1.45; color: var(--text); font-weight: 500; }
+
+/* Lab page's Intelligence Design / Multi-Agent Intelligence / Research
+   Continuity cards — text sat right up against the card's bottom edge,
+   flagged live as "zu nah dran". */
+.eil-role-grid article { padding-bottom: 34px; }
+
+/* "Every card should glow on hover" — a consistent hover treatment across
+   every clickable/interactive card-like surface site-wide, not just the
+   handful that already had one-off hover rules. */
+.eil-card, .eil-fold-card, .eil-role-grid article, .eil-system-grid article,
+.eil-domain-grid a, .eil-publication-list article, .eil-method-grid article,
+.eil-method-detail-list article, .eil-engagement-list article,
+.eil-library-grid article, .eil-notes-grid article, .eil-two-col article {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.eil-card:hover, .eil-fold-card:hover, .eil-role-grid article:hover,
+.eil-system-grid article:hover, .eil-domain-grid a:hover,
+.eil-publication-list article:hover, .eil-method-grid article:hover,
+.eil-method-detail-list article:hover, .eil-engagement-list article:hover,
+.eil-library-grid article:hover, .eil-notes-grid article:hover,
+.eil-two-col article:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px var(--cyan), 0 12px 32px color-mix(in srgb, var(--cyan) 18%, transparent);
+}
+
+/* FoldCard expand behavior, take three. First pass let opening a card stretch
+   its whole grid row (broke neighbors' height). Second pass made it span the
+   full grid width (still reflowed everything below it downward). Neither
+   matches what was actually wanted, described live as "wie ein Kalenderblatt
+   umblättern" — click a card, it unfolds and overlays whatever sits below it
+   in the SAME column, while every other card — including its own closed
+   height — stays exactly where it is. The fix: the open body is positioned
+   absolutely, so it never contributes to grid layout at all; it just floats
+   on top of the content beneath it. */
+.eil-fold-card { position: relative; }
+.eil-fold-card[open] > .eil-fold-body {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, .45);
+  max-height: 60vh;
+  overflow-y: auto;
+}
 
 /* .eil-callout p was rendering in the ui-monospace stack at up to 30px —
    fine for short tag-style labels elsewhere, but at callout heading size it
@@ -299,11 +345,15 @@
    sizing. */
 .eil-callout small {
   display: block;
-  margin-top: 14px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
   color: var(--text);
   font-size: 13px;
-  letter-spacing: 0.03em;
-  opacity: 0.8;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.9;
 }
 
 /* FoldCard (<details>) in a multi-column grid shares its ROW with neighbors —

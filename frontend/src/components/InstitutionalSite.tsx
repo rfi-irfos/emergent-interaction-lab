@@ -28,6 +28,9 @@ type Domain = {
   titleDe: string; titleEn: string
   leadDe: string; leadEn: string
   scopeDe: string[]; scopeEn: string[]
+  questionDe: string; questionEn: string
+  approachDe: string; approachEn: string
+  relationshipDe: string; relationshipEn: string
 }
 
 const researchDomains: Domain[] = [
@@ -37,6 +40,12 @@ const researchDomains: Domain[] = [
     leadEn: 'How local interactions create system-level behavior, adaptation, instability and change.',
     scopeDe: ['Emergenz aus verteilter Interaktion', 'Systemdynamik über Zeit', 'Wechselwirkungen zwischen Systemen', 'Feedback und Kaskaden', 'interaktionsgetriebene Zustandsübergänge', 'nichtlineares Verhalten'],
     scopeEn: ['Emergence from distributed interaction', 'System dynamics across time', 'Cross-system effects', 'Feedback and cascades', 'Interaction-driven state transitions', 'Nonlinear behavior'],
+    questionDe: 'Wann kippt eine Ansammlung lokaler Interaktionen in ein qualitativ neues Systemverhalten, das aus keiner Einzelkomponente allein ableitbar ist?',
+    questionEn: 'When does a collection of local interactions tip into qualitatively new system-level behavior that cannot be derived from any single component alone?',
+    approachDe: 'Interaktionsverläufe über Zeit beobachten, Feedback- und Kaskadeneffekte von Zufallsrauschen trennen, Zustandsübergänge markieren und prüfen, ob das entstehende Verhalten stabil, reversibel oder strukturell neu ist.',
+    approachEn: 'Observe interaction trajectories over time, separate feedback and cascade effects from noise, mark state transitions and test whether the emerging behavior is stable, reversible or structurally new.',
+    relationshipDe: 'Liefert die Systemdynamik-Perspektive für Rekonstruktion, Systemintegrität und Kausalität – Emergenz ist hier Untersuchungsgegenstand, nicht Erklärung für sich allein.',
+    relationshipEn: 'Supplies the system-dynamics lens for Reconstruction, System Integrity and Causality — emergence is the object of study here, not a self-sufficient explanation.',
   },
   {
     slug: 'research-behavioral', titleDe: 'Behavioral & Interaction Intelligence', titleEn: 'Behavioral & Interaction Intelligence',
@@ -44,6 +53,12 @@ const researchDomains: Domain[] = [
     leadEn: 'Using behavior and interaction as evidence about system state, constraints and decision dynamics.',
     scopeDe: ['Verhaltensmuster', 'Entscheidungsdynamik', 'Interaktionseffekte', 'adversariale Verhaltensanalyse', 'Abweichungsmuster', 'prädiktionsrelevantes Verhalten'],
     scopeEn: ['Behavioral patterns', 'Decision dynamics', 'Interaction effects', 'Adversarial behavioral analysis', 'Deviation patterns', 'Prediction-relevant behavior'],
+    questionDe: 'Welcher Systemzustand, welche Beziehung oder welcher Mechanismus erklärt das beobachtete Verhalten und die vorliegende Evidenz am besten?',
+    questionEn: 'What system state, relationship or mechanism best explains the observed behavior and the available evidence?',
+    approachDe: 'Verhaltensspuren und Entscheidungen über Zeit sammeln, gegen erwartete Muster abgleichen, Abweichungen adversarial prüfen statt sie sofort zu erklären, und Befunde erst nach Gegenbelege-Test als prädiktionsrelevant einstufen.',
+    approachEn: 'Collect behavioral traces and decisions over time, compare them against expected patterns, adversarially test deviations instead of explaining them away immediately, and only classify findings as prediction-relevant once they survive counter-evidence.',
+    relationshipDe: 'Liefert die Verhaltensevidenz, auf der Systemrekonstruktion und Systemintegrität aufbauen, und speist die Observatory-Signale zu Drift und Rollenstabilität.',
+    relationshipEn: 'Supplies the behavioral evidence that System Reconstruction and System Integrity build on, and feeds the Observatory\'s drift and role-stability signals.',
   },
   {
     slug: 'research-reconstruction', titleDe: 'Systemrekonstruktion', titleEn: 'System Reconstruction',
@@ -51,6 +66,12 @@ const researchDomains: Domain[] = [
     leadEn: 'Reconstructing hidden states and mechanisms from incomplete, distributed or longitudinal evidence.',
     scopeDe: ['Hidden-State-Rekonstruktion', 'zeitliche Rekonstruktion', 'Beziehungsrekonstruktion', 'Constraint Discovery', 'Kausalketten', 'Zustandsübergänge', 'Unsicherheit und unvollständige Evidenz'],
     scopeEn: ['Hidden-state reconstruction', 'Temporal reconstruction', 'Relationship reconstruction', 'Constraint discovery', 'Causal chains', 'State transitions', 'Uncertainty and incomplete evidence'],
+    questionDe: 'Welche Struktur, welcher Zustand oder welche Beziehung erklärt die verfügbaren Spuren am vollständigsten, wenn direkte Beobachtung nicht möglich ist?',
+    questionEn: 'What structure, state or relationship most completely explains the available traces when direct observation is not possible?',
+    approachDe: 'Fragmentierte, verteilte oder zeitlich versetzte Spuren zusammenführen, konkurrierende Rekonstruktionen gegeneinander testen, implizite Constraints aus Bruch- und Fehlerzuständen ableiten und Unsicherheit explizit halten statt sie in einer einzigen Erklärung aufzulösen.',
+    approachEn: 'Bring together fragmented, distributed or time-shifted traces, test competing reconstructions against each other, infer implicit constraints from breakpoints and failure states, and keep uncertainty explicit rather than collapsing it into a single explanation.',
+    relationshipDe: 'Zentrale Methode hinter DINGIR und dem Research Knowledge Graph, und Voraussetzung für belastbare Kausalitäts- und Prediction-Aussagen.',
+    relationshipEn: 'The core method behind DINGIR and the Research Knowledge Graph, and a precondition for defensible causality and prediction claims.',
   },
   {
     slug: 'research-human-ai', titleDe: 'Mensch–KI-Systeme', titleEn: 'Human–AI Systems',
@@ -58,6 +79,12 @@ const researchDomains: Domain[] = [
     leadEn: 'Studying how human and AI behavior co-evolves across long-running interaction rather than isolated sessions.',
     scopeDe: ['Interaktionsverläufe', 'Adaption', 'Handlungsfähigkeit', 'Abhängigkeit', 'semantische Integrität', 'HMI / UX', 'Recovery', 'longitudinale Evaluation'],
     scopeEn: ['Interaction trajectories', 'Adaptation', 'Agency', 'Dependency', 'Semantic integrity', 'HMI / UX', 'Recovery', 'Longitudinal evaluation'],
+    questionDe: 'Wie verändern sich Rollen, Handlungsfähigkeit und Vertrauen zwischen Mensch und KI über anhaltende Interaktion hinweg – und wann kippt Adaption in Abhängigkeit?',
+    questionEn: 'How do roles, agency and trust between human and AI change across sustained interaction — and when does adaptation tip into dependency?',
+    approachDe: 'Interaktionsverläufe longitudinal statt in Einzelsitzungen erfassen, Handlungsfähigkeit und semantische Integrität über Zeit vergleichen, Interface-bedingten Informationsverlust von tatsächlicher Verhaltensänderung trennen und Recovery nach Fehlanpassung explizit prüfen.',
+    approachEn: 'Capture interaction trajectories longitudinally rather than session by session, compare agency and semantic integrity over time, separate interface-induced information loss from actual behavioral change, and explicitly test recovery after misadaptation.',
+    relationshipDe: 'Verbindet die HMI-Perspektive mit Behavioral Analysis und liefert die longitudinale Baseline, gegen die das Observatory Drift und Rollenstabilität misst.',
+    relationshipEn: 'Connects the HMI perspective with Behavioral Analysis and supplies the longitudinal baseline the Observatory measures drift and role stability against.',
   },
   {
     slug: 'research-integrity', titleDe: 'Systemintegrität & Runtime', titleEn: 'System Integrity & Runtime',
@@ -65,6 +92,12 @@ const researchDomains: Domain[] = [
     leadEn: 'Understanding when intelligent systems degrade without producing an explicit error.',
     scopeDe: ['Drift', 'Regression', 'Widerspruch', 'Zustandsdivergenz', 'Constraint-Verlust', 'wiederholtes erfolgloses Verhalten', 'Runtime-Kontinuität', 'Recovery'],
     scopeEn: ['Drift', 'Regression', 'Contradiction', 'State divergence', 'Constraint loss', 'Repeated unsuccessful behavior', 'Runtime continuity', 'Recovery'],
+    questionDe: 'Wo weicht der tatsächliche Systemzustand still von seinem zuvor validierten Zustand ab, ohne dass ein Fehler, ein Log oder ein Alarm das anzeigt?',
+    questionEn: 'Where does the actual system state quietly diverge from its previously validated state, without an error, log or alert showing it?',
+    approachDe: 'Erwarteten gegen tatsächlichen Zustand über Zeit vergleichen, wiederholtes erfolgloses Verhalten und Constraint-Verlust als eigenes Signal behandeln – nicht als Rauschen –, und Drift von echter, absichtlicher Veränderung unterscheiden, bevor Recovery eingeleitet wird.',
+    approachEn: 'Compare expected against actual state over time, treat repeated unsuccessful behavior and constraint loss as a signal in its own right rather than noise, and distinguish drift from genuine, intentional change before recovery is initiated.',
+    relationshipDe: 'Die Runtime-Grundlage des Observatory und von MIRROR – ohne diese Domain bleibt Drift unsichtbar, bis sie sich bereits zu einem Problem ausgewachsen hat.',
+    relationshipEn: 'The runtime foundation behind the Observatory and MIRROR — without this domain, drift stays invisible until it has already grown into a problem.',
   },
   {
     slug: 'research-causality', titleDe: 'Kausalität, Prediction & DINGIR', titleEn: 'Causality, Prediction & DINGIR',
@@ -72,6 +105,12 @@ const researchDomains: Domain[] = [
     leadEn: 'Reconstructing causal structure and system state to reason about transitions and plausible future states.',
     scopeDe: ['DINGIR', 'Hidden-State-Rekonstruktion', 'Kausalketten', 'Zustandsübergänge', 'zeitliches Schließen', 'kontrafaktisches Schließen', 'Forecasting', 'Unsicherheit'],
     scopeEn: ['DINGIR', 'Hidden-state reconstruction', 'Causal chains', 'State transitions', 'Temporal reasoning', 'Counterfactual reasoning', 'Forecasting', 'Uncertainty'],
+    questionDe: 'Welche kausale Kette und welche Alternativverläufe erklären einen Zustandsübergang am besten – und wann rechtfertigt das genug, um eine zukünftige Entwicklung als plausibel statt nur möglich zu bezeichnen?',
+    questionEn: 'Which causal chain and which counterfactual paths best explain a state transition — and when is that enough to call a future development plausible rather than merely possible?',
+    approachDe: 'Kausalketten aus rekonstruierten Zuständen ableiten, kontrafaktische Alternativen explizit gegenprüfen, zeitliches Schließen von reiner Korrelation trennen und Forecasts durchgehend mit einem Unsicherheitsgrad versehen statt mit einer einzelnen Zahl.',
+    approachEn: 'Derive causal chains from reconstructed states, explicitly test counterfactual alternatives against each other, separate temporal reasoning from mere correlation, and carry forecasts with an explicit uncertainty level rather than a single number.',
+    relationshipDe: 'DINGIR ist das für diese Domain repräsentierte System – es verbindet Evidenz, verborgenen Zustand, kausale Struktur, Zustandsübergänge und mögliche Zukünfte in einer Kette.',
+    relationshipEn: 'DINGIR is the system represented for this domain — it chains evidence, hidden state, causal structure, state transitions and possible futures together.',
   },
   {
     slug: 'research-computational', titleDe: 'Intelligente & Computational Research Systems', titleEn: 'Intelligent & Computational Research Systems',
@@ -79,12 +118,15 @@ const researchDomains: Domain[] = [
     leadEn: 'Designing the computational and intelligence infrastructure needed for stateful, multi-step and multi-agent research.',
     scopeDe: ['Intelligence Design', 'Agent Intelligence', 'Multi-Agent Systems', 'EIL Kernel', 'Research Runtimes', 'Datenstrukturen', 'wissenschaftliche Visualisierung', 'experimentelle Infrastruktur'],
     scopeEn: ['Intelligence Design', 'Agent Intelligence', 'Multi-Agent Systems', 'EIL Kernel', 'Research runtimes', 'Data structures', 'Scientific visualization', 'Experimental infrastructure'],
+    questionDe: 'Welche Architektur hält relevanten Zustand, Evidenz und Kontext über lange, mehrstufige und Multi-Agent-Forschungsprozesse hinweg zugänglich, statt sie im Arbeitskontext einer einzelnen Sitzung verloren gehen zu lassen?',
+    questionEn: 'What architecture keeps relevant state, evidence and context accessible across long, multi-step, multi-agent research processes instead of letting it get lost in a single session\'s working context?',
+    approachDe: 'Wiederkehrende analytische Operationen identifizieren und in spezialisierte Agentenrollen mit klaren Inputs, Outputs und Handoffs übersetzen, Zustand und Evidenz zentral statt pro Agent halten, und Infrastruktur erst nach echtem, wiederholtem Forschungsbedarf bauen.',
+    approachEn: 'Identify recurring analytical operations and translate them into specialized agent roles with clear inputs, outputs and handoffs, hold state and evidence centrally rather than per agent, and build infrastructure only after genuine, repeated research demand.',
+    relationshipDe: 'Die Infrastrukturebene hinter dem EIL Kernel, der Multi-Agent Research Environment und dem Research Knowledge Graph – macht die anderen sechs Domains operativ ausführbar.',
+    relationshipEn: 'The infrastructure layer behind the EIL Kernel, the Multi-Agent Research Environment and the Research Knowledge Graph — what makes the other six domains operationally executable.',
   },
 ]
 
-const RESEARCH_QUESTION = ['Welcher Systemzustand, welche Beziehung oder welcher Mechanismus erklärt das beobachtete Verhalten und die vorliegende Evidenz am besten?', 'What system state, relationship or mechanism best explains the observed behavior and evidence?'] as const
-const RESEARCH_APPROACH = ['Systemspuren beobachten, Evidenz strukturieren, Alternativen vergleichen, verborgenen Zustand oder Übergänge rekonstruieren, Annahmen herausfordern und gegen verfügbare Evidenz validieren.', 'Observe system traces, structure evidence, compare alternatives, reconstruct hidden state or transitions, challenge assumptions and validate against available evidence.'] as const
-const RESEARCH_RELATIONSHIP = ['Diese Domain ist ein Teil der übergreifenden EIL-Forschungsumgebung und verbindet sich mit Systemen, Methoden, Datensätzen und Publikationen, ohne das Lab allein zu definieren.', 'This domain is one part of the wider EIL research environment and connects to systems, methods, datasets and publications without defining the lab by itself.'] as const
 
 const intelligenceSystems = [
   ['JARVIS', 'RESEARCH OPERATIONS', 'Research Operations, Untersuchung und Kontinuität.', 'Research operations, investigation and continuity.'],
@@ -270,7 +312,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
         <article><h3>{tx('Intelligente Architekturen', 'Intelligent Architectures')}</h3><p>{tx('Wie Reasoning, Zustand, Memory, Evidenz, Koordination, Validierung und Recovery in autonome und Multi-Agent-Systeme eingebaut werden.', 'How reasoning, state, memory, evidence, coordination, validation and recovery are designed into autonomous and multi-agent systems.')}</p></article>
       </div>
     </section>
-    <section className="eil-callout"><Status>{tx('KI-GESTÜTZT DURCH ARCHITEKTUR', 'AI-SUPPORTED BY ARCHITECTURE')}</Status><h2>{tx('KI ist Teil des Forschungssubstrats, nicht nur ein über Prompts genutztes Werkzeug.', 'AI is part of the research substrate, not merely a tool used through prompts.')}</h2><small>{['State','Context','Memory','Evidence','Reasoning','Hypotheses','Reconstruction','Challenge','Validation','Recovery'].join(' · ')}</small></section>
+    <section className="eil-callout"><Status>{tx('KI-GESTÜTZT & LONGITUDINAL', 'AI-AUGMENTED & LONGITUDINAL')}</Status><h2>{tx('Statt isoliertem Prompting: kontinuierliche Arbeit mit KI über ausgedehnte Interaktionsverläufe hinweg.', 'Rather than isolated prompting: continuous work with AI across extended interaction histories.')}</h2><p style={{ marginTop: 12, fontFamily: "'Archivo', system-ui, sans-serif", fontWeight: 500, fontSize: 17 }}>{tx('Für Forschung, Analyse, Rekonstruktion, Modellierung, Systemdesign, Experimentation und Validierung.', 'For research, analysis, reconstruction, modeling, system design, experimentation and validation.')}</p><small>{['State','Context','Memory','Evidence','Reasoning','Hypotheses','Reconstruction','Challenge','Validation','Recovery'].join(' · ')}</small></section>
     <section className="eil-section"><div className="eil-role-grid">
       <article><h3>{tx('Intelligence Design', 'Intelligence Design')}</h3><p>{tx('Entwurf, wie ein intelligentes System ein Problem zerlegt, relevanten Zustand hält, Hypothesen generiert und verwirft, Pfade priorisiert, mit Unsicherheit umgeht, Widerspruch erkennt und seine nächsten Schritte aktualisiert.', 'Designing how an intelligent system decomposes a problem, maintains relevant state, generates and rejects hypotheses, prioritizes paths, handles uncertainty, recognizes contradiction and updates its next actions.')}</p></article>
       <article><h3>{tx('Multi-Agent Intelligence', 'Multi-Agent Intelligence')}</h3><p>{tx('Entwurf von Spezialisierung, Handoffs, Koordination und geteiltem Forschungszustand über größere Agentenstrukturen hinweg, statt jeden Agenten als isoliertes Interface zu behandeln.', 'Designing specialization, handoffs, coordination and shared research state across larger agent structures rather than treating every agent as an isolated interface.')}</p></article>
@@ -294,13 +336,13 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <PageHero eyebrow={tx('FORSCHUNGSDOMÄNE', 'RESEARCH DOMAIN')} title={tx(d.titleDe, d.titleEn)} body={tx(d.leadDe, d.leadEn)} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Forschung', 'Research'), 'research'], [tx(d.titleDe, d.titleEn), null]]} />
     <section className="eil-section"><div className="eil-section-head"><Status>SCOPE</Status></div>
       <div className="eil-domain-chips">{(de ? d.scopeDe : d.scopeEn).map(x => <span key={x}>{x}</span>)}</div>
-      {d.slug === 'research-causality' && <p style={{ marginTop: 22, color: 'var(--soft)' }}>{tx('DINGIR ist das für diese Rekonstruktions- und Prediction-Schicht repräsentierte System.', 'DINGIR is the system represented for this reconstruction and prediction layer.')}</p>}
+      {d.slug === 'research-causality' && <p style={{ marginTop: 22, color: 'var(--soft)' }}>{tx('DINGIR ist EILs kollaboratives System für Hidden-State-Rekonstruktion, Kausalketten, Zustandsübergänge und prädiktives Reasoning – das für diese Domain repräsentierte System. ', 'DINGIR is EIL\'s collaborative system for hidden-state reconstruction, causal chains, state transitions and predictive reasoning — the system represented for this domain. ')}<a className="eil-text-link" href={href('systems')} style={{ marginTop: 0, display: 'inline' }}>{tx('Mehr zu DINGIR auf der Systeme-Seite', 'More on DINGIR on the Systems page')} →</a></p>}
     </section>
-    <section className="eil-two-col">
-      <article><Status>{tx('FORSCHUNGSFRAGE', 'RESEARCH QUESTION')}</Status><h2>{tx(RESEARCH_QUESTION[0], RESEARCH_QUESTION[1])}</h2></article>
-      <article><Status>{tx('FORSCHUNGSANSATZ', 'RESEARCH APPROACH')}</Status><p>{tx(RESEARCH_APPROACH[0], RESEARCH_APPROACH[1])}</p></article>
+    <section className="eil-two-col eil-domain-qa">
+      <article><Status>{tx('FORSCHUNGSFRAGE', 'RESEARCH QUESTION')}</Status><h2>{tx(d.questionDe, d.questionEn)}</h2></article>
+      <article><Status>{tx('FORSCHUNGSANSATZ', 'RESEARCH APPROACH')}</Status><p>{tx(d.approachDe, d.approachEn)}</p></article>
     </section>
-    <section className="eil-callout"><Status>{tx('BEZUG ZU EIL', 'RELATIONSHIP TO EIL')}</Status><p>{tx(RESEARCH_RELATIONSHIP[0], RESEARCH_RELATIONSHIP[1])}</p><a className="eil-text-link" href={href('research')}>{tx('Alle Domains ansehen', 'View all domains')} →</a></section>
+    <section className="eil-callout"><Status>{tx('BEZUG ZU EIL', 'RELATIONSHIP TO EIL')}</Status><p>{tx(d.relationshipDe, d.relationshipEn)}</p><a className="eil-text-link" href={href('research')}>{tx('Alle Domains ansehen', 'View all domains')} →</a></section>
   </div>
 
   // -- Methods ------------------------------------------------------------
@@ -339,8 +381,8 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <PageHero eyebrow="COMPUTATIONAL RESEARCH" title={tx('Systeme', 'Systems')} body={tx('Designte Intelligence über Agenten, Runtime und Forschungssysteme hinweg.', 'Designed intelligence across agents, runtime and research systems.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Systeme', 'Systems'), null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('Die Systemschicht operationalisiert die EIL-Forschung. Einzelne Agenten sind spezialisierte Intelligence-Komponenten innerhalb größerer Architekturen – keine eigenständigen Chatbot-Produkte.', 'The systems layer operationalizes EIL research. Individual agents are specialized intelligence components inside larger architectures — not standalone chatbot products.')}</p></div></section>
     <section className="eil-callout eil-agent-environment"><Status>{tx('MULTI-AGENT-ARCHITEKTUR', 'MULTI-AGENT ARCHITECTURE')}</Status><h2>{tx('Spezialisierte Lead Agents und Sub-Agents.', 'Specialized lead agents and sub-agents.')}</h2><p>{tx('Spezialisierte Lead Agents und Sub-Agents operieren über designte Rollen, Handoffs, Zustand, Evidenz und Runtime-Strukturen.', 'Specialized lead agents and sub-agents operate through designed roles, handoffs, state, evidence and runtime structures.')}</p>
+      <p style={{ marginTop: 18 }}>{tx(`Die aktuelle Architektur umfasst etwa 15 spezialisierte Lead Agents und mehr als ${institutionalFacts.specializedResearchAgentCrates} spezialisierte Sub-Agents über Forschungs- und Betriebskontexte hinweg. Ein einzelnes Modell in einem Chatfenster hält keinen geteilten Zustand, keine Handoffs und kein Audit-Trail über mehrere Schritte hinweg – sobald eine Aufgabe mehrere spezialisierte Perspektiven, parallele Recherche oder Kontinuität über Tage oder Wochen braucht, bricht dieses Modell zusammen. Die Lead-/Sub-Agent-Architektur hält explizit fest, welcher Agent was weiß, wer an wen übergibt und was passiert, wenn eine Rolle ausfällt oder abweicht.`, `The current architecture includes roughly 15 specialized lead agents and more than ${institutionalFacts.specializedResearchAgentCrates} specialized sub-agents across research and operational contexts. A single model in one chat window holds no shared state, no handoffs and no audit trail across multiple steps — once a task needs several specialized perspectives, parallel research or continuity across days or weeks, that model breaks down. The lead/sub-agent architecture keeps explicit track of what each agent knows, who hands off to whom, and what happens when a role fails or drifts.`)}</p>
       <small>{['Lead Agents', 'Specialists', 'Sub-Agents', 'Shared Context', 'Runtime / Evidence'].join(' · ')}</small>
-      <p style={{ marginTop: 18 }}>{tx(`Die aktuelle Architektur umfasst etwa 15 spezialisierte Lead Agents und mehr als ${institutionalFacts.specializedResearchAgentCrates} spezialisierte Sub-Agents über Forschungs- und Betriebskontexte hinweg.`, `The current architecture includes roughly 15 specialized lead agents and more than ${institutionalFacts.specializedResearchAgentCrates} specialized sub-agents across research and operational contexts.`)}</p>
     </section>
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('AUSGEWÄHLTE INTELLIGENCE-SYSTEME', 'SELECTED INTELLIGENCE SYSTEMS')}</Status></div>
       <div className="eil-system-grid">{intelligenceSystems.map(([name, kicker, d, e, dDetail, eDetail]) => (
@@ -350,8 +392,8 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
       ))}</div>
     </section>
     <section className="eil-section"><div className="eil-environment-grid">
-      <article><Status>{tx('GEBAUT', 'BUILT')}</Status><h3>EIL Kernel</h3><p>{tx('Der Kernel ist existierende Forschungsinfrastruktur für zustandsbehaftete Agentenoperation und Kontinuität. Er ist kein geplantes Konzept.', 'The Kernel is existing research infrastructure for stateful agent operation and continuity. It is not a planned concept.')}</p><small>{['Agent Logic', 'Runtime', 'State', 'Context', 'Memory', 'Drift', 'Monitoring', 'Feedback', 'Recovery', 'Audit Trails'].join(' · ')}</small><p>{tx('Der Kernel umfasst innerhalb der bestätigten Architektur zusätzlich Evidence Handling, Testarchitektur sowie Guard A / Guard B.', 'The Kernel also includes evidence handling, test structures and Guard A / Guard B within the confirmed architecture.')}</p></article>
-      <article><Status>{tx('AKTIVE FORSCHUNG', 'ACTIVE RESEARCH')}</Status><h3>DINGIR</h3><p>{tx('DINGIR ist das kollaborative System für Hidden-State-Rekonstruktion, Kausalketten, Zustandsübergänge und prädiktives Reasoning.', 'DINGIR is the collaborative system for hidden-state reconstruction, causal chains, state transitions and predictive reasoning.')}</p><small>{tx(['Evidenz', 'Verborgener Zustand', 'Kausale Struktur', 'Übergang', 'Mögliche Zukünfte'].join(' → '), ['Evidence', 'Hidden State', 'Causal Structure', 'Transition', 'Possible Futures'].join(' → '))}</small><p>{tx('EIL trägt Forschung und Intelligence Architecture rund um Rekonstruktion, Hidden-State-Reasoning, kausale und zeitliche Struktur, Zustandsübergänge und Prediction-Logik bei; Engineering- und Implementierungs-Attribution bleibt bei tatsächlicher Zusammenarbeit explizit ausgewiesen.', 'EIL contributes research and intelligence architecture around reconstruction, hidden-state reasoning, causal and temporal structure, state transitions and prediction logic; engineering and implementation attribution should remain explicit where collaborative.')}</p></article>
+      <article><Status>{tx('GEBAUT', 'BUILT')}</Status><h3>EIL Kernel</h3><p>{tx('Der Kernel ist existierende Forschungsinfrastruktur für zustandsbehaftete Agentenoperation und Kontinuität. Er ist kein geplantes Konzept. Ohne ihn verliert jede neue Sitzung Kontext, Entscheidungen und zuvor validierte Zustände – der Kernel hält das über Sitzungen, Neustarts und Machine-Wechsel hinweg fest, statt bei jedem Neustart bei null anzufangen.', 'The Kernel is existing research infrastructure for stateful agent operation and continuity. It is not a planned concept. Without it, every new session loses context, decisions and previously validated states — the Kernel preserves that across sessions, restarts and machine changes instead of starting from zero every time.')}</p><p>{tx('Der Kernel umfasst innerhalb der bestätigten Architektur zusätzlich Evidence Handling, Testarchitektur sowie Guard A / Guard B.', 'The Kernel also includes evidence handling, test structures and Guard A / Guard B within the confirmed architecture.')}</p><small>{['Agent Logic', 'Runtime', 'State', 'Context', 'Memory', 'Drift', 'Monitoring', 'Feedback', 'Recovery', 'Audit Trails'].join(' · ')}</small></article>
+      <article><Status>{tx('AKTIVE FORSCHUNG', 'ACTIVE RESEARCH')}</Status><h3>DINGIR</h3><p>{tx('DINGIR ist das kollaborative System für Hidden-State-Rekonstruktion, Kausalketten, Zustandsübergänge und prädiktives Reasoning.', 'DINGIR is the collaborative system for hidden-state reconstruction, causal chains, state transitions and predictive reasoning.')}</p><p>{tx('EIL trägt Forschung und Intelligence Architecture rund um Rekonstruktion, Hidden-State-Reasoning, kausale und zeitliche Struktur, Zustandsübergänge und Prediction-Logik bei; Engineering- und Implementierungs-Attribution bleibt bei tatsächlicher Zusammenarbeit explizit ausgewiesen.', 'EIL contributes research and intelligence architecture around reconstruction, hidden-state reasoning, causal and temporal structure, state transitions and prediction logic; engineering and implementation attribution should remain explicit where collaborative.')}</p><a className="eil-text-link" href={href('research-causality')} style={{ marginTop: 0, display: 'inline-block' }}>{tx('Forschungsdomäne Kausalität, Prediction & DINGIR ansehen', 'View the Causality, Prediction & DINGIR research domain')} →</a><small>{tx(['Evidenz', 'Verborgener Zustand', 'Kausale Struktur', 'Übergang', 'Mögliche Zukünfte'].join(' → '), ['Evidence', 'Hidden State', 'Causal Structure', 'Transition', 'Possible Futures'].join(' → '))}</small></article>
     </div></section>
   </>
 
@@ -401,7 +443,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('BESTEHENDE ANGEBOTE & PREISE', 'VERIFIED EXISTING OFFERS')}</Status><p>{tx('Preise bleiben sichtbar, bestimmen aber nicht die institutionelle Hierarchie. Finale Preise hängen von Evidenzvolumen, Systemgrenze und Komplexität ab.', 'Prices remain visible without defining the institutional hierarchy. Final pricing depends on evidence volume, system boundary and complexity.')}</p></div>
       <div className="eil-engagement-list">{engagements.map(([category,name,price,d,e])=><article key={name}><div><Status>{category.toUpperCase()}</Status><strong>{price}</strong></div><h2>{name}</h2><p>{tx(d,e)}</p><a href={`${href('home')}#contact`}>{tx('Scope prüfen', 'Discuss scope')} →</a></article>)}</div>
     </section>
-    <section className="eil-callout"><h2>{tx('Research ist nicht Engineering.', 'Research is not engineering.')}</h2><p>{tx('Wo technische Umsetzung erforderlich ist, wird RFI-IRFOS separat als Engineering-Partner ausgewiesen.', 'Where implementation is required, RFI-IRFOS is credited separately as the engineering partner.')}</p></section>
+    <section className="eil-callout"><h2>{tx('Von der Forschungsfrage bis zum lauffähigen System.', 'From research question to working system.')}</h2><p>{tx('EIL entwirft, baut und validiert eigene Instrumente und Architekturen. Wo Produktions-Infrastruktur oder großskalige technische Umsetzung erforderlich ist, wird RFI-IRFOS separat als Engineering-Partner ausgewiesen.', 'EIL designs, builds and validates its own instruments and architectures. Where production infrastructure or large-scale technical implementation is required, RFI-IRFOS is credited separately as the engineering partner.')}</p></section>
   </>
 
   const pages: Record<InstitutionalRoute, () => ReactElement> = {
