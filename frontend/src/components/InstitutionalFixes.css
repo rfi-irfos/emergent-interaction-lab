@@ -281,10 +281,13 @@
   opacity: 0.8;
 }
 
-/* FoldCard (<details>) grids defaulted to CSS Grid's stretch behavior: when
-   one card's <details> opens and grows taller, every OTHER card sharing that
-   grid row stretches to match, even though its own content is still short —
-   flagged live as opening one card "pushes all other boxes into a wide array
-   and bombs the view". align-items:start lets each card size to its own
-   content independently. */
-.eil-library-grid { align-items: start; }
+/* FoldCard (<details>) in a multi-column grid shares its ROW with neighbors —
+   opening one card grows the whole row's track height (a CSS Grid property
+   align-items can't override), leaving empty space under the shorter cards
+   in that row even once they stop stretching. Flagged live as opening one
+   card "pushes all other boxes into a wide array and bombs the view". Fixed
+   at the root: one column, so each card is its own row and can never affect
+   another's height — matches the mockup's own accordion-list pattern
+   (applied-research.html's Problem/Boundary/Evidence rows are a plain
+   single-column list, not a grid, for the same reason). */
+.eil-library-grid { grid-template-columns: 1fr; margin-top: 0; background: none; border: none; gap: 14px; }
