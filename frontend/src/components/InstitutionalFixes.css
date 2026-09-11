@@ -236,12 +236,7 @@
 }
 
 /* The 7 research-domain detail pages (research-behavioral, research-causality,
-   etc.) only carry a handful of short lines per section — the site-wide
-   .eil-section/.eil-two-col/.eil-callout padding (80-100px top+bottom, tuned
-   for content-dense pages like Methods/Systems) left them looking mostly
-   empty. Scoped to .eil-domain-detail only, so denser pages keep the original
-   spacing. */
-.eil-domain-detail .eil-page-hero { padding-top: 100px; padding-bottom: 56px; }
-.eil-domain-detail .eil-section { padding-top: 0; padding-bottom: 48px; }
-.eil-domain-detail .eil-two-col { padding-top: 48px; padding-bottom: 48px; }
-.eil-domain-detail .eil-callout { padding-top: 48px; padding-bottom: 64px; }
+   etc.) now inherit the mockup's own site-wide section rhythm directly
+   (.eil-page-hero 54/40, .eil-section/.eil-two-col/.eil-callout 64/64) — the
+   mockup's own research-*.html pages use the same plain `section{padding:64px 0}`
+   rule for these short-content pages, no page-specific override needed. */

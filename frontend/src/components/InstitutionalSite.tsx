@@ -185,7 +185,24 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <p className="eil-doctrine">Human rights are not subject to negotiation.<small>{tx('Emergent Interaction Lab · unabhängige Forschungsinstitution', 'Emergent Interaction Lab · independent research institution')}</small></p>
   </footer>
 
-  const PageHero = ({ eyebrow, title, body }: { eyebrow: string; title: string; body: string }) => <section className="eil-page-hero"><Status>{eyebrow}</Status><h1>{title}</h1><p>{body}</p></section>
+  // Breadcrumb trail mirrors the zip content package's own pattern:
+  // `Home / <Page>` for one-level pages, `Home / Research / <Domain>` for the
+  // 7 research-domain detail pages. Last segment is plain text (current page).
+  const Breadcrumbs = ({ trail }: { trail: Array<[string, InstitutionalRoute | null]> }) => (
+    <div className="eil-breadcrumbs">
+      {trail.map(([label, r], i) => (
+        <span key={label}>
+          {r ? <a href={href(r)}>{label}</a> : label}
+          {i < trail.length - 1 ? ' / ' : ''}
+        </span>
+      ))}
+    </div>
+  )
+
+  const PageHero = ({ eyebrow, title, body, crumbs }: { eyebrow: string; title: string; body: string; crumbs: Array<[string, InstitutionalRoute | null]> }) => <>
+    <Breadcrumbs trail={crumbs} />
+    <section className="eil-page-hero"><Status>{eyebrow}</Status><h1>{title}</h1><p>{body}</p></section>
+  </>
 
   // -- Home ------------------------------------------------------------
   const Home = () => <>
@@ -233,7 +250,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   // -- Lab ---------------------------------------------------------------
   const Lab = () => <>
-    <PageHero eyebrow="LAB" title="Lab" body={tx('Eine interdisziplinäre Umgebung für die Rekonstruktion und den Entwurf komplexer intelligenter Systeme.', 'An interdisciplinary environment for reconstructing and designing complex intelligent systems.')} />
+    <PageHero eyebrow="LAB" title="Lab" body={tx('Eine interdisziplinäre Umgebung für die Rekonstruktion und den Entwurf komplexer intelligenter Systeme.', 'An interdisciplinary environment for reconstructing and designing complex intelligent systems.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Lab', null]]} />
     <section className="eil-thesis"><p>{tx('EIL untersucht Emergenz, Interaktion, verborgenen Zustand, Systemverhalten und Intelligence über menschliche, computationale und sozio-technische Systeme hinweg. Methoden, Agenten, Datensätze und Software des Labs sind Instrumente innerhalb dieser größeren Forschungsumgebung.', 'EIL investigates emergence, interaction, hidden state, system behavior and intelligence across human, computational and socio-technical systems. Its methods, agents, datasets and software are instruments inside that larger research environment.')}</p></section>
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('WAS EIL IST', 'WHAT EIL IS')}</Status><h2>{tx('EIL ist die übergeordnete Forschungsumgebung.', 'EIL is the umbrella research environment.')}</h2><p>{tx('Kein einzelnes Framework, Benchmark, keine Agentenfamilie und keine Human–AI-Forschungslinie definiert das Lab für sich allein.', 'No single framework, benchmark, agent family or Human–AI research line defines the lab on its own.')}</p></div>
       <div className="eil-role-grid">
@@ -256,14 +273,14 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   // -- Research ------------------------------------------------------------
   const Research = () => <>
-    <PageHero eyebrow="RESEARCH" title={tx('Forschung', 'Research')} body={tx('Forschungsdomänen, verbunden durch Interaktion, Zustand und Systemveränderung.', 'Research domains connected by interaction, state and system change.')} />
+    <PageHero eyebrow="RESEARCH" title={tx('Forschung', 'Research')} body={tx('Forschungsdomänen, verbunden durch Interaktion, Zustand und Systemveränderung.', 'Research domains connected by interaction, state and system change.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Forschung', 'Research'), null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('Die Research Map trennt Fragen von den Systemen, Methoden und Outputs, mit denen sie untersucht werden. EIL bleibt die übergreifende Umgebung über alle Domains hinweg.', 'The research map separates questions from the systems, methods and outputs used to investigate them. EIL remains the overarching environment across all domains.')}</p></div>
       <div className="eil-domain-grid">{researchDomains.map(d => <a className="eil-card" key={d.slug} href={href(d.slug)}><Status>{tx('FORSCHUNGSDOMÄNE', 'RESEARCH DOMAIN')}</Status><h3>{tx(d.titleDe, d.titleEn)}</h3><p>{tx(d.leadDe, d.leadEn)}</p><span className="eil-text-link">{tx('Domain öffnen', 'Open domain')} →</span></a>)}</div>
     </section>
   </>
 
   const ResearchDomainDetail = (d: Domain) => <div className="eil-domain-detail">
-    <PageHero eyebrow={tx('FORSCHUNGSDOMÄNE', 'RESEARCH DOMAIN')} title={tx(d.titleDe, d.titleEn)} body={tx(d.leadDe, d.leadEn)} />
+    <PageHero eyebrow={tx('FORSCHUNGSDOMÄNE', 'RESEARCH DOMAIN')} title={tx(d.titleDe, d.titleEn)} body={tx(d.leadDe, d.leadEn)} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Forschung', 'Research'), 'research'], [tx(d.titleDe, d.titleEn), null]]} />
     <section className="eil-section"><div className="eil-section-head"><Status>SCOPE</Status></div>
       <div className="eil-domain-chips">{(de ? d.scopeDe : d.scopeEn).map(x => <span key={x}>{x}</span>)}</div>
       {d.slug === 'research-causality' && <p style={{ marginTop: 22, color: 'var(--soft)' }}>{tx('DINGIR ist das für diese Rekonstruktions- und Prediction-Schicht repräsentierte System.', 'DINGIR is the system represented for this reconstruction and prediction layer.')}</p>}
@@ -286,7 +303,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   ] as const
 
   const Methods = () => <>
-    <PageHero eyebrow="METHODOLOGY" title={tx('Methoden', 'Methods')} body={tx('Methoden und Instrumente, entwickelt innerhalb der EIL-Forschung.', 'Methods and instruments developed inside EIL research.')} />
+    <PageHero eyebrow="METHODOLOGY" title={tx('Methoden', 'Methods')} body={tx('Methoden und Instrumente, entwickelt innerhalb der EIL-Forschung.', 'Methods and instruments developed inside EIL research.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Methoden', 'Methods'), null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('Dies sind unterstützende Forschungswerkzeuge. Sie definieren das Lab nicht als Ganzes und bleiben den Forschungsfragen und Systemen, die sie unterstützen, untergeordnet.', 'These are supporting research tools. They do not define the lab as a whole and should remain subordinate to the research questions and systems they support.')}</p></div>
       <div className="eil-library-grid">{methodEntries.map(([name, status, full, desc]) => <FoldCard key={name} kicker={status} title={name} subtitle={full}><p>{desc}</p></FoldCard>)}</div>
     </section>
@@ -294,7 +311,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   // -- Systems ------------------------------------------------------------
   const Systems = () => <>
-    <PageHero eyebrow="COMPUTATIONAL RESEARCH" title={tx('Systeme', 'Systems')} body={tx('Designte Intelligence über Agenten, Runtime und Forschungssysteme hinweg.', 'Designed intelligence across agents, runtime and research systems.')} />
+    <PageHero eyebrow="COMPUTATIONAL RESEARCH" title={tx('Systeme', 'Systems')} body={tx('Designte Intelligence über Agenten, Runtime und Forschungssysteme hinweg.', 'Designed intelligence across agents, runtime and research systems.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Systeme', 'Systems'), null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('Die Systemschicht operationalisiert die EIL-Forschung. Einzelne Agenten sind spezialisierte Intelligence-Komponenten innerhalb größerer Architekturen – keine eigenständigen Chatbot-Produkte.', 'The systems layer operationalizes EIL research. Individual agents are specialized intelligence components inside larger architectures — not standalone chatbot products.')}</p></div></section>
     <section className="eil-callout eil-agent-environment"><Status>{tx('MULTI-AGENT-ARCHITEKTUR', 'MULTI-AGENT ARCHITECTURE')}</Status><h2>{tx('Spezialisierte Lead Agents und Sub-Agents.', 'Specialized lead agents and sub-agents.')}</h2><p>{tx('Spezialisierte Lead Agents und Sub-Agents operieren über designte Rollen, Handoffs, Zustand, Evidenz und Runtime-Strukturen.', 'Specialized lead agents and sub-agents operate through designed roles, handoffs, state, evidence and runtime structures.')}</p>
       <small>{['Lead Agents', 'Specialists', 'Sub-Agents', 'Shared Context', 'Runtime / Evidence'].join(' · ')}</small>
@@ -311,7 +328,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   // -- Publications --------------------------------------------------------
   const Publications = () => <>
-    <PageHero eyebrow="RESEARCH OUTPUTS" title={tx('Publikationen', 'Publications')} body={tx('Forschungsoutputs und offene Arbeit.', 'Research outputs and open work.')} />
+    <PageHero eyebrow="RESEARCH OUTPUTS" title={tx('Publikationen', 'Publications')} body={tx('Forschungsoutputs und offene Arbeit.', 'Research outputs and open work.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Publikationen', 'Publications'), null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('Publikationen, Benchmarks, Datensätze, Software und technische Notizen werden als Outputs der breiteren EIL-Forschungsumgebung präsentiert.', 'Publications, benchmarks, datasets, software and technical notes are presented as outputs of the broader EIL research environment.')}</p></div>
       <div className="eil-publication-list">{(content.papers?.items ?? []).map((p,i)=><article key={p.id}><div><Status>{p.type.toUpperCase()}</Status><span className="eil-index">{String(i+1).padStart(2,'0')}</span></div><h2>{p.title}</h2><div className="eil-pub-meta"><span>Authors: {p.authors.join(', ')}</span><span>Date: {p.date}</span><span>Version: {p.version}</span><span>Status: {p.status}</span><span>Peer review: {p.peerReviewStatus}</span><span>Pages: {p.pages}</span>{p.repository&&<span>Repository: {p.repository}</span>}</div><Disclosure summary={tx('Abstract und Links','Abstract and links')}><p>{p.description}</p><div className="eil-pub-actions">{p.doi&&<a href={p.doi}>DOI →</a>}<a href={`${BASE}${p.file}`}>{tx('Dokument öffnen','Open document')} →</a></div></Disclosure></article>)}</div>
       <p style={{ marginTop: 34, color: 'var(--soft)', fontSize: 13 }}>{tx('Kanonische Zenodo-/Repository-Metadaten werden direkt beim Deployment gebunden. Publikationseinträge werden nicht dupliziert oder erfunden.', 'Canonical Zenodo / repository metadata should be bound directly during deployment. Do not duplicate or invent publication records.')}</p>
@@ -329,7 +346,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   ] as const
 
   const Observatory = () => <>
-    <PageHero eyebrow="RESEARCH INSTRUMENT" title="Observatory" body={tx('Experimentelle Sichtbarkeit laufender Forschungssysteme.', 'Experimental visibility into ongoing research systems.')} />
+    <PageHero eyebrow="RESEARCH INSTRUMENT" title="Observatory" body={tx('Experimentelle Sichtbarkeit laufender Forschungssysteme.', 'Experimental visibility into ongoing research systems.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Observatory', null]]} />
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('IN ENTWICKLUNG', 'IN DEVELOPMENT')}</Status><p>{tx('Das Observatory ist eine sich in Entwicklung befindende Forschungsumgebung für Experimente, Zustand, Rekonstruktionen, Daten, Runtime-Verhalten und wissenschaftliche Visualisierung.', 'The Observatory is an in-development research environment for experiments, state, reconstructions, data, runtime behavior and scientific visualization.')}</p></div>
       <div className="eil-observatory-grid">{observatoryItems.map(([name,d])=><article key={name}><h3>{name}</h3><p>{d}</p></article>)}</div>
       <p style={{ marginTop: 34, color: 'var(--soft)', fontSize: 13 }}>{tx('Nur tatsächlich implementierte Elemente werden als operativ gekennzeichnet. Das Observatory bleibt als „in Entwicklung" markiert, bis dies anders verifiziert ist.', 'Only implemented elements should ever be labelled operational. The Observatory must remain marked in development until verified otherwise.')}</p>
@@ -337,7 +354,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   </>
 
   // -- Notes ----------------------------------------------------------------
-  const Notes = () => <><PageHero eyebrow="PUBLIC RESEARCH COMMUNICATION" title="Research Notes" body={tx('Lab Notes, Research Notes, Case Studies, Methods und Commentary – klar voneinander unterschieden.', 'Lab notes, research notes, case studies, methods and commentary—clearly distinguished.')} /><section className="eil-section"><div className="eil-notes-grid">{(content.news?.items ?? []).map(n=><article className="eil-card" key={n.id}><Status>RESEARCH NOTE · PRELIMINARY</Status><time>{n.date}</time><h3>{n.title}</h3><p>{n.body.replace(/<[^>]+>/g,'').slice(0,220)}…</p></article>)}</div></section></>
+  const Notes = () => <><PageHero eyebrow="PUBLIC RESEARCH COMMUNICATION" title="Research Notes" body={tx('Lab Notes, Research Notes, Case Studies, Methods und Commentary – klar voneinander unterschieden.', 'Lab notes, research notes, case studies, methods and commentary—clearly distinguished.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Research Notes', null]]} /><section className="eil-section"><div className="eil-notes-grid">{(content.news?.items ?? []).map(n=><article className="eil-card" key={n.id}><Status>RESEARCH NOTE · PRELIMINARY</Status><time>{n.date}</time><h3>{n.title}</h3><p>{n.body.replace(/<[^>]+>/g,'').slice(0,220)}…</p></article>)}</div></section></>
 
   // -- Applied Research -------------------------------------------------
   const appliedCapabilities = [
@@ -348,7 +365,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   ] as const
 
   const Applied = () => <>
-    <PageHero eyebrow="APPLIED RESEARCH" title="Applied Research" body={tx('Forschungsmethoden angewendet auf begrenzte reale Systeme.', 'Research methods applied to bounded real-world systems.')} />
+    <PageHero eyebrow="APPLIED RESEARCH" title="Applied Research" body={tx('Forschungsmethoden angewendet auf begrenzte reale Systeme.', 'Research methods applied to bounded real-world systems.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Applied Research', null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('EIL kann Rekonstruktion, Behavioral Analysis, KI-gestützte Systemdiagnostik und adversariales Systemdenken auf konkrete externe Systeme anwenden, ohne das Lab in eine generische Beratung zu verwandeln.', 'EIL can apply reconstruction, behavioral analysis, AI-augmented system diagnostics and adversarial systems thinking to concrete external systems without turning the lab into a generic consultancy.')}</p></div>
       <div className="eil-process">{['Problem', tx('Forschungsfrage','Research Question'), tx('Abgrenzung','Boundary'), 'Evidence'].map((x,i)=><article key={x}><span>{String(i+1).padStart(2,'0')}</span><strong>{x}</strong></article>)}</div>
     </section>
