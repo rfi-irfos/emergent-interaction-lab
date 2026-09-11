@@ -225,19 +225,18 @@
 /* Footer redesign — the old brand/Erkunden/Lab three-column grid plus a
    separate meta-links row plus a separate tagline paragraph sprawled across
    ~260px of vertical space with uneven gaps between them, flagged live as
-   "one huge chaos". Collapsed into one row: brand mark+name on the left, all
-   ten links flowing in a single wrapping line on the right — everything
-   else (tagline, doctrine) sits below as plain compact text. */
+   "one huge chaos". Collapsed to: doctrine line first, then one row with
+   brand mark+name on the left and all ten links flowing on the right. The
+   tagline paragraph was dropped entirely — flagged live as "too much". */
+.eil-footer .eil-doctrine { margin: 0 0 28px; }
 .eil-footer-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px 32px; }
 .eil-footer-brand { display: flex; align-items: center; gap: 11px; }
 .eil-footer-brand strong { color: #dff4f7; font-size: 14px; }
 .eil-footer-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .eil-footer-links a { color: #9ab6bd; text-decoration: none; font-size: 12px; white-space: nowrap; }
 .eil-footer-links a:hover { color: #55E1EE; }
-.eil-footer-tagline { margin: 18px 0 0; color: #9ab6bd; font-size: 12px; max-width: 640px; }
 .eil-site[data-theme="light"] .eil-footer-brand strong { color: #061a1c; }
 .eil-site[data-theme="light"] .eil-footer-links a { color: #4A5D52; }
-.eil-site[data-theme="light"] .eil-footer-tagline { color: #4A5D52; }
 
 @media (max-width: 720px) {
   .eil-home-hero { min-height: 680px; }
@@ -309,13 +308,15 @@
 .eil-role-grid article { padding-bottom: 34px; }
 
 /* "Every card should glow on hover" — a consistent hover treatment across
-   every clickable/interactive card-like surface site-wide, not just the
-   handful that already had one-off hover rules. */
+   every clickable/interactive card-like surface site-wide. First pass used a
+   crisp 1px ring, flagged live as wanting a soft glow BEHIND the card
+   instead of just the edges — a diffuse, blurred ambient bloom rather than
+   an outline. */
 .eil-card, .eil-fold-card, .eil-role-grid article, .eil-system-grid article,
 .eil-domain-grid a, .eil-publication-list article, .eil-method-grid article,
 .eil-method-detail-list article, .eil-engagement-list article,
 .eil-library-grid article, .eil-notes-grid article, .eil-two-col article {
-  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  transition: border-color .22s ease, box-shadow .22s ease;
 }
 .eil-card:hover, .eil-fold-card:hover, .eil-role-grid article:hover,
 .eil-system-grid article:hover, .eil-domain-grid a:hover,
@@ -323,8 +324,8 @@
 .eil-method-detail-list article:hover, .eil-engagement-list article:hover,
 .eil-library-grid article:hover, .eil-notes-grid article:hover,
 .eil-two-col article:hover {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 1px var(--cyan), 0 12px 32px color-mix(in srgb, var(--cyan) 18%, transparent);
+  border-color: color-mix(in srgb, var(--cyan) 55%, var(--line));
+  box-shadow: 0 0 56px 12px color-mix(in srgb, var(--cyan) 22%, transparent);
 }
 
 /* FoldCard expand behavior, take three. First pass let opening a card stretch

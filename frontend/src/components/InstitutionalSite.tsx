@@ -218,6 +218,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   // the legal routes (#p/impressum, #p/datenschutz) plus GitHub/Research
   // Notes links stay reachable since those routes still exist server-side.
   const Footer = () => <footer className="eil-footer">
+    <p className="eil-doctrine">Human rights are not subject to negotiation.<small>{tx('Emergent Interaction Lab · unabhängige Forschungsinstitution', 'Emergent Interaction Lab · independent research institution')}</small></p>
     <div className="eil-footer-row">
       <div className="eil-footer-brand"><Mark /><strong>Emergent Interaction Lab</strong></div>
       <nav className="eil-footer-links">
@@ -233,8 +234,6 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
         <a href={`${href('home')}#p/impressum`}>Impressum</a>
       </nav>
     </div>
-    <p className="eil-footer-tagline">{tx('Interdisziplinäre Forschungsumgebung für emergente Interaktion, komplexe Systeme, Rekonstruktion und intelligente Systemarchitekturen.', 'Interdisciplinary research environment for emergent interaction, complex systems, reconstruction and intelligent system architectures.')}</p>
-    <p className="eil-doctrine">Human rights are not subject to negotiation.<small>{tx('Emergent Interaction Lab · unabhängige Forschungsinstitution', 'Emergent Interaction Lab · independent research institution')}</small></p>
   </footer>
 
   // Breadcrumb trail mirrors the zip content package's own pattern:
