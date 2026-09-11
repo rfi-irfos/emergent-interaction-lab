@@ -337,7 +337,12 @@
    height — stays exactly where it is. The fix: the open body is positioned
    absolutely, so it never contributes to grid layout at all; it just floats
    on top of the content beneath it. */
-.eil-fold-card { position: relative; }
+/* .eil-fold-card's base rule sets overflow:hidden (for its own rounded
+   corners) — that clips the absolutely-positioned overlay body the moment it
+   extends past the card's own edge, so it opens (confirmed via computed
+   styles: opacity 1, real height, correct position) but is invisible.
+   Flagged live as the "×" icon toggling with nothing visibly unfolding. */
+.eil-fold-card { position: relative; overflow: visible; }
 .eil-fold-card[open] > .eil-fold-body {
   position: absolute;
   top: 100%;
