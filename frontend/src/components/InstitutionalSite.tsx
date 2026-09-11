@@ -89,11 +89,11 @@ const RESEARCH_RELATIONSHIP = ['Diese Domain ist ein Teil der übergreifenden EI
 const intelligenceSystems = [
   ['JARVIS', 'RESEARCH OPERATIONS', 'Research Operations, Untersuchung und Kontinuität.', 'Research operations, investigation and continuity.'],
   ['NYX', 'AUTONOMOUS INVESTIGATION', 'Investigations-Intelligence, aufgebaut um Hypothesen, Pfade, Priorisierung und Evidenz.', 'Investigation intelligence structured around hypotheses, paths, prioritization and evidence.'],
-  ['MIRROR', 'SYSTEM INTEGRITY', 'Erkennt Widerspruch, Drift, Regression und Abweichung von zuvor validierten Systemzuständen – bevor die Lücke zum eigentlichen Problem wird.', 'Detects contradiction, drift, regression and divergence from previously validated system states — before the gap becomes the actual problem.'],
+  ['MIRROR', 'SYSTEM INTEGRITY', 'Erkennt Widerspruch, Drift, Regression und Abweichung von zuvor validierten Systemzuständen – bevor die Lücke zum eigentlichen Problem wird.', 'Detects contradiction, drift, regression and divergence from previously validated system states — before the gap becomes the actual problem.', 'Beobachtet Plan gegen tatsächlichen Zustand, Regelkonformität, Zielwerte gegen Ergebnisse und Team-Velocity gegen Zusagen. Erkennt stillschweigende Workarounds, ausgehöhlte Kennzahlen und übersehene Fristen. Liefert eine Frühwarnung statt eines Post-mortems, mit einer laufenden Integritäts-Kennzahl.', 'Monitors plan versus actual state, rule compliance, targets versus outcomes and team velocity versus commitments. Detects quiet workarounds, hollowed-out metrics and overlooked deadlines. Delivers an early warning instead of a post-mortem, with a running integrity score.'],
   ['ROBERT', 'MULTI-AGENT INTELLIGENCE', 'Koordinierte Sales-/Research-Intelligence über spezialisierte Agentenrollen.', 'Coordinated sales/research intelligence across specialized agent roles.'],
-  ['ARGUS', 'INFORMATION INTELLIGENCE', 'Beobachtet Markt-, Presse- und Wettbewerbssignale kontinuierlich und markiert relevante Veränderungen, sobald sie auftreten – statt in periodischen Digests.', 'Continuously monitors market, press and competitive signals and flags relevant changes as they occur — rather than in periodic digests.'],
-  ['ATLAS', 'ORCHESTRATION', 'Priorisiert und orchestriert Signale aus mehreren spezialisierten Agenten, macht Dringlichkeit sichtbar und löst Widersprüche zwischen Einzelbefunden auf.', 'Prioritizes and orchestrates signals across multiple specialized agents, surfacing urgency and resolving conflicts between their individual findings.'],
-  ['KOPERNIKUS', 'EXECUTION', 'Identifiziert Förder- und Kapitalquellen, die tatsächlich zum untersuchten System passen, statt generischer Datenbank-Treffer.', 'Identifies funding and capital sources that actually match the system under study, rather than generic database matches.'],
+  ['ARGUS', 'INFORMATION INTELLIGENCE', 'Beobachtet Markt-, Presse- und Wettbewerbssignale kontinuierlich und markiert relevante Veränderungen, sobald sie auftreten – statt in periodischen Digests.', 'Continuously monitors market, press and competitive signals and flags relevant changes as they occur — rather than in periodic digests.', 'Beobachtet Wettbewerber-Ankündigungen, Erwähnungen, Presse, Stimmungsverschiebungen, Führungswechsel und Produktlaunches. Erkennt neue Marktbewegungen, sich formende Narrative und frühe Anzeichen eines Marktwandels. Liefert einen tagesaktuellen Alert statt eines wöchentlichen Digests, mit Historie und Quellenangabe.', 'Monitors competitor announcements, mentions, press, sentiment shifts, leadership changes and product launches. Detects emerging market movements, narratives forming before mainstream coverage and early signs of a market shift. Delivers a same-day alert instead of a weekly digest, with history and sourcing.'],
+  ['ATLAS', 'ORCHESTRATION', 'Priorisiert und orchestriert Signale aus mehreren spezialisierten Agenten, macht Dringlichkeit sichtbar und löst Widersprüche zwischen Einzelbefunden auf.', 'Prioritizes and orchestrates signals across multiple specialized agents, surfacing urgency and resolving conflicts between their individual findings.', 'Beobachtet, was jeder Agent findet, welche Alerts sich überschneiden und wo Agenten voneinander abhängen. Erkennt widersprüchliche Berichte, doppelte Alerts und Engpässe zwischen Agenten. Liefert eine einzige priorisierte Liste statt zehn Einzelmeldungen, mit klarer nächster Handlung.', 'Monitors what every agent is finding, which alerts overlap and where agents depend on each other. Detects conflicting reports, duplicate alerts and bottlenecks between agents. Delivers one ranked list instead of ten separate alerts, with a clear next action.'],
+  ['KOPERNIKUS', 'EXECUTION', 'Identifiziert Förder- und Kapitalquellen, die tatsächlich zum untersuchten System passen, statt generischer Datenbank-Treffer.', 'Identifies funding and capital sources that actually match the system under study, rather than generic database matches.', 'Beobachtet offene Förderprogramme, Investorenaktivität, neue Finanzierungsrunden und Bewerbungsfristen. Erkennt tatsächlich passende Programme, sich ändernde Eligibility-Regeln und knapp werdende Deadlines. Liefert eine kurze Liste echter Optionen statt eines Datenbank-Dumps, sortiert nach Passung und Frist.', 'Monitors open grant programs, investor activity, new funding rounds and application deadlines. Detects genuinely matching programs, changing eligibility rules and closing deadlines. Delivers a short list of real options instead of a database dump, ranked by fit and deadline.'],
   ['JANUS', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
   ['DAEDALUS', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
   ['DELTA', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
@@ -196,8 +196,8 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     // fixes that for any nested page, not just research domains.
     const parent = trail.length > 2 ? trail[trail.length - 2] : null
     return (
-      <>
-        {parent && parent[1] && <a className="eil-back-link" href={href(parent[1])}>← {tx('Zurück zu', 'Back to')} {parent[0]}</a>}
+      <div className="eil-crumb-row">
+        {parent && parent[1] && <a className="eil-back-link" href={href(parent[1])} aria-label={tx('Zurück', 'Back')}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></a>}
         <div className="eil-breadcrumbs">
           {trail.map(([label, r], i) => (
             <span key={label}>
@@ -206,7 +206,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
             </span>
           ))}
         </div>
-      </>
+      </div>
     )
   }
 
@@ -329,7 +329,11 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
       <p style={{ marginTop: 18 }}>{tx(`Die aktuelle Architektur umfasst etwa 15 spezialisierte Lead Agents und mehr als ${institutionalFacts.specializedResearchAgentCrates} spezialisierte Sub-Agents über Forschungs- und Betriebskontexte hinweg.`, `The current architecture includes roughly 15 specialized lead agents and more than ${institutionalFacts.specializedResearchAgentCrates} specialized sub-agents across research and operational contexts.`)}</p>
     </section>
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('AUSGEWÄHLTE INTELLIGENCE-SYSTEME', 'SELECTED INTELLIGENCE SYSTEMS')}</Status></div>
-      <div className="eil-system-grid">{intelligenceSystems.map(([name, kicker, d, e]) => <article className="eil-card" key={name}><Status>{kicker}</Status><h3>{name}</h3><p>{tx(d, e)}</p></article>)}</div>
+      <div className="eil-system-grid">{intelligenceSystems.map(([name, kicker, d, e, dDetail, eDetail]) => (
+        dDetail
+          ? <FoldCard key={name} group="intelligence-systems" kicker={kicker} title={name} subtitle={tx(d, e)}><p>{tx(dDetail, eDetail)}</p></FoldCard>
+          : <article className="eil-card" key={name}><Status>{kicker}</Status><h3>{name}</h3><p>{tx(d, e)}</p></article>
+      ))}</div>
     </section>
     <section className="eil-section"><div className="eil-environment-grid">
       <article><Status>{tx('GEBAUT', 'BUILT')}</Status><h3>EIL Kernel</h3><p>{tx('Der Kernel ist existierende Forschungsinfrastruktur für zustandsbehaftete Agentenoperation und Kontinuität. Er ist kein geplantes Konzept.', 'The Kernel is existing research infrastructure for stateful agent operation and continuity. It is not a planned concept.')}</p><small>{['Agent Logic', 'Runtime', 'State', 'Context', 'Memory', 'Drift', 'Monitoring', 'Feedback', 'Recovery', 'Audit Trails'].join(' · ')}</small><p>{tx('Der Kernel umfasst innerhalb der bestätigten Architektur zusätzlich Evidence Handling, Testarchitektur sowie Guard A / Guard B.', 'The Kernel also includes evidence handling, test structures and Guard A / Guard B within the confirmed architecture.')}</p></article>

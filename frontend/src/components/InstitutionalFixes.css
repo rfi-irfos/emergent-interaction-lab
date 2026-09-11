@@ -75,7 +75,7 @@
 .eil-home-hero > div > .eil-status {
   display: table;
   width: fit-content;
-  margin: 0 auto;
+  margin: 0 auto 28px;
   padding: 7px 13px;
   border: 1px solid color-mix(in srgb, var(--cyan) 45%, transparent);
   border-radius: 999px;
@@ -128,7 +128,7 @@
 .eil-home-hero { min-height: 780px; }
 .eil-hero-wordmark-image {
   width: min(1460px, 85vw);
-  margin: -12px auto 46px;
+  margin: 0 auto 64px;
 }
 .eil-home-taxonomy .eil-section { padding-top: 72px; padding-bottom: 72px; }
 .eil-home-taxonomy .eil-domain-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -241,18 +241,43 @@
 
 /* Nested pages (research-domain detail pages etc.) were a dead end — no way
    back except the browser's own back button, flagged live as a "Sackgasse".
-   Paired with the Breadcrumbs component's new parent-level back arrow. */
-.eil-back-link {
-  display: inline-block;
+   First pass used a full "← Zurück zu Forschung" text link stacked above the
+   breadcrumb trail — flagged live as "chaos", two lines saying almost the
+   same thing. Replaced with a plain icon-only arrow button sitting inline
+   with the breadcrumb row instead of its own line. */
+.eil-crumb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding-top: 34px;
   padding-left: max(20px, calc((100vw - 1180px) / 2));
-  color: var(--cyan);
-  font-size: 13px;
-  font-weight: 650;
-  text-decoration: none;
+  padding-right: max(20px, calc((100vw - 1180px) / 2));
 }
-.eil-back-link:hover { text-decoration: underline; }
-.eil-back-link + .eil-breadcrumbs { padding-top: 10px; }
+.eil-crumb-row .eil-breadcrumbs { padding: 0; }
+.eil-back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--soft);
+  transition: color .15s ease, border-color .15s ease;
+}
+.eil-back-link:hover { color: var(--cyan); border-color: var(--cyan); }
+
+/* Systems page agent cards were static — flagged live as wanting to click
+   through to more info, like the Methods accordion. Four agents (Mirror,
+   Argus, Atlas, Kopernikus) now render as FoldCard within the same 2-col
+   .eil-system-grid as the plain cards. Opening one would hit the exact same
+   grid row-stretch bug just fixed on Methods — but here it's a MIXED grid
+   (some plain cards, some FoldCards), so collapsing to one column would
+   needlessly flatten the whole page. Instead: an [open] FoldCard spans both
+   columns, so it gets its own full-width row instead of sharing one with
+   a shorter neighbor, and everything below reflows down naturally. */
+.eil-system-grid .eil-fold-card[open] { grid-column: 1 / -1; }
 
 /* .eil-callout p was rendering in the ui-monospace stack at up to 30px —
    fine for short tag-style labels elsewhere, but at callout heading size it
