@@ -1,3 +1,20 @@
+/* App.tsx already wraps every route change in document.startViewTransition —
+   the wiring was there, but with no custom animation on the pseudo-elements
+   the browser's UA-default cross-fade is short enough to read as an instant
+   cut, flagged live as "instant switches are not allowed, must be all smooth
+   af". Give the root transition an actual, visible fade+slide. Falls back to
+   the existing instant update() automatically on browsers without View
+   Transitions support (Safari) — no separate fallback needed here. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.38s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-old(root) { animation-name: eil-page-out; }
+::view-transition-new(root) { animation-name: eil-page-in; }
+@keyframes eil-page-out { to { opacity: 0; transform: translateY(-8px); } }
+@keyframes eil-page-in { from { opacity: 0; transform: translateY(8px); } }
+
 .eil-program-questions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -205,12 +222,22 @@
 .eil-preview-detail h3 { margin: 0 0 6px; }
 .eil-preview-detail p { margin: 0; }
 
-.eil-footer-grid > div > strong { display: block; color: #dff4f7; font-size: 12px; letter-spacing: .04em; margin-bottom: 10px; }
-.eil-footer-grid > div > p { margin: 0; }
-.eil-footer-grid > div > p a { display: block; color: #9ab6bd; text-decoration: none; font-size: 12px; margin: 7px 0; }
-.eil-footer-grid > div > p a:hover { color: #55E1EE; }
-.eil-site[data-theme="light"] .eil-footer-grid > div > strong { color: #061a1c; }
-.eil-site[data-theme="light"] .eil-footer-grid > div > p a { color: #4A5D52; }
+/* Footer redesign — the old brand/Erkunden/Lab three-column grid plus a
+   separate meta-links row plus a separate tagline paragraph sprawled across
+   ~260px of vertical space with uneven gaps between them, flagged live as
+   "one huge chaos". Collapsed into one row: brand mark+name on the left, all
+   ten links flowing in a single wrapping line on the right — everything
+   else (tagline, doctrine) sits below as plain compact text. */
+.eil-footer-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px 32px; }
+.eil-footer-brand { display: flex; align-items: center; gap: 11px; }
+.eil-footer-brand strong { color: #dff4f7; font-size: 14px; }
+.eil-footer-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.eil-footer-links a { color: #9ab6bd; text-decoration: none; font-size: 12px; white-space: nowrap; }
+.eil-footer-links a:hover { color: #55E1EE; }
+.eil-footer-tagline { margin: 18px 0 0; color: #9ab6bd; font-size: 12px; max-width: 640px; }
+.eil-site[data-theme="light"] .eil-footer-brand strong { color: #061a1c; }
+.eil-site[data-theme="light"] .eil-footer-links a { color: #4A5D52; }
+.eil-site[data-theme="light"] .eil-footer-tagline { color: #4A5D52; }
 
 @media (max-width: 720px) {
   .eil-home-hero { min-height: 680px; }
