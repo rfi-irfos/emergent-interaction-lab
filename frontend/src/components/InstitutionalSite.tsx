@@ -89,11 +89,11 @@ const RESEARCH_RELATIONSHIP = ['Diese Domain ist ein Teil der übergreifenden EI
 const intelligenceSystems = [
   ['JARVIS', 'RESEARCH OPERATIONS', 'Research Operations, Untersuchung und Kontinuität.', 'Research operations, investigation and continuity.'],
   ['NYX', 'AUTONOMOUS INVESTIGATION', 'Investigations-Intelligence, aufgebaut um Hypothesen, Pfade, Priorisierung und Evidenz.', 'Investigation intelligence structured around hypotheses, paths, prioritization and evidence.'],
-  ['MIRROR', 'SYSTEM INTEGRITY', 'Widerspruch, Drift, Regression und Abweichung von zuvor korrekten Systemzuständen.', 'Contradiction, drift, regression and divergence from prior correct system states.'],
+  ['MIRROR', 'SYSTEM INTEGRITY', 'Erkennt Widerspruch, Drift, Regression und Abweichung von zuvor validierten Systemzuständen – bevor die Lücke zum eigentlichen Problem wird.', 'Detects contradiction, drift, regression and divergence from previously validated system states — before the gap becomes the actual problem.'],
   ['ROBERT', 'MULTI-AGENT INTELLIGENCE', 'Koordinierte Sales-/Research-Intelligence über spezialisierte Agentenrollen.', 'Coordinated sales/research intelligence across specialized agent roles.'],
-  ['ARGUS', 'INFORMATION INTELLIGENCE', 'Spezialisierte Informations- und LinkedIn-Intelligence.', 'Specialized information and LinkedIn intelligence.'],
-  ['ATLAS', 'ORCHESTRATION', 'Orchestrierung und Koordination innerhalb größerer Agenten-Workflows.', 'Orchestration and coordination within larger agent workflows.'],
-  ['KOPERNIKUS', 'EXECUTION', 'Ausführungsorientierter spezialisierter Agent innerhalb der übergreifenden Architektur.', 'Execution-oriented specialized agent within the broader architecture.'],
+  ['ARGUS', 'INFORMATION INTELLIGENCE', 'Beobachtet Markt-, Presse- und Wettbewerbssignale kontinuierlich und markiert relevante Veränderungen, sobald sie auftreten – statt in periodischen Digests.', 'Continuously monitors market, press and competitive signals and flags relevant changes as they occur — rather than in periodic digests.'],
+  ['ATLAS', 'ORCHESTRATION', 'Priorisiert und orchestriert Signale aus mehreren spezialisierten Agenten, macht Dringlichkeit sichtbar und löst Widersprüche zwischen Einzelbefunden auf.', 'Prioritizes and orchestrates signals across multiple specialized agents, surfacing urgency and resolving conflicts between their individual findings.'],
+  ['KOPERNIKUS', 'EXECUTION', 'Identifiziert Förder- und Kapitalquellen, die tatsächlich zum untersuchten System passen, statt generischer Datenbank-Treffer.', 'Identifies funding and capital sources that actually match the system under study, rather than generic database matches.'],
   ['JANUS', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
   ['DAEDALUS', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
   ['DELTA', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
@@ -188,16 +188,27 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   // Breadcrumb trail mirrors the zip content package's own pattern:
   // `Home / <Page>` for one-level pages, `Home / Research / <Domain>` for the
   // 7 research-domain detail pages. Last segment is plain text (current page).
-  const Breadcrumbs = ({ trail }: { trail: Array<[string, InstitutionalRoute | null]> }) => (
-    <div className="eil-breadcrumbs">
-      {trail.map(([label, r], i) => (
-        <span key={label}>
-          {r ? <a href={href(r)}>{label}</a> : label}
-          {i < trail.length - 1 ? ' / ' : ''}
-        </span>
-      ))}
-    </div>
-  )
+  const Breadcrumbs = ({ trail }: { trail: Array<[string, InstitutionalRoute | null]> }) => {
+    // Domain detail pages are 3 levels deep (Start / Research / <Domain>) and
+    // were a dead end before this: no way back except the browser's own back
+    // button, flagged live as a "Sackgasse" — the breadcrumb trail alone
+    // wasn't prominent enough. An explicit arrow-back to the parent level
+    // fixes that for any nested page, not just research domains.
+    const parent = trail.length > 2 ? trail[trail.length - 2] : null
+    return (
+      <>
+        {parent && parent[1] && <a className="eil-back-link" href={href(parent[1])}>← {tx('Zurück zu', 'Back to')} {parent[0]}</a>}
+        <div className="eil-breadcrumbs">
+          {trail.map(([label, r], i) => (
+            <span key={label}>
+              {r ? <a href={href(r)}>{label}</a> : label}
+              {i < trail.length - 1 ? ' / ' : ''}
+            </span>
+          ))}
+        </div>
+      </>
+    )
+  }
 
   const PageHero = ({ eyebrow, title, body, crumbs }: { eyebrow: string; title: string; body: string; crumbs: Array<[string, InstitutionalRoute | null]> }) => <>
     <Breadcrumbs trail={crumbs} />
@@ -252,7 +263,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   const Lab = () => <>
     <PageHero eyebrow="LAB" title="Lab" body={tx('Eine interdisziplinäre Umgebung für die Rekonstruktion und den Entwurf komplexer intelligenter Systeme.', 'An interdisciplinary environment for reconstructing and designing complex intelligent systems.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Lab', null]]} />
     <section className="eil-thesis"><p>{tx('EIL untersucht Emergenz, Interaktion, verborgenen Zustand, Systemverhalten und Intelligence über menschliche, computationale und sozio-technische Systeme hinweg. Methoden, Agenten, Datensätze und Software des Labs sind Instrumente innerhalb dieser größeren Forschungsumgebung.', 'EIL investigates emergence, interaction, hidden state, system behavior and intelligence across human, computational and socio-technical systems. Its methods, agents, datasets and software are instruments inside that larger research environment.')}</p></section>
-    <section className="eil-section"><div className="eil-section-head"><Status>{tx('WAS EIL IST', 'WHAT EIL IS')}</Status><h2>{tx('EIL ist die übergeordnete Forschungsumgebung.', 'EIL is the umbrella research environment.')}</h2><p>{tx('Kein einzelnes Framework, Benchmark, keine Agentenfamilie und keine Human–AI-Forschungslinie definiert das Lab für sich allein.', 'No single framework, benchmark, agent family or Human–AI research line defines the lab on its own.')}</p></div>
+    <section className="eil-section"><div className="eil-section-head"><Status>{tx('WAS EIL IST', 'WHAT EIL IS')}</Status><h2>{tx('EIL ist die maßgebliche Forschungsumgebung.', 'EIL is the paramount research environment.')}</h2><p>{tx('Kein einzelnes Framework, Benchmark, keine Agentenfamilie und keine Human–AI-Forschungslinie definiert das Lab für sich allein.', 'No single framework, benchmark, agent family or Human–AI research line defines the lab on its own.')}</p></div>
       <div className="eil-role-grid">
         <article><h3>{tx('Emergente Interaktion', 'Emergent Interaction')}</h3><p>{tx('Wie Interaktion zwischen Komponenten, Agenten, Menschen und Systemen Verhalten erzeugt, das sich nicht aus isolierten Teilen verstehen lässt.', 'How interaction between components, agents, people and systems generates behavior that cannot be understood from isolated parts.')}</p></article>
         <article><h3>{tx('Rekonstruktion verborgener Zustände', 'Hidden State Reconstruction')}</h3><p>{tx('Wie sich verborgene Zustände, Constraints, Beziehungen und kausale Strukturen aus unvollständiger Evidenz ableiten lassen.', 'How hidden states, constraints, relationships and causal structures can be inferred from incomplete evidence.')}</p></article>
@@ -331,7 +342,6 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <PageHero eyebrow="RESEARCH OUTPUTS" title={tx('Publikationen', 'Publications')} body={tx('Forschungsoutputs und offene Arbeit.', 'Research outputs and open work.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Publikationen', 'Publications'), null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('Publikationen, Benchmarks, Datensätze, Software und technische Notizen werden als Outputs der breiteren EIL-Forschungsumgebung präsentiert.', 'Publications, benchmarks, datasets, software and technical notes are presented as outputs of the broader EIL research environment.')}</p></div>
       <div className="eil-publication-list">{(content.papers?.items ?? []).map((p,i)=><article key={p.id}><div><Status>{p.type.toUpperCase()}</Status><span className="eil-index">{String(i+1).padStart(2,'0')}</span></div><h2>{p.title}</h2><div className="eil-pub-meta"><span>Authors: {p.authors.join(', ')}</span><span>Date: {p.date}</span><span>Version: {p.version}</span><span>Status: {p.status}</span><span>Peer review: {p.peerReviewStatus}</span><span>Pages: {p.pages}</span>{p.repository&&<span>Repository: {p.repository}</span>}</div><Disclosure summary={tx('Abstract und Links','Abstract and links')}><p>{p.description}</p><div className="eil-pub-actions">{p.doi&&<a href={p.doi}>DOI →</a>}<a href={`${BASE}${p.file}`}>{tx('Dokument öffnen','Open document')} →</a></div></Disclosure></article>)}</div>
-      <p style={{ marginTop: 34, color: 'var(--soft)', fontSize: 13 }}>{tx('Kanonische Zenodo-/Repository-Metadaten werden direkt beim Deployment gebunden. Publikationseinträge werden nicht dupliziert oder erfunden.', 'Canonical Zenodo / repository metadata should be bound directly during deployment. Do not duplicate or invent publication records.')}</p>
     </section>
   </>
 

@@ -77,11 +77,11 @@
   width: fit-content;
   margin: 0 auto;
   padding: 7px 13px;
-  border: 1px solid rgba(220, 220, 216, .34);
+  border: 1px solid color-mix(in srgb, var(--cyan) 45%, transparent);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(235, 233, 228, .12), rgba(165, 164, 161, .05));
-  color: #d7d6d2;
-  box-shadow: inset 0 1px rgba(255,255,255,.08);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cyan) 16%, transparent), color-mix(in srgb, var(--cyan) 6%, transparent));
+  color: var(--cyan);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 30%, transparent), inset 0 1px rgba(255,255,255,.08);
 }
 
 .eil-home-hero h1.eil-wordmark--h1 {
@@ -238,3 +238,53 @@
    (.eil-page-hero 54/40, .eil-section/.eil-two-col/.eil-callout 64/64) — the
    mockup's own research-*.html pages use the same plain `section{padding:64px 0}`
    rule for these short-content pages, no page-specific override needed. */
+
+/* Nested pages (research-domain detail pages etc.) were a dead end — no way
+   back except the browser's own back button, flagged live as a "Sackgasse".
+   Paired with the Breadcrumbs component's new parent-level back arrow. */
+.eil-back-link {
+  display: inline-block;
+  padding-top: 34px;
+  padding-left: max(20px, calc((100vw - 1180px) / 2));
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.eil-back-link:hover { text-decoration: underline; }
+.eil-back-link + .eil-breadcrumbs { padding-top: 10px; }
+
+/* .eil-callout p was rendering in the ui-monospace stack at up to 30px —
+   fine for short tag-style labels elsewhere, but at callout heading size it
+   reads as a chunky, badly-kerned "code font" for full sentences (flagged
+   live on both the homepage AI callout and the Systems page agent callout).
+   Callout statements are prose, not code — switch to the site's actual
+   display font and let it breathe. */
+.eil-callout p {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+/* The small joined-list lines under callout headings ("Lead Agents ·
+   Specialists · ...") were nearly invisible between the bold cyan statement
+   above and the body paragraph below — flagged live as "geht unter". Give
+   them their own visual weight instead of inheriting tiny default <small>
+   sizing. */
+.eil-callout small {
+  display: block;
+  margin-top: 14px;
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  opacity: 0.8;
+}
+
+/* FoldCard (<details>) grids defaulted to CSS Grid's stretch behavior: when
+   one card's <details> opens and grows taller, every OTHER card sharing that
+   grid row stretches to match, even though its own content is still short —
+   flagged live as opening one card "pushes all other boxes into a wide array
+   and bombs the view". align-items:start lets each card size to its own
+   content independently. */
+.eil-library-grid { align-items: start; }
