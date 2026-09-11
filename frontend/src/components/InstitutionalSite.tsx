@@ -176,12 +176,12 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   // the legal routes (#p/impressum, #p/datenschutz) plus GitHub/Research
   // Notes links stay reachable since those routes still exist server-side.
   const Footer = () => <footer className="eil-footer">
-    <div><Mark /><strong>Emergent Interaction Lab</strong><p>{tx('Interdisziplinäre Forschungsumgebung für emergente Interaktion, komplexe Systeme, Rekonstruktion und intelligente Systemarchitekturen.', 'Interdisciplinary research environment for emergent interaction, complex systems, reconstruction and intelligent system architectures.')}</p></div>
-    <div className="eil-footer-groups">
+    <div className="eil-footer-grid">
+      <div><Mark /><strong>Emergent Interaction Lab</strong><p>{tx('Interdisziplinäre Forschungsumgebung für emergente Interaktion, komplexe Systeme, Rekonstruktion und intelligente Systemarchitekturen.', 'Interdisciplinary research environment for emergent interaction, complex systems, reconstruction and intelligent system architectures.')}</p></div>
       <div><strong>{tx('Erkunden', 'Explore')}</strong><p><a href={href('research')}>{tx('Forschung', 'Research')}</a><br/><a href={href('systems')}>{tx('Systeme', 'Systems')}</a><br/><a href={href('publications')}>{tx('Publikationen', 'Publications')}</a></p></div>
       <div><strong>Lab</strong><p><a href={href('lab')}>{tx('Über EIL', 'About EIL')}</a><br/><a href={href('observatory')}>Observatory</a><br/><a href={href('applied-research')}>Applied Research</a></p></div>
-      <div className="eil-footer-links"><a href={href('notes')}>Research Notes</a><a href="https://github.com/rfi-irfos/emergent-interaction-lab">GitHub</a><a href={`${href('home')}#p/datenschutz`}>Datenschutz</a><a href={`${href('home')}#p/impressum`}>Impressum</a></div>
     </div>
+    <div className="eil-footer-meta"><a href={href('notes')}>Research Notes</a><a href="https://github.com/rfi-irfos/emergent-interaction-lab">GitHub</a><a href={`${href('home')}#p/datenschutz`}>Datenschutz</a><a href={`${href('home')}#p/impressum`}>Impressum</a></div>
     <p className="eil-doctrine">Human rights are not subject to negotiation.<small>{tx('Emergent Interaction Lab · unabhängige Forschungsinstitution', 'Emergent Interaction Lab · independent research institution')}</small></p>
   </footer>
 
@@ -255,7 +255,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('WAS EIL IST', 'WHAT EIL IS')}</Status><h2>{tx('EIL ist die übergeordnete Forschungsumgebung.', 'EIL is the umbrella research environment.')}</h2><p>{tx('Kein einzelnes Framework, Benchmark, keine Agentenfamilie und keine Human–AI-Forschungslinie definiert das Lab für sich allein.', 'No single framework, benchmark, agent family or Human–AI research line defines the lab on its own.')}</p></div>
       <div className="eil-role-grid">
         <article><h3>{tx('Emergente Interaktion', 'Emergent Interaction')}</h3><p>{tx('Wie Interaktion zwischen Komponenten, Agenten, Menschen und Systemen Verhalten erzeugt, das sich nicht aus isolierten Teilen verstehen lässt.', 'How interaction between components, agents, people and systems generates behavior that cannot be understood from isolated parts.')}</p></article>
-        <article><h3>{tx('Rekonstruktion', 'Reconstruction')}</h3><p>{tx('Wie sich verborgene Zustände, Constraints, Beziehungen und kausale Strukturen aus unvollständiger Evidenz ableiten lassen.', 'How hidden states, constraints, relationships and causal structures can be inferred from incomplete evidence.')}</p></article>
+        <article><h3>{tx('Rekonstruktion verborgener Zustände', 'Hidden State Reconstruction')}</h3><p>{tx('Wie sich verborgene Zustände, Constraints, Beziehungen und kausale Strukturen aus unvollständiger Evidenz ableiten lassen.', 'How hidden states, constraints, relationships and causal structures can be inferred from incomplete evidence.')}</p></article>
         <article><h3>{tx('Intelligente Architekturen', 'Intelligent Architectures')}</h3><p>{tx('Wie Reasoning, Zustand, Memory, Evidenz, Koordination, Validierung und Recovery in autonome und Multi-Agent-Systeme eingebaut werden.', 'How reasoning, state, memory, evidence, coordination, validation and recovery are designed into autonomous and multi-agent systems.')}</p></article>
       </div>
     </section>
