@@ -313,9 +313,23 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     ['8-Layer Model', tx('KONZEPTIONELLES MODELL', 'CONCEPTUAL MODEL'), tx('Historisches Framework-Modell', 'Historical framework model'), tx('Ein konzeptionelles Research-Modell innerhalb des historischen EIL-Framework-Portfolios.', 'A conceptual research model within the historical EIL framework portfolio.')],
   ] as const
 
+  const processStages = [
+    [tx('Beobachten', 'Observe'), tx('Verhalten, Interaktion und Systemspuren erfassen, wie sie tatsächlich auftreten.', 'Capture behavior, interaction and system traces as they actually occur.')],
+    [tx('Rekonstruieren', 'Reconstruct'), tx('Verborgene Zustände, Beziehungen und zugrundeliegende Strukturen aus fragmentierter Evidenz ableiten.', 'Infer hidden states, relationships and underlying structures from fragmented evidence.')],
+    [tx('Modellieren', 'Model'), tx('Beobachtete Zustände, Übergänge und Unsicherheit in einer strukturierten Repräsentation abbilden.', 'Represent observed states, transitions and uncertainty in a structured model.')],
+    [tx('Entwerfen', 'Design'), tx('Architektur, Rollen und Kontrolllogik für das untersuchte oder gebaute System festlegen.', 'Define architecture, roles and control logic for the system under study or under construction.')],
+    [tx('Bauen', 'Build'), tx('Modell und Design in ein lauffähiges Instrument oder eine Systemkomponente überführen.', 'Translate model and design into a working instrument or system component.')],
+    [tx('Validieren', 'Validate'), tx('Ergebnisse gegen spätere Beobachtung und Gegenbelege prüfen.', 'Test results against later observation and counter-evidence.')],
+  ] as const
+
   const Methods = () => <>
     <PageHero eyebrow="METHODOLOGY" title={tx('Methoden', 'Methods')} body={tx('Methoden und Instrumente, entwickelt innerhalb der EIL-Forschung.', 'Methods and instruments developed inside EIL research.')} crumbs={[[tx('Start', 'Home'), 'home'], [tx('Methoden', 'Methods'), null]]} />
-    <section className="eil-section"><div className="eil-section-head"><p>{tx('Dies sind unterstützende Forschungswerkzeuge. Sie definieren das Lab nicht als Ganzes und bleiben den Forschungsfragen und Systemen, die sie unterstützen, untergeordnet.', 'These are supporting research tools. They do not define the lab as a whole and should remain subordinate to the research questions and systems they support.')}</p></div>
+    <section className="eil-section"><div className="eil-section-head"><Status>{tx('FORSCHUNGS- & ENTWICKLUNGSPROZESS', 'RESEARCH & DEVELOPMENT PROCESS')}</Status><h2>{tx('KI-gestützter, longitudinaler Forschungs- und Entwicklungsprozess.', 'AI-augmented, longitudinal research and development process.')}</h2><p>{tx('Statt isoliertem Prompting arbeitet das Lab longitudinal mit KI über ausgedehnte Interaktionsverläufe hinweg – für Forschung, Analyse, Rekonstruktion, Modellierung, Systemdesign, Experimentation und Validierung.', 'Rather than isolated prompting, the Lab works longitudinally with AI across extended interaction histories — for research, analysis, reconstruction, modeling, system design, experimentation and validation.')}</p></div>
+      <div className="eil-step-row">{processStages.map(([label]) => <span key={label}><b>{tx('SCHRITT', 'STEP')}</b>{label}</span>)}</div>
+      <div className="eil-method-detail-list" style={{ marginTop: 24 }}>{processStages.map(([label, desc]) => <article key={label}><h2>{label}</h2><p>{desc}</p></article>)}</div>
+      <p style={{ marginTop: 28, color: 'var(--soft)', fontSize: 13 }}>{tx('KI wird im gesamten Prozess als Forschungs-, Analyse-, Modellierungs- und Entwicklungswerkzeug eingesetzt; alle Konzepte, Architekturen, Interpretationen und finalen Entscheidungen bleiben in eigener Verantwortung.', "AI is used throughout this process as a research, analysis, modeling and development tool; all concepts, architectures, interpretations and final decisions remain the Lab's own responsibility.")}</p>
+    </section>
+    <section className="eil-section"><div className="eil-section-head"><Status>{tx('FORSCHUNGSWERKZEUGE', 'RESEARCH TOOLS')}</Status><p>{tx('Dies sind unterstützende Forschungswerkzeuge. Sie definieren das Lab nicht als Ganzes und bleiben den Forschungsfragen und Systemen, die sie unterstützen, untergeordnet.', 'These are supporting research tools. They do not define the lab as a whole and should remain subordinate to the research questions and systems they support.')}</p></div>
       <div className="eil-library-grid">{methodEntries.map(([name, status, full, desc]) => <FoldCard key={name} kicker={status} title={name} subtitle={full}><p>{desc}</p></FoldCard>)}</div>
     </section>
   </>
