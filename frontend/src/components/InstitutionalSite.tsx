@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import type { SiteContent } from '../types/content'
 import { useLang } from '../hooks/useLang'
@@ -128,18 +128,144 @@ const researchDomains: Domain[] = [
 ]
 
 
-const intelligenceSystems = [
-  ['JARVIS', 'MULTI-AGENT ORCHESTRATION', 'Koordiniert mehrere spezialisierte Agenten in einem gemeinsamen Workflow – verteilt Teilaufgaben, sammelt Ergebnisse zusammen und hält den Gesamtstatus, während einzelne Agenten unabhängig laufen.', 'Coordinates multiple specialized agents within one shared workflow — distributes subtasks, gathers their results back together and tracks overall status while individual agents run independently.', 'Ohne Orchestrator müsste jeder Agent selbst wissen, wann er dran ist und an wen er sein Ergebnis übergibt. JARVIS hält diese Reihenfolge und Zuständigkeit zentral, statt es jedem Agenten einzeln aufzubürden, und erkennt, wenn ein Agent nichts mehr liefert.', "Without an orchestrator, every agent would need to know on its own when it's its turn and who to hand results to. JARVIS holds that sequencing and ownership centrally instead of burdening every agent with it individually, and notices when an agent stops delivering."],
-  ['NYX', 'SECURITY & VULNERABILITY SCANNING', 'Scannt Angriffsfläche, Abhängigkeiten, Konfiguration und exponierte Credentials und liefert eine nach Schweregrad sortierte Liste, was zuerst gefixt werden muss.', 'Scans attack surface, dependencies, configuration and exposed credentials, and delivers a severity-ranked list of what to fix first.', 'Beobachtet offene Ports, exponierte Services, TLS-Zertifikatsstatus und neu veröffentlichte CVEs, die den eigenen Stack betreffen. Erkennt bekannte Schwachstellen in Abhängigkeiten, falsch konfigurierte Zugriffsrechte und ungenutzte Accounts mit noch aktivem Zugriff. Liefert einen Bericht mit CVSS-artiger Einstufung pro Fund, der direkt an ein Entwicklungsteam übergeben werden kann.', 'Monitors open ports, exposed services, TLS certificate health and newly published CVEs affecting the stack. Detects known vulnerabilities in dependencies, misconfigured access rights and unused accounts still holding live access. Delivers a report with a CVSS-style severity rating per finding, ready to hand directly to a dev team.'],
-  ['MIRROR', 'SYSTEM INTEGRITY', 'Erkennt Widerspruch, Drift, Regression und Abweichung von zuvor validierten Systemzuständen – bevor die Lücke zum eigentlichen Problem wird.', 'Detects contradiction, drift, regression and divergence from previously validated system states — before the gap becomes the actual problem.', 'Beobachtet Plan gegen tatsächlichen Zustand, Regelkonformität, Zielwerte gegen Ergebnisse und Team-Velocity gegen Zusagen. Erkennt stillschweigende Workarounds, ausgehöhlte Kennzahlen und übersehene Fristen. Liefert eine Frühwarnung statt eines Post-mortems, mit einer laufenden Integritäts-Kennzahl.', 'Monitors plan versus actual state, rule compliance, targets versus outcomes and team velocity versus commitments. Detects quiet workarounds, hollowed-out metrics and overlooked deadlines. Delivers an early warning instead of a post-mortem, with a running integrity score.'],
-  ['ROBERT', 'SALES INTELLIGENCE', 'Sales-Intelligence-Agent, der Leads recherchiert, qualifiziert und Kontext für Outreach zusammenstellt – koordiniert über mehrere spezialisierte Teilrollen.', 'Sales-intelligence agent that researches and qualifies leads and assembles outreach context — coordinated across several specialized sub-roles.', 'Sammelt öffentlich verfügbare Signale zu einem Unternehmen – Größe, Branche, aktuelle Aktivität, passende Ansprechpartner – und bringt sie in eine Form, mit der eine Erstansprache konkret statt generisch sein kann. Ersetzt keine menschliche Entscheidung, wer angesprochen wird, liefert aber die Grundlage dafür.', "Gathers publicly available signals about a company — size, sector, current activity, relevant contacts — and turns them into something a first outreach message can actually be specific about instead of generic. Doesn't replace the human decision of who to reach out to, but supplies the basis for it."],
-  ['ARGUS', 'INFORMATION INTELLIGENCE', 'Beobachtet Markt-, Presse- und Wettbewerbssignale kontinuierlich und markiert relevante Veränderungen, sobald sie auftreten – statt in periodischen Digests.', 'Continuously monitors market, press and competitive signals and flags relevant changes as they occur — rather than in periodic digests.', 'Beobachtet Wettbewerber-Ankündigungen, Erwähnungen, Presse, Stimmungsverschiebungen, Führungswechsel und Produktlaunches. Erkennt neue Marktbewegungen, sich formende Narrative und frühe Anzeichen eines Marktwandels. Liefert einen tagesaktuellen Alert statt eines wöchentlichen Digests, mit Historie und Quellenangabe.', 'Monitors competitor announcements, mentions, press, sentiment shifts, leadership changes and product launches. Detects emerging market movements, narratives forming before mainstream coverage and early signs of a market shift. Delivers a same-day alert instead of a weekly digest, with history and sourcing.'],
-  ['ATLAS', 'ORCHESTRATION', 'Priorisiert und orchestriert Signale aus mehreren spezialisierten Agenten, macht Dringlichkeit sichtbar und löst Widersprüche zwischen Einzelbefunden auf.', 'Prioritizes and orchestrates signals across multiple specialized agents, surfacing urgency and resolving conflicts between their individual findings.', 'Beobachtet, was jeder Agent findet, welche Alerts sich überschneiden und wo Agenten voneinander abhängen. Erkennt widersprüchliche Berichte, doppelte Alerts und Engpässe zwischen Agenten. Liefert eine einzige priorisierte Liste statt zehn Einzelmeldungen, mit klarer nächster Handlung.', 'Monitors what every agent is finding, which alerts overlap and where agents depend on each other. Detects conflicting reports, duplicate alerts and bottlenecks between agents. Delivers one ranked list instead of ten separate alerts, with a clear next action.'],
-  ['KOPERNIKUS', 'EXECUTION', 'Identifiziert Förder- und Kapitalquellen, die tatsächlich zum untersuchten System passen, statt generischer Datenbank-Treffer.', 'Identifies funding and capital sources that actually match the system under study, rather than generic database matches.', 'Beobachtet offene Förderprogramme, Investorenaktivität, neue Finanzierungsrunden und Bewerbungsfristen. Erkennt tatsächlich passende Programme, sich ändernde Eligibility-Regeln und knapp werdende Deadlines. Liefert eine kurze Liste echter Optionen statt eines Datenbank-Dumps, sortiert nach Passung und Frist.', 'Monitors open grant programs, investor activity, new funding rounds and application deadlines. Detects genuinely matching programs, changing eligibility rules and closing deadlines. Delivers a short list of real options instead of a database dump, ranked by fit and deadline.'],
-  ['JANUS', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
-  ['DAEDALUS', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
-  ['DELTA', 'SPECIALIZED AGENT', 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', 'Specialized intelligence system; public detail intentionally limited.'],
-] as const
+type SpecEntry = {
+  key: string; kicker: string; title: string
+  leadDe: string; leadEn: string
+  problemDe?: string; problemEn?: string
+  archDe?: string[]; archEn?: string[]
+  specDe?: [string, string][]; specEn?: [string, string][]
+}
+
+const intelligenceSystems: SpecEntry[] = [
+  { key: 'jarvis', kicker: 'MULTI-AGENT ORCHESTRATION', title: 'JARVIS',
+    leadDe: 'Koordiniert mehrere spezialisierte Agenten in einem gemeinsamen Workflow.', leadEn: 'Coordinates multiple specialized agents within one shared workflow.',
+    problemDe: 'Ohne zentrale Orchestrierung muss jeder Agent selbst wissen, wann er dran ist und an wen er übergibt – bei mehr als ein paar Agenten wird das unkoordinierbar, und ein stiller Ausfall bleibt unbemerkt.', problemEn: "Without central orchestration, every agent has to know on its own when it's its turn and who to hand off to — past a handful of agents that stops being coordinable, and a silent failure goes unnoticed.",
+    archDe: ['Verteilt Teilaufgaben an die passenden spezialisierten Agenten.', 'Sammelt Zwischenergebnisse zusammen und hält den Gesamtstatus.', 'Erkennt, wenn ein Agent nichts mehr liefert oder hängen bleibt.', 'Hält fest, welcher Agent was weiß und wer an wen übergibt.'],
+    archEn: ['Distributes subtasks to the matching specialized agents.', 'Gathers intermediate results and tracks overall status.', 'Detects when an agent stops delivering or gets stuck.', 'Keeps track of what each agent knows and who hands off to whom.'],
+    specDe: [['Rolle', 'Multi-Agent-Orchestrator'], ['Input', 'Teilaufgaben aus einem Workflow'], ['Output', 'Konsolidierter Status + Ergebnis']],
+    specEn: [['Role', 'Multi-agent orchestrator'], ['Input', 'Subtasks from a workflow'], ['Output', 'Consolidated status + result']] },
+  { key: 'nyx', kicker: 'SECURITY & VULNERABILITY SCANNING', title: 'NYX',
+    leadDe: 'Scannt Angriffsfläche, Abhängigkeiten, Konfiguration und exponierte Credentials.', leadEn: 'Scans attack surface, dependencies, configuration and exposed credentials.',
+    problemDe: 'Sicherheitslücken bleiben oft unentdeckt, bis sie ausgenutzt werden – ohne laufendes Scanning verlässt man sich auf Zufall oder seltene manuelle Audits.', problemEn: 'Security gaps often go undetected until they are exploited — without continuous scanning, you rely on luck or rare manual audits.',
+    archDe: ['Beobachtet offene Ports, exponierte Services und TLS-Zertifikatsstatus.', 'Gleicht Abhängigkeiten gegen neu veröffentlichte CVEs ab.', 'Erkennt falsch konfigurierte Zugriffsrechte und ungenutzte Accounts mit noch aktivem Zugriff.', 'Ordnet jeden Fund nach Schweregrad, CVSS-artig.'],
+    archEn: ['Monitors open ports, exposed services and TLS certificate health.', 'Matches dependencies against newly published CVEs.', 'Detects misconfigured access rights and unused accounts still holding live access.', 'Ranks every finding by severity, CVSS-style.'],
+    specDe: [['Rolle', 'Security & Vulnerability Scanning'], ['Output', 'Priorisierte Findings-Liste, übergabefertig an ein Dev-Team']],
+    specEn: [['Role', 'Security & vulnerability scanning'], ['Output', 'Prioritized findings list, ready to hand to a dev team']] },
+  { key: 'mirror', kicker: 'SYSTEM INTEGRITY', title: 'MIRROR',
+    leadDe: 'Erkennt Widerspruch, Drift, Regression und Abweichung von zuvor validierten Systemzuständen.', leadEn: 'Detects contradiction, drift, regression and divergence from previously validated system states.',
+    problemDe: 'Ein Team kann wochenlang glauben, im Plan zu sein, während die Realität längst woanders ist – niemand meldet das von selbst.', problemEn: "A team can believe for weeks it's on plan while reality has already moved on — nobody reports that on its own.",
+    archDe: ['Vergleicht Plan gegen tatsächlichen Zustand, Regelkonformität, Zielwerte gegen Ergebnisse.', 'Beobachtet Team-Velocity gegen Zusagen.', 'Erkennt stillschweigende Workarounds, ausgehöhlte Kennzahlen und übersehene Fristen.', 'Liefert eine Frühwarnung statt eines Post-mortems, mit einer laufenden Integritäts-Kennzahl.'],
+    archEn: ['Compares plan versus actual state, rule compliance, targets versus outcomes.', 'Monitors team velocity versus commitments.', 'Detects quiet workarounds, hollowed-out metrics and overlooked deadlines.', 'Delivers an early warning instead of a post-mortem, with a running integrity score.'] },
+  { key: 'robert', kicker: 'SALES INTELLIGENCE', title: 'ROBERT',
+    leadDe: 'Sales-Intelligence-Agent, der Leads recherchiert, qualifiziert und Kontext für Outreach zusammenstellt.', leadEn: 'Sales-intelligence agent that researches and qualifies leads and assembles outreach context.',
+    problemDe: 'Eine Erstansprache ohne konkreten Kontext liest sich generisch und wird ignoriert – Research für jeden Lead von Hand zu machen skaliert nicht.', problemEn: "A first outreach message without real context reads generic and gets ignored — doing research on every lead by hand doesn't scale.",
+    archDe: ['Sammelt öffentlich verfügbare Signale zu einem Unternehmen – Größe, Branche, aktuelle Aktivität, passende Ansprechpartner.', 'Bringt sie in eine Form, mit der eine Erstansprache konkret statt generisch sein kann.', 'Koordiniert über mehrere spezialisierte Teilrollen.', 'Ersetzt keine menschliche Entscheidung, wer angesprochen wird, liefert aber die Grundlage dafür.'],
+    archEn: ['Gathers publicly available signals about a company — size, sector, current activity, relevant contacts.', 'Turns them into something a first outreach message can actually be specific about.', 'Coordinated across several specialized sub-roles.', "Doesn't replace the human decision of who to reach out to, but supplies the basis for it."] },
+  { key: 'argus', kicker: 'INFORMATION INTELLIGENCE', title: 'ARGUS',
+    leadDe: 'Beobachtet Markt-, Presse- und Wettbewerbssignale kontinuierlich.', leadEn: 'Continuously monitors market, press and competitive signals.',
+    problemDe: 'Wettbewerbsbewegungen werden oft erst über Wochen sichtbar, wenn sie längst Konsequenzen haben – ein wöchentlicher Digest kommt strukturell zu spät.', problemEn: 'Competitive moves often only become visible over weeks, by which point they already have consequences — a weekly digest is structurally too late.',
+    archDe: ['Beobachtet Wettbewerber-Ankündigungen, Erwähnungen, Presse, Stimmungsverschiebungen, Führungswechsel und Produktlaunches.', 'Erkennt neue Marktbewegungen, sich formende Narrative und frühe Anzeichen eines Marktwandels.', 'Liefert einen tagesaktuellen Alert statt eines wöchentlichen Digests, mit Historie und Quellenangabe.'],
+    archEn: ['Monitors competitor announcements, mentions, press, sentiment shifts, leadership changes and product launches.', 'Detects emerging market movements, narratives forming before mainstream coverage and early signs of a market shift.', 'Delivers a same-day alert instead of a weekly digest, with history and sourcing.'] },
+  { key: 'atlas', kicker: 'ORCHESTRATION', title: 'ATLAS',
+    leadDe: 'Priorisiert und orchestriert Signale aus mehreren spezialisierten Agenten.', leadEn: 'Prioritizes and orchestrates signals across multiple specialized agents.',
+    problemDe: 'Zehn Agenten liefern zehn Einzelmeldungen – ohne Priorisierung weiß niemand, was zuerst drankommt oder wo sich Befunde widersprechen.', problemEn: 'Ten agents deliver ten separate alerts — without prioritization, nobody knows what to act on first or where findings conflict.',
+    archDe: ['Beobachtet, was jeder Agent findet, welche Alerts sich überschneiden und wo Agenten voneinander abhängen.', 'Erkennt widersprüchliche Berichte, doppelte Alerts und Engpässe zwischen Agenten.', 'Liefert eine einzige priorisierte Liste statt zehn Einzelmeldungen, mit klarer nächster Handlung.'],
+    archEn: ['Monitors what every agent is finding, which alerts overlap and where agents depend on each other.', 'Detects conflicting reports, duplicate alerts and bottlenecks between agents.', 'Delivers one ranked list instead of ten separate alerts, with a clear next action.'] },
+  { key: 'kopernikus', kicker: 'EXECUTION', title: 'KOPERNIKUS',
+    leadDe: 'Identifiziert Förder- und Kapitalquellen, die tatsächlich zum untersuchten System passen.', leadEn: 'Identifies funding and capital sources that actually match the system under study.',
+    problemDe: 'Förderdatenbanken listen tausende Programme, von denen die meisten für den konkreten Fall gar nicht infrage kommen – das manuell zu sichten kostet mehr Zeit, als es bringt.', problemEn: "Grant databases list thousands of programs, most of which don't actually apply to the case at hand — sifting through them by hand costs more time than it saves.",
+    archDe: ['Beobachtet offene Förderprogramme, Investorenaktivität, neue Finanzierungsrunden und Bewerbungsfristen.', 'Erkennt tatsächlich passende Programme, sich ändernde Eligibility-Regeln und knapp werdende Deadlines.', 'Liefert eine kurze Liste echter Optionen statt eines Datenbank-Dumps, sortiert nach Passung und Frist.'],
+    archEn: ['Monitors open grant programs, investor activity, new funding rounds and application deadlines.', 'Detects genuinely matching programs, changing eligibility rules and closing deadlines.', 'Delivers a short list of real options instead of a database dump, ranked by fit and deadline.'] },
+  { key: 'lynx', kicker: 'VISIBILITY & SEO INTELLIGENCE', title: 'LYNX',
+    leadDe: 'Prüft, ob und wie ein Unternehmen online tatsächlich gefunden wird.', leadEn: 'Checks whether and how a company can actually be found online.',
+    problemDe: 'Rankings und Sichtbarkeit verschlechtern sich oft lange bevor der Traffic-Verlust auffällt – ohne laufende Prüfung wird das erst nach dem Schaden bemerkt.', problemEn: "Rankings and visibility often degrade long before the traffic loss becomes obvious — without ongoing monitoring, it's noticed only after the damage is done.",
+    archDe: ['Beobachtet Google-Rankings, Keyword-Performance und technische SEO-Signale wie Core Web Vitals und defekte Links.', 'Prüft, wie eine Marke in KI-Suchergebnissen erscheint, nicht nur in klassischer Suche.', 'Erkennt Seiten, die um dasselbe Keyword konkurrieren, und Content, den Suchmaschinen nicht sauber indexieren können.', 'Liefert eine priorisierte Fix-Liste statt nur eines Keyword-Reports.'],
+    archEn: ['Monitors Google rankings, keyword performance and technical SEO signals like Core Web Vitals and broken links.', 'Checks how a brand shows up in AI search results, not just classic search.', "Detects pages competing against each other for the same keyword, and content search engines can't properly index.", 'Delivers a prioritized fix list, not just a keyword report.'],
+    specDe: [['Rolle', 'Visibility & SEO Intelligence'], ['Output', 'Technischer SEO-Audit + priorisierte Fix-Liste']],
+    specEn: [['Role', 'Visibility & SEO intelligence'], ['Output', 'Technical SEO audit + prioritized fix list']] },
+  { key: 'janus', kicker: 'SPECIALIZED AGENT', title: 'JANUS',
+    leadDe: 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', leadEn: 'Specialized intelligence system; public detail intentionally limited.',
+    problemDe: 'Die Rolle ist bewusst nicht öffentlich im Detail beschrieben.', problemEn: 'The role is intentionally not described in public detail.' },
+  { key: 'daedalus', kicker: 'SPECIALIZED AGENT', title: 'DAEDALUS',
+    leadDe: 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', leadEn: 'Specialized intelligence system; public detail intentionally limited.',
+    problemDe: 'Die Rolle ist bewusst nicht öffentlich im Detail beschrieben.', problemEn: 'The role is intentionally not described in public detail.' },
+  { key: 'delta', kicker: 'SPECIALIZED AGENT', title: 'DELTA',
+    leadDe: 'Spezialisiertes Intelligence-System; öffentliche Details bewusst begrenzt.', leadEn: 'Specialized intelligence system; public detail intentionally limited.',
+    problemDe: 'Die Rolle ist bewusst nicht öffentlich im Detail beschrieben.', problemEn: 'The role is intentionally not described in public detail.' },
+]
+
+const infraSystems: SpecEntry[] = [
+  { key: 'eil-kernel', kicker: 'GEBAUT', title: 'EIL Kernel',
+    leadDe: 'Läuft bereits produktiv – kein Konzept auf dem Reißbrett.', leadEn: 'Already running in production — not a concept on the drawing board.',
+    problemDe: 'Ohne persistente Infrastruktur verliert jede neue Sitzung Kontext, Entscheidungen und zuvor validierte Zustände – ein Agent, dessen Gedächtnis bei jedem Neustart zurückgesetzt wird, kann nicht longitudinal forschen.', problemEn: "Without persistent infrastructure, every new session loses context, decisions and previously validated states — an agent whose memory resets on every restart can't do longitudinal research.",
+    archDe: ['Hält Runtime, State, Context und Memory über Sitzungen, Neustarts und Machine-Wechsel hinweg fest.', 'Protokolliert Entscheidungen und Zustände in Audit Trails statt sie stillschweigend zu überschreiben.', 'Umfasst Evidence Handling, Testarchitektur sowie Guard A / Guard B als eingebaute Kontrollmechanismen.', 'Erkennt Drift und meldet es über Monitoring/Feedback statt es zu ignorieren.'],
+    archEn: ['Preserves runtime, state, context and memory across sessions, restarts and machine changes.', 'Logs decisions and states to audit trails instead of silently overwriting them.', 'Includes evidence handling, test structures and Guard A / Guard B as built-in controls.', 'Detects drift and surfaces it via monitoring/feedback instead of ignoring it.'],
+    specDe: [['Status', 'Gebaut, in aktivem Einsatz'], ['Komponenten', 'Agent Logic · Runtime · State · Context · Memory · Drift · Monitoring · Feedback · Recovery · Audit Trails']],
+    specEn: [['Status', 'Built, in active use'], ['Components', 'Agent Logic · Runtime · State · Context · Memory · Drift · Monitoring · Feedback · Recovery · Audit Trails']] },
+  { key: 'dingir', kicker: 'AKTIVE FORSCHUNG', title: 'DINGIR',
+    leadDe: 'Das kollaborative System für Hidden-State-Rekonstruktion, Kausalketten, Zustandsübergänge und prädiktives Reasoning.', leadEn: 'The collaborative system for hidden-state reconstruction, causal chains, state transitions and predictive reasoning.',
+    problemDe: 'Ein Systemzustand, der nicht direkt beobachtbar ist, bleibt ohne Rekonstruktion eine Vermutung statt einer belastbaren Aussage.', problemEn: 'A system state that cannot be directly observed stays a guess rather than a defensible claim without reconstruction.',
+    archDe: ['Verbindet Evidenz, verborgenen Zustand, kausale Struktur, Zustandsübergänge und mögliche Zukünfte in einer Kette.', 'EIL trägt Forschung und Intelligence Architecture rund um Rekonstruktion, Hidden-State-Reasoning, kausale und zeitliche Struktur bei.', 'Engineering- und Implementierungs-Attribution bleibt bei tatsächlicher Zusammenarbeit mit RFI-IRFOS explizit ausgewiesen.'],
+    archEn: ['Chains evidence, hidden state, causal structure, state transitions and possible futures together.', 'EIL contributes research and intelligence architecture around reconstruction, hidden-state reasoning, causal and temporal structure.', 'Engineering and implementation attribution stays explicit where RFI-IRFOS actually collaborates.'],
+    specDe: [['Status', 'Aktive Forschung'], ['Kette', 'Evidenz → Verborgener Zustand → Kausale Struktur → Übergang → Mögliche Zukünfte'], ['Zugehörige Domain', 'Kausalität, Prediction & DINGIR']],
+    specEn: [['Status', 'Active research'], ['Chain', 'Evidence → Hidden State → Causal Structure → Transition → Possible Futures'], ['Related domain', 'Causality, Prediction & DINGIR']] },
+]
+
+const methodEntries: SpecEntry[] = [
+  { key: 'liie', kicker: 'OPEN RESEARCH BENCHMARK', title: 'LIIE',
+    leadDe: 'Longitudinal Interaction Impact Evaluation', leadEn: 'Longitudinal Interaction Impact Evaluation',
+    problemDe: 'Kurzzeit-Tests zeigen nicht, ob eine Mensch-KI-Interaktion über Monate hinweg besser oder schlechter wird – Langzeitmuster brauchen einen Langzeit-Benchmark.', problemEn: 'Short-term tests can\'t show whether a human–AI interaction gets better or worse over months — long-term patterns need a long-term benchmark.',
+    archDe: ['Erfasst vorteilhafte, erhaltende und sich verschlechternde Interaktionsmuster über mehrjährige Verläufe.', 'Misst Rekonstruktionsgenauigkeit, Handlungsfähigkeit und semantische Integrität.', 'Prüft Abhängigkeit, Unsicherheitskalibrierung, Recovery und False-State-Kontrollen.'],
+    archEn: ['Captures beneficial, preserving and deteriorating interaction patterns across multi-year trajectories.', 'Measures reconstruction accuracy, agency and semantic integrity.', 'Tests dependency, uncertainty calibration, recovery and false-state controls.'] },
+  { key: 'ieia', kicker: 'FORSCHUNGSSTRUKTUR', title: 'IEIA / EIA',
+    leadDe: 'Iterative & Emergent Interaction Analysis', leadEn: 'Iterative & Emergent Interaction Analysis',
+    problemDe: 'Eine einzelne Sitzung isoliert zu betrachten verschleiert, ob ein Muster Zufall oder echte Tendenz ist.', problemEn: 'Looking at a single session in isolation obscures whether a pattern is chance or a real trend.',
+    archDe: ['Zerlegt eine Interaktionsreihe in einzeln vergleichbare Episoden.', 'Vergleicht Muster über wiederholte Durchläufe statt über eine Momentaufnahme.'],
+    archEn: ['Breaks an interaction series into individually comparable episodes.', 'Compares patterns across repeated runs instead of a single snapshot.'] },
+  { key: 'cei', kicker: 'METRIK', title: 'CEI',
+    leadDe: 'Continuous Evolution Index', leadEn: 'Continuous Evolution Index',
+    problemDe: 'Ob sich eine Interaktion verbessert oder verschlechtert, ist ohne durchgehende Messung reine Vermutung.', problemEn: 'Whether an interaction is improving or degrading is pure guesswork without continuous measurement.',
+    archDe: ['Ein einzelner, über Zeit fortgeschriebener Wert.', 'Zeigt Trend Richtung Verbesserung, Stillstand oder Verschlechterung.', 'Gemessen aus stabilen Turns und getrackten Signalen, nicht behauptet.'],
+    archEn: ['A single value, updated over time.', 'Shows a trend toward improvement, stagnation or deterioration.', 'Measured from stable turns and tracked signals, not asserted.'] },
+  { key: 'uip-ccet', kicker: 'RESEARCH INSTRUMENTE', title: 'UIP / CCET',
+    leadDe: 'User Integrity Protocol · Continuous Co-Evolution Tracker', leadEn: 'User Integrity Protocol · Continuous Co-Evolution Tracker',
+    problemDe: 'Ohne festgehaltenen Verlauf behandelt ein System jeden Nutzer wie einen Erstkontakt, selbst nach hunderten Interaktionen.', problemEn: 'Without a recorded history, a system treats every user like a first contact, even after hundreds of interactions.',
+    archDe: ['UIP prüft, ob ein System einen Nutzer über die Zeit konsistent behandelt, statt bei jeder Sitzung neu zu raten.', 'CCET verfolgt, wie sich Nutzer und System gemeinsam über wiederholte Interaktion verändern.', 'Beide arbeiten auf longitudinalen Snapshots, nicht auf Einzelsitzungen.'],
+    archEn: ['UIP checks whether a system treats a user consistently over time, instead of re-guessing at every session.', 'CCET tracks how user and system change together across repeated interaction.', 'Both operate on longitudinal snapshots, not single sessions.'] },
+  { key: 'lsg-24', kicker: 'FORSCHUNGS- & DATENINSTRUMENTE', title: 'LSG-24 / LAP-1 / LT-Data',
+    leadDe: 'Framework-Familie', leadEn: 'Framework family',
+    problemDe: 'Eine Universalmethode, die auf jeden Fall gestülpt wird, übersieht fallspezifische Besonderheiten.', problemEn: 'A one-size-fits-all method stretched over every case overlooks case-specific detail.',
+    archDe: ['Jedes Instrument wurde für eine konkrete, wiederkehrende Analyseaufgabe gebaut.', 'Kein Fall wird in ein Standardschema gezwungen, das nicht passt.'],
+    archEn: ['Each instrument was built for one concrete, recurring analysis task.', "No case gets forced into a standard schema that doesn't fit."] },
+  { key: '8-layer', kicker: 'KONZEPTIONELLES MODELL', title: '8-Layer Model',
+    leadDe: 'Historisches Framework-Modell', leadEn: 'Historical framework model',
+    problemDe: 'Ein Fehler wird oft erst dort bemerkt, wo er sichtbar wird – nicht dort, wo er tatsächlich entstanden ist.', problemEn: "An error is often noticed where it becomes visible — not where it actually originated.",
+    archDe: ['Zerlegt einen Reasoning-Verlauf in acht unterscheidbare Schichten.', 'Macht sichtbar, in welcher Schicht ein Fehler ursprünglich entsteht.', 'Heute primär von historischem Interesse, nicht aktiv weiterentwickelt.'],
+    archEn: ['Breaks a reasoning trace into eight distinguishable layers.', 'Reveals which layer an error actually originates in.', 'Today mostly of historical interest, not actively developed further.'] },
+]
+
+const appliedCapabilities: SpecEntry[] = [
+  { key: 'app-reconstruction', kicker: 'CORE CAPABILITY', title: 'Systemrekonstruktion',
+    leadDe: 'Systemzustand, Ereignisabfolgen, Constraints oder kausale Struktur aus unvollständiger und verteilter Evidenz rekonstruieren.', leadEn: 'Reconstruct system state, event sequences, constraints or causal structure from incomplete and distributed evidence.',
+    problemDe: 'Bei fragmentierter oder verteilter Evidenz lässt sich der wahre Systemzustand nicht direkt beobachten, nur erschließen.', problemEn: 'With fragmented or distributed evidence, the true system state can\'t be directly observed, only inferred.',
+    archDe: ['Rekonstruiert Systemzustand, Ereignisabfolgen, Constraints oder kausale Struktur.', 'Arbeitet aus unvollständiger und verteilter Evidenz statt vollständigem Zugriff.', 'Nutzt dieselbe Methode wie die Forschungsdomäne Systemrekonstruktion.'],
+    archEn: ['Reconstructs system state, event sequences, constraints or causal structure.', 'Works from incomplete and distributed evidence rather than full access.', 'Uses the same method as the System Reconstruction research domain.'] },
+  { key: 'app-diagnostics', kicker: 'RESEARCH CAPABILITY', title: 'KI-gestützte Systemdiagnostik',
+    leadDe: 'Strukturierte Intelligence-Systeme einsetzen, um Verhalten, Systemzustände, Fehlermuster und verborgene Constraints zu untersuchen.', leadEn: 'Use structured intelligence systems to investigate behavior, system conditions, failure patterns and hidden constraints.',
+    problemDe: 'Manuelle Diagnostik skaliert nicht über viele Systeme oder große Datenmengen hinweg.', problemEn: "Manual diagnostics don't scale across many systems or large volumes of data.",
+    archDe: ['Setzt strukturierte Intelligence-Systeme ein, um Verhalten und Systemzustände zu untersuchen.', 'Deckt Fehlermuster und verborgene Constraints auf, die isolierte Checks übersehen.'],
+    archEn: ['Uses structured intelligence systems to investigate behavior and system states.', 'Surfaces failure patterns and hidden constraints that isolated checks miss.'] },
+  { key: 'app-behavioral', kicker: 'RESEARCH CAPABILITY', title: 'Behavioral- / Interaktionsanalyse',
+    leadDe: 'Beobachtete Interaktionsmuster, Entscheidungsdynamik, Abweichungen und longitudinale Veränderung analysieren.', leadEn: 'Analyze observed interaction patterns, decision dynamics, deviations and longitudinal change.',
+    problemDe: 'Einzelne Interaktionen zeigen kein Muster – erst der Vergleich über Zeit macht Abweichung und Tendenz sichtbar.', problemEn: 'Single interactions show no pattern — only comparison over time makes deviation and trend visible.',
+    archDe: ['Analysiert beobachtete Interaktionsmuster und Entscheidungsdynamik.', 'Verfolgt longitudinale Veränderung statt Momentaufnahmen.'],
+    archEn: ['Analyzes observed interaction patterns and decision dynamics.', 'Tracks longitudinal change rather than snapshots.'] },
+  { key: 'app-adversarial', kicker: 'RESEARCH CAPABILITY', title: 'Adversariale Systemanalyse',
+    leadDe: 'Annahmen und behauptetes Systemverhalten gegen widersprüchliche Evidenz, Edge Cases und Fehlerzustände prüfen.', leadEn: 'Challenge assumptions and stated system behavior against conflicting evidence, edge cases and failure conditions.',
+    problemDe: 'Ein System, das nur gegen erwartete Fälle getestet wird, bricht beim ersten unerwarteten.', problemEn: 'A system tested only against expected cases breaks on the first unexpected one.',
+    archDe: ['Prüft Annahmen und behauptetes Verhalten gegen widersprüchliche Evidenz.', 'Testet Edge Cases und Fehlerzustände gezielt, statt zu hoffen, dass sie nicht eintreten.'],
+    archEn: ['Tests assumptions and stated behavior against conflicting evidence.', "Deliberately tests edge cases and failure conditions instead of hoping they don't occur."] },
+]
 
 const engagements = [
   ['System Reconstruction', 'Case Intake Scan', '€700', 'Intake, erste Evidenzgrenzen und priorisierte offene Fragen.', 'Intake, initial evidence boundaries and prioritized open questions.'],
@@ -170,15 +296,57 @@ function handleAccordionToggle(e: React.SyntheticEvent<HTMLDetailsElement>) {
 function Disclosure({ summary, children, group }: { summary: string; children: ReactElement | ReactElement[]; group?: string }) {
   return <details className="eil-disclosure" name={group || "eil-disclosure"} onToggle={handleAccordionToggle}><summary>{summary}</summary><div className="eil-disclosure-body">{children}</div></details>
 }
-function FoldCard({ title, subtitle, kicker, children, className = '', group }: { title: string; subtitle?: string; kicker?: ReactNode; children: ReactNode; className?: string; group?: string }) {
-  return <details className={`eil-fold-card ${className}`.trim()} name={group || "eil-fold-card"} onToggle={handleAccordionToggle}><summary>{kicker&&<span className="eil-fold-kicker">{kicker}</span>}<strong>{title}</strong>{subtitle&&<small>{subtitle}</small>}</summary><div className="eil-fold-body">{children}</div></details>
-}
 
 export function InstitutionalSite({ route, content }: { route: InstitutionalRoute; content: SiteContent }) {
   const { lang, setLang } = useLang()
   const { theme, cycle } = useTheme()
   const de = lang === 'de'
   const tx = (german: string, english: string) => de ? german : english
+
+  // Replaces the old inline FoldCard accordion for Systems/Methods/Applied
+  // Research: flagged live as "das ist kake" — a 3-line dropdown, not a real
+  // explanation. SpecCard is the closed, clickable card; SpecModal is the
+  // on-screen panel it opens, with real sections (what it is / problem it
+  // solves / how it works / spec facts) instead of one paragraph.
+  const [openModal, setOpenModal] = useState<string | null>(null)
+  const allSpecEntries = [...intelligenceSystems, ...infraSystems, ...methodEntries, ...appliedCapabilities]
+
+  useEffect(() => {
+    if (!openModal) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenModal(null) }
+    window.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = '' }
+  }, [openModal])
+
+  const SpecCard = ({ entry }: { entry: SpecEntry }) => (
+    <button type="button" className="eil-spec-card" onClick={() => setOpenModal(entry.key)}>
+      <Status>{entry.kicker}</Status><h3>{entry.title}</h3><p>{tx(entry.leadDe, entry.leadEn)}</p>
+    </button>
+  )
+
+  const SpecModal = () => {
+    const entry = allSpecEntries.find(e => e.key === openModal)
+    if (!entry) return null
+    return (
+      <div className="eil-spec-overlay" role="dialog" aria-modal="true" aria-label={entry.title} onClick={(e) => { if (e.target === e.currentTarget) setOpenModal(null) }}>
+        <div className="eil-spec-panel">
+          <button type="button" className="eil-spec-x" aria-label={tx('Schließen', 'Close')} onClick={() => setOpenModal(null)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6 L18 18 M18 6 L6 18" /></svg>
+          </button>
+          <div className="eil-spec-scroll">
+            <Status>{entry.kicker}</Status>
+            <h1>{entry.title}</h1>
+            <p className="eil-spec-lead">{tx(entry.leadDe, entry.leadEn)}</p>
+            {entry.problemDe && <><h2>{tx('PROBLEM', 'PROBLEM')}</h2><p>{tx(entry.problemDe, entry.problemEn!)}</p></>}
+            {entry.archDe && <><h2>{tx('ARCHITEKTUR', 'ARCHITECTURE')}</h2><ul>{(de ? entry.archDe : entry.archEn!).map(line => <li key={line}>{line}</li>)}</ul></>}
+            {entry.specDe && <><h2>{tx('SPEC', 'SPEC')}</h2><dl className="eil-spec-dl">{(de ? entry.specDe : entry.specEn!).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl></>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Mirrors the zip content package's own <nav> order (index.html etc.):
   // Lab, Research, Systems, Methods, Publications, Observatory, Applied Research.
   const navigation: Array<[InstitutionalRoute, string, string]> = [
@@ -273,9 +441,9 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('EIN LAB, MEHRERE VERBUNDENE FORSCHUNGSSCHICHTEN', 'ONE LAB, MULTIPLE INTERACTING RESEARCH LAYERS')}</Status><h2>{tx('Ein Lab. Mehrere ineinandergreifende Forschungsschichten.', 'One lab. Multiple interacting research layers.')}</h2><p>{tx('EIL ist keine Framework-Sammlung, kein reines Human–AI-Lab und kein Agentenkatalog. Die Arbeit verbindet Interaktion, Systemdynamik, Rekonstruktion, Intelligence Architecture, Runtime-Integrität, Kausalität, Experimentation und Evaluation.', 'EIL is not a framework collection, a Human–AI lab only, or an agent catalogue. Its work connects interaction, system dynamics, reconstruction, intelligence architecture, runtime integrity, causality, experimentation and evaluation.')}</p></div>
       <div className="eil-domain-chips">{['Emergent Interaction', 'Complex Systems', 'System Reconstruction', 'Intelligence Architecture', 'Multi-Agent Systems', 'DINGIR'].map(x => <span key={x}>{x}</span>)}</div>
       <div className="eil-role-grid" style={{ marginTop: 32 }}>
-        <article><span className="eil-fold-kicker">{tx('EMERGENZ & DYNAMIK', 'EMERGENCE & DYNAMICS')}</span><h3>{tx('Interaktion', 'Interaction')}</h3><p>{tx('Wie lokale Interaktionen globales Verhalten, Struktur, Adaption und Veränderung über Zeit erzeugen.', 'How local interactions generate global behavior, structure, adaptation and change over time.')}</p></article>
-        <article><span className="eil-fold-kicker">{tx('VERBORGENE ZUSTÄNDE & ÜBERGÄNGE', 'HIDDEN STATES & TRANSITIONS')}</span><h3>{tx('Rekonstruktion', 'Reconstruction')}</h3><p>{tx('Wie sich aus unvollständiger Evidenz Zustand, Beziehungen, Constraints und kausale Struktur rekonstruieren lassen.', 'How incomplete evidence can be used to reconstruct state, relationships, constraints and causal structure.')}</p></article>
-        <article><span className="eil-fold-kicker">{tx('ARCHITEKTUREN, DIE UNTERSUCHEN', 'ARCHITECTURES THAT INVESTIGATE')}</span><h3>Intelligence</h3><p>{tx('Wie spezialisierte intelligente Systeme schließen, Zustand bewahren, koordinieren, Hypothesen prüfen, Fehler erkennen und sich erholen.', 'How specialized intelligent systems reason, preserve state, coordinate, test hypotheses, detect failure and recover.')}</p></article>
+        <article><span className="eil-fold-kicker">{tx('EMERGENZ & DYNAMIK', 'EMERGENCE & DYNAMICS')}</span><h3>{tx('Interaktion', 'Interaction')}</h3><p>{tx('Wie lokale Interaktionen globales Verhalten, Struktur, Adaption und Veränderung über Zeit erzeugen.', 'How local interactions generate global behavior, structure, adaptation and change over time.')}</p><a className="eil-text-link" href={href('research-complex')}>{tx('Forschungsdomäne ansehen', 'View research domain')} →</a></article>
+        <article><span className="eil-fold-kicker">{tx('VERBORGENE ZUSTÄNDE & ÜBERGÄNGE', 'HIDDEN STATES & TRANSITIONS')}</span><h3>{tx('Systemrekonstruktion', 'System Reconstruction')}</h3><p>{tx('Wie sich aus unvollständiger Evidenz Zustand, Beziehungen, Constraints und kausale Struktur rekonstruieren lassen.', 'How incomplete evidence can be used to reconstruct state, relationships, constraints and causal structure.')}</p><a className="eil-text-link" href={href('research-reconstruction')}>{tx('Forschungsdomäne ansehen', 'View research domain')} →</a></article>
+        <article><span className="eil-fold-kicker">{tx('ARCHITEKTUREN, DIE UNTERSUCHEN', 'ARCHITECTURES THAT INVESTIGATE')}</span><h3>Intelligence</h3><p>{tx('Wie spezialisierte intelligente Systeme schließen, Zustand bewahren, koordinieren, Hypothesen prüfen, Fehler erkennen und sich erholen.', 'How specialized intelligent systems reason, preserve state, coordinate, test hypotheses, detect failure and recover.')}</p><a className="eil-text-link" href={href('research-computational')}>{tx('Forschungsdomäne ansehen', 'View research domain')} →</a></article>
       </div>
     </section>
 
@@ -295,7 +463,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     </section>
 
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('AUSGEWÄHLTE SYSTEME', 'SELECTED SYSTEMS')}</Status><h2>{tx('Vier von zehn Intelligence-Systemen.', 'Four of ten intelligence systems.')}</h2></div>
-      <div className="eil-system-grid">{[intelligenceSystems[0], intelligenceSystems[1], intelligenceSystems[2], intelligenceSystems[3]].map(([name, kicker, d, e]) => <article className="eil-card" key={name}><Status>{kicker}</Status><h3>{name}</h3><p>{tx(d, e)}</p></article>)}</div>
+      <div className="eil-system-grid">{intelligenceSystems.slice(0, 4).map(entry => <article className="eil-card" key={entry.key}><Status>{entry.kicker}</Status><h3>{entry.title}</h3><p>{tx(entry.leadDe, entry.leadEn)}</p></article>)}</div>
       <a className="eil-text-link" href={href('systems')}>{tx('Systemarchitektur ansehen', 'Explore system architecture')} →</a>
     </section>
 
@@ -303,7 +471,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
       <div className="eil-environment-grid">
         <article><Status>{tx('GEBAUT', 'BUILT')}</Status><h3>EIL Kernel</h3><p>{tx('Existierende Runtime-Grundlage für zustandsbehaftete Agenten- und Forschungssysteme, inklusive Runtime, State, Context, Memory, Monitoring, Evidence, Recovery, Tests und Audit Trails.', 'Existing runtime foundation for stateful agent and research systems, including runtime, state, context, memory, monitoring, evidence, recovery, tests and audit trails.')}</p></article>
         <article><Status>{tx('AKTIVE FORSCHUNG', 'ACTIVE RESEARCH')}</Status><h3>DINGIR</h3><p>{tx('Das kollaborative System für Hidden-State-Rekonstruktion, Kausalketten, Zustandsübergänge und Prediction.', 'The collaborative system for hidden-state reconstruction, causal chains, state transitions and prediction.')}</p></article>
-        <article><Status>{tx('IN ENTWICKLUNG', 'IN DEVELOPMENT')}</Status><h3>Observatory</h3><p>{tx('Experimentelle Forschungsumgebung für System-Observability, Rekonstruktionen, Daten und Visualisierung.', 'Experimental research environment for system observability, reconstructions, data and visualization.')}</p></article>
+        <article><Status>{tx('FORSCHUNGSINSTRUMENT', 'RESEARCH INSTRUMENT')}</Status><h3>Observatory</h3><p>{tx('Forschungsumgebung für System-Observability, Rekonstruktionen, Daten und Visualisierung, mit dem internen Content-/Admin-Panel verzahnt.', 'Research environment for system observability, reconstructions, data and visualization, tied into the internal content/admin panel.')}</p></article>
       </div>
     </section>
 
@@ -317,7 +485,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('WAS EIL IST', 'WHAT EIL IS')}</Status><h2>{tx('EIL ist die maßgebliche Forschungsumgebung.', 'EIL is the paramount research environment.')}</h2><p>{tx('Kein einzelnes Framework, Benchmark, keine Agentenfamilie und keine Human–AI-Forschungslinie definiert das Lab für sich allein.', 'No single framework, benchmark, agent family or Human–AI research line defines the lab on its own.')}</p></div>
       <div className="eil-role-grid">
         <article><h3>{tx('Emergente Interaktion', 'Emergent Interaction')}</h3><p>{tx('Wie Interaktion zwischen Komponenten, Agenten, Menschen und Systemen Verhalten erzeugt, das sich nicht aus isolierten Teilen verstehen lässt.', 'How interaction between components, agents, people and systems generates behavior that cannot be understood from isolated parts.')}</p></article>
-        <article><h3>{tx('Rekonstruktion verborgener Zustände', 'Hidden State Reconstruction')}</h3><p>{tx('Wie sich verborgene Zustände, Constraints, Beziehungen und kausale Strukturen aus unvollständiger Evidenz ableiten lassen.', 'How hidden states, constraints, relationships and causal structures can be inferred from incomplete evidence.')}</p></article>
+        <article><h3>{tx('Systemrekonstruktion (Hidden State Reconstruction)', 'System Reconstruction (Hidden State Reconstruction)')}</h3><p>{tx('Wie sich verborgene Zustände, Constraints, Beziehungen und kausale Strukturen aus unvollständiger Evidenz ableiten lassen.', 'How hidden states, constraints, relationships and causal structures can be inferred from incomplete evidence.')}</p><a className="eil-text-link" href={href('research-reconstruction')}>{tx('Forschungsdomäne ansehen', 'View research domain')} →</a></article>
         <article><h3>{tx('Intelligente Architekturen', 'Intelligent Architectures')}</h3><p>{tx('Wie Reasoning, Zustand, Memory, Evidenz, Koordination, Validierung und Recovery in autonome und Multi-Agent-Systeme eingebaut werden.', 'How reasoning, state, memory, evidence, coordination, validation and recovery are designed into autonomous and multi-agent systems.')}</p></article>
       </div>
     </section>
@@ -355,15 +523,6 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   </div>
 
   // -- Methods ------------------------------------------------------------
-  const methodEntries = [
-    ['LIIE', tx('OPEN RESEARCH BENCHMARK', 'OPEN RESEARCH BENCHMARK'), 'Longitudinal Interaction Impact Evaluation', tx('Offener Research-Benchmark für mehrjährige Human–AI-Interaktionsverläufe, einschließlich vorteilhafter, erhaltender und sich verschlechternder Muster, Rekonstruktionsgenauigkeit, Handlungsfähigkeit, semantischer Integrität, Abhängigkeit, Unsicherheitskalibrierung, Recovery und False-State-Kontrollen.', 'Open research benchmark for multi-year Human–AI interaction trajectories, including beneficial, preserving and deteriorating patterns, reconstruction accuracy, agency, semantic integrity, dependency, uncertainty calibration, recovery and false-state controls.')],
-    ['IEIA / EIA', tx('FORSCHUNGSSTRUKTUR', 'RESEARCH STRUCTURE'), tx('Iterative & Emergent Interaction Analysis', 'Iterative & Emergent Interaction Analysis'), tx('Zerlegt eine Interaktionsreihe in einzeln vergleichbare Episoden, statt eine Sitzung isoliert zu betrachten – so werden Muster erst über wiederholte Durchläufe sichtbar.', 'Breaks an interaction series into individually comparable episodes instead of looking at one session in isolation — patterns only become visible across repeated runs.')],
-    ['CEI', tx('METRIK', 'METRIC'), 'Continuous Evolution Index', tx('Ein einzelner, über Zeit fortgeschriebener Wert, der zeigt, ob sich eine Interaktion in Richtung Verbesserung, Stillstand oder Verschlechterung bewegt – gemessen, nicht behauptet.', 'A single value, updated over time, showing whether an interaction is trending toward improvement, stagnation or deterioration — measured, not asserted.')],
-    ['UIP / CCET', tx('RESEARCH INSTRUMENTE', 'RESEARCH INSTRUMENTS'), tx('User Integrity Protocol · Continuous Co-Evolution Tracker', 'User Integrity Protocol · Continuous Co-Evolution Tracker'), tx('UIP prüft, ob ein System einen Nutzer über die Zeit konsistent behandelt, statt bei jeder Sitzung neu zu raten. CCET verfolgt, wie sich Nutzer und System gemeinsam über wiederholte Interaktion verändern.', 'UIP checks whether a system treats a user consistently over time, instead of re-guessing at every session. CCET tracks how user and system change together across repeated interaction.')],
-    ['LSG-24 / LAP-1 / LT-Data', tx('FORSCHUNGS- & DATENINSTRUMENTE', 'RESEARCH & DATA INSTRUMENTS'), tx('Framework-Familie', 'Framework family'), tx('Fallspezifische Research- und Dateninstrumente, jeweils für eine konkrete wiederkehrende Analyseaufgabe gebaut – keine Universallösung, die auf jeden Fall gestülpt wird.', 'Case-specific research and data instruments, each built for one concrete recurring analysis task — not a one-size-fits-all tool stretched over every case.')],
-    ['8-Layer Model', tx('KONZEPTIONELLES MODELL', 'CONCEPTUAL MODEL'), tx('Historisches Framework-Modell', 'Historical framework model'), tx('Frühes Modell, das einen Reasoning-Verlauf in acht unterscheidbare Schichten zerlegt hat, um zu zeigen, wo ein Fehler im Denkprozess tatsächlich entsteht – nicht nur, wo er sichtbar wird. Heute primär von historischem Interesse.', 'An early model that broke a reasoning trace into eight distinguishable layers to show where an error in a thought process actually originates — not just where it becomes visible. Today mostly of historical interest.')],
-  ] as const
-
   const processStages = [
     [tx('Beobachten', 'Observe'), tx('Interaktionsverläufe, Logs, Entscheidungen und Systemreaktionen werden mit Zeitstempel mitgeschnitten, während sie passieren – nicht nachträglich aus dem Gedächtnis rekonstruiert.', 'Interaction histories, logs, decisions and system responses are captured with timestamps as they happen — not reconstructed afterward from memory.')],
     [tx('Rekonstruieren', 'Reconstruct'), tx('Aus Logs, Fehlermeldungen, Teilaussagen und indirekten Spuren wird abgeleitet, welcher Zustand oder welche Regel das beobachtete Verhalten tatsächlich erklärt – mehrere konkurrierende Erklärungen werden gegeneinander geprüft, bevor eine übernommen wird.', 'From logs, error messages, partial statements and indirect traces, the actual state or rule behind the observed behavior is inferred — competing explanations are tested against each other before one is adopted.')],
@@ -381,7 +540,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
       <p style={{ marginTop: 28, color: 'var(--soft)', fontSize: 13 }}>{tx('KI wird im gesamten Prozess als Forschungs-, Analyse-, Modellierungs- und Entwicklungswerkzeug eingesetzt; alle Konzepte, Architekturen, Interpretationen und finalen Entscheidungen bleiben in eigener Verantwortung.', "AI is used throughout this process as a research, analysis, modeling and development tool; all concepts, architectures, interpretations and final decisions remain the Lab's own responsibility.")}</p>
     </section>
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('FORSCHUNGSWERKZEUGE', 'RESEARCH TOOLS')}</Status><p>{tx('Dies sind unterstützende Forschungswerkzeuge. Sie definieren das Lab nicht als Ganzes und bleiben den Forschungsfragen und Systemen, die sie unterstützen, untergeordnet.', 'These are supporting research tools. They do not define the lab as a whole and should remain subordinate to the research questions and systems they support.')}</p></div>
-      <div className="eil-library-grid">{methodEntries.map(([name, status, full, desc]) => <FoldCard key={name} kicker={status} title={name} subtitle={full}><p>{desc}</p></FoldCard>)}</div>
+      <div className="eil-library-grid">{methodEntries.map(entry => <SpecCard key={entry.key} entry={entry} />)}</div>
     </section>
   </>
 
@@ -394,16 +553,11 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
       <small>{['Lead Agents', 'Specialists', 'Sub-Agents', 'Shared Context', 'Runtime / Evidence'].join(' · ')}</small>
     </section>
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('AUSGEWÄHLTE INTELLIGENCE-SYSTEME', 'SELECTED INTELLIGENCE SYSTEMS')}</Status></div>
-      <div className="eil-system-grid">{intelligenceSystems.map(([name, kicker, d, e, dDetail, eDetail]) => (
-        dDetail
-          ? <FoldCard key={name} group="intelligence-systems" kicker={kicker} title={name} subtitle={tx(d, e)}><p>{tx(dDetail, eDetail)}</p></FoldCard>
-          : <article className="eil-card" key={name}><Status>{kicker}</Status><h3>{name}</h3><p>{tx(d, e)}</p></article>
-      ))}</div>
+      <div className="eil-system-grid">{intelligenceSystems.map(entry => <SpecCard key={entry.key} entry={entry} />)}</div>
     </section>
-    <section className="eil-section"><div className="eil-environment-grid">
-      <article><Status>{tx('GEBAUT', 'BUILT')}</Status><h3>EIL Kernel</h3><p>{tx('Der Kernel ist existierende Forschungsinfrastruktur für zustandsbehaftete Agentenoperation und Kontinuität. Er ist kein geplantes Konzept. Ohne ihn verliert jede neue Sitzung Kontext, Entscheidungen und zuvor validierte Zustände – der Kernel hält das über Sitzungen, Neustarts und Machine-Wechsel hinweg fest, statt bei jedem Neustart bei null anzufangen.', 'The Kernel is existing research infrastructure for stateful agent operation and continuity. It is not a planned concept. Without it, every new session loses context, decisions and previously validated states — the Kernel preserves that across sessions, restarts and machine changes instead of starting from zero every time.')}</p><p>{tx('Der Kernel umfasst innerhalb der bestätigten Architektur zusätzlich Evidence Handling, Testarchitektur sowie Guard A / Guard B.', 'The Kernel also includes evidence handling, test structures and Guard A / Guard B within the confirmed architecture.')}</p><small>{['Agent Logic', 'Runtime', 'State', 'Context', 'Memory', 'Drift', 'Monitoring', 'Feedback', 'Recovery', 'Audit Trails'].join(' · ')}</small></article>
-      <article><Status>{tx('AKTIVE FORSCHUNG', 'ACTIVE RESEARCH')}</Status><h3>DINGIR</h3><p>{tx('DINGIR ist das kollaborative System für Hidden-State-Rekonstruktion, Kausalketten, Zustandsübergänge und prädiktives Reasoning.', 'DINGIR is the collaborative system for hidden-state reconstruction, causal chains, state transitions and predictive reasoning.')}</p><p>{tx('EIL trägt Forschung und Intelligence Architecture rund um Rekonstruktion, Hidden-State-Reasoning, kausale und zeitliche Struktur, Zustandsübergänge und Prediction-Logik bei; Engineering- und Implementierungs-Attribution bleibt bei tatsächlicher Zusammenarbeit explizit ausgewiesen.', 'EIL contributes research and intelligence architecture around reconstruction, hidden-state reasoning, causal and temporal structure, state transitions and prediction logic; engineering and implementation attribution should remain explicit where collaborative.')}</p><a className="eil-text-link" href={href('research-causality')} style={{ marginTop: 0, display: 'inline-block' }}>{tx('Forschungsdomäne Kausalität, Prediction & DINGIR ansehen', 'View the Causality, Prediction & DINGIR research domain')} →</a><small>{tx(['Evidenz', 'Verborgener Zustand', 'Kausale Struktur', 'Übergang', 'Mögliche Zukünfte'].join(' → '), ['Evidence', 'Hidden State', 'Causal Structure', 'Transition', 'Possible Futures'].join(' → '))}</small></article>
-    </div></section>
+    <section className="eil-section"><div className="eil-section-head"><Status>{tx('INFRASTRUKTUR', 'INFRASTRUCTURE')}</Status></div>
+      <div className="eil-environment-grid">{infraSystems.map(entry => <SpecCard key={entry.key} entry={entry} />)}</div>
+    </section>
   </>
 
   // -- Publications --------------------------------------------------------
@@ -416,19 +570,18 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   // -- Observatory ----------------------------------------------------------
   const observatoryItems = [
-    [tx('Experimente', 'Experiments'), tx('Strukturierte Ansichten aktiver und abgeschlossener Experimente.', 'Structured views of active and completed experiments.')],
-    [tx('Zustand & Runtime', 'State & Runtime'), tx('Beobachtbarer Zustand und Runtime-Verhalten ausgewählter Forschungssysteme.', 'Observable state and runtime behavior for selected research systems.')],
-    [tx('Rekonstruktionen', 'Reconstructions'), tx('Visueller Zugang zu rekonstruierten Zuständen, Beziehungen und Übergängen.', 'Visual access to reconstructed states, relationships and transitions.')],
-    [tx('Research Streams', 'Research Streams'), tx('Lang laufende Forschungsstränge und Kontinuität über Untersuchungen hinweg.', 'Long-running research threads and continuity across investigations.')],
-    [tx('Daten', 'Data'), tx('Evidenzstrukturen, Datensätze und zeitliche Information.', 'Evidence structures, datasets and temporal information.')],
-    [tx('Wissenschaftliche Visualisierung', 'Scientific Visualization'), tx('Visualisierung von Verläufen, Systemdynamik, kausaler Struktur und anderen Forschungszuständen.', 'Visualization of trajectories, system dynamics, causal structure and other research states.')],
+    [tx('Experimente', 'Experiments'), tx('Welche Experimente laufen gerade, welche sind abgeschlossen, und mit welchem Ergebnis.', 'Which experiments are currently running, which are finished, and with what result.')],
+    [tx('Zustand & Runtime', 'State & Runtime'), tx('Wie sich der Zustand ausgewählter Forschungssysteme über Zeit verändert, nicht nur eine Momentaufnahme.', 'How the state of selected research systems changes over time, not just a single snapshot.')],
+    [tx('Rekonstruktionen', 'Reconstructions'), tx('Rekonstruierte Zustände, Beziehungen und Übergänge visuell statt als Textbericht zugänglich machen.', 'Making reconstructed states, relationships and transitions accessible visually instead of as a text report.')],
+    [tx('Research Streams', 'Research Streams'), tx('Welche Forschungsstränge über mehrere Untersuchungen hinweg zusammenhängen, statt isolierter Einzelfälle.', 'Which research threads connect across multiple investigations, instead of isolated one-off cases.')],
+    [tx('Daten', 'Data'), tx('Woher eine Evidenz stammt, wann sie erhoben wurde und welche Datensätze dahinterstehen.', 'Where a piece of evidence came from, when it was captured and which datasets it draws on.')],
+    [tx('Wissenschaftliche Visualisierung', 'Scientific Visualization'), tx('Verläufe, Systemdynamik und kausale Struktur so darstellen, dass ein Muster tatsächlich erkennbar wird.', 'Representing trajectories, system dynamics and causal structure so a pattern actually becomes recognizable.')],
   ] as const
 
   const Observatory = () => <>
     <PageHero eyebrow="RESEARCH INSTRUMENT" title="Observatory" body={tx('Experimentelle Sichtbarkeit laufender Forschungssysteme.', 'Experimental visibility into ongoing research systems.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Observatory', null]]} />
-    <section className="eil-section"><div className="eil-section-head"><Status>{tx('IN ENTWICKLUNG', 'IN DEVELOPMENT')}</Status><p>{tx('Das Observatory ist eine sich in Entwicklung befindende Forschungsumgebung für Experimente, Zustand, Rekonstruktionen, Daten, Runtime-Verhalten und wissenschaftliche Visualisierung.', 'The Observatory is an in-development research environment for experiments, state, reconstructions, data, runtime behavior and scientific visualization.')}</p></div>
+    <section className="eil-section"><div className="eil-section-head"><Status>{tx('FORSCHUNGSINSTRUMENT', 'RESEARCH INSTRUMENT')}</Status><p>{tx('Das Observatory ist die Forschungsumgebung für Experimente, Zustand, Rekonstruktionen, Daten, Runtime-Verhalten und wissenschaftliche Visualisierung. Es ist mit dem internen Content-/Admin-Panel verzahnt; daneben wird parallel ein eigenständiges internes Observatory weitergebaut.', 'The Observatory is the research environment for experiments, state, reconstructions, data, runtime behavior and scientific visualization. It ties into the internal content/admin panel; a standalone internal Observatory is being built out alongside it.')}</p></div>
       <div className="eil-observatory-grid">{observatoryItems.map(([name,d])=><article key={name}><h3>{name}</h3><p>{d}</p></article>)}</div>
-      <p style={{ marginTop: 34, color: 'var(--soft)', fontSize: 13 }}>{tx('Nur tatsächlich implementierte Elemente werden als operativ gekennzeichnet. Das Observatory bleibt als „in Entwicklung" markiert, bis dies anders verifiziert ist.', 'Only implemented elements should ever be labelled operational. The Observatory must remain marked in development until verified otherwise.')}</p>
     </section>
   </>
 
@@ -436,19 +589,19 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
   const Notes = () => <><PageHero eyebrow="PUBLIC RESEARCH COMMUNICATION" title="Research Notes" body={tx('Lab Notes, Research Notes, Case Studies, Methods und Commentary – klar voneinander unterschieden.', 'Lab notes, research notes, case studies, methods and commentary—clearly distinguished.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Research Notes', null]]} /><section className="eil-section"><div className="eil-notes-grid">{(content.news?.items ?? []).map(n=><article className="eil-card" key={n.id}><Status>RESEARCH NOTE · PRELIMINARY</Status><time>{n.date}</time><h3>{n.title}</h3><p>{n.body.replace(/<[^>]+>/g,'').slice(0,220)}…</p></article>)}</div></section></>
 
   // -- Applied Research -------------------------------------------------
-  const appliedCapabilities = [
-    [tx('Systemrekonstruktion', 'System Reconstruction'), tx('Systemzustand, Ereignisabfolgen, Constraints oder kausale Struktur aus unvollständiger und verteilter Evidenz rekonstruieren.', 'Reconstruct system state, event sequences, constraints or causal structure from incomplete and distributed evidence.')],
-    [tx('KI-gestützte Systemdiagnostik', 'AI-Augmented System Diagnostics'), tx('Strukturierte Intelligence-Systeme einsetzen, um Verhalten, Systemzustände, Fehlermuster und verborgene Constraints zu untersuchen.', 'Use structured intelligence systems to investigate behavior, system conditions, failure patterns and hidden constraints.')],
-    [tx('Behavioral- / Interaktionsanalyse', 'Behavioral / Interaction Analysis'), tx('Beobachtete Interaktionsmuster, Entscheidungsdynamik, Abweichungen und longitudinale Veränderung analysieren.', 'Analyze observed interaction patterns, decision dynamics, deviations and longitudinal change.')],
-    [tx('Adversariale Systemanalyse', 'Adversarial Systems Analysis'), tx('Annahmen und behauptetes Systemverhalten gegen widersprüchliche Evidenz, Edge Cases und Fehlerzustände prüfen.', 'Challenge assumptions and stated system behavior against conflicting evidence, edge cases and failure conditions.')],
-  ] as const
+  const appliedProcessSteps: [string, string, string][] = [
+    ['Problem', 'Das konkrete Problem im externen System wird benannt, nicht vorausgesetzt.', 'The concrete problem in the external system gets named, not assumed.'],
+    [tx('Forschungsfrage', 'Research Question'), 'Das Problem wird in eine prüfbare Frage übersetzt, die tatsächlich beantwortbar ist.', 'The problem gets translated into a testable question that can actually be answered.'],
+    [tx('Abgrenzung', 'Boundary'), 'Systemgrenze und Scope werden schriftlich festgelegt, bevor untersucht wird.', 'System boundary and scope are fixed in writing before investigation starts.'],
+    ['Evidence', 'Nur was tatsächlich belegt ist, geht in den Befund ein – keine Annahmen als Fakt.', 'Only what is actually documented goes into the finding — no assumptions dressed up as fact.'],
+  ]
 
   const Applied = () => <>
     <PageHero eyebrow="APPLIED RESEARCH" title="Applied Research" body={tx('Forschungsmethoden angewendet auf begrenzte reale Systeme.', 'Research methods applied to bounded real-world systems.')} crumbs={[[tx('Start', 'Home'), 'home'], ['Applied Research', null]]} />
     <section className="eil-section"><div className="eil-section-head"><p>{tx('EIL kann Rekonstruktion, Behavioral Analysis, KI-gestützte Systemdiagnostik und adversariales Systemdenken auf konkrete externe Systeme anwenden, ohne das Lab in eine generische Beratung zu verwandeln.', 'EIL can apply reconstruction, behavioral analysis, AI-augmented system diagnostics and adversarial systems thinking to concrete external systems without turning the lab into a generic consultancy.')}</p></div>
-      <div className="eil-process">{['Problem', tx('Forschungsfrage','Research Question'), tx('Abgrenzung','Boundary'), 'Evidence'].map((x,i)=><article key={x}><span>{String(i+1).padStart(2,'0')}</span><strong>{x}</strong></article>)}</div>
+      <div className="eil-process">{appliedProcessSteps.map(([label, d, e],i)=><article key={label}><span>{String(i+1).padStart(2,'0')}</span><strong>{label}</strong><p>{tx(d,e)}</p></article>)}</div>
     </section>
-    <section className="eil-section"><div className="eil-domain-grid">{appliedCapabilities.map(([name,d])=><article className="eil-card" key={name}><h3>{name}</h3><p>{d}</p></article>)}</div></section>
+    <section className="eil-section"><div className="eil-domain-grid">{appliedCapabilities.map(entry => <SpecCard key={entry.key} entry={entry} />)}</div></section>
     <section className="eil-section"><div className="eil-section-head"><Status>{tx('BESTEHENDE ANGEBOTE & PREISE', 'VERIFIED EXISTING OFFERS')}</Status><p>{tx('Preise bleiben sichtbar, bestimmen aber nicht die institutionelle Hierarchie. Finale Preise hängen von Evidenzvolumen, Systemgrenze und Komplexität ab.', 'Prices remain visible without defining the institutional hierarchy. Final pricing depends on evidence volume, system boundary and complexity.')}</p></div>
       <div className="eil-engagement-list">{engagements.map(([category,name,price,d,e])=><article key={name}><div><Status>{category.toUpperCase()}</Status><strong>{price}</strong></div><h2>{name}</h2><p>{tx(d,e)}</p><a href={`${href('home')}#contact`}>{tx('Scope prüfen', 'Discuss scope')} →</a></article>)}</div>
     </section>
@@ -467,5 +620,5 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
     'research-computational': () => ResearchDomainDetail(researchDomains[6]),
   }
   const Page = pages[route]
-  return <div className="eil-site" data-theme={theme}><Header/><main className="eil-main"><Page/></main><Footer/></div>
+  return <div className="eil-site" data-theme={theme}><Header/><main className="eil-main"><Page/></main><Footer/>{openModal && <SpecModal/>}</div>
 }

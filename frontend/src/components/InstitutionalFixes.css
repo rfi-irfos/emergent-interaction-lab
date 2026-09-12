@@ -399,3 +399,77 @@
    (applied-research.html's Problem/Boundary/Evidence rows are a plain
    single-column list, not a grid, for the same reason). */
 .eil-library-grid { grid-template-columns: 1fr; margin-top: 0; background: none; border: none; gap: 14px; }
+
+/* ── Modal-on-click system, replacing FoldCard for Systems/Methods/Applied
+   Research — Laura rejected the inline-dropdown pattern outright ("das ist
+   kake"), wants a real on-screen panel per card with real sections instead
+   of a 3-line accordion. SpecCard is the closed, clickable summary; the
+   panel below reuses the same visual language as the site's other modal
+   (PageModal in App.css — dark overlay, X top-right, Escape/backdrop close)
+   but through this component's own theme tokens (--bg/--surface/--cyan) so
+   it respects light/dark/hc mode instead of hardcoding dark. */
+.eil-spec-card {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  font-family: inherit; border: 1px solid var(--line); border-radius: 16px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--violet) 7%, var(--surface)), var(--surface));
+  padding: 26px;
+}
+.eil-spec-card h3 { font-size: 22px; margin: 22px 0 12px; color: var(--text); }
+.eil-spec-card p { margin: 0; color: var(--soft); line-height: 1.55; }
+
+.eil-spec-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: color-mix(in srgb, var(--bg) 78%, black 10%); backdrop-filter: blur(6px);
+  padding: 6vh 20px 8vh; overflow-y: auto;
+  animation: eilSpecFade .18s ease-out;
+}
+@keyframes eilSpecFade { from { opacity: 0 } to { opacity: 1 } }
+.eil-spec-panel {
+  position: relative; width: 100%; max-width: 680px;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .45);
+  padding: 34px 36px 40px;
+}
+.eil-spec-x {
+  position: absolute; top: 16px; right: 16px;
+  width: 38px; height: 38px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--soft);
+  border: 1px solid var(--line); border-radius: 10px;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.eil-spec-x:hover { background: color-mix(in srgb, var(--cyan) 14%, transparent); color: var(--cyan); }
+.eil-spec-scroll { max-height: 78vh; overflow-y: auto; padding-right: 6px; }
+.eil-spec-scroll h1 { font-size: 30px; font-weight: 900; margin: 18px 0 14px; line-height: 1.15; }
+.eil-spec-lead { font-size: 17px; line-height: 1.55; color: var(--soft); margin: 0 0 8px; }
+.eil-spec-scroll h2 { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--cyan); margin: 30px 0 10px; font-family: ui-monospace, monospace; }
+.eil-spec-scroll ul { margin: 0; padding-left: 20px; color: var(--soft); line-height: 1.6; }
+.eil-spec-scroll li { margin: 6px 0; }
+.eil-spec-dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; margin: 0; }
+.eil-spec-dl dt { color: var(--soft); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.eil-spec-dl dd { margin: 0; }
+@media (max-width: 720px) {
+  .eil-spec-panel { padding: 28px 22px 32px; }
+  .eil-spec-dl { grid-template-columns: 1fr; }
+}
+
+/* Card eyebrow → title → description spacing, bumped consistently across
+   every card grid site-wide (was too tight everywhere, flagged live
+   repeatedly, not just on one page). */
+.eil-card h3, .eil-card h2, .eil-role-grid article h3,
+.eil-domain-grid a h3, .eil-system-grid h3, .eil-publication-list article h2 {
+  margin-top: 22px;
+}
+.eil-role-grid article p, .eil-domain-grid a p {
+  margin-top: 4px;
+}
+
+/* Applied Research's 01/02/03/04 process strip was bare number + label,
+   "sagt nichts aus" — each step now carries a one-line explanation. */
+.eil-process { grid-template-columns: repeat(4, 1fr); }
+.eil-process article p { margin: 10px 0 0; color: var(--soft); font-size: 13px; line-height: 1.5; }
+@media (max-width: 720px) { .eil-process { grid-template-columns: 1fr 1fr; } }
+
+/* Publications' 01/02 index number sat right against the title with no gap. */
+.eil-publication-list .eil-index { margin-left: 10px; }
