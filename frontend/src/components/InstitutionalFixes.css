@@ -199,8 +199,14 @@
 .eil-lineage-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .eil-lineage-strip span { min-height: 138px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; background: var(--surface); color: var(--text); font-size: 13px; line-height: 1.4; }
 .eil-lineage-strip b { color: var(--cyan); font: 700 10px ui-monospace,monospace; }
-.eil-environment-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-.eil-environment-grid article { padding: 24px; background: var(--surface); }
+/* .eil-environment-grid and .eil-library-grid used the same "1px gap +
+   var(--line) background bleed" trick as a cheap shared border between grid
+   cells — worked fine when children were plain <article>s that filled the
+   cell exactly. Now the children are .eil-spec-card <button>s with their own
+   border-radius, which don't fill the cell edge-to-edge, so that background
+   shows through as a visible grey box behind/around the rounded card —
+   flagged live on multiple pages. Plain gap, no shared background. */
+.eil-environment-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; background: none; border: none; }
 .eil-environment-grid h3 { margin: 0 0 9px; }
 .eil-environment-grid p { margin: 0; color: var(--soft); line-height: 1.55; }
 .eil-lineage-distinction { color: var(--text) !important; border-left: 2px solid var(--cyan); padding-left: 18px; }

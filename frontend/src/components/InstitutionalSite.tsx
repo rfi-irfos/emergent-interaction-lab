@@ -195,7 +195,7 @@ const intelligenceSystems: SpecEntry[] = [
 ]
 
 const infraSystems: SpecEntry[] = [
-  { key: 'eil-kernel', kicker: 'GEBAUT', title: 'EIL Kernel',
+  { key: 'eil-kernel', kicker: '', title: 'EIL Kernel',
     leadDe: 'Läuft bereits produktiv – kein Konzept auf dem Reißbrett.', leadEn: 'Already running in production — not a concept on the drawing board.',
     problemDe: 'Ohne persistente Infrastruktur verliert jede neue Sitzung Kontext, Entscheidungen und zuvor validierte Zustände – ein Agent, dessen Gedächtnis bei jedem Neustart zurückgesetzt wird, kann nicht longitudinal forschen.', problemEn: "Without persistent infrastructure, every new session loses context, decisions and previously validated states — an agent whose memory resets on every restart can't do longitudinal research.",
     archDe: ['Hält Runtime, State, Context und Memory über Sitzungen, Neustarts und Machine-Wechsel hinweg fest.', 'Protokolliert Entscheidungen und Zustände in Audit Trails statt sie stillschweigend zu überschreiben.', 'Umfasst Evidence Handling, Testarchitektur sowie Guard A / Guard B als eingebaute Kontrollmechanismen.', 'Erkennt Drift und meldet es über Monitoring/Feedback statt es zu ignorieren.'],
@@ -321,7 +321,7 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
 
   const SpecCard = ({ entry }: { entry: SpecEntry }) => (
     <button type="button" className="eil-spec-card" onClick={() => setOpenModal(entry.key)}>
-      <Status>{entry.kicker}</Status><h3>{entry.title}</h3><p>{tx(entry.leadDe, entry.leadEn)}</p>
+      {entry.kicker && <Status>{entry.kicker}</Status>}<h3>{entry.title}</h3><p>{tx(entry.leadDe, entry.leadEn)}</p>
     </button>
   )
 
@@ -335,10 +335,10 @@ export function InstitutionalSite({ route, content }: { route: InstitutionalRout
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6 L18 18 M18 6 L6 18" /></svg>
           </button>
           <div className="eil-spec-scroll">
-            <Status>{entry.kicker}</Status>
+            {entry.kicker && <Status>{entry.kicker}</Status>}
             <h1>{entry.title}</h1>
             <p className="eil-spec-lead">{tx(entry.leadDe, entry.leadEn)}</p>
-            {entry.problemDe && <><h2>{tx('PROBLEM', 'PROBLEM')}</h2><p>{tx(entry.problemDe, entry.problemEn!)}</p></>}
+            {entry.problemDe && <><h2>{tx('DAS PROBLEM', 'THE PROBLEM')}</h2><p>{tx(entry.problemDe, entry.problemEn!)}</p></>}
             {entry.archDe && <><h2>{tx('ARCHITEKTUR', 'ARCHITECTURE')}</h2><ul>{(de ? entry.archDe : entry.archEn!).map(line => <li key={line}>{line}</li>)}</ul></>}
             {entry.specDe && <><h2>{tx('SPEC', 'SPEC')}</h2><dl className="eil-spec-dl">{(de ? entry.specDe : entry.specEn!).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl></>}
           </div>
